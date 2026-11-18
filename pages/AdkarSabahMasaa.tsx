@@ -8,10 +8,11 @@ import ZoomModal from '../components/AdkarSabahMasaa/ZoomModal';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useHabitTracker } from '../hooks/useHabitTracker';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Check } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ADKAR_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 const ADHKAR_STATUS_KEY = 'sabah_masaa_status_v1';
 
@@ -36,7 +37,8 @@ interface AdkarSabahMasaaProps {
 }
 
 function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps) {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000' || themeKey === 'deep_black' || theme.name === 'اسود' || theme.name === 'أبيض وأسود';
@@ -287,28 +289,30 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
             />
 
             <main ref={mainRef} className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
-<<<<<<< HEAD
                 {/* Modern 3D Search bar */}
-=======
-                {/* Modern Borderless Search bar and View Mode Switch */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-                    <div className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible"
+                    <div className={`app-page-card border-0 relative flex-1 rounded-2xl ${isBlackTheme ? 'bg-[#18181b]' : 'bg-white dark:bg-[#1E293B]'} transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible`}
                          style={{ 
                              '--tw-ring-color': primaryColor,
                          } as any}
                     >
-                        <i 
-                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-45 pointer-events-none text-sm`} 
-                            style={{ color: 'var(--text-color)' }}
-                        ></i>
+                        <span
+                            className={`app-3d-badge border-0 absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none`}
+                            style={{
+                                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : hexToRgba(primaryColor, 0.12),
+                                color: isBlackTheme ? '#FFFFFF' : primaryColor,
+                            }}
+                            aria-hidden="true"
+                        >
+                            <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
                         <input 
                             type="text" 
                             placeholder={isEn ? "Search remembrances..." : "ابحث في الأذكار..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${
-                                isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'
+                                isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'
                             } placeholder-gray-400 dark:placeholder-gray-500`}
                             style={{ color: 'var(--text-color)' }}
                         />
@@ -316,7 +320,7 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                             <button
                                 type="button"
                                 onClick={() => setSearchQuery('')}
-                                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                className={`app-page-card unified-3d-btn border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
                                 aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
@@ -374,16 +378,12 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                 ref={fabContainerRef} 
                 className={`fixed app-fab-bottom ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
             >
-                <AnimatePresence>
-                    {isMenuOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: menuOpenDirection === 'up' ? 10 : -10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: menuOpenDirection === 'up' ? 10 : -10 }}
-                            className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
-                            style={{ color: 'var(--text-color)' }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
+                {isMenuOpen && (
+                    <div
+                        className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
+                        style={{ color: 'var(--text-color)' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                             <button 
                                 type="button"
                                 onClick={() => { setAdhkarTab('morning'); setIsMenuOpen(false); }}
@@ -408,7 +408,7 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                                 <span>{isEn ? 'Evening Remembrances' : 'أذكار المساء'}</span>
                                 <i className="fa-solid fa-moon text-xs opacity-75"></i>
                             </button>
-                            <div className="h-px bg-slate-100 dark:bg-white/10 my-0.5" />
+                            <div className="app-3d-divider my-0.5 mx-1" />
                             <button 
                                 type="button"
                                 onClick={() => { 
@@ -426,18 +426,17 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
                                 <i className="fa-solid fa-heart text-xs opacity-75"></i>
                             </button>
-                            <div className="h-px bg-slate-100 dark:bg-white/10 my-0.5" />
+                            <div className="app-3d-divider my-0.5 mx-1" />
                             <button 
                                 type="button"
                                 onClick={handleResetAll}
                                 className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                             >
                                 <span>{isEn ? 'Reset All Counters' : 'إعادة ضبط العدادات'}</span>
-                                <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
+                        </button>
+                    </div>
+                )}
 
                 {/* FAB: 3D embossed circle filled with primaryColor */}
                 <button 
@@ -458,20 +457,23 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
 
             <ZoomModal zoomedDhikr={zoomedDhikr} onClose={closeZoomModal} setToastMessage={setToastMessage} />
 
-            <AnimatePresence>
-                {toastMessage && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed left-1/2 z-[101] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10 text-sm"
-                        style={{ bottom: 'calc(var(--app-safe-bottom) + 1.25rem)' }}
+            {toastMessage && (
+                <div 
+                    className="app-3d-toast fixed left-1/2 -translate-x-1/2 z-[101] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold flex items-center justify-center gap-2.5 text-xs sm:text-sm text-center leading-normal break-words pointer-events-none"
+                    style={{
+                        bottom: 'calc(var(--app-safe-bottom) + 1.25rem)',
+                        ...toast3D.style,
+                    }}
+                >
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
                     >
-                        <i className="fa-solid fa-check text-green-400"></i>
-                        {toastMessage}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                    <span>{toastMessage}</span>
+                </div>
+            )}
             <CommunitySpotlightGuide
                 isOpen={showGuide}
                 onClose={() => {

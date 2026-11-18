@@ -1,6 +1,7 @@
 import React from 'react';
 import { Type, Palette, Highlighter, X, Check } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface AyahContextMenuProps {
     isOpen: boolean;
@@ -14,15 +15,6 @@ interface AyahContextMenuProps {
     currentTheme: any;
     isLandscape?: boolean;
 }
-
-const extractColor = (val?: string, fallback = '#000000'): string => {
-    if (!val) return fallback;
-    if (val.includes('#')) {
-        const match = val.match(/#[0-9a-fA-F]{3,8}/);
-        if (match) return match[0];
-    }
-    return val;
-};
 
 const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
     isOpen,
@@ -40,56 +32,53 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
     const isEn = language === 'en';
     if (!isOpen) return null;
 
-    // Dynamically derive the frame and border color from the active theme
-    const themeBorderColor = currentTheme?.id === 'deep_black'
-        ? '#ffffff'
-        : extractColor(
-            currentTheme?.barBorder || currentTheme?.cardBorder || currentTheme?.accent,
-            '#000000'
-        );
+    const p = resolveQuranModalPalette(currentTheme);
 
     return (
-        <div className={`fixed inset-0 z-[1200] bg-black/25 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'} animate-fadeIn`} onClick={() => {
-            setAyahContextMenu((p: any) => ({...p, isOpen: false}));
+        <div className={`fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'}`} onClick={() => {
+            setAyahContextMenu((prev: any) => ({...prev, isOpen: false}));
         }}>
             <div 
                 dir={dir}
-                className={`ayah-context-menu w-full ${isLandscape ? 'max-w-[300px] max-h-[90dvh]' : 'max-w-[320px] max-h-[75dvh]'} rounded-3xl shadow-2xl transition-all duration-300 flex flex-col pointer-events-auto overflow-hidden animate-modal-enter border-0`} 
+                className={`ayah-context-menu modal-skinned ${isLandscape ? 'w-[54%] max-w-[330px] max-h-[85%]' : 'w-full max-w-[325px] max-h-[78dvh]'} rounded-3xl flex flex-col pointer-events-auto overflow-hidden border-0 ${p.isDark ? 'quran-3d-dark' : ''}`} 
                 style={{ 
-                    fontFamily: currentTheme?.font,
-                    backgroundColor: currentTheme?.modalBg || '#ffffff',
-                    color: currentTheme?.modalText || currentTheme?.text || '#000000',
+                    fontFamily: p.fontFamily,
+                    backgroundColor: p.modalBg,
+                    color: p.modalText,
                     border: 'none',
                     outline: 'none',
-                    boxShadow: '0 20px 45px -10px rgba(0, 0, 0, 0.28), 0 8px 16px -2px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.85)'
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                <div className="p-4 overflow-y-auto flex-1 min-h-0 custom-scrollbar space-y-4">
-                    {/* Header Bar */}
+                {/* Canonical Raised Header */}
+                <div className={isLandscape ? "p-2.5 pb-1.5 shrink-0" : "p-3.5 pb-2 shrink-0"}>
                     <div 
-                        className="py-2 px-3 rounded-2xl flex items-center justify-between transition-colors quran-raised-card border-0"
+                        className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between quran-raised-card border-0`}
                         style={{
-                            backgroundColor: `${themeBorderColor}12`,
+                            backgroundColor: p.headerBg,
                         }}
                     >
-                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
+                        <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide`} style={{ color: p.headerAccent }}>
                             {isEn ? "Colors & Customization" : "الألوان والتخصيص"}
                         </span>
                         <button 
+                            type="button"
                             onClick={() => {
-                                setAyahContextMenu((p: any) => ({...p, isOpen: false}));
+                                setAyahContextMenu((prev: any) => ({...prev, isOpen: false}));
                             }} 
-                            className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0"
-                            style={{ color: themeBorderColor }}
+                            className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer`}
+                            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+                            aria-label={isEn ? "Close" : "إغلاق"}
                         >
-                            <X size={16} />
+                            <X size={isLandscape ? 14 : 16} />
                         </button>
                     </div>
+                </div>
 
+                <div className={`${isLandscape ? 'p-2.5 pt-1.5 pb-3 space-y-2.5' : 'p-3.5 pt-2 pb-4 space-y-4'} overflow-y-auto flex-1 min-h-0 custom-scrollbar`}>
                     {/* Colors Section */}
-                    <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-2.5">
+                    <div className={isLandscape ? "space-y-2.5" : "space-y-3"}>
+                        <div className={`grid grid-cols-3 ${isLandscape ? 'gap-2' : 'gap-3'}`}>
                             {[
                                 { id: 'textColor', label: isEn ? 'Text' : 'النص', icon: <Type size={14} /> },
                                 { id: 'bgColor', label: isEn ? 'Background' : 'الخلفية', icon: <Palette size={14} /> },
@@ -98,46 +87,42 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                 const isFieldActive = ayahContextColorField === field.id;
                                 const fieldColorValue = tempSettings[field.id] || (
                                     field.id === 'highlightTextColor' 
-                                        ? (currentTheme?.highlightText || currentTheme?.accent || '#10b981') 
+                                        ? (currentTheme?.highlightText || p.accentColor) 
                                         : ''
                                 );
 
                                 return (
                                     <div 
                                         key={field.id} 
-                                        className="flex flex-col gap-1 items-center"
+                                        className={`flex flex-col ${isLandscape ? 'gap-1' : 'gap-1.5'} items-center`}
                                     >
                                         <span 
-                                            className="text-xs font-bold text-center transition-colors select-none mb-1"
+                                            className={`${isLandscape ? 'text-[11px]' : 'text-xs'} font-bold text-center transition-colors select-none`}
                                             style={{ 
-                                                color: isFieldActive 
-                                                    ? themeBorderColor 
-                                                    : (currentTheme?.modalText ? `${currentTheme.modalText}90` : '#4b5563') 
+                                                color: isFieldActive ? p.headerAccent : p.mutedText
                                             }}
                                         >
                                             {field.label}
                                         </span>
                                         <button 
+                                            type="button"
                                             onClick={() => setAyahContextColorField(isFieldActive ? null : field.id as any)}
-                                            className="h-12 w-full rounded-xl transition-all relative overflow-hidden flex items-center justify-center active:scale-95 cursor-pointer quran-raised-btn border-0"
+                                            className={`${isLandscape ? 'h-9 rounded-xl' : 'h-12 rounded-2xl'} w-full relative overflow-hidden flex items-center justify-center cursor-pointer border-0 ${isFieldActive ? 'quran-raised-btn-selected scale-[1.03]' : 'quran-raised-btn'}`}
                                             style={{
                                                 ...renderCheckerboard(fieldColorValue),
-                                                boxShadow: isFieldActive 
-                                                    ? `0 0 0 2.5px ${themeBorderColor}, 0 4px 12px ${themeBorderColor}40` 
-                                                    : undefined
                                             }}
-                                            title={field.label}
+                                            aria-label={field.label}
                                         >
                                             {isFieldActive && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/15 backdrop-blur-[0.5px]">
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/15">
                                                     <div 
-                                                        className="w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-transform scale-100"
+                                                        className={`${isLandscape ? 'w-5 h-5' : 'w-6 h-6'} rounded-full flex items-center justify-center`}
                                                         style={{ 
-                                                            backgroundColor: themeBorderColor, 
-                                                            color: themeBorderColor.toLowerCase() === '#ffffff' ? '#000000' : (currentTheme?.accentText || '#ffffff') 
+                                                            backgroundColor: p.selectedBg, 
+                                                            color: p.selectedText 
                                                         }}
                                                     >
-                                                        <Check size={14} className="stroke-[3]" />
+                                                        <Check size={isLandscape ? 11 : 14} className="stroke-[3]" />
                                                     </div>
                                                 </div>
                                             )}
@@ -149,23 +134,24 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
 
                         {ayahContextColorField && (
                             <div 
-                                className="p-3.5 rounded-2xl border-0 quran-raised-card animate-fadeIn transition-colors"
+                                className={`${isLandscape ? 'p-2.5 rounded-2xl' : 'p-3.5 rounded-2xl'} border-0 quran-raised-card`}
                                 style={{
-                                    backgroundColor: `${themeBorderColor}0d`,
+                                    backgroundColor: p.subtleBg,
                                 }}
                             >
-                                <div className="flex justify-between items-center mb-2.5">
-                                    <span className="text-[11px] font-bold" style={{ color: themeBorderColor }}>
+                                <div className={`flex justify-between items-center ${isLandscape ? 'mb-1.5' : 'mb-2.5'}`}>
+                                    <span className={`${isLandscape ? 'text-[10px]' : 'text-[11px]'} font-bold`} style={{ color: p.headerAccent }}>
                                         {isEn 
                                             ? `Select ${ayahContextColorField === 'bgColor' ? 'background' : ayahContextColorField === 'textColor' ? 'text' : 'highlight'} color`
                                             : `اختر لون ${ayahContextColorField === 'bgColor' ? 'الخلفية' : ayahContextColorField === 'textColor' ? 'النص' : 'التحديد'}`}
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-6 gap-2">
+                                <div className={`grid ${isLandscape ? 'grid-cols-8 gap-1.5' : 'grid-cols-6 gap-2.5'}`}>
                                     {PREDEFINED_COLORS.map(c => {
                                         const isSelected = tempSettings[ayahContextColorField!] === c;
                                         return (
                                             <button
+                                                type="button"
                                                 key={c}
                                                 onClick={() => {
                                                     const currentField = ayahContextColorField!;
@@ -178,21 +164,20 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                                         onTempSettingsChange(newTempSettings, currentField);
                                                     }
                                                 }}
-                                                className={`h-8 rounded-xl transition-all hover:scale-110 active:scale-95 relative flex items-center justify-center border-0 quran-raised-btn ${isSelected ? 'scale-105 shadow-md' : ''}`}
+                                                className={`${isLandscape ? 'h-6.5 rounded-lg' : 'h-8 rounded-xl'} relative flex items-center justify-center border-0 ${isSelected ? 'quran-raised-btn-selected scale-105' : 'quran-raised-btn'}`}
                                                 style={{
                                                     ...renderCheckerboard(c),
-                                                    boxShadow: isSelected ? `0 0 0 2.5px ${themeBorderColor}, 0 4px 10px rgba(0,0,0,0.2)` : undefined
                                                 }}
                                             >
                                                 {isSelected && (
                                                     <div 
-                                                        className="w-4 h-4 rounded-full flex items-center justify-center shadow-sm"
+                                                        className={`${isLandscape ? 'w-3.5 h-3.5' : 'w-4 h-4'} rounded-full flex items-center justify-center`}
                                                         style={{ 
-                                                            backgroundColor: themeBorderColor, 
-                                                            color: currentTheme?.accentText || '#ffffff' 
+                                                            backgroundColor: p.selectedBg, 
+                                                            color: p.selectedText 
                                                         }}
                                                     >
-                                                        <Check size={10} className="stroke-[3]" />
+                                                        <Check size={isLandscape ? 9 : 10} className="stroke-[3]" />
                                                     </div>
                                                 )}
                                             </button>

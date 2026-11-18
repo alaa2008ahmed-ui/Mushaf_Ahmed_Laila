@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { useTheme } from '../../context/ThemeContext';
 import { usePrayerTimes, computeTimesSync } from '../../context/PrayerTimesContext';
 import { checkSupportsDST, applyOffset } from '../../utils/prayerTimesUtils';
 import { recordAppVisit } from '../../utils/favoriteAppsManager';
@@ -11,18 +10,15 @@ import {
 } from '../../utils/islamicOccasionsEngine';
 
 interface SmartSeasonalStripProps {
-  layoutMode: 'modern' | 'classic';
   onNavigate: (pageId: string, params?: any) => void;
 }
 
 const DISMISSED_STORAGE_KEY = 'smart_seasonal_strip_dismissed_v1';
 
 export const SmartSeasonalStrip: React.FC<SmartSeasonalStripProps> = ({
-  layoutMode,
   onNavigate
 }) => {
   const { language, isRTL, dir, formatNumber } = useLanguage();
-  const { theme, themeKey, isNightMode } = useTheme();
   const { times, config } = usePrayerTimes();
   const isEn = language === 'en';
 
@@ -143,9 +139,9 @@ export const SmartSeasonalStrip: React.FC<SmartSeasonalStripProps> = ({
       prayerSchedule,
       isEn,
       formatNumber,
-      layoutMode === 'modern' ? 'modern_home' : 'classic_home'
+      'modern_home'
     );
-  }, [nowDate, prayerSchedule, isEn, formatNumber, layoutMode]);
+  }, [nowDate, prayerSchedule, isEn, formatNumber]);
 
   if (!activeReminder || dismissedIds[activeReminder.id]) {
     return null;
@@ -167,88 +163,20 @@ export const SmartSeasonalStrip: React.FC<SmartSeasonalStripProps> = ({
     onNavigate(activeReminder.targetPage, activeReminder.targetParams);
   };
 
-  // ١. مظهر التصميم الذكي (النهاري الذهبي / الليلي الأسود والذهبي والأبيض المسطح)
-  if (layoutMode === 'modern') {
-    return (
-      <div
-        dir={dir}
-        onClick={activeReminder.targetPage ? handleAction : undefined}
-        className={`w-full golden-3d-card px-3.5 py-2.5 sm:px-4 sm:py-3 select-none transition-all animate-fadeIn ${
-          activeReminder.targetPage ? 'cursor-pointer' : ''
-        }`}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex flex-col min-w-0 flex-1 text-start">
-            <span className="card-header-title text-xs sm:text-[13px] font-black font-cairo text-[#451A03] leading-snug truncate">
-              {activeReminder.title}
-            </span>
-            <span className="text-[10.5px] sm:text-[11px] font-medium text-amber-900/90 leading-snug mt-0.5">
-              {activeReminder.subtitle}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0">
-            {activeReminder.actionLabel && activeReminder.targetPage && (
-              <button
-                type="button"
-                onClick={handleAction}
-                className="px-3 py-1.5 rounded-full golden-3d-pill-btn font-bold text-[11px] sm:text-xs flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
-              >
-                <span>{activeReminder.actionLabel}</span>
-                <ChevronLeft className={`w-3.5 h-3.5 ${isRTL ? '' : 'rotate-180'}`} />
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleDismiss}
-              className="p-1 rounded-full opacity-55 hover:opacity-100 active:scale-90 transition-all bg-transparent border-none outline-none cursor-pointer gold-accent-icon shrink-0"
-              title={isEn ? 'Dismiss reminder' : 'إخفاء التذكير'}
-              aria-label={isEn ? 'Dismiss reminder' : 'إخفاء التذكير'}
-            >
-              <X className="w-3.5 h-3.5 text-amber-900 stroke-[2.4]" />
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ٢. مظهر التصميم الكلاسيكي (متوافق تماماً مع الوضع النهاري الفاتح والوضع الليلي/الداكن بالتصميم الكلاسيكي)
-  const isClassicDark =
-    themeKey === 'deep_black' ||
-    theme?.bgColor === '#000000' ||
-    theme?.isDark ||
-    isNightMode;
-  const primaryColor =
-    themeKey === 'deep_black' || theme?.bgColor === '#000000'
-      ? '#10b981'
-      : theme?.palette?.[0] || theme?.accent || '#059669';
-
   return (
     <div
       dir={dir}
       onClick={activeReminder.targetPage ? handleAction : undefined}
-      className={`w-full px-3.5 py-2.5 sm:px-4 sm:py-3 relative overflow-hidden select-none transition-all ${
-        isClassicDark
-          ? 'bg-[#18181b] text-white tactile-3d-card-dark'
-          : 'bg-white text-slate-800 tactile-3d-card-light'
-      } ${activeReminder.targetPage ? 'cursor-pointer' : ''}`}
-      style={{ fontFamily: theme?.font }}
+      className={`w-full golden-3d-card px-3.5 py-2.5 sm:px-4 sm:py-3 select-none transition-all animate-fadeIn ${
+        activeReminder.targetPage ? 'cursor-pointer' : ''
+      }`}
     >
-      <div className="flex items-center justify-between gap-2 relative z-10">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col min-w-0 flex-1 text-start">
-          <span
-            className="text-xs sm:text-[13px] font-bold leading-snug truncate"
-            style={{ color: isClassicDark ? '#ffffff' : primaryColor }}
-          >
+          <span className="card-header-title text-xs sm:text-[13px] font-black font-cairo text-[#451A03] leading-snug truncate">
             {activeReminder.title}
           </span>
-          <span
-            className={`text-[10.5px] sm:text-[11px] font-medium leading-snug mt-0.5 ${
-              isClassicDark ? 'text-zinc-300' : 'text-slate-600'
-            }`}
-          >
+          <span className="text-[10.5px] sm:text-[11px] font-medium text-amber-900/90 leading-snug mt-0.5">
             {activeReminder.subtitle}
           </span>
         </div>
@@ -258,8 +186,7 @@ export const SmartSeasonalStrip: React.FC<SmartSeasonalStripProps> = ({
             <button
               type="button"
               onClick={handleAction}
-              className="px-3 py-1.5 rounded-full font-bold text-[11px] sm:text-xs flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0 border-none text-white shadow-xs"
-              style={{ backgroundColor: primaryColor }}
+              className="px-3 py-1.5 rounded-full golden-3d-pill-btn font-bold text-[11px] sm:text-xs flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
             >
               <span>{activeReminder.actionLabel}</span>
               <ChevronLeft className={`w-3.5 h-3.5 ${isRTL ? '' : 'rotate-180'}`} />
@@ -269,13 +196,11 @@ export const SmartSeasonalStrip: React.FC<SmartSeasonalStripProps> = ({
           <button
             type="button"
             onClick={handleDismiss}
-            className={`p-1 rounded-full opacity-55 hover:opacity-100 active:scale-90 transition-all bg-transparent border-none outline-none cursor-pointer shrink-0 ${
-              isClassicDark ? 'text-zinc-400' : 'text-slate-400'
-            }`}
+            className="p-1 rounded-full opacity-55 hover:opacity-100 active:scale-90 transition-all bg-transparent border-none outline-none cursor-pointer gold-accent-icon shrink-0"
             title={isEn ? 'Dismiss reminder' : 'إخفاء التذكير'}
             aria-label={isEn ? 'Dismiss reminder' : 'إخفاء التذكير'}
           >
-            <X className="w-3.5 h-3.5 stroke-[2.4]" />
+            <X className="w-3.5 h-3.5 text-amber-900 stroke-[2.4]" />
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Mic, 
   MapPin, 
@@ -40,10 +40,45 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
   customTitle,
   customDescription
 }) => {
-  const { theme, isNightMode } = useTheme();
+  const { theme, isNightMode, homeThemeVariant } = useTheme();
   const { language } = useLanguage();
   const isEn = language === 'en';
   const isBlackTheme = theme.bgColor === '#000000' || isNightMode;
+  const isSky = !isBlackTheme && homeThemeVariant === 'sky';
+  const isEmerald = !isBlackTheme && homeThemeVariant === 'emerald';
+  const isBurgundy = !isBlackTheme && homeThemeVariant === 'burgundy';
+
+  const card3dStyle: React.CSSProperties = isBlackTheme
+    ? {
+        background: 'linear-gradient(168deg, #24242f 0%, #191922 65%, #121218 100%)',
+        border: '1px solid rgba(255, 255, 255, 0.14)',
+        boxShadow: '0 5px 0 #07070b, 0 12px 24px rgba(0, 0, 0, 0.65), inset 0 1.5px 1px rgba(255, 255, 255, 0.16)',
+        color: '#ffffff',
+      }
+    : {
+        background: isSky
+          ? 'linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%)'
+          : isEmerald
+            ? 'linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%)'
+            : isBurgundy
+              ? 'linear-gradient(180deg, #ffffff 0%, #fff1f2 100%)'
+              : 'linear-gradient(180deg, #ffffff 0%, #fffdf2 100%)',
+        border: isSky
+          ? '1px solid rgba(14, 165, 233, 0.25)'
+          : isEmerald
+            ? '1px solid rgba(16, 185, 129, 0.25)'
+            : isBurgundy
+              ? '1px solid rgba(225, 29, 72, 0.25)'
+              : '1px solid rgba(217, 119, 6, 0.25)',
+        boxShadow: isSky
+          ? '0 5px 0 rgba(2, 132, 199, 0.18), 0 12px 24px rgba(2, 132, 199, 0.12), inset 0 2px 1.5px rgba(255, 255, 255, 0.98)'
+          : isEmerald
+            ? '0 5px 0 rgba(5, 150, 105, 0.18), 0 12px 24px rgba(5, 150, 105, 0.12), inset 0 2px 1.5px rgba(255, 255, 255, 0.98)'
+            : isBurgundy
+              ? '0 5px 0 rgba(190, 18, 60, 0.18), 0 12px 24px rgba(190, 18, 60, 0.12), inset 0 2px 1.5px rgba(255, 255, 255, 0.98)'
+              : '0 5px 0 rgba(180, 115, 20, 0.2), 0 12px 24px rgba(180, 115, 20, 0.12), inset 0 2px 1.5px rgba(255, 255, 255, 0.98)',
+        color: '#0f172a',
+      };
 
   const [isLoading, setIsLoading] = useState(false);
   const [hasFailedOnce, setHasFailedOnce] = useState(false);
@@ -165,12 +200,7 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 15 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
+      <div
         className="fixed inset-0 z-[9999999] flex flex-col font-cairo select-none overflow-hidden"
         style={{ 
           backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#FFFFFF')) 
@@ -184,7 +214,7 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
               <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                 <button
                   onClick={onClose}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
                   title={isEn ? "Go Back" : "رجوع للخلف"}
                   aria-label={isEn ? "Go Back" : "رجوع للخلف"}
                 >
@@ -193,7 +223,7 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
               </div>
 
               <div className="text-center px-12 min-w-0">
-                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate">
                   {config.badge}
                 </h1>
               </div>
@@ -201,7 +231,7 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
               <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                 <button
                   onClick={onClose}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
                   title={isEn ? "Close" : "إغلاق"}
                   aria-label={isEn ? "Close" : "إغلاق"}
                 >
@@ -214,12 +244,23 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
 
         {/* Content Body */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 max-w-2xl mx-auto w-full space-y-5 modal-sheet-safe-bottom">
-          <div className="flex items-center gap-3.5 p-4 rounded-2xl quran-raised-card bg-white dark:bg-zinc-900">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${config.iconBg}`}>
+          <div className="flex items-center gap-3.5 p-4 sm:p-5 rounded-3xl" style={card3dStyle}>
+            <div
+              className={`w-13 h-13 rounded-2xl flex items-center justify-center shrink-0 ${config.iconBg}`}
+              style={{
+                boxShadow: isBlackTheme
+                  ? '0 3.5px 0 #07070b, inset 0 1.5px 1px rgba(255,255,255,0.2)'
+                  : '0 3.5px 0 rgba(15,23,42,0.12), inset 0 1.5px 1px rgba(255,255,255,0.9)',
+                border: isBlackTheme ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(15,23,42,0.08)'
+              }}
+            >
               <IconComponent size={24} className="animate-pulse" />
             </div>
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mb-1">
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 mb-1.5"
+                style={{ boxShadow: '0 2px 0 rgba(16,185,129,0.16), inset 0 1px 0 rgba(255,255,255,0.5)' }}
+              >
                 <ShieldCheck size={12} />
                 {config.badge}
               </span>
@@ -229,14 +270,14 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
             </div>
           </div>
 
-          <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-zinc-300 px-1">
+          <p className={`text-xs sm:text-sm leading-relaxed px-1 font-medium ${isBlackTheme ? 'text-zinc-300' : 'text-slate-600'}`}>
             {config.description}
           </p>
 
-          <div className="rounded-2xl p-4 space-y-3 quran-raised-card bg-white dark:bg-zinc-900 text-xs sm:text-sm">
+          <div className="rounded-3xl p-4 sm:p-5 space-y-3 text-xs sm:text-sm font-semibold" style={card3dStyle}>
             {config.features.map((feature, idx) => (
               <div key={idx} className="flex items-center gap-2.5">
-                <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                <CheckCircle2 size={17} className="text-emerald-500 shrink-0" />
                 <span>{feature}</span>
               </div>
             ))}
@@ -246,7 +287,17 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs sm:text-sm text-amber-700 dark:text-amber-300"
+              className="rounded-3xl p-4 flex items-start gap-3 text-xs sm:text-sm"
+              style={{
+                background: isBlackTheme
+                  ? 'linear-gradient(168deg, rgba(245,158,11,0.18) 0%, rgba(180,83,9,0.12) 100%)'
+                  : 'linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%)',
+                border: '1px solid rgba(245, 158, 11, 0.45)',
+                color: isBlackTheme ? '#fcd34d' : '#92400e',
+                boxShadow: isBlackTheme
+                  ? '0 4px 0 #07070b, inset 0 1px 1px rgba(255,255,255,0.14)'
+                  : '0 4px 0 rgba(217,119,6,0.22), inset 0 1.5px 1px rgba(255,255,255,0.9)'
+              }}
             >
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <div className="space-y-1">
@@ -269,7 +320,14 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
               type="button"
               onClick={handleGrantPermission}
               disabled={isLoading}
-              className="w-full py-4 px-5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:brightness-105"
+              className="unified-3d-btn w-full py-4 px-5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(180deg, #10b981 0%, #059669 60%, #047857 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.28)',
+                boxShadow: isBlackTheme
+                  ? '0 5px 0 #022c22, 0 12px 24px rgba(5, 150, 105, 0.35), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.38)'
+                  : '0 5px 0 #065f46, 0 12px 24px rgba(5, 150, 105, 0.3), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.45)'
+              }}
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -285,7 +343,8 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
               <button
                 type="button"
                 onClick={handleOpenSettings}
-                className="w-full py-3.5 px-5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer quran-raised-card bg-white dark:bg-zinc-900"
+                className="unified-3d-btn w-full py-3.5 px-5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                style={card3dStyle}
               >
                 <SettingsIcon size={16} />
                 <span>{isEn ? 'Open App Settings' : 'فتح إعدادات التطبيق بالهاتف'}</span>
@@ -293,8 +352,7 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
             )}
           </div>
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
   );
 };
 

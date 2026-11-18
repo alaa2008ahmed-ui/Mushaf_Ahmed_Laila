@@ -135,50 +135,29 @@ export const parseVoiceCommand = (
     const themeRegex = /(?:ثيم|سيم|لون|مظهر)\s+([آ-ي\s]+)/;
     const themeMatch = normalized.match(themeRegex);
     
-    // Theme names mapping from constants.ts
+    // Active Quran theme names mapping from constants.ts
     const themeNameMap: Record<string, string> = {
-        'الافتراضي': 'black',
-        'افتراضي': 'black',
+        'الافتراضي': 'gold',
+        'افتراضي': 'gold',
         'اخضر': 'green',
-        'احمر': 'red',
         'نبيتي': 'maroon',
-        'زيتوني': 'olive',
-        'ازرق': 'blue',
-        'بني': 'brown',
-        'بنفسجي': 'purple',
-        'برتقالي': 'orange',
-        'ازرق مخضر': 'teal',
-        'وردي': 'pink',
-        'سماوي': 'cyan',
-        'رمادي': 'gray',
+        'عنابي': 'maroon',
+        'ازرق': 'night_sky',
+        'سماوي': 'night_sky',
         'اسود': 'black',
+        'ليلي': 'deep_black',
+        'داكن': 'deep_black',
         'ذهبي': 'gold',
-        'ذهبي ملكي': 'i_royal_gold'
     };
 
     if (themeMatch) {
         const themeName = themeMatch[1].trim();
         const normThemeName = normalizeArabic(themeName);
         
-        // Try mapping from the full theme names first
         for (const [arName, id] of Object.entries(themeNameMap)) {
             if (normThemeName === normalizeArabic(arName)) {
                 return { action: 'set_theme', params: { theme: id }, originalText: text };
             }
-        }
-
-        // Mapping common Arabic color names to theme IDs (fallback)
-        const colorMap: Record<string, string> = {
-            'اخضر': 'medina', 'الأخضر': 'medina',
-            'ازرق': 'blue_cyan', 'الأزرق': 'blue_cyan',
-            'احمر': 'coral', 'الأحمر': 'coral',
-            'اسود': 'deep_black', 'الأسود': 'deep_black', 'ليلي': 'midnight',
-            'ابيض': 'default', 'الأبيض': 'default', 'نهاري': 'default',
-            'بني': 'cream', 'البني': 'cream', 'قديم': 'cream',
-        };
-        const themeId = colorMap[normThemeName];
-        if (themeId) {
-            return { action: 'set_theme', params: { theme: themeId }, originalText: text };
         }
     }
 
@@ -251,10 +230,6 @@ export const parseVoiceCommand = (
         'الاستماع للقران': 'open_listen',
         'فتح الإعدادات': 'open_settings',
         'الاعدادات': 'open_settings',
-        'فتح الثيمات': 'open_themes',
-        'ثيمات': 'open_themes',
-        'السيمات': 'open_themes',
-        'سيمات': 'open_themes',
         'فتح التحكم الصوتي': 'open_voice_control',
         'التحكم الصوتى': 'open_voice_control',
         'فتح الادعيه': 'open_adia',

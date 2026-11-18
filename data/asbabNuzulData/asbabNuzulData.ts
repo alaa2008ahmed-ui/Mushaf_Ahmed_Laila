@@ -510,17 +510,51 @@ export const PASSAGE_STORIES: PassageStoryMap[] = [
   ...NAS_DETAILED_PASSAGES
 ];
 
+// فهرسة سريعة (O(1)) لأسباب النزول ومقاطع السور لتسريع الفتح اللحظي
+let exactMatchMap: Map<string, SababNuzulEntry> | null = null;
+let passagesBySurahMap: Map<number, PassageStoryMap[]> | null = null;
+const sababResultCache = new Map<string, SababNuzulEntry>();
+
+function ensureAsbabIndexes() {
+  if (!exactMatchMap) {
+    exactMatchMap = new Map<string, SababNuzulEntry>();
+    for (let i = 0; i < ASBAB_NUZUL_DATABASE.length; i++) {
+      const entry = ASBAB_NUZUL_DATABASE[i];
+      const key = `${entry.surahNumber}:${entry.ayahNumber}`;
+      if (!exactMatchMap.has(key)) exactMatchMap.set(key, entry);
+    }
+  }
+  if (!passagesBySurahMap) {
+    passagesBySurahMap = new Map<number, PassageStoryMap[]>();
+    for (let i = 0; i < PASSAGE_STORIES.length; i++) {
+      const p = PASSAGE_STORIES[i];
+      let list = passagesBySurahMap.get(p.surahNumber);
+      if (!list) {
+        list = [];
+        passagesBySurahMap.set(p.surahNumber, list);
+      }
+      list.push(p);
+    }
+  }
+}
+
 // 3. دالة جلب سبب النزول المباشر أو التفسير السياقي والقصصي لجميع سور القرآن الـ 114
 export const getSababNuzulForAyah = (surahNumber: number, ayahNumber: number): SababNuzulEntry => {
+  const cacheKey = `${surahNumber}:${ayahNumber}`;
+  const cached = sababResultCache.get(cacheKey);
+  if (cached) return cached;
+
+  ensureAsbabIndexes();
   let result: SababNuzulEntry;
 
-  // 1. البحث في قاعدة البيانات المباشرة للأسباب المحددة بدقة للآية
-  const exactMatch = ASBAB_NUZUL_DATABASE.find(e => e.surahNumber === surahNumber && e.ayahNumber === ayahNumber);
+  // 1. البحث المباشر O(1) في قاعدة البيانات المباشرة للأسباب المحددة بدقة للآية
+  const exactMatch = exactMatchMap!.get(cacheKey);
   if (exactMatch) {
     result = { ...exactMatch };
   } else {
-    // 2. البحث في خريطة مقاطع السور والقصص النبوية المطولة المفصلة
-    const passageMatch = PASSAGE_STORIES.find(p => p.surahNumber === surahNumber && ayahNumber >= p.startAyah && ayahNumber <= p.endAyah);
+    // 2. البحث O(k) داخل مقاطع السورة المحددة فقط
+    const surahPassages = passagesBySurahMap!.get(surahNumber);
+    const passageMatch = surahPassages?.find(p => ayahNumber >= p.startAyah && ayahNumber <= p.endAyah);
     if (passageMatch) {
       const surahInfo = ALL_SURAHS_STORY_ENCYCLOPEDIA[surahNumber];
       const rangeAr = passageMatch.startAyah === passageMatch.endAyah 
@@ -589,7 +623,7 @@ export const getSababNuzulForAyah = (surahNumber: number, ayahNumber: number): S
     result.takhrijNoteAr
   );
 
-  return {
+  const finalResult: SababNuzulEntry = {
     ...result,
     authenticity: auth.authenticity,
     authenticityGradeAr: auth.authenticityGradeAr,
@@ -597,4 +631,6 @@ export const getSababNuzulForAyah = (surahNumber: number, ayahNumber: number): S
     takhrijNoteAr: auth.takhrijNoteAr,
     takhrijNoteEn: auth.takhrijNoteEn
   };
+  sababResultCache.set(cacheKey, finalResult);
+  return finalResult;
 };

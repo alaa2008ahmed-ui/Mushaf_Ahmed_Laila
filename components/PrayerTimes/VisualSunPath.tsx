@@ -319,13 +319,11 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
         <div 
             id="visual-sun-path-card" 
             dir={dir}
-            className="w-full app-page-card rounded-3xl mb-3 relative overflow-hidden transition-all duration-300 select-none shadow-xl"
+            className="w-full app-page-card border-0 rounded-3xl mb-3 relative overflow-hidden transition-all duration-300 select-none"
             style={{ 
                 background: themeAccents.cardBg,
-                border: themeAccents.cardBorder,
-                boxShadow: isBlackTheme 
-                    ? '0 16px 36px -8px rgba(0,0,0,0.85), inset 0 1px 1px rgba(255,255,255,0.1)' 
-                    : '0 12px 32px -6px rgba(0,0,0,0.07), 0 4px 12px -2px rgba(217,119,6,0.06), inset 0 1px 1px rgba(255,255,255,0.8)'
+                borderRadius: '24px',
+                border: 'none'
             }}
         >
             {/* 3D Elevated Header Bar */}
@@ -372,7 +370,13 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
                                 {isAr ? 'مسار الشمس المرئي' : 'Visual Sun Path'}
                             </h4>
                             {isDaytime && (
-                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                                <span 
+                                    className="app-3d-badge inline-flex items-center gap-0.5 text-[9.5px] font-black px-2 py-0.5 rounded-full"
+                                    style={{
+                                        background: isBlackTheme ? '#27272a' : '#fffbeb',
+                                        color: isBlackTheme ? '#FBBF24' : '#B45309'
+                                    }}
+                                >
                                     <Sparkles size={9} />
                                     <span>{formatNumber(currentAltitudeDeg)}°</span>
                                 </span>
@@ -388,11 +392,10 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
                 <div className="flex items-center gap-2 shrink-0">
                     {/* Daylight Duration Badge */}
                     <div 
-                        className="text-[9.5px] sm:text-[10px] font-bold px-2.5 py-1 rounded-xl whitespace-nowrap hidden xs:flex items-center gap-1"
+                        className="app-3d-badge text-[9.5px] sm:text-[10px] font-bold px-2.5 py-1 rounded-xl whitespace-nowrap hidden xs:flex items-center gap-1"
                         style={{ 
-                            background: isBlackTheme ? 'rgba(255,255,255,0.08)' : 'rgba(245, 158, 11, 0.12)',
-                            color: themeAccents.headerColor,
-                            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.4)'
+                            background: isBlackTheme ? '#27272a' : '#fffbeb',
+                            color: themeAccents.headerColor
                         }}
                     >
                         <Clock size={11} className="shrink-0 opacity-80" />
@@ -405,9 +408,14 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
 
                     {/* 3D Expand / Collapse Chevron */}
                     <div 
-                        className="w-7 h-7 rounded-xl flex items-center justify-center transition-transform duration-300"
+                        className="unified-3d-btn w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300"
                         style={{
-                            background: isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                            background: isBlackTheme
+                                ? 'linear-gradient(180deg, #32323a 0%, #202026 100%)'
+                                : 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
+                            boxShadow: isBlackTheme
+                                ? '0 3px 0 #09090b, 0 5px 10px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.16)'
+                                : '0 3px 0 rgba(0,0,0,0.12), 0 5px 10px rgba(0,0,0,0.08), inset 0 1.5px 1px rgba(255,255,255,0.95)',
                             transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
                         }}
                     >
@@ -441,7 +449,13 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
                                 {/* Interactive Simulation Controls Ribbon inside Dome */}
                                 <div className="absolute top-2.5 left-3 right-3 z-20 flex items-center justify-between pointer-events-auto">
                                     {/* Daylight Progress Pill */}
-                                    <div className="flex items-center gap-1.5 text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-black/10 dark:bg-white/10 backdrop-blur-xs text-slate-700 dark:text-zinc-200">
+                                    <div 
+                                        className="app-3d-badge flex items-center gap-1.5 text-[9.5px] font-extrabold px-2.5 py-1 rounded-full"
+                                        style={{
+                                            background: isBlackTheme ? '#27272a' : '#ffffff',
+                                            color: isBlackTheme ? '#e4e4e7' : '#334155'
+                                        }}
+                                    >
                                         <Flame size={11} className="text-amber-500" />
                                         <span>
                                             {isAr 
@@ -457,17 +471,19 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
                                             e.stopPropagation();
                                             startSimulation();
                                         }}
-                                        className="px-2.5 py-1 rounded-xl text-[10px] font-extrabold flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer shadow-md"
+                                        className="unified-3d-btn px-3 py-1.5 rounded-xl text-[10px] font-extrabold flex items-center gap-1.5 cursor-pointer border-0"
                                         style={{
                                             background: isSimulating 
-                                                ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' 
+                                                ? 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)' 
                                                 : isBlackTheme
-                                                    ? 'linear-gradient(135deg, #3f3f46 0%, #27272a 100%)'
-                                                    : 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                                                    ? 'linear-gradient(180deg, #52525b 0%, #27272a 100%)'
+                                                    : 'linear-gradient(180deg, #fbbf24 0%, #d97706 100%)',
                                             color: '#FFFFFF',
                                             boxShadow: isSimulating 
-                                                ? '0 3px 10px rgba(239, 68, 68, 0.45)' 
-                                                : '0 3px 10px rgba(245, 158, 11, 0.35)'
+                                                ? '0 3.5px 0 #991b1b, 0 6px 14px rgba(239, 68, 68, 0.35), inset 0 1.5px 1px rgba(255,255,255,0.4)' 
+                                                : isBlackTheme
+                                                    ? '0 3.5px 0 #09090b, 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 1.5px 1px rgba(255,255,255,0.22)'
+                                                    : '0 3.5px 0 #92400e, 0 6px 14px rgba(217, 119, 6, 0.35), inset 0 1.5px 1px rgba(255,255,255,0.45)'
                                         }}
                                         title={isAr ? 'محاكاة رحلة الشمس طوال اليوم' : 'Simulate Sun Day Journey'}
                                     >
@@ -795,23 +811,23 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
                             </div>
 
                             {/* 3D Elevated Landmark Stations (الشروق - الزوال - الغروب) */}
-                            <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                            <div className="grid grid-cols-3 gap-2 pt-1 pb-1 text-center overflow-visible">
                                 
                                 {/* 1. Sunrise Station (الشروق) */}
                                 <div 
-                                    className="p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden"
+                                    className={`${activeStage === 'morning' ? '' : 'app-inner-3d-box'} border-0 p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden`}
                                     style={{
                                         background: activeStage === 'morning' ? themeAccents.podActiveBg : themeAccents.podBg,
-                                        border: activeStage === 'morning' 
-                                            ? `1.5px solid ${themeAccents.podActiveBorder}` 
-                                            : `1px solid ${themeAccents.podBorder}`,
+                                        border: 'none',
                                         boxShadow: activeStage === 'morning'
-                                            ? '0 6px 16px -2px rgba(245, 158, 11, 0.25), inset 0 1px 1px rgba(255,255,255,0.7)'
-                                            : '0 3px 8px -1px rgba(0,0,0,0.04)'
+                                            ? (isBlackTheme
+                                                ? '0 4px 0 #b45309, 0 8px 16px rgba(0,0,0,0.6), inset 0 1.5px 1px rgba(245,158,11,0.35)'
+                                                : '0 4px 0 rgba(217, 119, 6, 0.3), 0 8px 16px -2px rgba(245, 158, 11, 0.22), inset 0 1.5px 1px rgba(255,255,255,0.85)')
+                                            : undefined
                                     }}
                                 >
-                                    <div className="flex items-center gap-1.5 opacity-90">
-                                        <div className="w-5 h-5 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                                    <div className="flex items-center gap-1.5 opacity-95">
+                                        <div className="app-3d-badge w-5.5 h-5.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center shrink-0">
                                             <Sunrise size={12} className="text-amber-500" />
                                         </div>
                                         <span className="text-[10px] sm:text-[11px] font-extrabold truncate">
@@ -833,19 +849,19 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
 
                                 {/* 2. Solar Noon / Zenith Station (الزوال / الظهر) */}
                                 <div 
-                                    className="p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden"
+                                    className={`${Math.abs(nowMins - dhuhrMins) <= 30 && isDaytime ? '' : 'app-inner-3d-box'} border-0 p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden`}
                                     style={{
                                         background: Math.abs(nowMins - dhuhrMins) <= 30 && isDaytime ? themeAccents.podActiveBg : themeAccents.podBg,
-                                        border: Math.abs(nowMins - dhuhrMins) <= 30 && isDaytime
-                                            ? `1.5px solid ${themeAccents.podActiveBorder}` 
-                                            : `1px solid ${themeAccents.podBorder}`,
+                                        border: 'none',
                                         boxShadow: Math.abs(nowMins - dhuhrMins) <= 30 && isDaytime
-                                            ? '0 6px 16px -2px rgba(245, 158, 11, 0.25), inset 0 1px 1px rgba(255,255,255,0.7)'
-                                            : '0 3px 8px -1px rgba(0,0,0,0.04)'
+                                            ? (isBlackTheme
+                                                ? '0 4px 0 #b45309, 0 8px 16px rgba(0,0,0,0.6), inset 0 1.5px 1px rgba(245,158,11,0.35)'
+                                                : '0 4px 0 rgba(217, 119, 6, 0.3), 0 8px 16px -2px rgba(245, 158, 11, 0.22), inset 0 1.5px 1px rgba(255,255,255,0.85)')
+                                            : undefined
                                     }}
                                 >
-                                    <div className="flex items-center gap-1.5 opacity-90">
-                                        <div className="w-5 h-5 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                                    <div className="flex items-center gap-1.5 opacity-95">
+                                        <div className="app-3d-badge w-5.5 h-5.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center shrink-0">
                                             <Compass size={12} className="text-amber-600 dark:text-amber-400" />
                                         </div>
                                         <span className="text-[10px] sm:text-[11px] font-extrabold truncate">
@@ -865,19 +881,19 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
 
                                 {/* 3. Sunset Station (الغروب) */}
                                 <div 
-                                    className="p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden"
+                                    className={`${activeStage === 'afternoon' ? '' : 'app-inner-3d-box'} border-0 p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden`}
                                     style={{
                                         background: activeStage === 'afternoon' ? themeAccents.podActiveBg : themeAccents.podBg,
-                                        border: activeStage === 'afternoon' 
-                                            ? `1.5px solid ${themeAccents.podActiveBorder}` 
-                                            : `1px solid ${themeAccents.podBorder}`,
+                                        border: 'none',
                                         boxShadow: activeStage === 'afternoon'
-                                            ? '0 6px 16px -2px rgba(234, 88, 12, 0.25), inset 0 1px 1px rgba(255,255,255,0.7)'
-                                            : '0 3px 8px -1px rgba(0,0,0,0.04)'
+                                            ? (isBlackTheme
+                                                ? '0 4px 0 #c2410c, 0 8px 16px rgba(0,0,0,0.6), inset 0 1.5px 1px rgba(234,88,12,0.35)'
+                                                : '0 4px 0 rgba(234, 88, 12, 0.3), 0 8px 16px -2px rgba(234, 88, 12, 0.22), inset 0 1.5px 1px rgba(255,255,255,0.85)')
+                                            : undefined
                                     }}
                                 >
-                                    <div className="flex items-center gap-1.5 opacity-90">
-                                        <div className="w-5 h-5 rounded-lg bg-orange-500/15 flex items-center justify-center shrink-0">
+                                    <div className="flex items-center gap-1.5 opacity-95">
+                                        <div className="app-3d-badge w-5.5 h-5.5 rounded-lg bg-orange-50 dark:bg-orange-950/60 flex items-center justify-center shrink-0">
                                             <Sunset size={12} className="text-orange-500" />
                                         </div>
                                         <span className="text-[10px] sm:text-[11px] font-extrabold truncate">
@@ -907,15 +923,20 @@ export const VisualSunPath: React.FC<VisualSunPathProps> = ({
                                     </span>
                                 </div>
                                 <div 
-                                    className="w-full h-1.5 rounded-full overflow-hidden relative"
-                                    style={{ background: isBlackTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
+                                    className="w-full h-2 rounded-full overflow-hidden relative"
+                                    style={{ 
+                                        background: isBlackTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                                        boxShadow: isBlackTheme
+                                            ? 'inset 0 1.5px 3px rgba(0,0,0,0.75)'
+                                            : 'inset 0 1.5px 3px rgba(0,0,0,0.16), inset 0 -1px 1px rgba(255,255,255,0.65)'
+                                    }}
                                 >
                                     <div 
                                         className="h-full rounded-full transition-all duration-300"
                                         style={{ 
                                             width: `${Math.round(activeProgress * 100)}%`,
                                             background: 'linear-gradient(90deg, #F59E0B 0%, #EA580C 100%)',
-                                            boxShadow: '0 0 8px rgba(245, 158, 11, 0.7)'
+                                            boxShadow: '0 0 8px rgba(245, 158, 11, 0.7), inset 0 1px 1px rgba(255,255,255,0.45)'
                                         }}
                                     />
                                 </div>

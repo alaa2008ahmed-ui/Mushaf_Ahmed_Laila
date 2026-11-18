@@ -149,11 +149,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
     return (
         <div 
             data-card-item="true"
-<<<<<<< HEAD
             className={`app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative overflow-visible group transition-all duration-300 flex flex-col justify-between ${
-=======
-            className={`app-page-card p-5 pb-3.5 rounded-[18px] relative overflow-hidden group transition-all duration-300 flex flex-col justify-between border-0 ${
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
             }`} 
             onClick={(e) => {
@@ -165,19 +161,14 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             }}
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
-<<<<<<< HEAD
-=======
-                backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                border: 'none',
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 color: 'var(--text-color)',
-                fontFamily: isEn ? 'sans-serif' : theme.font
+                fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif"
             }}
         >
             {/* Top row: Repetition badge and count badge */}
             <div className="flex justify-between items-center mb-3">
                 <span 
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold select-none transition-colors" 
+                    className="app-3d-badge inline-flex items-center px-3 py-1 rounded-full text-xs font-bold select-none transition-colors" 
                     style={{ 
                         backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.1), 
                         color: isBlackTheme ? '#FFFFFF' : primaryColor 
@@ -219,7 +210,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
                 </p>
             ) : (
                 <p 
-                    className="text-xl md:text-2xl leading-[2.3] text-center font-amiri mb-4 select-none text-balance"
+                    className="text-lg leading-loose font-medium font-cairo text-center mb-4 select-none text-balance"
                     dir="rtl"
                     style={{ color: 'var(--text-color)' }}
                 >
@@ -231,7 +222,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             {displaySource && (
                 <div className="flex justify-center mb-3">
                     <span 
-                        className="text-xs sm:text-sm text-center opacity-70 font-bold bg-slate-100 dark:bg-zinc-800/60 px-3.5 py-1 rounded-full" 
+                        className="app-3d-badge text-xs sm:text-sm text-center opacity-85 font-bold bg-slate-100 dark:bg-zinc-800/70 px-3.5 py-1 rounded-full" 
                         dir={isEn ? 'ltr' : 'rtl'}
                         style={{ color: 'var(--text-color)' }}
                     >

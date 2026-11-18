@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -40,10 +39,7 @@ import {
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { LISTEN_QURAN_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
-<<<<<<< HEAD
 import { hexToRgba } from '../utils/flatDesignTokens';
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
 const mockQuranData = {
     surahs: SURAH_LIST.map(s => ({
@@ -65,7 +61,6 @@ interface ListenFavorite {
 
 interface ListenQuranProps {
     onBack: () => void;
-    onOpenThemes?: () => void;
     onNavigate: (pageId: string, params?: any) => void;
 }
 
@@ -143,45 +138,6 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
         decrementTimer,
     } = useListenQuranStore();
 
-<<<<<<< HEAD
-=======
-    const {
-        reciterId,
-        surahNumber,
-        isPlaying,
-        isLoading,
-        currentTime,
-        duration,
-        isContinuousPlay,
-        isRepeatSurah,
-        playbackRate,
-        reciterSurahs,
-        sleepTimerMode,
-        isSleepTimerActive,
-        sleepTimerRemainingSeconds,
-        customTimerMinutes,
-        initAudio,
-        fetchReciterSurahs,
-        getAvailableSurahs,
-        setReciterId,
-        setSurahNumber,
-        setReciterAndSurah,
-        togglePlay,
-        seek,
-        setPlaybackRate,
-        nextSurah,
-        prevSurah,
-        toggleContinuousPlay,
-        toggleRepeatSurah,
-        setPresetTimer,
-        setEndOfSurahTimer,
-        startCustomTimer,
-        cancelSleepTimer,
-        incrementTimer,
-        decrementTimer,
-    } = useListenQuranStore();
-
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     const [showReciterModal, setShowReciterModal] = useState(false);
     const [showSurahModal, setShowSurahModal] = useState(false);
     const [showDownloadModal, setShowDownloadModal] = useState(false);
@@ -416,7 +372,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
 
                         {/* عنوان الصفحة في الوسط مع تباعُد آمن عن الأزرار الجانبية */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <h1 className="app-top-bar__title text-base sm:text-lg font-kufi font-bold truncate px-24 text-center">
+                            <h1 className="app-top-bar__title text-base sm:text-lg font-cairo font-bold truncate px-24 text-center">
                                 {tListen('pageTitle', language)}
                             </h1>
                         </div>
@@ -433,7 +389,6 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                             >
                                 <i className="fa-solid fa-circle-question text-base"></i>
                             </button>
-                            <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
                                 className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -465,30 +420,15 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         }`}
                     >
                         <div className="flex flex-col min-w-0 flex-1">
-<<<<<<< HEAD
                             <span className={`text-[11px] font-semibold leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400 dark:text-zinc-400'}`}>
                                 {language === 'en' ? 'Reciter' : 'القارئ'}
                             </span>
                             <span className="text-sm sm:text-base font-black truncate mt-0.5">
-=======
-                            <span className={`text-[11px] font-medium leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
-                                {language === 'en' ? 'Reciter' : 'القارئ'}
-                            </span>
-                            <span className="text-sm sm:text-base font-bold truncate mt-0.5">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 {getReciterDisplayName(reciterId, reciterName, language)}
                             </span>
                         </div>
                         <div 
-<<<<<<< HEAD
                             className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ms-2 ${circleBadgeOnCardClass}`}
-=======
-                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ms-2"
-                            style={{ 
-                                backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', 
-                                color: isBlackTheme ? '#FFFFFF' : '#64748B' 
-                            }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         >
                             <ChevronDown className="w-4 h-4" />
                         </div>
@@ -506,30 +446,15 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         }`}
                     >
                         <div className="flex flex-col min-w-0 flex-1">
-<<<<<<< HEAD
                             <span className={`text-[11px] font-semibold leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400 dark:text-zinc-400'}`}>
                                 {language === 'en' ? 'Surah' : 'السورة'}
                             </span>
-                            <span className="text-sm sm:text-base font-black truncate mt-0.5">
-=======
-                            <span className={`text-[11px] font-medium leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
-                                {language === 'en' ? 'Surah' : 'السورة'}
-                            </span>
-                            <span className="text-sm sm:text-base font-bold truncate mt-0.5">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                            <span className="font-cairo text-sm sm:text-base font-black truncate mt-0.5" style={{ fontFamily: "'Cairo', sans-serif" }}>
                                 {formatListenNumber(surahNumber, language)} - {getSurahDisplayName(surahNumber, surahName, language)}
                             </span>
                         </div>
                         <div 
-<<<<<<< HEAD
                             className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ms-2 ${circleBadgeOnCardClass}`}
-=======
-                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ms-2"
-                            style={{ 
-                                backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', 
-                                color: isBlackTheme ? '#FFFFFF' : '#64748B' 
-                            }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         >
                             <ChevronDown className="w-4 h-4" />
                         </div>
@@ -539,37 +464,21 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                 {/* 2. بطاقة مشغل الصوت الرئيسية (Audio Player Card) */}
                 <div 
                     id="listen-player-card"
-                    className={`app-page-card border-0 w-full rounded-3xl p-5 sm:p-7 space-y-6 flex-shrink-0 transition-all duration-300 ${
+                    className={`app-page-card border-0 w-full rounded-3xl px-5 py-3.5 sm:px-7 sm:py-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
                         isBlackTheme 
                             ? 'bg-[#18181b] text-white' 
-<<<<<<< HEAD
                             : 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white'
                     }`}
-=======
-                            : 'bg-white text-slate-800'
-                    }`}
-                    style={{ borderRadius: '20px', border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
-                    {/* معلومات التلاوة الحالية في أعلى بطاقة المشغل */}
-                    <div className="text-center space-y-1">
-                        <div 
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold mb-1"
-                            style={{
-                                backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.1),
-                                color: primaryColor
-                            }}
-                        >
-                            <span className="w-2 h-2 rounded-full inline-block animate-pulse" style={{ backgroundColor: primaryColor }}></span>
-                            <span>{getReciterDisplayName(reciterId, reciterName, language)}</span>
-                        </div>
-                        <h2 className="text-xl sm:text-2xl font-black font-kufi tracking-tight">
+                    {/* اسم السورة في أعلى بطاقة المشغل */}
+                    <div className="text-center">
+                        <h2 className="text-xl sm:text-2xl font-black font-cairo tracking-tight" style={{ fontFamily: "'Cairo', sans-serif" }}>
                             {tListen('surahPrefix', language)} {getSurahDisplayName(surahNumber, surahName, language)}
                         </h2>
                     </div>
 
                     {/* شريط التقدم: سميك وواضح وأرقام الوقت مكبرة لتسهيل القراءة */}
-                    <div className="w-full space-y-2" dir={dir}>
+                    <div className="w-full space-y-1.5" dir={dir}>
                         <div className="relative flex items-center w-full">
                             <input
                                 type="range"
@@ -590,18 +499,13 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         </div>
                     </div>
 
-<<<<<<< HEAD
                     {/* أزرار التحكم بالصوت */}
-                    <div className="flex items-center justify-between px-3 sm:px-8 pt-1 pb-2 overflow-visible">
-=======
-                    {/* أزرار التحكم بالصوت: أيقونات مسطحة عصرية مع زر Play باللون الأساسي الديناميكي */}
-                    <div className="flex items-center justify-between px-3 sm:px-8 pt-1">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                    <div className="flex items-center justify-between px-3 sm:px-8 py-0.5 overflow-visible">
                         {/* زر السابق: في العربية يظهر على اليمين وأيقونته تشير لليمين ▶| */}
                         <button 
                             type="button"
                             onClick={handlePrevSurah} 
-                            className={`app-page-card border-0 w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
+                            className={`app-page-card border-0 w-[44px] h-[44px] sm:w-[48px] sm:h-[48px] rounded-[14px] flex items-center justify-center transition-all cursor-pointer ${
                                 isBlackTheme 
                                     ? 'bg-[#27272a] text-white' 
                                     : 'bg-white dark:bg-[#0F172A] text-slate-700 dark:text-white'
@@ -610,9 +514,9 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                             aria-label={tListen('previous', language)}
                         >
                             {isRTL ? (
-                                <SkipForward className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
+                                <SkipForward className="w-[17px] h-[17px] sm:w-5 sm:h-5" strokeWidth={2.3} />
                             ) : (
-                                <SkipBack className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
+                                <SkipBack className="w-[17px] h-[17px] sm:w-5 sm:h-5" strokeWidth={2.3} />
                             )}
                         </button>
 
@@ -620,11 +524,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         <button 
                             type="button"
                             onClick={handlePlayPause} 
-<<<<<<< HEAD
-                            className="app-page-card border-0 w-20 h-20 sm:w-22 sm:h-22 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer" 
-=======
-                            className="w-20 h-20 sm:w-22 sm:h-22 rounded-full flex items-center justify-center active:scale-95 transition-all duration-300 cursor-pointer" 
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                            className="app-page-card border-0 w-[68px] h-[68px] sm:w-[75px] sm:h-[75px] rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer" 
                             style={{ 
                                 backgroundColor: primaryColor, 
                                 color: btnTextColor,
@@ -633,11 +533,11 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                             aria-label={isPlaying ? tListen('pause', language) : tListen('play', language)}
                         >
                             {isPlaying ? (
-                                <Pause className="w-8 h-8 sm:w-9 sm:h-9" strokeWidth={2.4} />
+                                <Pause className="w-[27px] h-[27px] sm:w-[31px] sm:h-[31px]" strokeWidth={2.4} />
                             ) : isLoading ? (
-                                <i className="fa-solid fa-spinner fa-spin fa-2x"></i>
+                                <i className="fa-solid fa-spinner fa-spin text-[27px] sm:text-[31px]"></i>
                             ) : (
-                                <Play className={`w-8 h-8 sm:w-9 sm:h-9 ${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'}`} strokeWidth={2.4} fill="currentColor" />
+                                <Play className={`w-[27px] h-[27px] sm:w-[31px] sm:h-[31px] ${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'}`} strokeWidth={2.4} fill="currentColor" />
                             )}
                         </button>
 
@@ -645,7 +545,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         <button 
                             type="button"
                             onClick={handleNextSurah} 
-                            className={`app-page-card border-0 w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
+                            className={`app-page-card border-0 w-[44px] h-[44px] sm:w-[48px] sm:h-[48px] rounded-[14px] flex items-center justify-center transition-all cursor-pointer ${
                                 isBlackTheme 
                                     ? 'bg-[#27272a] text-white' 
                                     : 'bg-white dark:bg-[#0F172A] text-slate-700 dark:text-white'
@@ -654,20 +554,16 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                             aria-label={tListen('next', language)}
                         >
                             {isRTL ? (
-                                <SkipBack className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
+                                <SkipBack className="w-[17px] h-[17px] sm:w-5 sm:h-5" strokeWidth={2.3} />
                             ) : (
-                                <SkipForward className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
+                                <SkipForward className="w-[17px] h-[17px] sm:w-5 sm:h-5" strokeWidth={2.3} />
                             )}
                         </button>
                     </div>
 
                     {/* معلومات الآية الحالية والجزء ونوع السورة تحت أزرار التحكم */}
-                    <div className="text-center pt-1">
-<<<<<<< HEAD
+                    <div className="text-center">
                         <p className={`text-xs sm:text-sm font-bold ${isBlackTheme ? 'text-zinc-300' : 'text-slate-600 dark:text-zinc-300'}`}>
-=======
-                        <p className={`text-xs sm:text-sm font-bold ${isBlackTheme ? 'text-zinc-300' : 'text-slate-600'}`}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {isEn
                                 ? `Ayah ${formatListenNumber(currentAyah, language)}/${formatListenNumber(totalAyahs, language)} • Juz ${formatListenNumber(currentJuz, language)} • ${revelationType}`
                                 : `الآية (${formatListenNumber(currentAyah, language)}) • الجزء ${formatListenNumber(currentJuz, language)} • ${revelationType}`}
@@ -675,37 +571,18 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                     </div>
 
                     {/* زر التحكم في سرعة التلاوة (بطيئة 0.50 و 0.75 / أسرع 1.25 و 1.5) */}
-<<<<<<< HEAD
-                    <div className="pt-1 pb-1 flex flex-col items-center overflow-visible">
-=======
-                    <div className="pt-1 flex flex-col items-center">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                    <div className="pt-0.5 pb-0.5 flex flex-col items-center overflow-visible">
                         <button
                             id="btn-listen-speed"
                             type="button"
                             onClick={() => setShowSpeedMenu(prev => !prev)}
                             aria-expanded={showSpeedMenu}
-<<<<<<< HEAD
                             className={`app-page-card border-0 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm transition-all cursor-pointer ${
                                 playbackRate !== 1 || showSpeedMenu
                                     ? 'font-black'
                                     : `font-bold ${isBlackTheme ? 'bg-[#27272a] text-white' : 'bg-white dark:bg-[#0F172A] text-slate-700 dark:text-zinc-200'}`
                             }`}
                             style={playbackRate !== 1 || showSpeedMenu ? { backgroundColor: primaryColor, color: btnTextColor } : undefined}
-=======
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
-                                playbackRate !== 1 || showSpeedMenu
-                                    ? 'shadow-sm'
-                                    : (isBlackTheme
-                                        ? 'bg-white/[0.08] hover:bg-white/[0.14] text-white'
-                                        : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700')
-                            }`}
-                            style={playbackRate !== 1 || showSpeedMenu ? {
-                                backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.16)' : `${primaryColor}18`,
-                                color: primaryColor,
-                                outline: `1.5px solid ${primaryColor}45`
-                            } : undefined}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         >
                             <Gauge className="w-4 h-4 shrink-0" strokeWidth={2.2} />
                             <span>{tListen('playbackSpeed', language)}</span>
@@ -713,17 +590,12 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                 dir="ltr"
                                 className="px-2 py-0.5 rounded-full text-[11px] font-extrabold tabular-nums"
                                 style={{
-<<<<<<< HEAD
                                     backgroundColor: playbackRate !== 1 || showSpeedMenu
                                         ? (isBlackTheme ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.22)')
                                         : (isBlackTheme ? 'rgba(255,255,255,0.14)' : 'rgba(15,23,42,0.08)'),
                                     color: playbackRate !== 1 || showSpeedMenu
                                         ? btnTextColor
                                         : (isBlackTheme ? '#FFFFFF' : '#334155')
-=======
-                                    backgroundColor: playbackRate !== 1 ? primaryColor : (isBlackTheme ? 'rgba(255,255,255,0.14)' : 'rgba(15,23,42,0.08)'),
-                                    color: playbackRate !== 1 ? (isBlackTheme ? '#000000' : '#FFFFFF') : (isBlackTheme ? '#FFFFFF' : '#334155')
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 }}
                             >
                                 {playbackRate === 0.5 ? '0.50×' : `${playbackRate}×`}
@@ -734,7 +606,6 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         {showSpeedMenu && (
                             <div
                                 id="listen-speed-menu"
-<<<<<<< HEAD
                                 className={`mt-3 w-full rounded-2xl p-3 space-y-2.5 overflow-visible ${innerSubBoxClass}`}
                             >
                                 {/* السرعات البطيئة والأسرع */}
@@ -745,22 +616,6 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                             {tListen('slowerSpeeds', language)}
                                         </span>
                                         <div className="grid grid-cols-2 gap-2 pb-1 overflow-visible">
-=======
-                                className={`mt-3 w-full rounded-2xl p-3 space-y-2.5 ${
-                                    isBlackTheme
-                                        ? 'bg-white/[0.05] text-white'
-                                        : 'bg-slate-50 text-slate-700'
-                                }`}
-                            >
-                                {/* السرعات البطيئة والأسرع */}
-                                <div className="grid grid-cols-2 gap-2.5">
-                                    {/* سرعات بطيئة: 0.50 و 0.75 فقط */}
-                                    <div className="space-y-1.5">
-                                        <span className={`block text-[11px] font-bold text-center ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'}`}>
-                                            {tListen('slowerSpeeds', language)}
-                                        </span>
-                                        <div className="grid grid-cols-2 gap-1.5">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             {[
                                                 { value: 0.5, label: '0.50×' },
                                                 { value: 0.75, label: '0.75×' }
@@ -775,26 +630,12 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                                             setPlaybackRate(opt.value);
                                                             setShowSpeedMenu(false);
                                                         }}
-<<<<<<< HEAD
                                                         className={`app-page-card border-0 py-2 px-1 rounded-xl text-xs tabular-nums transition-all cursor-pointer ${
                                                             isActive
                                                                 ? 'font-black'
                                                                 : `font-extrabold ${isBlackTheme ? 'bg-[#18181b] text-zinc-200' : 'bg-white dark:bg-[#1E293B] text-slate-700 dark:text-zinc-200'}`
                                                         }`}
                                                         style={isActive ? { backgroundColor: primaryColor, color: btnTextColor } : undefined}
-=======
-                                                        className={`py-2 px-1 rounded-xl text-xs font-extrabold tabular-nums transition-all duration-150 active:scale-95 cursor-pointer ${
-                                                            isActive
-                                                                ? 'shadow-sm'
-                                                                : (isBlackTheme
-                                                                    ? 'bg-white/[0.07] hover:bg-white/[0.12] text-zinc-200'
-                                                                    : 'bg-white hover:bg-slate-100 text-slate-700 shadow-2xs')
-                                                        }`}
-                                                        style={isActive ? {
-                                                            backgroundColor: primaryColor,
-                                                            color: isBlackTheme ? '#000000' : '#FFFFFF'
-                                                        } : undefined}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     >
                                                         {opt.label}
                                                     </button>
@@ -804,19 +645,11 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                     </div>
 
                                     {/* سرعات أسرع: 1.25 و 1.5 فقط */}
-<<<<<<< HEAD
                                     <div className="space-y-1.5 overflow-visible">
                                         <span className={`block text-[11px] font-bold text-center ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500 dark:text-zinc-400'}`}>
                                             {tListen('fasterSpeeds', language)}
                                         </span>
                                         <div className="grid grid-cols-2 gap-2 pb-1 overflow-visible">
-=======
-                                    <div className="space-y-1.5">
-                                        <span className={`block text-[11px] font-bold text-center ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'}`}>
-                                            {tListen('fasterSpeeds', language)}
-                                        </span>
-                                        <div className="grid grid-cols-2 gap-1.5">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             {[
                                                 { value: 1.25, label: '1.25×' },
                                                 { value: 1.5, label: '1.5×' }
@@ -831,26 +664,12 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                                             setPlaybackRate(opt.value);
                                                             setShowSpeedMenu(false);
                                                         }}
-<<<<<<< HEAD
                                                         className={`app-page-card border-0 py-2 px-1 rounded-xl text-xs tabular-nums transition-all cursor-pointer ${
                                                             isActive
                                                                 ? 'font-black'
                                                                 : `font-extrabold ${isBlackTheme ? 'bg-[#18181b] text-zinc-200' : 'bg-white dark:bg-[#1E293B] text-slate-700 dark:text-zinc-200'}`
                                                         }`}
                                                         style={isActive ? { backgroundColor: primaryColor, color: btnTextColor } : undefined}
-=======
-                                                        className={`py-2 px-1 rounded-xl text-xs font-extrabold tabular-nums transition-all duration-150 active:scale-95 cursor-pointer ${
-                                                            isActive
-                                                                ? 'shadow-sm'
-                                                                : (isBlackTheme
-                                                                    ? 'bg-white/[0.07] hover:bg-white/[0.12] text-zinc-200'
-                                                                    : 'bg-white hover:bg-slate-100 text-slate-700 shadow-2xs')
-                                                        }`}
-                                                        style={isActive ? {
-                                                            backgroundColor: primaryColor,
-                                                            color: isBlackTheme ? '#000000' : '#FFFFFF'
-                                                        } : undefined}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     >
                                                         {opt.label}
                                                     </button>
@@ -861,7 +680,6 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                 </div>
 
                                 {/* زر العودة للسرعة العادية 1× */}
-<<<<<<< HEAD
                                 <div className="pb-1 overflow-visible">
                                     <button
                                         type="button"
@@ -880,29 +698,6 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                         <span dir="ltr">(1×)</span>
                                     </button>
                                 </div>
-=======
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setPlaybackRate(1);
-                                        setShowSpeedMenu(false);
-                                    }}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
-                                        playbackRate === 1
-                                            ? 'shadow-sm'
-                                            : (isBlackTheme
-                                                ? 'bg-white/[0.07] hover:bg-white/[0.12] text-zinc-200'
-                                                : 'bg-white hover:bg-slate-100 text-slate-700 shadow-2xs')
-                                    }`}
-                                    style={playbackRate === 1 ? {
-                                        backgroundColor: primaryColor,
-                                        color: isBlackTheme ? '#000000' : '#FFFFFF'
-                                    } : undefined}
-                                >
-                                    <span>{tListen('normalSpeed', language)}</span>
-                                    <span dir="ltr">(1×)</span>
-                                </button>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             </div>
                         )}
                     </div>
@@ -914,14 +709,8 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                     className={`app-page-card border-0 w-full rounded-2xl p-4 sm:p-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
                         isBlackTheme 
                             ? 'bg-[#18181b] text-white' 
-<<<<<<< HEAD
                             : 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white'
                     }`}
-=======
-                            : 'bg-white text-slate-800'
-                    }`}
-                    style={{ borderRadius: '16px', border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                     {/* عنوان ورأس البطاقة */}
                     <div className="flex items-center justify-between gap-2 overflow-visible">
@@ -1065,20 +854,11 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                 {/* 4. بطاقة خيارات التشغيل (Options Card) المجسمة بدون إطارات */}
                 <div 
                     id="listen-options-card"
-<<<<<<< HEAD
                     className={`app-page-card border-0 w-full rounded-2xl p-4 sm:p-5 space-y-3 flex-shrink-0 transition-all duration-300 ${
                         isBlackTheme 
                             ? 'bg-[#18181b] text-white' 
                             : 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white'
                     }`}
-=======
-                    className={`app-page-card border-0 w-full rounded-2xl p-4 sm:p-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
-                        isBlackTheme 
-                            ? 'bg-[#18181b] text-white' 
-                            : 'bg-white text-slate-800'
-                    }`}
-                    style={{ borderRadius: '16px', border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                     {/* خيار تكرار نفس السورة بعد انتهائها */}
                     <div 
@@ -1101,7 +881,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                 e.stopPropagation();
                                 handleToggleRepeatSurah();
                             }}
-                            className="relative w-12 h-7 rounded-full transition-colors cursor-pointer border-0 shrink-0"
+                            className="app-3d-switch-track relative w-12 h-7 rounded-full transition-colors cursor-pointer border-0 shrink-0"
                             style={{ 
                                 backgroundColor: isRepeatSurah 
                                     ? primaryColor 
@@ -1111,7 +891,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                             role="switch"
                         >
                             <span 
-                                className={`absolute top-1 w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${isRepeatSurah ? (isRTL ? 'right-6' : 'left-6') : (isRTL ? 'right-1' : 'left-1')}`}
+                                className={`app-3d-switch-thumb ${isBlackTheme && isRepeatSurah ? 'app-3d-switch-thumb-dark' : ''} absolute top-1 w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${isRepeatSurah ? (isRTL ? 'right-6' : 'left-6') : (isRTL ? 'right-1' : 'left-1')}`}
                                 style={{
                                     backgroundColor: isBlackTheme && isRepeatSurah ? '#000000' : '#FFFFFF',
                                 }}
@@ -1140,7 +920,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                 e.stopPropagation();
                                 handleToggleContinuousPlay();
                             }}
-                            className="relative w-12 h-7 rounded-full transition-colors cursor-pointer border-0 shrink-0"
+                            className="app-3d-switch-track relative w-12 h-7 rounded-full transition-colors cursor-pointer border-0 shrink-0"
                             style={{ 
                                 backgroundColor: isContinuousPlay 
                                     ? primaryColor 
@@ -1150,7 +930,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                             role="switch"
                         >
                             <span 
-                                className={`absolute top-1 w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${isContinuousPlay ? (isRTL ? 'right-6' : 'left-6') : (isRTL ? 'right-1' : 'left-1')}`}
+                                className={`app-3d-switch-thumb ${isBlackTheme && isContinuousPlay ? 'app-3d-switch-thumb-dark' : ''} absolute top-1 w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${isContinuousPlay ? (isRTL ? 'right-6' : 'left-6') : (isRTL ? 'right-1' : 'left-1')}`}
                                 style={{
                                     backgroundColor: isBlackTheme && isContinuousPlay ? '#000000' : '#FFFFFF',
                                 }}
@@ -1188,14 +968,8 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                     className={`app-page-card border-0 w-full rounded-2xl p-4 sm:p-5 space-y-3.5 flex-shrink-0 transition-all duration-300 ${
                         isBlackTheme 
                             ? 'bg-[#18181b] text-white' 
-<<<<<<< HEAD
                             : 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white'
                     }`}
-=======
-                            : 'bg-white text-slate-800'
-                    }`}
-                    style={{ borderRadius: '16px', border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
@@ -1250,7 +1024,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                                 {formatListenNumber(fav.surahNumber, language)}
                                             </div>
                                             <div className={`truncate ${isRTL ? 'text-right' : 'text-left'}`}>
-                                                <div className="text-xs sm:text-sm font-black truncate">
+                                                <div className="font-cairo text-xs sm:text-sm font-black truncate" style={{ fontFamily: "'Cairo', sans-serif" }}>
                                                     {tListen('surahPrefix', language)} {getSurahDisplayName(fav.surahNumber, fav.surahName, language)}
                                                 </div>
                                                 <div className={`text-[11px] truncate font-medium mt-0.5 ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500 dark:text-zinc-400'}`}>
@@ -1297,7 +1071,6 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                     currentReader={reciterId}
                     onSelect={(id) => setReciterId(id)}
                     readersList={RECITERS}
-                    hideHeader={true}
                 />
             )}
             {showSurahModal && (

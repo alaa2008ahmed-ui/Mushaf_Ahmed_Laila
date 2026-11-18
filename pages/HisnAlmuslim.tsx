@@ -9,12 +9,12 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { HISN_CATEGORIES_EN } from '../data/hisnAlmuslimTranslationsEn';
-import { motion, AnimatePresence } from 'motion/react';
-import { LayoutGrid, ListFilter, Search, HelpCircle } from 'lucide-react';
+import { LayoutGrid, ListFilter, Search, Check } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { HISN_ALMUSLIM_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
-import { getModernFlatTokens } from '../utils/flatDesignTokens';
+import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 import { HISN_ALMUSLIM_CATEGORIES, HISN_ALMUSLIM_DATA } from '../data/hisnAlmuslimData';
 
@@ -27,9 +27,10 @@ interface HisnAlmuslimProps {
 }
 
 function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language } = useLanguage();
     const tokens = getModernFlatTokens(theme, themeKey);
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const isEn = language === 'en';
     const isBlackTheme = tokens.isDeepBlack;
     const [selectedCategory, setSelectedCategory] = useState<any>(null);
@@ -246,13 +247,12 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: tokens.pageBgColor,
-                fontFamily: isEn ? 'sans-serif' : theme.font
+                fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif"
             }}
         >
             <HisnHeader 
                 title={getPageTitle()} 
                 subtitle={getPageSubtitle()} 
-                showThemePageLock={!selectedCategory}
                 onBack={handleBack}
                 onHome={handleGoHome}
                 onOpenGuide={!selectedCategory ? () => setShowGuide(true) : undefined}
@@ -263,25 +263,32 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                     <div className="mb-4 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                         {/* Search Input */}
                         <div 
-                            className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible transition-all" 
+                            className={`app-page-card border-0 relative flex-1 rounded-2xl ${isBlackTheme ? 'bg-[#18181b]' : 'bg-white dark:bg-[#1E293B]'} overflow-visible transition-all focus-within:ring-2`} 
+                            style={{ '--tw-ring-color': tokens.primaryColor } as any}
                         >
                             <input 
                                 type="text" 
                                 placeholder={isEn ? "Search by name or meaning..." : "ابحث بالاسم أو المعنى..."} 
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className={`w-full bg-transparent py-3 text-sm ${isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-cairo'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
+                                className={`w-full bg-transparent py-3 text-sm ${isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
                                 style={{ color: 'var(--text-color)' }}
                             />
-                            <i 
-                                className={`fa-solid fa-magnifying-glass absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-40 text-xs pointer-events-none`} 
-                                style={{ color: 'var(--text-color)' }}
-                            ></i>
+                            <span
+                                className={`app-3d-badge border-0 absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none`}
+                                style={{
+                                    backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : hexToRgba(tokens.primaryColor, 0.12),
+                                    color: isBlackTheme ? '#FFFFFF' : tokens.primaryColor,
+                                }}
+                                aria-hidden="true"
+                            >
+                                <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                            </span>
                             {searchQuery && (
                                 <button
                                     type="button"
                                     onClick={() => setSearchQuery('')}
-                                    className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                    className={`app-page-card unified-3d-btn border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
                                     aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                                 >
                                     <i className="fa-solid fa-times text-xs"></i>
@@ -365,17 +372,12 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                 className={`fixed app-fab-bottom ${isEn ? 'right-4 items-end' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
                 dir={isEn ? 'ltr' : 'rtl'}
             >
-                <AnimatePresence>
-                    {isMenuOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
-                            transition={{ duration: 0.2 }}
-                            className={`app-page-card border-0 absolute right-0 ${menuOpenDirection === 'up' ? 'bottom-full mb-4 origin-bottom-right' : 'top-full mt-4 origin-top-right'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
-                            style={{ color: 'var(--text-color)' }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
+                {isMenuOpen && (
+                    <div
+                        className={`app-page-card border-0 absolute right-0 ${menuOpenDirection === 'up' ? 'bottom-full mb-4 origin-bottom-right' : 'top-full mt-4 origin-top-right'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
+                        style={{ color: 'var(--text-color)' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                             <button 
                                 type="button"
                                 onClick={() => { setSelectedCategory(null); setIsMenuOpen(false); }}
@@ -393,18 +395,17 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
                                 <i className={`fa-solid fa-heart ${selectedCategory?.id === 'favorites' ? '' : 'text-red-500'}`}></i>
                             </button>
-                            <div className="h-px bg-black/10 dark:bg-white/10 my-0.5" />
+                            <div className="app-3d-divider my-0.5 mx-1" />
                             <button 
                                 type="button"
                                 onClick={handleResetAllHisn}
                                 className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer`}
                             >
                                 <span>{isEn ? 'Reset All Counters' : 'إعادة ضبط العدادات'}</span>
-                                <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
+                        </button>
+                    </div>
+                )}
 
                 <button 
                     type="button"
@@ -425,20 +426,23 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
 
             <ZoomModal zoomedItem={zoomedItem} onClose={closeZoomModal} setToastMessage={setToastMessage} />
 
-            <AnimatePresence>
-                {toastMessage && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 50 }}
-                        className="fixed left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
-                        style={{ bottom: 'calc(var(--app-safe-bottom) + 5.25rem)' }}
+            {toastMessage && (
+                <div 
+                    className="app-3d-toast fixed left-1/2 -translate-x-1/2 z-[101] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none flex items-center justify-center gap-2.5"
+                    style={{
+                        bottom: 'calc(var(--app-safe-bottom) + 5.25rem)',
+                        ...toast3D.style,
+                    }}
+                >
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
                     >
-                        <i className="fa-solid fa-check text-green-400"></i>
-                        {toastMessage}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                    <span>{toastMessage}</span>
+                </div>
+            )}
             <CommunitySpotlightGuide
                 isOpen={showGuide}
                 onClose={() => {

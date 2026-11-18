@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
-import { toArabic, SURAH_INFO, SURAH_NAMES_AR, SURAH_NAMES_EN, getAyahCountText, SAJDAH_LOCATIONS, getBilingualEnglishFont, getEffectiveWordHighlightColor } from './constants';
+import { toArabic, SURAH_INFO, SURAH_NAMES_AR, SURAH_NAMES_EN, SAJDAH_LOCATIONS, getBilingualEnglishFont, getEffectiveWordHighlightColor } from './constants';
 import SurahHeader from './SurahHeader';
 import { getClusterForLanguage, syncClusterSettings } from '../../utils/quranClusterSync';
 import { useLanguage } from '../../context/LanguageContext';
@@ -33,6 +33,7 @@ interface VerticalReadingViewProps {
     onAyahNumberClick?: (s: number, a: number) => void;
     onInteractionStart?: () => void;
     onInteractionEnd?: () => void;
+    isAutoScrolling?: boolean;
     audioProgress?: { currentTime: number; duration: number } | null;
 }
 
@@ -69,6 +70,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     onAyahNumberClick,
     onInteractionStart,
     onInteractionEnd,
+    isAutoScrolling = false,
     audioProgress
 }) => {
     const { language } = useLanguage();
@@ -84,8 +86,22 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     const virtuosoRef = useRef<VirtuosoHandle>(null);
     const isInternalClickRef = useRef(false);
     const isUserInteractingRef = useRef(false);
+    const isAutoScrollingRef = useRef(isAutoScrolling);
+    useEffect(() => {
+        isAutoScrollingRef.current = isAutoScrolling;
+    }, [isAutoScrolling]);
+    const onInteractionStartRef = useRef(onInteractionStart);
+    const onInteractionEndRef = useRef(onInteractionEnd);
+    const onVisibleAyahChangeRef = useRef(onVisibleAyahChange);
+    useEffect(() => {
+        onInteractionStartRef.current = onInteractionStart;
+        onInteractionEndRef.current = onInteractionEnd;
+        onVisibleAyahChangeRef.current = onVisibleAyahChange;
+    }, [onInteractionStart, onInteractionEnd, onVisibleAyahChange]);
     const lastScrolledAyahRef = useRef<{s: number, a: number} | null>(null);
     const currentVisibleAyahRef = useRef<{s: number, a: number} | null>(null);
+    const lastEmittedAyahRef = useRef<{s: number, a: number} | null>(null);
+    const recentVisibleAyahsRef = useRef<Map<string, number>>(new Map());
     const lastNotifiedJuz = useRef<number | null>(null);
     const lastNotifiedQuarter = useRef<number | null>(null);
     const lastNotifiedSajda = useRef<string | null>(null);
@@ -107,16 +123,61 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
         const parent = document.getElementById('mushaf-content');
         if (parent) {
             setScrollParent(parent);
-            const markUserInteraction = () => {
+            let wheelEndTimer: number | null = null;
+            let tapFallbackTimer: number | null = null;
+
+            const handleUserInteractionStart = () => {
                 isUserInteractingRef.current = true;
+                if (tapFallbackTimer) {
+                    window.clearTimeout(tapFallbackTimer);
+                    tapFallbackTimer = null;
+                }
+                onInteractionStartRef.current?.();
             };
-            parent.addEventListener('touchstart', markUserInteraction, { passive: true });
-            parent.addEventListener('wheel', markUserInteraction, { passive: true });
-            parent.addEventListener('pointerdown', markUserInteraction, { passive: true });
+
+            const handleUserInteractionEnd = () => {
+                onInteractionEndRef.current?.();
+                if (tapFallbackTimer) window.clearTimeout(tapFallbackTimer);
+                tapFallbackTimer = window.setTimeout(() => {
+                    isUserInteractingRef.current = false;
+                }, 250);
+            };
+
+            const handleWheelInteraction = () => {
+                isUserInteractingRef.current = true;
+                onInteractionStartRef.current?.();
+                if (wheelEndTimer) window.clearTimeout(wheelEndTimer);
+                wheelEndTimer = window.setTimeout(() => {
+                    onInteractionEndRef.current?.();
+                    if (isUserInteractingRef.current && currentVisibleAyahRef.current) {
+                        const { s, a } = currentVisibleAyahRef.current;
+                        recentVisibleAyahsRef.current.set(`${s}-${a}`, Date.now());
+                        lastScrolledAyahRef.current = { s, a };
+                        lastEmittedAyahRef.current = { s, a };
+                        onVisibleAyahChangeRef.current?.(s, a);
+                    }
+                    isUserInteractingRef.current = false;
+                }, 220);
+            };
+
+            parent.addEventListener('touchstart', handleUserInteractionStart, { passive: true });
+            parent.addEventListener('pointerdown', handleUserInteractionStart, { passive: true });
+            parent.addEventListener('touchend', handleUserInteractionEnd, { passive: true });
+            parent.addEventListener('touchcancel', handleUserInteractionEnd, { passive: true });
+            parent.addEventListener('pointerup', handleUserInteractionEnd, { passive: true });
+            parent.addEventListener('pointercancel', handleUserInteractionEnd, { passive: true });
+            parent.addEventListener('wheel', handleWheelInteraction, { passive: true });
+
             return () => {
-                parent.removeEventListener('touchstart', markUserInteraction);
-                parent.removeEventListener('wheel', markUserInteraction);
-                parent.removeEventListener('pointerdown', markUserInteraction);
+                if (wheelEndTimer) window.clearTimeout(wheelEndTimer);
+                if (tapFallbackTimer) window.clearTimeout(tapFallbackTimer);
+                parent.removeEventListener('touchstart', handleUserInteractionStart);
+                parent.removeEventListener('pointerdown', handleUserInteractionStart);
+                parent.removeEventListener('touchend', handleUserInteractionEnd);
+                parent.removeEventListener('touchcancel', handleUserInteractionEnd);
+                parent.removeEventListener('pointerup', handleUserInteractionEnd);
+                parent.removeEventListener('pointercancel', handleUserInteractionEnd);
+                parent.removeEventListener('wheel', handleWheelInteraction);
             };
         }
     }, []);
@@ -381,6 +442,8 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
 
     useEffect(() => {
         lastScrolledAyahRef.current = null;
+        lastEmittedAyahRef.current = null;
+        recentVisibleAyahsRef.current.clear();
         isUserInteractingRef.current = false;
         currentVisibleAyahRef.current = { s: currentAyah.s, a: currentAyah.a };
     }, [readingMode]);
@@ -392,11 +455,15 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                 isInternalClickRef.current = false;
                 return;
             }
+            const targetKey = `${currentAyah.s}-${currentAyah.a}`;
+            const recentTs = recentVisibleAyahsRef.current.get(targetKey) ?? 0;
+            if (isAutoScrollingRef.current || (Date.now() - recentTs) < 1000) {
+                return;
+            }
             if (lastScrolledAyahRef.current?.s === currentAyah.s && lastScrolledAyahRef.current?.a === currentAyah.a) {
                 return;
             }
-            const targetId = `${currentAyah.s}-${currentAyah.a}`;
-            const index = flattenedItems.findIndex(item => item.type === 'ayah' && item.id === targetId);
+            const index = flattenedItems.findIndex(item => item.type === 'ayah' && item.id === targetKey);
             
             if (index !== -1) {
                 isUserInteractingRef.current = false;
@@ -811,15 +878,16 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                             {readingMode === 'tafseer' ? getTafseer(item.surahNumber, item.ayahNumber) : 
                              getMeaning(item.surahNumber, item.ayahNumber)}
                             {readingMode === 'tafseer' && (
-                                <div className="mt-2 flex items-center justify-end">
+                                <div className="mt-2.5 flex items-center justify-end">
                                     <button
+                                        type="button"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_multi_tafseer' } }));
                                         }}
-                                        className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all active:scale-95 flex items-center gap-1.5 shadow-xs"
+                                        className="quran-raised-btn unified-3d-btn border-0 text-[11px] font-bold px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 flex items-center gap-1.5 cursor-pointer"
                                     >
-                                        <i className="fa-solid fa-columns text-[10px]"></i>
+                                        <i className="fa-solid fa-columns text-[10px] quran-3d-icon"></i>
                                         <span>مقارنة التفاسير ⇄</span>
                                     </button>
                                 </div>
@@ -853,12 +921,17 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                     useWindowScroll={false}
                     customScrollParent={scrollParent}
                     isScrolling={(scrolling) => {
-                        if (scrolling) {
-                            onInteractionStart?.();
-                        } else {
-                            onInteractionEnd?.();
+                        if (!scrolling) {
                             if (isUserInteractingRef.current && currentVisibleAyahRef.current) {
-                                onVisibleAyahChange?.(currentVisibleAyahRef.current.s, currentVisibleAyahRef.current.a);
+                                const { s, a } = currentVisibleAyahRef.current;
+                                recentVisibleAyahsRef.current.set(`${s}-${a}`, Date.now());
+                                if (recentVisibleAyahsRef.current.size > 40) {
+                                    const first = recentVisibleAyahsRef.current.keys().next().value;
+                                    if (first) recentVisibleAyahsRef.current.delete(first);
+                                }
+                                lastScrolledAyahRef.current = { s, a };
+                                lastEmittedAyahRef.current = { s, a };
+                                onVisibleAyahChangeRef.current?.(s, a);
                             }
                             isUserInteractingRef.current = false;
                         }
@@ -877,16 +950,41 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                         currentAyah
                     }}
                     initialTopMostItemIndex={{ index: initialIndex, align: 'center' }}
-                    overscan={200} // Pre-render items for smoother experience
+                    increaseViewportBy={{ top: 450, bottom: 750 }}
                     className="scrollbar-hide"
-                    itemContent={(index, item) => renderItem(index, item)}
+                    itemContent={renderItem}
                     rangeChanged={(range) => {
-                        const centerIndex = Math.round((range.startIndex + range.endIndex) / 2);
-                        const targetIndex = Math.min(range.endIndex, Math.max(range.startIndex, centerIndex));
-                        const item = flattenedItems[targetIndex] || flattenedItems[range.startIndex];
+                        const span = Math.max(0, range.endIndex - range.startIndex);
+                        const targetOffset = isAutoScrollingRef.current ? Math.floor(span * 0.35) : Math.round(span / 2);
+                        const targetIndex = Math.min(range.endIndex, Math.max(range.startIndex, range.startIndex + targetOffset));
+                        let item = flattenedItems[targetIndex];
+                        if (!item || item.type !== 'ayah') {
+                            for (let i = targetIndex; i <= Math.min(flattenedItems.length - 1, range.endIndex); i++) {
+                                if (flattenedItems[i]?.type === 'ayah') {
+                                    item = flattenedItems[i];
+                                    break;
+                                }
+                            }
+                        }
+                        if (!item || item.type !== 'ayah') {
+                            item = flattenedItems[range.startIndex];
+                        }
                         if (item && item.type === 'ayah') {
                             if (isUserInteractingRef.current) {
                                 currentVisibleAyahRef.current = { s: item.surahNumber, a: item.ayahNumber };
+                            } else if (isAutoScrollingRef.current) {
+                                currentVisibleAyahRef.current = { s: item.surahNumber, a: item.ayahNumber };
+                                const ayahKey = `${item.surahNumber}-${item.ayahNumber}`;
+                                recentVisibleAyahsRef.current.set(ayahKey, Date.now());
+                                if (recentVisibleAyahsRef.current.size > 40) {
+                                    const first = recentVisibleAyahsRef.current.keys().next().value;
+                                    if (first) recentVisibleAyahsRef.current.delete(first);
+                                }
+                                lastScrolledAyahRef.current = { s: item.surahNumber, a: item.ayahNumber };
+                                if (!lastEmittedAyahRef.current || lastEmittedAyahRef.current.s !== item.surahNumber || lastEmittedAyahRef.current.a !== item.ayahNumber) {
+                                    lastEmittedAyahRef.current = { s: item.surahNumber, a: item.ayahNumber };
+                                    onVisibleAyahChangeRef.current?.(item.surahNumber, item.ayahNumber);
+                                }
                             } else {
                                 currentVisibleAyahRef.current = { s: currentAyah.s, a: currentAyah.a };
                             }

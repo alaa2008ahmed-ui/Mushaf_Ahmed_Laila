@@ -1,7 +1,9 @@
 import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
+import { Check } from 'lucide-react';
 import { APP_GLOBAL_TOAST_EVENT } from '../../utils/appNotificationSettings';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { getToast3DStyles } from '../../utils/toast3DStyles';
 
 export const GlobalAppToast: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -91,52 +93,7 @@ export const GlobalAppToast: React.FC = () => {
 
   if (!visible || !message) return null;
 
-  // Dynamic Theme Colors
-  const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود';
-  const isDark = isNightMode || theme.isDark || isBlackTheme;
-
-  let bg = isNightMode
-    ? '#18181b'
-    : isBlackTheme
-    ? '#111111'
-    : (theme.btnBg || theme.accent || theme.barBg || '#1e293b');
-
-  let text = isNightMode
-    ? '#f4f4f5'
-    : isBlackTheme
-    ? '#ffffff'
-    : (theme.btnText || theme.accentText || '#ffffff');
-
-  let border = isNightMode
-    ? '1px solid rgba(255, 255, 255, 0.15)'
-    : isBlackTheme
-    ? '1px solid rgba(255, 255, 255, 0.25)'
-    : (theme.btnBorder && theme.btnBorder !== 'none' ? theme.btnBorder : '1px solid rgba(255, 255, 255, 0.25)');
-
-  // Fallback for white/transparent button backgrounds to preserve contrast with theme accent colors
-  if (bg === '#FFFFFF' || bg === '#ffffff' || bg === 'transparent') {
-    if (homeThemeVariant === 'sky' || themeKey === 'sky_mode') {
-      bg = '#0284c7';
-      text = '#ffffff';
-      border = '1px solid #38bdf8';
-    } else if (homeThemeVariant === 'emerald' || themeKey === 'emerald_mode') {
-      bg = '#047857';
-      text = '#ffffff';
-      border = '1px solid #34d399';
-    } else if (homeThemeVariant === 'burgundy' || themeKey === 'burgundy_mode') {
-      bg = '#881337';
-      text = '#ffffff';
-      border = '1px solid #fb7185';
-    } else if (homeThemeVariant === 'gold' || themeKey === 'shiny_gold') {
-      bg = '#d97706';
-      text = '#ffffff';
-      border = '1px solid #f59e0b';
-    } else {
-      bg = '#1e293b';
-      text = '#ffffff';
-      border = '1px solid rgba(255, 255, 255, 0.2)';
-    }
-  }
+  const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
 
   const resolvedBottom = bottomOffsetPx !== null
     ? `${bottomOffsetPx}px`
@@ -147,17 +104,19 @@ export const GlobalAppToast: React.FC = () => {
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
-      className="fixed left-1/2 -translate-x-1/2 z-[99999999] pointer-events-none px-3 flex justify-center animate-fadeIn max-w-[90vw]"
+      className="fixed left-1/2 -translate-x-1/2 z-[99999999] pointer-events-none px-3 flex justify-center max-w-[92vw]"
       style={{ bottom: resolvedBottom }}
     >
       <div 
-        className="backdrop-blur-md rounded-full shadow-2xl px-4.5 py-2 flex items-center justify-center text-center text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-300"
-        style={{
-          backgroundColor: bg,
-          color: text,
-          border: border
-        }}
+        className="app-3d-toast border-0 rounded-2xl px-4 py-2.5 flex items-center justify-center gap-2.5 text-center text-xs sm:text-sm font-bold leading-normal break-words max-w-[88vw] w-max"
+        style={toast3D.style}
       >
+        <span
+          className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+          style={toast3D.iconStyle}
+        >
+          <Check className="w-3 h-3 stroke-[3]" />
+        </span>
         <span>{message}</span>
       </div>
     </div>

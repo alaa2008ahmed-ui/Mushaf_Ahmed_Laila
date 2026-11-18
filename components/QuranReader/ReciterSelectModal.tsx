@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-<<<<<<< HEAD
-import { READERS, ReaderItem, ReadingMode, getReadersForMode, isEnglishReader, THEMES, isDarkQuranTheme } from './constants';
-=======
-import { READERS, ReaderItem, ReadingMode, getReadersForMode, isEnglishReader } from './constants';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-import { Search } from 'lucide-react';
+import { READERS, ReaderItem, ReadingMode, getReadersForMode, isEnglishReader, THEMES } from './constants';
+import { Search, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getQuranThemeIdForLayout } from '../../utils/quranThemeHelper';
 import { getReciterDisplayName, tListen } from '../../utils/listenQuranTranslations';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface ReciterSelectModalProps {
     onClose: () => void;
@@ -20,6 +17,7 @@ interface ReciterSelectModalProps {
     readingMode?: ReadingMode;
     hideHeader?: boolean;
     zIndexClass?: string;
+    currentTheme?: any;
 }
 
 const ARABIC_ALPHABET = [
@@ -63,6 +61,15 @@ const getReciterIndexLetter = (name: string, isEn: boolean): string => {
     return firstChar;
 };
 
+const resolveFallbackTheme = (themeKey: string, isNightMode: boolean, homeThemeVariant: string) => {
+    if (isNightMode || themeKey === 'black' || themeKey === 'black_gold') return THEMES.deep_black;
+    if (homeThemeVariant === 'gold' || themeKey === 'shiny_gold' || themeKey === 'gold') return THEMES.gold;
+    if (homeThemeVariant === 'sky' || themeKey === 'sky') return THEMES.night_sky;
+    if (homeThemeVariant === 'emerald' || themeKey === 'emerald') return THEMES.green;
+    if (homeThemeVariant === 'burgundy' || themeKey === 'burgundy') return THEMES.maroon;
+    return THEMES.black;
+};
+
 const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({ 
     onClose, 
     currentReader, 
@@ -71,10 +78,11 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
     readersList = READERS,
     readingMode = 'mushaf',
     hideHeader = false,
-    zIndexClass = 'z-[1200]'
+    zIndexClass = 'z-[1200]',
+    currentTheme
 }) => {
     const { language, isRTL, dir } = useLanguage();
-    const { theme, themeKey, isNightMode, homeThemeVariant, homeLayout } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const isEn = language === 'en';
     const [searchTerm, setSearchTerm] = useState('');
     const [activeLetter, setActiveLetter] = useState<string | null>(null);
@@ -92,99 +100,17 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
         return unregister;
     }, [onClose]);
 
-<<<<<<< HEAD
-    const themeColors = useMemo(() => {
+    const effectiveTheme = useMemo(() => {
+        if (currentTheme) return currentTheme;
         const modeSuffix = isLandscape ? '_h' : '_v';
         const activeQuranThemeId = getQuranThemeIdForLayout(modeSuffix, undefined, readingMode);
-        const activeQuranTheme = THEMES[activeQuranThemeId as keyof typeof THEMES];
-
-        const isBlack =
-            isNightMode ||
-            themeKey === 'deep_black' ||
-            theme?.bgColor === '#000000' ||
-            activeQuranThemeId === 'deep_black';
-
-        const isDark =
-            isBlack ||
-            Boolean(theme?.isDark) ||
-            isDarkQuranTheme(activeQuranTheme);
-
-        const isModernLayout = homeLayout !== 'classic';
-
-        const homeLightBg = homeThemeVariant === 'sky'
-            ? '#F0F9FF'
-            : homeThemeVariant === 'emerald'
-                ? '#F0FDF4'
-                : homeThemeVariant === 'burgundy'
-                    ? '#FFF1F2'
-                    : '#FEF9C3';
-
-        const homeLightAccent = homeThemeVariant === 'sky'
-            ? '#0284c7'
-            : homeThemeVariant === 'emerald'
-                ? '#047857'
-                : homeThemeVariant === 'burgundy'
-                    ? '#881337'
-                    : '#d4af37';
-
-        const modalBg = isBlack
-            ? '#09090b'
-            : isDark
-                ? (activeQuranTheme?.modalBg && isHexDark(activeQuranTheme.modalBg)
-                    ? activeQuranTheme.modalBg
-                    : (activeQuranTheme?.bg && isHexDark(activeQuranTheme.bg)
-                        ? activeQuranTheme.bg
-                        : (theme?.modalBg && isHexDark(theme.modalBg) ? theme.modalBg : '#0f172a')))
-                : isModernLayout
-                    ? homeLightBg
-                    : (activeQuranTheme?.modalBg && activeQuranTheme.modalBg.toLowerCase() !== '#ffffff'
-                        ? activeQuranTheme.modalBg
-                        : (theme?.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
-                            ? theme.bgColor
-                            : '#EEF2F6'));
-
-        const cardBg = isDark ? '#1a1a22' : '#ffffff';
-        const cardText = isDark ? '#ffffff' : '#0f172a';
-        const subTextColor = isDark ? '#cbd5e1' : '#475569';
-
-        let accent = isBlack
-            ? '#ffffff'
-            : isDark
-                ? (activeQuranTheme?.accent || theme?.accent || '#10b981')
-                : isModernLayout
-                    ? (activeQuranTheme?.accent || homeLightAccent)
-                    : (activeQuranTheme?.accent || theme?.accent || theme?.palette?.[0] || '#10b981');
-
-        if (accent.toLowerCase() === '#000000' && isDark) {
-            accent = '#ffffff';
-=======
-    const isBlackTheme = useMemo(() => {
-        try {
-            const bg = getComputedStyle(document.documentElement).getPropertyValue('--qr-bg').trim();
-            const accent = getComputedStyle(document.documentElement).getPropertyValue('--qr-accent').trim();
-            return bg === '#000000' || accent === '#ffffff' || accent === '#FFFFFF';
-        } catch {
-            return false;
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+        if (activeQuranThemeId && THEMES[activeQuranThemeId as keyof typeof THEMES]) {
+            return THEMES[activeQuranThemeId as keyof typeof THEMES];
         }
+        return resolveFallbackTheme(themeKey, isNightMode, homeThemeVariant);
+    }, [currentTheme, isLandscape, readingMode, themeKey, isNightMode, homeThemeVariant]);
 
-        const accentText = isBlack
-            ? '#000000'
-            : (activeQuranTheme?.accentText && (!isDark || isHexDark(accent))
-                ? activeQuranTheme.accentText
-                : (isHexDark(accent) ? '#ffffff' : '#000000'));
-
-        return {
-            isBlack,
-            isDark,
-            modalBg,
-            cardBg,
-            cardText,
-            subTextColor,
-            accent,
-            accentText
-        };
-    }, [isNightMode, themeKey, theme, homeThemeVariant, homeLayout, isLandscape, readingMode]);
+    const p = useMemo(() => resolveQuranModalPalette(effectiveTheme), [effectiveTheme]);
 
     // Strictly filter the available readers based on current reading mode or custom readers list
     const modeReaders = useMemo(() => {
@@ -286,87 +212,90 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
             : (isEn ? "Holy Quran Reciters" : "قراء القرآن الكريم");
 
     const modalVars = {
-        '--qr-modal-bg': themeColors.modalBg,
-        '--qr-modal-text': themeColors.cardText,
-        '--qr-card-bg': themeColors.cardBg,
-        '--qr-card-text': themeColors.cardText,
-        '--qr-accent': themeColors.accent,
-        '--qr-accent-text': themeColors.accentText,
-        backgroundColor: themeColors.modalBg,
-        color: themeColors.cardText,
+        '--qr-modal-bg': p.modalBg,
+        '--qr-modal-text': p.cardText,
+        '--qr-card-bg': p.cardBg,
+        '--qr-card-text': p.cardText,
+        '--qr-accent': p.selectedBg,
+        '--qr-accent-text': p.selectedText,
+        backgroundColor: p.modalBg,
+        color: p.modalText,
     } as React.CSSProperties;
 
     return (
-<<<<<<< HEAD
-        <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm ${zIndexClass} flex items-center justify-center ${isLandscape ? 'p-0' : 'p-3 sm:p-4'} animate-fadeIn font-cairo select-none`} onClick={handleClose}>
+        <div className={`fixed inset-0 bg-black/55 ${zIndexClass} flex items-center justify-center ${isLandscape ? 'p-2' : 'p-3 sm:p-4'} font-cairo select-none`} onClick={handleClose}>
             <div 
                 dir={dir} 
-                className={`modal-skinned settings-3d-adia-scope ${themeColors.isDark ? 'settings-3d-dark' : ''} font-cairo w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md sm:max-w-2xl rounded-3xl max-h-[88dvh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter relative border-0`} 
-                style={modalVars}
+                className={`modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} font-cairo ${isLandscape ? 'w-[62%] max-w-[430px] h-[86%] max-h-[86%] rounded-3xl' : 'w-full max-w-md sm:max-w-2xl rounded-3xl max-h-[88dvh]'} shadow-2xl overflow-hidden flex flex-col relative border-0`} 
+                style={{
+                    fontFamily: p.fontFamily,
+                    backgroundColor: p.modalBg,
+                    color: p.modalText,
+                    border: 'none',
+                    outline: 'none',
+                    ...modalVars
+                }}
                 onClick={e => e.stopPropagation()}
             >
-=======
-        <div className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-3 sm:p-4'} animate-fadeIn`} onClick={handleClose}>
-            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md sm:max-w-2xl rounded-2xl max-h-[88dvh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter relative`} onClick={e => e.stopPropagation()}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                {/* Header with Title and Search */}
-                {(!hideHeader || !isSingleReciterMode) && (
-                    <div className="p-3.5 pb-2 flex flex-col gap-2.5 shrink-0 border-0">
-                        {!hideHeader && (
-                            <div className="flex items-center justify-between px-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-black truncate" style={{ color: themeColors.cardText }}>
-                                        {modalTitle}
-                                    </span>
-<<<<<<< HEAD
-                                    <span 
-                                        className="text-[11px] px-2.5 py-0.5 rounded-full font-bold app-page-card border-0" 
-                                        style={{ backgroundColor: themeColors.cardBg, color: themeColors.isBlack ? '#ffffff' : themeColors.accent }}
-                                    >
-=======
-                                    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold opacity-75" style={{ backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : 'var(--qr-accent-10, rgba(16, 185, 129, 0.12))', color: isBlackTheme ? '#ffffff' : 'var(--qr-accent, #10b981)' }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                                        {filteredReaders.length}
-                                    </span>
-                                </div>
-                                {isSingleReciterMode && (
-                                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 dark:text-indigo-300 font-bold">
-                                        {isBilingualMode ? 'AR + EN' : 'EN'}
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                        {!isSingleReciterMode && (
-                            <div 
-                                className="relative w-full rounded-2xl app-page-card border-0"
-                                style={{ backgroundColor: themeColors.cardBg }}
+                {/* Canonical Raised Header with Title, Count, Close and Search */}
+                <div className={`${isLandscape ? 'p-2.5 pb-1.5 gap-2' : 'p-3.5 pb-2 gap-2.5'} flex flex-col shrink-0 border-0`}>
+                    <div 
+                        className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between quran-raised-card border-0`}
+                        style={{ backgroundColor: p.headerBg }}
+                    >
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide truncate`} style={{ color: p.headerAccent }}>
+                                {modalTitle}
+                            </span>
+                            <span 
+                                className={`${isLandscape ? 'text-[10px]' : 'text-[11px]'} px-2 py-0.5 rounded-full font-bold border-0`} 
+                                style={{ backgroundColor: p.modalBg, color: p.headerAccent }}
                             >
-                                <Search className={`absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 w-4 h-4 opacity-55`} style={{ color: themeColors.cardText }} />
-                                <input
-                                    type="text"
-                                    placeholder={tListen('searchReciterPlaceholder', language)}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className={`w-full bg-transparent border-none rounded-2xl py-2.5 ${isRTL ? 'pr-10 pl-3.5 text-right' : 'pl-10 pr-3.5 text-left'} text-sm font-bold focus:outline-none`}
-                                    style={{ 
-                                        color: themeColors.cardText
-                                    }}
-                                />
-                            </div>
-                        )}
+                                {filteredReaders.length}
+                            </span>
+                            {isSingleReciterMode && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: p.selectedBg, color: p.selectedText }}>
+                                    {isBilingualMode ? 'AR + EN' : 'EN'}
+                                </span>
+                            )}
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={handleClose} 
+                            className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer shrink-0`}
+                            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+                            aria-label={isEn ? "Close" : "إغلاق"}
+                        >
+                            <X size={isLandscape ? 14 : 16} />
+                        </button>
                     </div>
-                )}
+
+                    {!isSingleReciterMode && (
+                        <div 
+                            className={`relative w-full ${isLandscape ? 'rounded-xl' : 'rounded-2xl'} quran-raised-card border-0`}
+                            style={{ backgroundColor: p.cardBg }}
+                        >
+                            <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-55`} style={{ color: p.cardText }} />
+                            <input
+                                type="text"
+                                placeholder={tListen('searchReciterPlaceholder', language)}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className={`w-full bg-transparent border-none ${isLandscape ? 'py-1.5 text-xs rounded-xl' : 'py-2.5 text-sm rounded-2xl'} ${isRTL ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'} font-bold focus:outline-none`}
+                                style={{ 
+                                    color: p.cardText
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
 
                 {/* Body: 2-column Reciters Grid + Vertical Alphabet Jump Sidebar */}
                 <div className="relative flex-1 flex overflow-hidden min-h-0">
                     {/* Scrollable Reciters Area */}
                     <div 
                         ref={listContainerRef} 
-<<<<<<< HEAD
-                        className={`overflow-y-auto overflow-x-hidden no-scrollbar flex-1 min-h-0 p-3.5 pt-2 pb-5 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} ${!isSingleReciterMode ? 'pr-10 sm:pr-11 pl-3.5' : ''}`}
-=======
-                        className={`overflow-y-auto flex-1 min-h-0 p-3 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} ${!isSingleReciterMode ? 'pr-8 sm:pr-9 pl-3' : ''}`}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                        className={`overflow-y-auto overflow-x-hidden no-scrollbar flex-1 min-h-0 ${isLandscape ? 'p-2.5 pt-1 pb-3' : 'p-3.5 pt-2 pb-5'} ${!isSingleReciterMode ? (isLandscape ? 'pr-9 pl-2.5' : 'pr-10 sm:pr-11 pl-3.5') : ''}`}
                     >
                         {isSingleReciterMode ? (
                             <div className="flex flex-col items-center justify-center h-full p-4">
@@ -378,28 +307,23 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                             key={r.id} 
                                             ref={isSelected ? selectedRef : null}
                                             onClick={() => handleSelect(r.id)}
-                                            className="w-full max-w-md p-5 rounded-2xl border-0 transition-all font-bold flex flex-col items-center justify-center text-center cursor-pointer app-page-card quran-raised-btn quran-raised-btn-selected"
+                                            className={`w-full max-w-md ${isLandscape ? 'p-3.5 rounded-xl' : 'p-5 rounded-2xl'} border-0 transition-all font-bold flex flex-col items-center justify-center text-center cursor-pointer quran-raised-btn quran-raised-btn-selected`}
                                             style={{ 
-<<<<<<< HEAD
-                                                backgroundColor: themeColors.accent, 
-                                                color: themeColors.accentText
-=======
-                                                backgroundColor: 'var(--qr-accent)', 
-                                                color: 'var(--qr-accent-text, #ffffff)'
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                                                backgroundColor: p.selectedBg, 
+                                                color: p.selectedText,
+                                                border: 'none'
                                             }}
                                         >
-                                            <div className="flex items-center justify-center w-full">
-                                                <span className="text-sm font-black truncate flex-1 text-center">
+                                            <div className="flex items-center justify-center w-full overflow-hidden">
+                                                <span
+                                                    className={`font-cairo ${isLandscape ? 'text-sm' : 'text-base sm:text-lg'} font-extrabold line-clamp-2 break-words flex-1 text-center leading-snug`}
+                                                    style={{ fontFamily: "'Cairo', sans-serif" }}
+                                                >
                                                     {getReciterDisplayName(r.name, language)}
                                                 </span>
                                             </div>
                                             {!isEnReader && (r.subTitle || r.subTitleEn) && (
-<<<<<<< HEAD
-                                                <span className="text-xs mt-1.5 opacity-90" style={{ color: themeColors.accentText }}>
-=======
-                                                <span className="text-xs mt-1.5 opacity-90 text-white/90">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                                                <span className="text-xs mt-1.5 opacity-90" style={{ color: p.selectedText }}>
                                                     {isEn ? (r.subTitleEn || r.subTitle) : r.subTitle}
                                                 </span>
                                             )}
@@ -408,7 +332,7 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                 })}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 py-1">
+                            <div className={`grid ${isLandscape ? 'grid-cols-2 gap-2' : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3'} py-1`}>
                                 {filteredReaders.map(r => {
                                     const isSelected = currentReader === r.id;
                                     const isEnReader = isEnglishReader(r);
@@ -421,35 +345,30 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                             id={`reciter-card-${encodeURIComponent(r.id)}`}
                                             ref={isSelected ? selectedRef : null}
                                             onClick={() => handleSelect(r.id)}
-                                            className={`w-full p-3 rounded-2xl border-0 transition-all font-bold flex flex-col items-center justify-center text-center cursor-pointer scroll-mt-3 min-h-[64px] app-page-card ${
+                                            className={`w-full ${isLandscape ? 'px-2 py-2 rounded-xl min-h-[54px]' : 'px-2.5 py-3 rounded-2xl min-h-[68px]'} border-0 transition-all font-bold flex flex-col items-center justify-center text-center cursor-pointer scroll-mt-3 overflow-hidden ${
                                                 isSelected 
                                                     ? 'quran-raised-btn quran-raised-btn-selected scale-[1.01]' 
                                                     : 'quran-raised-btn'
                                             }`}
                                             style={{ 
-<<<<<<< HEAD
-                                                backgroundColor: isSelected ? themeColors.accent : themeColors.cardBg, 
-                                                color: isSelected ? themeColors.accentText : themeColors.cardText
-=======
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : 'var(--qr-card-bg)', 
-                                                color: isSelected ? 'var(--qr-accent-text, #ffffff)' : 'var(--qr-card-text)'
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                                                backgroundColor: isSelected ? p.selectedBg : p.cardBg, 
+                                                color: isSelected ? p.selectedText : p.cardText,
+                                                border: 'none'
                                             }}
                                         >
-                                            <div className="flex items-center justify-center w-full">
-                                                <span className="text-xs sm:text-[13px] font-bold line-clamp-2 flex-1 text-center leading-snug">
+                                            <div className="flex items-center justify-center w-full overflow-hidden">
+                                                <span
+                                                    className="font-cairo text-sm sm:text-[15px] font-extrabold line-clamp-2 break-words flex-1 text-center leading-snug"
+                                                    style={{ fontFamily: "'Cairo', sans-serif" }}
+                                                >
                                                     {displayName}
                                                 </span>
                                             </div>
                                             {!isEnReader && subTitle && (
-<<<<<<< HEAD
                                                 <span 
                                                     className="text-[10px] mt-1 line-clamp-1 opacity-85"
-                                                    style={{ color: isSelected ? themeColors.accentText : themeColors.subTextColor }}
+                                                    style={{ color: isSelected ? p.selectedText : p.mutedText }}
                                                 >
-=======
-                                                <span className={`text-[10px] mt-0.5 line-clamp-1 opacity-80 ${isSelected ? 'text-white/90' : 'text-indigo-600 dark:text-indigo-300'}`}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {subTitle}
                                                 </span>
                                             )}
@@ -469,8 +388,8 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                     {/* Vertical Alphabet Index Rail on the Right Side */}
                     {!isSingleReciterMode && (
                         <div 
-                            className="absolute right-1.5 top-2 bottom-3 w-7 flex flex-col items-center justify-start py-1.5 z-20 overflow-y-auto no-scrollbar rounded-full app-page-card select-none border-0"
-                            style={{ direction: 'ltr', backgroundColor: themeColors.cardBg }}
+                            className="absolute right-1.5 top-2 bottom-3 w-7 flex flex-col items-center justify-start py-1.5 z-20 overflow-y-auto no-scrollbar rounded-full quran-raised-card select-none border-0"
+                            style={{ direction: 'ltr', backgroundColor: p.cardBg }}
                         >
                             {activeAlphabet.map((char) => {
                                 const isAvailable = letterFirstIdMap.has(char);
@@ -488,10 +407,10 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                             isActive 
                                                 ? 'quran-raised-btn quran-raised-btn-selected scale-110 font-black' 
                                                 : (isAvailable 
-                                                    ? (themeColors.isDark ? 'text-zinc-100 hover:bg-white/10 active:scale-125' : 'text-slate-700 hover:bg-black/5 active:scale-125')
-                                                    : (themeColors.isDark ? 'text-zinc-600/60 cursor-default pointer-events-none' : 'text-slate-300/70 cursor-default pointer-events-none'))
+                                                    ? (p.isDark ? 'text-zinc-100 hover:bg-white/10 active:scale-125' : 'text-slate-700 hover:bg-black/5 active:scale-125')
+                                                    : (p.isDark ? 'text-zinc-600/60 cursor-default pointer-events-none' : 'text-slate-300/70 cursor-default pointer-events-none'))
                                         }`}
-                                        style={isActive ? { backgroundColor: themeColors.accent, color: themeColors.accentText } : undefined}
+                                        style={isActive ? { backgroundColor: p.selectedBg, color: p.selectedText } : undefined}
                                         title={isAvailable ? char : undefined}
                                         aria-label={`Jump to letter ${char}`}
                                     >
@@ -506,8 +425,8 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                     {floatingLetter && (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-30 animate-fadeIn">
                             <div 
-                                className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black app-page-card quran-raised-btn-selected scale-105"
-                                style={{ backgroundColor: themeColors.accent, color: themeColors.accentText }}
+                                className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black quran-raised-btn-selected scale-105 border-0"
+                                style={{ backgroundColor: p.selectedBg, color: p.selectedText }}
                             >
                                 {floatingLetter}
                             </div>

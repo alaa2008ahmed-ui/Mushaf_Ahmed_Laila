@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Clock, Check, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 import { toArabic } from '../QuranReader/constants';
 
 export interface IslamicTimePickerModalProps {
@@ -28,7 +30,7 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
 }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, homeThemeVariant, isNightMode } = useTheme();
 
     // Parse initial time (24h -> 12h + AM/PM)
     const initialParsed = useMemo(() => {
@@ -79,6 +81,16 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         }
     }, [isOpen, initialParsed]);
 
+    // Android hardware back button support
+    useEffect(() => {
+        if (!isOpen) return;
+        const unregister = registerBackInterceptor(() => {
+            onClose();
+            return true;
+        });
+        return unregister;
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     // Convert to 24h string
@@ -91,7 +103,6 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
     };
 
     const handleSave = () => {
-        // Resolve current inputs if user typed without blurring
         let finalHour = hourRef.current;
         let finalMinute = minuteRef.current;
 
@@ -162,7 +173,6 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         minuteInputStrRef.current = mFormatted;
     };
 
-    // Hour Input Focus / Click Handler: Automatically empties the field on focus/click for instant typing
     const handleHourFocus = () => {
         setActiveField('hours');
         setHourInput('');
@@ -175,20 +185,16 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         hourInputStrRef.current = '';
     };
 
-    // Hour Input Change Handler: Allows typing 1-12, 11, 12, 8, etc. without losing digits
     const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = toEnglishDigits(e.target.value).replace(/\D/g, '').slice(0, 2);
         hourInputStrRef.current = raw;
         setHourInput(raw);
 
-        if (raw === '') {
-            return;
-        }
+        if (raw === '') return;
 
         const val = parseInt(raw, 10);
         if (isNaN(val)) return;
 
-        // If user typed a number > 12 (e.g. 15), clamp to 12
         if (val > 12) {
             const clamped = 12;
             setHour(clamped);
@@ -205,7 +211,6 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         }
     };
 
-    // Hour Input Blur Handler
     const handleHourBlur = () => {
         setActiveField(null);
         const raw = toEnglishDigits(hourInputStrRef.current).trim();
@@ -227,7 +232,6 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         }
     };
 
-    // Minute Input Focus / Click Handler: Automatically empties field on focus/click for instant typing
     const handleMinuteFocus = () => {
         setActiveField('minutes');
         setMinuteInput('');
@@ -240,15 +244,12 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         minuteInputStrRef.current = '';
     };
 
-    // Minute Input Change Handler: Allows typing 0-59
     const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = toEnglishDigits(e.target.value).replace(/\D/g, '').slice(0, 2);
         minuteInputStrRef.current = raw;
         setMinuteInput(raw);
 
-        if (raw === '') {
-            return;
-        }
+        if (raw === '') return;
 
         const val = parseInt(raw, 10);
         if (isNaN(val)) return;
@@ -267,7 +268,6 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         minuteRef.current = val;
     };
 
-    // Minute Input Blur Handler
     const handleMinuteBlur = () => {
         setActiveField(null);
         const raw = toEnglishDigits(minuteInputStrRef.current).trim();
@@ -289,565 +289,364 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         }
     };
 
-    // Dynamic Theme Detection & Color Resolution
-    const domQrAccent = typeof window !== 'undefined' && typeof document !== 'undefined'
-        ? getComputedStyle(document.documentElement).getPropertyValue('--qr-accent').trim()
-        : '';
-
-    // Check if golden theme is active in any form (Quran reader theme, global theme, or CSS class)
-    const goldHexes = [
-        '#d97706', '#d4af37', '#f59e0b', '#fbbf24', '#eab308', 
-        '#ca8a04', '#b45309', '#fde047', '#fef08a'
-    ];
-    const isGoldKey = [
-        'shiny_gold', 'gold', 'royal_gold', 'i_gold', 'i_royal_gold', 
-        'amber_light', 'i_amber', 'golden_sand', 'black_gold'
-    ].includes(themeKey);
-
-    const hasGoldName = Boolean(
-        theme?.name && (
-            theme.name.includes('ذهب') || 
-            theme.name.toLowerCase().includes('gold') || 
-            theme.name.includes('عنبر') || 
-            theme.name.includes('كهرمان')
-        )
-    );
-
-    const hasGoldAccent = Boolean(
-        (theme?.accent && goldHexes.includes(theme.accent.toLowerCase())) ||
-        (domQrAccent && goldHexes.includes(domQrAccent.toLowerCase())) ||
-        (propAccentColor && goldHexes.includes(propAccentColor.toLowerCase()))
-    );
-
-    const isGoldClass = typeof document !== 'undefined' && (
-        document.body.classList.contains('theme-shiny-gold') ||
-        document.documentElement.classList.contains('theme-shiny-gold')
-    );
-
-    const isGolden = isGoldKey || hasGoldName || hasGoldAccent || isGoldClass;
-
+    // Unified Theme Resolution matching NotificationSettingsModal & PrayerTimesSettingsModal
     const isDark = Boolean(
-        theme?.isDark || 
-        themeKey === 'deep_black' || 
-        themeKey === 'night' || 
+        isNightMode ||
+        theme?.isDark ||
+        themeKey === 'deep_black' ||
+        themeKey === 'black_gold' ||
+        themeKey === 'night' ||
         themeKey === 'i_midnight' ||
         themeKey === 'i_slate' ||
         (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'))
     );
 
-    const effectiveAccent = (
-        propAccentColor || 
-        domQrAccent || 
-        theme?.accent || 
-        theme?.palette?.[0] || 
-        (isGolden ? '#D97706' : (isDark ? '#FFFFFF' : '#059669'))
-    ).trim();
+    const cleanPropAccent = propAccentColor?.trim();
 
-    // Palette fields:
-    let primaryAccent: string;
-    let primaryAccentText: string;
-    let cardBgColor: string;
-    let cardBorderColor: string;
-    let headerBg: string;
-    let headerBorder: string;
-    let textPrimary: string;
-    let textSecondary: string;
-    let segmentBg: string;
-    let segmentBorder: string;
-    let boxBg: string;
-    let boxBorder: string;
-    let inputActiveBg: string;
-    let inputActiveText: string;
-    let inputInactiveBg: string;
-    let inputInactiveBorder: string;
-    let actionSaveBg: string;
-    let actionSaveText: string;
-    let actionCancelBorder: string;
-    let actionCancelText: string;
-    let presetBtnBg: string;
-    let presetBtnText: string;
-    let presetBtnBorder: string;
-    let nowBtnBg: string;
-    let nowBtnText: string;
-    let nowBtnBorder: string;
-    let footerBg: string;
-    let footerBorder: string;
+    const isSky = !isDark && (
+        themeKey === 'sky_mode' ||
+        homeThemeVariant === 'sky' ||
+        ['night_sky', 'blue', 'cyan', 'fajr_light', 'blue_sky', 'midnight_blue', 'i_lapis', 'i_deep_ocean', 'i_turquoise'].includes(themeKey)
+    );
 
-    if (isGolden) {
+    const isEmerald = !isDark && (
+        themeKey === 'emerald_mode' ||
+        homeThemeVariant === 'emerald'
+    );
+
+    const isBurgundy = !isDark && (
+        themeKey === 'burgundy_mode' ||
+        homeThemeVariant === 'burgundy' ||
+        ['red', 'maroon', 'i_ruby', 'rose_gold'].includes(themeKey)
+    );
+
+    const isGold = !isDark && (
+        themeKey === 'shiny_gold' ||
+        themeKey === 'gold' ||
+        homeThemeVariant === 'gold' ||
+        ['royal_gold', 'i_gold', 'i_royal_gold', 'amber_light', 'i_amber', 'golden_sand'].includes(themeKey)
+    );
+
+    const palette = (() => {
         if (isDark) {
-            // Dark Gold Theme (e.g. i_royal_gold, black_gold, i_gold)
-            primaryAccent = '#F59E0B';
-            primaryAccentText = '#000000';
-            cardBgColor = '#18150C';
-            cardBorderColor = '#78350F';
-            headerBg = '#292213';
-            headerBorder = '#78350F';
-            textPrimary = '#FDE68A';
-            textSecondary = '#F59E0B';
-            segmentBg = '#292213';
-            segmentBorder = '#78350F';
-            boxBg = '#292213';
-            boxBorder = '#78350F';
-            inputActiveBg = '#D97706';
-            inputActiveText = '#FFFFFF';
-            inputInactiveBg = '#18150C';
-            inputInactiveBorder = '#78350F';
-            actionSaveBg = '#D97706';
-            actionSaveText = '#FFFFFF';
-            actionCancelBorder = '#78350F';
-            actionCancelText = '#FDE68A';
-            presetBtnBg = '#292213';
-            presetBtnText = '#FDE68A';
-            presetBtnBorder = '#78350F';
-            nowBtnBg = '#292213';
-            nowBtnText = '#FDE68A';
-            nowBtnBorder = '#78350F';
-            footerBg = '#15130A';
-            footerBorder = '#78350F';
-        } else {
-            // Light Golden Theme (matches Quran gold & shiny_gold screenshots)
-            primaryAccent = '#D97706';
-            primaryAccentText = '#FFFFFF';
-            cardBgColor = '#FFFDF5';
-            cardBorderColor = '#FCD34D';
-            headerBg = '#FDE68A';
-            headerBorder = '#F59E0B33';
-            textPrimary = '#1F2937';
-            textSecondary = '#78350F';
-            segmentBg = '#FFFBEB';
-            segmentBorder = '#FDE68A';
-            boxBg = '#FEF3C7';
-            boxBorder = '#FCD34D';
-            inputActiveBg = '#D97706';
-            inputActiveText = '#FFFFFF';
-            inputInactiveBg = '#FFFFFF';
-            inputInactiveBorder = '#FCD34D';
-            actionSaveBg = '#D97706';
-            actionSaveText = '#FFFFFF';
-            actionCancelBorder = '#FCD34D';
-            actionCancelText = '#78350F';
-            presetBtnBg = '#FEF3C7';
-            presetBtnText = '#92400E';
-            presetBtnBorder = '#FCD34D';
-            nowBtnBg = '#FDE68A';
-            nowBtnText = '#78350F';
-            nowBtnBorder = '#F59E0B';
-            footerBg = '#FEF3C755';
-            footerBorder = '#F59E0B22';
+            const darkAccent = (cleanPropAccent && cleanPropAccent.toLowerCase() !== '#000000')
+                ? cleanPropAccent
+                : '#ffffff';
+            const isWhiteAccent = darkAccent.toLowerCase() === '#ffffff' || darkAccent.toLowerCase() === '#fff';
+            return {
+                modalBg: '#121214',
+                headerBg: '#18181b',
+                cardBg: '#18181b',
+                innerBg: '#27272a',
+                dividerColor: 'rgba(255, 255, 255, 0.12)',
+                textPrimary: '#ffffff',
+                textSecondary: '#a1a1aa',
+                primaryAccent: darkAccent,
+                primaryAccentText: isWhiteAccent ? '#000000' : '#ffffff',
+                modalShadow: '0 8px 0 #050507, 0 24px 50px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.14)',
+                inputShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.65), inset 0 -1px 1px rgba(255, 255, 255, 0.12)'
+            };
         }
-    } else if (isDark) {
-        // Pure Dark OLED Theme
-        primaryAccent = effectiveAccent && effectiveAccent !== '#FFFFFF' ? effectiveAccent : '#FFFFFF';
-        primaryAccentText = effectiveAccent && effectiveAccent !== '#FFFFFF' ? '#FFFFFF' : '#000000';
-        cardBgColor = '#121215';
-        cardBorderColor = '#27272A';
-        headerBg = '#18181D';
-        headerBorder = '#27272A';
-        textPrimary = '#FFFFFF';
-        textSecondary = '#A1A1AA';
-        segmentBg = '#18181D';
-        segmentBorder = '#27272A';
-        boxBg = '#18181D';
-        boxBorder = '#27272A';
-        inputActiveBg = primaryAccent;
-        inputActiveText = primaryAccentText;
-        inputInactiveBg = '#27272A';
-        inputInactiveBorder = '#3F3F46';
-        actionSaveBg = primaryAccent;
-        actionSaveText = primaryAccentText;
-        actionCancelBorder = '#3F3F46';
-        actionCancelText = '#E4E4E7';
-        presetBtnBg = '#1E1E24';
-        presetBtnText = '#E4E4E7';
-        presetBtnBorder = '#27272A';
-        nowBtnBg = '#27272A';
-        nowBtnText = '#FFFFFF';
-        nowBtnBorder = '#3F3F46';
-        footerBg = '#151518';
-        footerBorder = '#27272A';
-    } else {
-        // Light Theme: determine color family (Blue, Red, Purple, Orange, Green, etc.)
-        const accLower = effectiveAccent.toLowerCase();
-        const isBlueFamily = ['night_sky', 'blue', 'cyan', 'fajr_light', 'blue_sky', 'midnight_blue', 'i_lapis', 'i_deep_ocean', 'i_turquoise'].includes(themeKey) ||
-            accLower.startsWith('#3b') || accLower.startsWith('#25') || accLower.startsWith('#028') || accLower.startsWith('#089') || accLower.startsWith('#4f') ||
-            Boolean(theme?.name && (theme.name.includes('أزرق') || theme.name.includes('سماوي') || theme.name.includes('نيلي')));
 
-        const isRedFamily = ['red', 'maroon', 'i_ruby', 'rose_gold'].includes(themeKey) ||
-            accLower.startsWith('#dc') || accLower.startsWith('#ef') || accLower.startsWith('#83') ||
-            Boolean(theme?.name && (theme.name.includes('أحمر') || theme.name.includes('نبيتي') || theme.name.includes('ياقوت')));
+        const modalShadowLight = '0 8px 0 rgba(0, 0, 0, 0.16), 0 24px 48px rgba(0, 0, 0, 0.30), inset 0 2px 2px rgba(255, 255, 255, 0.92)';
+        const inputShadowLight = 'inset 0 2px 4px rgba(0, 0, 0, 0.12), inset 0 -1px 1px rgba(255, 255, 255, 0.92)';
 
-        const isPurpleFamily = ['purple', 'i_amethyst', 'i_brocade', 'purple_haze', 'i_sunset_royal'].includes(themeKey) ||
-            accLower.startsWith('#93') || accLower.startsWith('#7c') || accLower.startsWith('#8b') || accLower.startsWith('#4c') ||
-            Boolean(theme?.name && (theme.name.includes('بنفسجي') || theme.name.includes('أرجوان') || theme.name.includes('إستبرق')));
-
-        const isOrangeFamily = ['orange', 'sunset'].includes(themeKey) ||
-            accLower.startsWith('#ea') || accLower.startsWith('#f9') ||
-            Boolean(theme?.name && (theme.name.includes('برتقالي') || theme.name.includes('غروب')));
-
-        if (isBlueFamily) {
-            primaryAccent = effectiveAccent || '#2563EB';
-            primaryAccentText = '#FFFFFF';
-            cardBgColor = '#FFFFFF';
-            cardBorderColor = '#BFDBFE';
-            headerBg = '#EFF6FF';
-            headerBorder = '#DBEAFE';
-            textPrimary = '#0F172A';
-            textSecondary = '#1E40AF';
-            segmentBg = '#EFF6FF';
-            segmentBorder = '#DBEAFE';
-            boxBg = '#F0F9FF';
-            boxBorder = '#BAE6FD';
-            inputActiveBg = primaryAccent;
-            inputActiveText = '#FFFFFF';
-            inputInactiveBg = '#FFFFFF';
-            inputInactiveBorder = '#BAE6FD';
-            actionSaveBg = primaryAccent;
-            actionSaveText = '#FFFFFF';
-            actionCancelBorder = '#BFDBFE';
-            actionCancelText = '#1E40AF';
-            presetBtnBg = '#F0F9FF';
-            presetBtnText = '#0369A1';
-            presetBtnBorder = '#BAE6FD';
-            nowBtnBg = '#E0F2FE';
-            nowBtnText = '#0284C7';
-            nowBtnBorder = '#BAE6FD';
-            footerBg = '#F8FAFC';
-            footerBorder = '#E2E8F0';
-        } else if (isRedFamily) {
-            primaryAccent = effectiveAccent || '#DC2626';
-            primaryAccentText = '#FFFFFF';
-            cardBgColor = '#FFFFFF';
-            cardBorderColor = '#FECACA';
-            headerBg = '#FEF2F2';
-            headerBorder = '#FEE2E2';
-            textPrimary = '#0F172A';
-            textSecondary = '#991B1B';
-            segmentBg = '#FEF2F2';
-            segmentBorder = '#FEE2E2';
-            boxBg = '#FFF1F2';
-            boxBorder = '#FECDD3';
-            inputActiveBg = primaryAccent;
-            inputActiveText = '#FFFFFF';
-            inputInactiveBg = '#FFFFFF';
-            inputInactiveBorder = '#FECDD3';
-            actionSaveBg = primaryAccent;
-            actionSaveText = '#FFFFFF';
-            actionCancelBorder = '#FECACA';
-            actionCancelText = '#991B1B';
-            presetBtnBg = '#FFF1F2';
-            presetBtnText = '#9F1239';
-            presetBtnBorder = '#FECDD3';
-            nowBtnBg = '#FEE2E2';
-            nowBtnText = '#B91C1C';
-            nowBtnBorder = '#FECACA';
-            footerBg = '#F8FAFC';
-            footerBorder = '#E2E8F0';
-        } else if (isPurpleFamily) {
-            primaryAccent = effectiveAccent || '#9333EA';
-            primaryAccentText = '#FFFFFF';
-            cardBgColor = '#FFFFFF';
-            cardBorderColor = '#E9D5FF';
-            headerBg = '#FAF5FF';
-            headerBorder = '#F3E8FF';
-            textPrimary = '#0F172A';
-            textSecondary = '#6B21A8';
-            segmentBg = '#FAF5FF';
-            segmentBorder = '#F3E8FF';
-            boxBg = '#FAF5FF';
-            boxBorder = '#E9D5FF';
-            inputActiveBg = primaryAccent;
-            inputActiveText = '#FFFFFF';
-            inputInactiveBg = '#FFFFFF';
-            inputInactiveBorder = '#E9D5FF';
-            actionSaveBg = primaryAccent;
-            actionSaveText = '#FFFFFF';
-            actionCancelBorder = '#E9D5FF';
-            actionCancelText = '#6B21A8';
-            presetBtnBg = '#FAF5FF';
-            presetBtnText = '#6B21A8';
-            presetBtnBorder = '#E9D5FF';
-            nowBtnBg = '#F3E8FF';
-            nowBtnText = '#7E22CE';
-            nowBtnBorder = '#E9D5FF';
-            footerBg = '#F8FAFC';
-            footerBorder = '#E2E8F0';
-        } else if (isOrangeFamily) {
-            primaryAccent = effectiveAccent || '#EA580C';
-            primaryAccentText = '#FFFFFF';
-            cardBgColor = '#FFFFFF';
-            cardBorderColor = '#FED7AA';
-            headerBg = '#FFF7ED';
-            headerBorder = '#FFEDD5';
-            textPrimary = '#0F172A';
-            textSecondary = '#9A3412';
-            segmentBg = '#FFF7ED';
-            segmentBorder = '#FFEDD5';
-            boxBg = '#FFF7ED';
-            boxBorder = '#FED7AA';
-            inputActiveBg = primaryAccent;
-            inputActiveText = '#FFFFFF';
-            inputInactiveBg = '#FFFFFF';
-            inputInactiveBorder = '#FED7AA';
-            actionSaveBg = primaryAccent;
-            actionSaveText = '#FFFFFF';
-            actionCancelBorder = '#FED7AA';
-            actionCancelText = '#9A3412';
-            presetBtnBg = '#FFF7ED';
-            presetBtnText = '#9A3412';
-            presetBtnBorder = '#FED7AA';
-            nowBtnBg = '#FFEDD5';
-            nowBtnText = '#C2410C';
-            nowBtnBorder = '#FED7AA';
-            footerBg = '#F8FAFC';
-            footerBorder = '#E2E8F0';
-        } else {
-            // Emerald Green / Islamic Default
-            primaryAccent = effectiveAccent || '#059669';
-            primaryAccentText = '#FFFFFF';
-            cardBgColor = '#FFFFFF';
-            cardBorderColor = '#BBF7D0';
-            headerBg = '#F0FDF4';
-            headerBorder = '#DCFCE7';
-            textPrimary = '#0F172A';
-            textSecondary = '#166534';
-            segmentBg = '#F0FDF4';
-            segmentBorder = '#DCFCE7';
-            boxBg = '#F0FDF4';
-            boxBorder = '#BBF7D0';
-            inputActiveBg = primaryAccent;
-            inputActiveText = '#FFFFFF';
-            inputInactiveBg = '#FFFFFF';
-            inputInactiveBorder = '#BBF7D0';
-            actionSaveBg = primaryAccent;
-            actionSaveText = '#FFFFFF';
-            actionCancelBorder = '#CBD5E1';
-            actionCancelText = '#166534';
-            presetBtnBg = '#F0FDF4';
-            presetBtnText = '#166534';
-            presetBtnBorder = '#BBF7D0';
-            nowBtnBg = '#DCFCE7';
-            nowBtnText = '#15803D';
-            nowBtnBorder = '#BBF7D0';
-            footerBg = '#F8FAFC';
-            footerBorder = '#E2E8F0';
+        if (isSky) {
+            return {
+                modalBg: '#F0F9FF',
+                headerBg: '#E0F2FE',
+                cardBg: '#ffffff',
+                innerBg: '#f8fafc',
+                dividerColor: 'rgba(2, 132, 199, 0.12)',
+                textPrimary: '#0f172a',
+                textSecondary: '#0369a1',
+                primaryAccent: cleanPropAccent || '#0284c7',
+                primaryAccentText: '#ffffff',
+                modalShadow: modalShadowLight,
+                inputShadow: inputShadowLight
+            };
         }
-    }
+        if (isEmerald) {
+            return {
+                modalBg: '#F0FDF4',
+                headerBg: '#DCFCE7',
+                cardBg: '#ffffff',
+                innerBg: '#f8fafc',
+                dividerColor: 'rgba(5, 150, 105, 0.12)',
+                textPrimary: '#0f172a',
+                textSecondary: '#047857',
+                primaryAccent: cleanPropAccent || '#059669',
+                primaryAccentText: '#ffffff',
+                modalShadow: modalShadowLight,
+                inputShadow: inputShadowLight
+            };
+        }
+        if (isBurgundy) {
+            return {
+                modalBg: '#FFF1F2',
+                headerBg: '#FFE4E6',
+                cardBg: '#ffffff',
+                innerBg: '#f8fafc',
+                dividerColor: 'rgba(190, 18, 60, 0.12)',
+                textPrimary: '#0f172a',
+                textSecondary: '#881337',
+                primaryAccent: cleanPropAccent || '#be123c',
+                primaryAccentText: '#ffffff',
+                modalShadow: modalShadowLight,
+                inputShadow: inputShadowLight
+            };
+        }
+        if (isGold) {
+            return {
+                modalBg: '#FEF9C3',
+                headerBg: '#FEF08A',
+                cardBg: '#ffffff',
+                innerBg: '#fffbeb',
+                dividerColor: 'rgba(180, 83, 9, 0.14)',
+                textPrimary: '#0f172a',
+                textSecondary: '#854d0e',
+                primaryAccent: cleanPropAccent || '#ca8a04',
+                primaryAccentText: '#ffffff',
+                modalShadow: modalShadowLight,
+                inputShadow: inputShadowLight
+            };
+        }
 
-    return (
-        <div 
+        const fallbackAccent = cleanPropAccent || theme?.accent || theme?.palette?.[0] || '#059669';
+        return {
+            modalBg: '#F8FAFC',
+            headerBg: '#F1F5F9',
+            cardBg: '#ffffff',
+            innerBg: '#f8fafc',
+            dividerColor: 'rgba(15, 23, 42, 0.08)',
+            textPrimary: '#0f172a',
+            textSecondary: '#475569',
+            primaryAccent: fallbackAccent,
+            primaryAccentText: '#ffffff',
+            modalShadow: modalShadowLight,
+            inputShadow: inputShadowLight
+        };
+    })();
+
+    const modalContent = (
+        <div
             dir={isEn ? 'ltr' : 'rtl'}
-            className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn"
-            onClick={onClose}
+            className="fixed inset-0 z-[10000000] flex items-center justify-center p-4 bg-black/65"
+            onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+            }}
         >
-            <div 
-                className="w-full max-w-[340px] sm:max-w-[365px] rounded-3xl shadow-2xl overflow-hidden border flex flex-col transition-all animate-scaleUp select-none"
+            <div
+                className={`settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''} w-full max-w-[292px] sm:max-w-[314px] rounded-[2rem] overflow-hidden flex flex-col select-none border-0`}
                 style={{
-                    backgroundColor: cardBgColor,
-                    borderColor: cardBorderColor,
-                    color: textPrimary
+                    backgroundColor: palette.modalBg,
+                    color: palette.textPrimary,
+                    boxShadow: palette.modalShadow
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header Banner - Clean with No 'X' button, Title & Icon Centered */}
-                <div 
-                    className="py-3.5 px-4 flex items-center justify-center border-b shrink-0"
+                {/* Compact Header */}
+                <div
+                    className="py-2.5 px-4 flex items-center justify-center border-b shrink-0"
                     style={{
-                        backgroundColor: headerBg,
-                        borderColor: headerBorder
+                        backgroundColor: palette.headerBg,
+                        borderColor: palette.dividerColor
                     }}
                 >
-                    <div className="flex items-center gap-2.5">
-                        <div 
-                            className="w-7 h-7 rounded-xl flex items-center justify-center shadow-xs shrink-0"
-                            style={{ backgroundColor: primaryAccent, color: primaryAccentText }}
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="app-page-card quran-raised-btn-selected border-0 w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+                            style={{
+                                backgroundColor: palette.primaryAccent,
+                                color: palette.primaryAccentText
+                            }}
                         >
-                            <Clock className="w-4 h-4" />
+                            <Clock className="w-3.5 h-3.5" />
                         </div>
-                        <h3 className="font-bold text-sm sm:text-base tracking-wide" style={{ color: textPrimary }}>
+                        <h3
+                            className="font-black text-xs sm:text-sm tracking-wide truncate"
+                            style={{ color: isDark ? palette.textPrimary : palette.textSecondary }}
+                        >
                             {title || (isEn ? 'Set Time' : 'تحديد الوقت')}
                         </h3>
                     </div>
                 </div>
 
-                {/* Body - Digital Picker */}
-                <div className="p-4 sm:p-5 space-y-4">
-                    {/* AM / PM Segmented Switch */}
-                    <div 
-                        className="flex items-center justify-center p-1 rounded-2xl border"
-                        style={{
-                            backgroundColor: segmentBg,
-                            borderColor: segmentBorder
-                        }}
-                    >
+                {/* Compact Body */}
+                <div className="p-3 sm:p-3.5 space-y-3 overflow-visible">
+                    {/* AM / PM 3D Tactile Switch */}
+                    <div className="grid grid-cols-2 gap-2.5 overflow-visible">
                         <button
                             type="button"
                             onClick={() => setIsPM(false)}
-                            className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer border-0 flex items-center justify-center gap-1.5 ${
-                                !isPM
-                                    ? 'shadow-md scale-[1.02]'
-                                    : 'opacity-60 hover:opacity-90'
+                            className={`app-page-card border-0 py-2 px-2.5 rounded-2xl font-extrabold text-xs cursor-pointer flex items-center justify-center gap-1.5 ${
+                                !isPM ? 'quran-raised-btn-selected' : ''
                             }`}
                             style={{
-                                backgroundColor: !isPM ? primaryAccent : 'transparent',
-                                color: !isPM ? primaryAccentText : textPrimary
+                                backgroundColor: !isPM ? palette.primaryAccent : palette.cardBg,
+                                color: !isPM ? palette.primaryAccentText : palette.textPrimary
                             }}
                         >
                             <span>☀️</span>
-                            <span>{isEn ? 'AM (Morning)' : 'صباحاً'}</span>
+                            <span>{isEn ? 'AM' : 'صباحاً'}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setIsPM(true)}
-                            className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer border-0 flex items-center justify-center gap-1.5 ${
-                                isPM
-                                    ? 'shadow-md scale-[1.02]'
-                                    : 'opacity-60 hover:opacity-90'
+                            className={`app-page-card border-0 py-2 px-2.5 rounded-2xl font-extrabold text-xs cursor-pointer flex items-center justify-center gap-1.5 ${
+                                isPM ? 'quran-raised-btn-selected' : ''
                             }`}
                             style={{
-                                backgroundColor: isPM ? primaryAccent : 'transparent',
-                                color: isPM ? primaryAccentText : textPrimary
+                                backgroundColor: isPM ? palette.primaryAccent : palette.cardBg,
+                                color: isPM ? palette.primaryAccentText : palette.textPrimary
                             }}
                         >
                             <span>🌙</span>
-                            <span>{isEn ? 'PM (Evening)' : 'مساءً'}</span>
+                            <span>{isEn ? 'PM' : 'مساءً'}</span>
                         </button>
                     </div>
 
-                    {/* Digital Time Pods Display (Direct Typing + Steppers) */}
-                    <div 
-                        className="flex items-center justify-center gap-2 sm:gap-3 py-3 px-3 rounded-2xl border shadow-inner"
+                    {/* 3D Embossed Digital Time Pods Card - Always Hours on Left, Minutes on Right */}
+                    <div
+                        dir="ltr"
+                        className="app-page-card border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center gap-2.5 overflow-visible"
                         style={{
-                            backgroundColor: boxBg,
-                            borderColor: boxBorder
+                            backgroundColor: palette.cardBg,
+                            color: palette.textPrimary
                         }}
                     >
                         {/* Hours Digital Column */}
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center gap-1.5">
                             <button
                                 type="button"
                                 onClick={() => adjustHours(1)}
-                                className="w-10 h-7 rounded-lg flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 transition-transform cursor-pointer border-0"
-                                style={{ color: textPrimary }}
+                                className="app-page-card border-0 w-9 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                                style={{
+                                    color: palette.textPrimary,
+                                    backgroundColor: palette.innerBg
+                                }}
                                 title={isEn ? 'Add Hour' : 'زيادة ساعة'}
                             >
-                                <ChevronUp className="w-5 h-5 opacity-70" />
+                                <ChevronUp className="w-4 h-4" />
                             </button>
 
-                            <div className="relative">
-                                <input
-                                    ref={hourInputRef}
-                                    type="text"
-                                    dir="ltr"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    maxLength={2}
-                                    autoComplete="off"
-                                    autoCorrect="off"
-                                    value={hourInput}
-                                    onFocus={handleHourFocus}
-                                    onClick={handleHourClick}
-                                    onChange={handleHourChange}
-                                    onBlur={handleHourBlur}
-                                    placeholder="--"
-                                    className={`w-20 sm:w-24 h-16 sm:h-20 rounded-2xl font-black text-3xl sm:text-4xl text-center tabular-nums transition-all outline-none border cursor-text ${
-                                        activeField === 'hours'
-                                            ? 'shadow-lg ring-2 ring-offset-2'
-                                            : 'shadow-xs hover:border-black/20 dark:hover:border-white/20'
-                                    }`}
-                                    style={{
-                                        backgroundColor: activeField === 'hours' ? inputActiveBg : inputInactiveBg,
-                                        color: activeField === 'hours' ? inputActiveText : textPrimary,
-                                        borderColor: activeField === 'hours' ? primaryAccent : inputInactiveBorder,
-                                        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif'
-                                    }}
-                                />
-                            </div>
+                            <input
+                                ref={hourInputRef}
+                                type="text"
+                                dir="ltr"
+                                inputMode="numeric"
+                                pattern="[0-9\u0660-\u0669]*"
+                                maxLength={2}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                value={isEn ? hourInput : toArabic(hourInput)}
+                                onFocus={handleHourFocus}
+                                onClick={handleHourClick}
+                                onChange={handleHourChange}
+                                onBlur={handleHourBlur}
+                                placeholder="--"
+                                className="w-16 sm:w-[68px] h-12 sm:h-[52px] rounded-2xl font-black text-2xl text-center tabular-nums transition-all outline-none border-0 cursor-text"
+                                style={{
+                                    backgroundColor: activeField === 'hours' ? palette.primaryAccent : palette.innerBg,
+                                    color: activeField === 'hours' ? palette.primaryAccentText : palette.textPrimary,
+                                    boxShadow: activeField === 'hours'
+                                        ? (isDark ? '0 4px 0 #07070b, inset 0 1.5px 1px rgba(255,255,255,0.3)' : '0 4px 0 rgba(0,0,0,0.22), inset 0 1.5px 1px rgba(255,255,255,0.45)')
+                                        : palette.inputShadow,
+                                    fontFamily: isEn ? 'system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif' : undefined
+                                }}
+                            />
 
                             <button
                                 type="button"
                                 onClick={() => adjustHours(-1)}
-                                className="w-10 h-7 rounded-lg flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 transition-transform cursor-pointer border-0"
-                                style={{ color: textPrimary }}
+                                className="app-page-card border-0 w-9 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                                style={{
+                                    color: palette.textPrimary,
+                                    backgroundColor: palette.innerBg
+                                }}
                                 title={isEn ? 'Subtract Hour' : 'إنقاص ساعة'}
                             >
-                                <ChevronDown className="w-5 h-5 opacity-70" />
+                                <ChevronDown className="w-4 h-4" />
                             </button>
 
-                            <span className="text-xs font-bold mt-0.5" style={{ color: textSecondary }}>
+                            <span className="text-[10px] font-bold" style={{ color: palette.textSecondary }}>
                                 {isEn ? 'Hour' : 'ساعة'}
                             </span>
                         </div>
 
                         {/* Digital Separator Colon */}
-                        <div className="flex flex-col items-center justify-center pb-5">
-                            <span 
-                                className="text-3xl sm:text-4xl font-black opacity-60 animate-pulse select-none"
-                                style={{ color: textPrimary }}
+                        <div className="flex flex-col items-center justify-center pb-4">
+                            <span
+                                className="text-2xl font-black opacity-55 animate-pulse select-none"
+                                style={{ color: palette.textPrimary }}
                             >
                                 :
                             </span>
                         </div>
 
                         {/* Minutes Digital Column */}
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center gap-1.5">
                             <button
                                 type="button"
                                 onClick={() => adjustMinutes(1)}
-                                className="w-10 h-7 rounded-lg flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 transition-transform cursor-pointer border-0"
-                                style={{ color: textPrimary }}
+                                className="app-page-card border-0 w-9 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                                style={{
+                                    color: palette.textPrimary,
+                                    backgroundColor: palette.innerBg
+                                }}
                                 title={isEn ? 'Add Minute' : 'زيادة دقيقة'}
                             >
-                                <ChevronUp className="w-5 h-5 opacity-70" />
+                                <ChevronUp className="w-4 h-4" />
                             </button>
 
-                            <div className="relative">
-                                <input
-                                    ref={minuteInputRef}
-                                    type="text"
-                                    dir="ltr"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    maxLength={2}
-                                    autoComplete="off"
-                                    autoCorrect="off"
-                                    value={minuteInput}
-                                    onFocus={handleMinuteFocus}
-                                    onClick={handleMinuteClick}
-                                    onChange={handleMinuteChange}
-                                    onBlur={handleMinuteBlur}
-                                    placeholder="--"
-                                    className={`w-20 sm:w-24 h-16 sm:h-20 rounded-2xl font-black text-3xl sm:text-4xl text-center tabular-nums transition-all outline-none border cursor-text ${
-                                        activeField === 'minutes'
-                                            ? 'shadow-lg ring-2 ring-offset-2'
-                                            : 'shadow-xs hover:border-black/20 dark:hover:border-white/20'
-                                    }`}
-                                    style={{
-                                        backgroundColor: activeField === 'minutes' ? inputActiveBg : inputInactiveBg,
-                                        color: activeField === 'minutes' ? inputActiveText : textPrimary,
-                                        borderColor: activeField === 'minutes' ? primaryAccent : inputInactiveBorder,
-                                        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif'
-                                    }}
-                                />
-                            </div>
+                            <input
+                                ref={minuteInputRef}
+                                type="text"
+                                dir="ltr"
+                                inputMode="numeric"
+                                pattern="[0-9\u0660-\u0669]*"
+                                maxLength={2}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                value={isEn ? minuteInput : toArabic(minuteInput)}
+                                onFocus={handleMinuteFocus}
+                                onClick={handleMinuteClick}
+                                onChange={handleMinuteChange}
+                                onBlur={handleMinuteBlur}
+                                placeholder="--"
+                                className="w-16 sm:w-[68px] h-12 sm:h-[52px] rounded-2xl font-black text-2xl text-center tabular-nums transition-all outline-none border-0 cursor-text"
+                                style={{
+                                    backgroundColor: activeField === 'minutes' ? palette.primaryAccent : palette.innerBg,
+                                    color: activeField === 'minutes' ? palette.primaryAccentText : palette.textPrimary,
+                                    boxShadow: activeField === 'minutes'
+                                        ? (isDark ? '0 4px 0 #07070b, inset 0 1.5px 1px rgba(255,255,255,0.3)' : '0 4px 0 rgba(0,0,0,0.22), inset 0 1.5px 1px rgba(255,255,255,0.45)')
+                                        : palette.inputShadow,
+                                    fontFamily: isEn ? 'system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif' : undefined
+                                }}
+                            />
 
                             <button
                                 type="button"
                                 onClick={() => adjustMinutes(-1)}
-                                className="w-10 h-7 rounded-lg flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 transition-transform cursor-pointer border-0"
-                                style={{ color: textPrimary }}
+                                className="app-page-card border-0 w-9 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                                style={{
+                                    color: palette.textPrimary,
+                                    backgroundColor: palette.innerBg
+                                }}
                                 title={isEn ? 'Subtract Minute' : 'إنقاص دقيقة'}
                             >
-                                <ChevronDown className="w-5 h-5 opacity-70" />
+                                <ChevronDown className="w-4 h-4" />
                             </button>
 
-                            <span className="text-xs font-bold mt-0.5" style={{ color: textSecondary }}>
+                            <span className="text-[10px] font-bold" style={{ color: palette.textSecondary }}>
                                 {isEn ? 'Minute' : 'دقيقة'}
                             </span>
                         </div>
                     </div>
 
-                    {/* Quick Minute Interval Chips */}
-                    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                    {/* Quick Minute Interval Chips - Symmetrical 4-Column 3D Grid */}
+                    <div className="grid grid-cols-4 gap-2 pt-0.5 overflow-visible">
                         {[0, 15, 30, 45].map((mVal) => {
                             const mStr = String(mVal).padStart(2, '0');
                             const isActive = minute === mVal;
@@ -861,16 +660,15 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
                                         setMinuteInput(mStr);
                                         minuteInputStrRef.current = mStr;
                                     }}
-                                    className={`py-1 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                                        isActive ? 'shadow-xs scale-105' : 'opacity-70 hover:opacity-100'
+                                    className={`app-page-card border-0 py-1.5 px-1 rounded-xl text-xs font-extrabold cursor-pointer flex items-center justify-center ${
+                                        isActive ? 'quran-raised-btn-selected' : ''
                                     }`}
                                     style={{
-                                        backgroundColor: isActive ? primaryAccent : presetBtnBg,
-                                        color: isActive ? primaryAccentText : presetBtnText,
-                                        borderColor: isActive ? primaryAccent : presetBtnBorder
+                                        backgroundColor: isActive ? palette.primaryAccent : palette.cardBg,
+                                        color: isActive ? palette.primaryAccentText : palette.textPrimary
                                     }}
                                 >
-                                    :{isEn ? mStr : toArabic(mStr)}
+                                    <span dir="ltr">:{isEn ? mStr : toArabic(mStr)}</span>
                                 </button>
                             );
                         })}
@@ -878,37 +676,34 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
                         <button
                             type="button"
                             onClick={() => adjustMinutes(-5)}
-                            className="py-1 px-2 rounded-xl text-xs font-bold opacity-80 hover:opacity-100 transition-opacity cursor-pointer border"
-                            style={{ 
-                                backgroundColor: presetBtnBg,
-                                color: presetBtnText,
-                                borderColor: presetBtnBorder
+                            className="app-page-card border-0 py-1.5 px-1 rounded-xl text-xs font-extrabold cursor-pointer flex items-center justify-center"
+                            style={{
+                                backgroundColor: palette.cardBg,
+                                color: palette.textPrimary
                             }}
                         >
-                            -5{isEn ? 'm' : 'د'}
+                            {isEn ? '-5m' : <span dir="ltr">-{toArabic('5')} د</span>}
                         </button>
 
                         <button
                             type="button"
                             onClick={() => adjustMinutes(5)}
-                            className="py-1 px-2 rounded-xl text-xs font-bold opacity-80 hover:opacity-100 transition-opacity cursor-pointer border"
-                            style={{ 
-                                backgroundColor: presetBtnBg,
-                                color: presetBtnText,
-                                borderColor: presetBtnBorder
+                            className="app-page-card border-0 py-1.5 px-1 rounded-xl text-xs font-extrabold cursor-pointer flex items-center justify-center"
+                            style={{
+                                backgroundColor: palette.cardBg,
+                                color: palette.textPrimary
                             }}
                         >
-                            +5{isEn ? 'm' : 'د'}
+                            {isEn ? '+5m' : <span dir="ltr">+{toArabic('5')} د</span>}
                         </button>
 
                         <button
                             type="button"
                             onClick={handleSetNow}
-                            className="py-1 px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 opacity-90 hover:opacity-100 transition-all cursor-pointer border shadow-xs"
-                            style={{ 
-                                backgroundColor: nowBtnBg,
-                                color: nowBtnText,
-                                borderColor: nowBtnBorder
+                            className="app-page-card border-0 col-span-2 py-1.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1 cursor-pointer"
+                            style={{
+                                backgroundColor: palette.cardBg,
+                                color: isDark ? palette.textPrimary : palette.textSecondary
                             }}
                             title={isEn ? 'Set Current Time' : 'ضبط الوقت الحالي'}
                         >
@@ -918,22 +713,21 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
                     </div>
                 </div>
 
-                {/* Footer Action Buttons */}
-                <div 
-                    className="p-3.5 sm:p-4 flex items-center justify-between gap-3 border-t shrink-0"
+                {/* Compact 3D Footer Action Buttons */}
+                <div
+                    className="px-3 pb-3 pt-2 flex items-center justify-between gap-2.5 border-t shrink-0 overflow-visible"
                     style={{
-                        backgroundColor: footerBg,
-                        borderColor: footerBorder
+                        backgroundColor: palette.modalBg,
+                        borderColor: palette.dividerColor
                     }}
                 >
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex-1 py-2.5 px-4 rounded-2xl font-bold text-xs sm:text-sm opacity-85 hover:opacity-100 transition-all cursor-pointer border hover:bg-black/5 dark:hover:bg-white/5 active:scale-95"
+                        className="app-page-card border-0 flex-1 py-2 px-3 rounded-2xl font-extrabold text-xs cursor-pointer flex items-center justify-center"
                         style={{
-                            borderColor: actionCancelBorder,
-                            color: actionCancelText,
-                            backgroundColor: 'transparent'
+                            backgroundColor: palette.cardBg,
+                            color: palette.textPrimary
                         }}
                     >
                         {isEn ? 'Cancel' : 'إلغاء'}
@@ -941,19 +735,25 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleSave}
-                        className="flex-1 py-2.5 px-4 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg active:scale-95 hover:brightness-105 transition-all cursor-pointer border-0"
+                        className="app-page-card quran-raised-btn-selected border-0 flex-1 py-2 px-3 rounded-2xl font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                         style={{
-                            backgroundColor: actionSaveBg,
-                            color: actionSaveText
+                            backgroundColor: palette.primaryAccent,
+                            color: palette.primaryAccentText
                         }}
                     >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3.5 h-3.5" />
                         <span>{isEn ? 'Save Time' : 'حفظ الوقت'}</span>
                     </button>
                 </div>
             </div>
         </div>
     );
+
+    if (typeof document !== 'undefined' && document.body) {
+        return createPortal(modalContent, document.body);
+    }
+
+    return modalContent;
 };
 
 export default IslamicTimePickerModal;

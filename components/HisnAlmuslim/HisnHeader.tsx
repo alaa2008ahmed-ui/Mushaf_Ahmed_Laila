@@ -1,18 +1,16 @@
 import React from 'react';
-import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { useShowPageGuides } from '../../utils/guideManager';
 
 interface HisnHeaderProps {
     title: string;
     subtitle: string;
-    showThemePageLock?: boolean;
     onBack?: () => void;
     onHome?: () => void;
     onOpenGuide?: () => void;
 }
 
-const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageLock = true, onBack, onHome, onOpenGuide }) => {
+const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, onBack, onHome, onOpenGuide }) => {
     const { t, language } = useLanguage();
     const isEn = language === 'en';
     const showPageGuides = useShowPageGuides();
@@ -47,12 +45,12 @@ const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageL
 
                     {/* Page Title in center - takes the entire remaining space between left and right icons without overlapping */}
                     <div className="flex-1 min-w-0 text-center px-1">
-                        <h1 className={`app-top-bar__title ${titleSizeClass} ${isEn ? 'font-sans font-bold' : 'font-kufi font-bold'} truncate leading-tight`}>
+                        <h1 className={`app-top-bar__title ${titleSizeClass} ${isEn ? 'font-sans font-bold' : 'font-cairo font-bold'} truncate leading-tight`}>
                             {localizedTitle}
                         </h1>
                     </div>
 
-                    {/* Home, Guide, and Theme Lock */}
+                    {/* Home and Guide */}
                     <div className="flex items-center gap-1 shrink-0 justify-end min-w-[40px]">
                         {onOpenGuide && showPageGuides && (
                             <button
@@ -65,7 +63,6 @@ const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageL
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                         )}
-                        {showThemePageLock && <ThemePageLock />}
                         {onHome && (
                             <button
                                 onClick={onHome}

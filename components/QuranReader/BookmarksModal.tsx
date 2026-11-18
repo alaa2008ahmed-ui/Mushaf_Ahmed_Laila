@@ -2,6 +2,7 @@ import React from 'react';
 import { toArabic, SURAH_NAMES_EN } from './constants';
 import { useLanguage } from '../../context/LanguageContext';
 import { X } from 'lucide-react';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface BookmarksModalProps {
     bookmarks: any[];
@@ -12,15 +13,6 @@ interface BookmarksModalProps {
     isLandscape?: boolean;
     currentTheme?: any;
 }
-
-const extractModalAccentColor = (val?: string, fallback = '#3b82f6'): string => {
-    if (!val) return fallback;
-    if (val.includes('#')) {
-        const match = val.match(/#[0-9a-fA-F]{3,8}/);
-        if (match) return match[0];
-    }
-    return val;
-};
 
 const getHijriDate = (timestamp: number, isEn: boolean) => {
     try {
@@ -36,88 +28,89 @@ const getHijriDate = (timestamp: number, isEn: boolean) => {
 const BookmarksModal: React.FC<BookmarksModalProps> = ({ bookmarks, quranData, onSelect, onDelete, onClose, isLandscape, currentTheme }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
-    const isDeepBlack = currentTheme?.id === 'deep_black';
-
-    const accentColor = isDeepBlack
-        ? '#ffffff'
-        : extractModalAccentColor(
-            currentTheme?.barBorder || currentTheme?.cardBorder || currentTheme?.accent,
-            '#3b82f6'
-        );
+    const p = resolveQuranModalPalette(currentTheme);
 
     return (
-        <div className={`fixed inset-0 z-[1200] bg-black/30 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
+        <div className={`fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'}`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
             <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-[400px] max-h-[90dvh] rounded-3xl' : 'max-w-[360px] sm:max-w-[380px] rounded-3xl max-h-[88dvh]'} flex flex-col shadow-2xl border-none animate-modal-enter overflow-hidden`} 
+                className={`modal-skinned ${isLandscape ? 'w-[56%] max-w-[360px] max-h-[84%] rounded-3xl' : 'w-full max-w-[360px] sm:max-w-[380px] rounded-3xl max-h-[88dvh]'} flex flex-col border-0 overflow-hidden ${p.isDark ? 'quran-3d-dark' : ''}`} 
                 style={{
-                    backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff',
-                    color: currentTheme?.modalText || currentTheme?.text || '#000000'
+                    fontFamily: p.fontFamily,
+                    backgroundColor: p.modalBg,
+                    color: p.modalText
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Header Bar - Identical to Colors & Customization Modal */}
-                <div className="p-3.5 shrink-0">
+                {/* Canonical Raised Header */}
+                <div className={isLandscape ? "p-2.5 pb-1.5 shrink-0" : "p-3.5 pb-2 shrink-0"}>
                     <div 
-                        className="py-2.5 px-3.5 rounded-2xl flex items-center justify-between transition-colors quran-raised-card border-0"
+                        className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between quran-raised-card border-0`}
                         style={{
-                            backgroundColor: isDeepBlack ? 'rgba(255, 255, 255, 0.08)' : `${accentColor}12`,
+                            backgroundColor: p.headerBg,
                         }}
                     >
                         <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm font-black tracking-wide" style={{ color: accentColor }}>
+                            <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide`} style={{ color: p.headerAccent }}>
                                 {isEn ? "Bookmarks" : "الإشارات المرجعية"}
                             </span>
-                            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold opacity-80" style={{ backgroundColor: isDeepBlack ? 'rgba(255, 255, 255, 0.15)' : `${accentColor}25`, color: accentColor }}>
+                            <span className={`${isLandscape ? 'text-[10px] px-2' : 'text-xs px-2.5'} py-0.5 rounded-full font-bold`} style={{ backgroundColor: p.isDark ? 'rgba(255, 255, 255, 0.14)' : `${p.headerAccent}22`, color: p.headerAccent }}>
                                 {isEn ? bookmarks.length : toArabic(bookmarks.length)}
                             </span>
                         </div>
                         <button 
+                            type="button"
                             onClick={onClose} 
-                            className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0 cursor-pointer"
-                            style={{ color: accentColor }}
-                            title={isEn ? "Close" : "إغلاق"}
+                            className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer`}
+                            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+                            aria-label={isEn ? "Close" : "إغلاق"}
                         >
-                            <X size={16} />
+                            <X size={isLandscape ? 14 : 16} />
                         </button>
                     </div>
                 </div>
 
-                <div className="overflow-y-auto p-4 pt-1 flex-1 min-h-0 flex flex-col gap-4">
+                <div className={`overflow-y-auto ${isLandscape ? 'p-2.5 pt-1.5 pb-3 gap-2.5' : 'p-3.5 pt-2 pb-4 gap-3.5'} flex-1 min-h-0 flex flex-col`}>
                     {bookmarks.length === 0 ? (
-                        <div className="col-span-full text-center py-8 font-bold opacity-70 text-sm">{isEn ? "No saved bookmarks" : "لا توجد إشارات مرجعية محفوظة"}</div>
+                        <div className="col-span-full text-center py-6 font-bold opacity-70 text-xs sm:text-sm">{isEn ? "No saved bookmarks" : "لا توجد إشارات مرجعية محفوظة"}</div>
                     ) : (
                         bookmarks.map((b, index) => {
                             const rawSurahName = quranData?.surahs[b.s - 1]?.name.replace('سورة','').trim() || '';
                             const cleanEnName = (SURAH_NAMES_EN[b.s - 1] || rawSurahName).replace(/^Al-/, '');
                             const hijriDate = getHijriDate(b.id, isEn);
                             return (
-                                <div key={b.id} className={`w-full p-4 sm:p-4.5 rounded-2xl border-none transition-all themed-card-bg relative group quran-raised-card min-h-[96px] flex flex-col justify-center`}>
+                                <div 
+                                    key={b.id} 
+                                    className={`w-full ${isLandscape ? 'p-3 rounded-xl min-h-[68px]' : 'p-4 rounded-2xl min-h-[92px]'} border-0 relative group quran-raised-card flex flex-col justify-center`}
+                                    style={{ backgroundColor: p.cardBg, color: p.cardText }}
+                                >
                                     <button 
+                                        type="button"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onDelete(b.id);
                                         }} 
-                                        className={`absolute top-4 ${isEn ? 'right-3.5' : 'left-3.5'} w-9 h-9 rounded-full flex items-center justify-center text-red-500 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20 active:scale-95 transition-all border-none quran-raised-btn cursor-pointer`}
-                                        title={isEn ? "Delete" : "حذف"}
+                                        className={`absolute ${isLandscape ? 'top-2.5 w-7 h-7' : 'top-4 w-9 h-9'} ${isEn ? 'right-3' : 'left-3'} rounded-full flex items-center justify-center text-red-500 border-0 quran-raised-btn cursor-pointer`}
+                                        style={{ backgroundColor: p.closeBg }}
+                                        aria-label={isEn ? "Delete" : "حذف"}
                                     >
-                                        <i className="fa-solid fa-trash-alt text-sm quran-3d-icon"></i>
+                                        <i className={`fa-solid fa-trash-alt ${isLandscape ? 'text-xs' : 'text-sm'} quran-3d-icon`}></i>
                                     </button>
                                     
-                                    <div className={`cursor-pointer ${isEn ? 'pr-12' : 'pl-12'}`} onClick={() => { onSelect(b.s, b.a, !!b.isLandscape); onClose(); }}>
-                                        <div className="font-black text-base flex flex-wrap items-center gap-1.5 mb-2 leading-snug" style={{ fontFamily: isEn ? 'system-ui, -apple-system, sans-serif' : 'var(--font-amiri)' }}>
+                                    <div className={`cursor-pointer ${isLandscape ? (isEn ? 'pr-9' : 'pl-9') : (isEn ? 'pr-12' : 'pl-12')}`} onClick={() => { onSelect(b.s, b.a, !!b.isLandscape); onClose(); }}>
+                                        <div className={`font-black ${isLandscape ? 'text-sm mb-1' : 'text-base mb-2'} flex flex-wrap items-center gap-1.5 leading-snug`} style={{ fontFamily: isEn ? 'system-ui, -apple-system, sans-serif' : 'var(--font-amiri)' }}>
                                             <span className="text-xs opacity-50 font-sans">{isEn ? `${index + 1} -` : `${toArabic(index + 1)} -`}</span>
                                             <span className="break-words">
                                                 {isEn ? `Surah-${cleanEnName} - ${b.a}` : `${rawSurahName} - آية ${toArabic(b.a)}`}
                                             </span>
                                         </div>
                                         
-                                        <div className="flex flex-col gap-1 text-[11px] font-semibold opacity-75">
+                                        <div className={`flex flex-col gap-0.5 ${isLandscape ? 'text-[10px]' : 'text-[11px]'} font-semibold opacity-75`}>
                                             <div className="flex items-center gap-1.5">
                                                 <i className="fa-regular fa-calendar text-[9px] opacity-70"></i>
                                                 <span>{b.date} | {b.time}</span>
                                             </div>
                                             {hijriDate && (
-                                                <div className={`flex items-center gap-1.5 ${isDeepBlack ? 'text-white/90' : 'text-emerald-600 dark:text-emerald-400 font-bold'}`}>
+                                                <div className="flex items-center gap-1.5 font-bold" style={{ color: p.headerAccent }}>
                                                     <i className="fa-solid fa-moon text-[9px]"></i>
                                                     <span>{hijriDate}</span>
                                                 </div>

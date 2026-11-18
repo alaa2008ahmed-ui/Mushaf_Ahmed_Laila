@@ -1,13 +1,10 @@
-<<<<<<< HEAD
 import React, { FC, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
-=======
-import React, { FC } from 'react';
-import { X } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+import { THEMES } from './constants';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface ScrollSpeedModalProps {
     isOpen: boolean;
@@ -16,25 +13,32 @@ interface ScrollSpeedModalProps {
     currentMinutes: number;
     isLandscape?: boolean;
     currentTheme?: any;
-<<<<<<< HEAD
     zIndexClass?: string;
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+    isEnOverride?: boolean;
 }
 
-const extractModalAccentColor = (val?: string, fallback = '#3b82f6'): string => {
-    if (!val) return fallback;
-    if (val.includes('#')) {
-        const match = val.match(/#[0-9a-fA-F]{3,8}/);
-        if (match) return match[0];
-    }
-    return val;
+const resolveFallbackTheme = (themeKey: string, isNightMode: boolean, homeThemeVariant: string) => {
+    if (isNightMode || themeKey === 'black' || themeKey === 'black_gold') return THEMES.deep_black;
+    if (homeThemeVariant === 'gold' || themeKey === 'shiny_gold' || themeKey === 'gold') return THEMES.gold;
+    if (homeThemeVariant === 'sky' || themeKey === 'sky') return THEMES.night_sky;
+    if (homeThemeVariant === 'emerald' || themeKey === 'emerald') return THEMES.green;
+    if (homeThemeVariant === 'burgundy' || themeKey === 'burgundy') return THEMES.maroon;
+    return THEMES.black;
 };
 
-<<<<<<< HEAD
-const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect, currentMinutes, isLandscape, currentTheme, zIndexClass = 'z-[1250]' }) => {
+const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({
+    isOpen,
+    onClose,
+    onSelect,
+    currentMinutes,
+    isLandscape,
+    currentTheme,
+    zIndexClass = 'z-[1250]',
+    isEnOverride,
+}) => {
     const { language } = useLanguage();
-    const isEn = language === 'en';
+    const { themeKey, isNightMode, homeThemeVariant } = useTheme();
+    const isEn = isEnOverride ?? (language === 'en');
 
     useEffect(() => {
         if (!isOpen) return;
@@ -45,69 +49,80 @@ const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
     }, [isOpen, onClose]);
-=======
-const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect, currentMinutes, isLandscape, currentTheme }) => {
-    const { language } = useLanguage();
-    const isEn = language === 'en';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     if (!isOpen) return null;
-    const options = Array.from({length: 56}, (_, i) => i + 5);
-
-    const accentColor = currentTheme?.id === 'deep_black'
-        ? '#ffffff'
-        : extractModalAccentColor(
-            currentTheme?.barBorder || currentTheme?.cardBorder || currentTheme?.accent,
-            '#3b82f6'
-        );
+    const options = Array.from({ length: 56 }, (_, i) => i + 5);
+    const effectiveTheme = currentTheme || resolveFallbackTheme(themeKey, isNightMode, homeThemeVariant);
+    const p = resolveQuranModalPalette(effectiveTheme);
 
     return (
-<<<<<<< HEAD
-        <div className={`fixed inset-0 ${zIndexClass} bg-black/30 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
-=======
-        <div className={`fixed inset-0 z-[1200] bg-black/30 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-            <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-xl max-h-[90dvh] rounded-3xl' : 'max-w-sm sm:max-w-2xl rounded-3xl max-h-[88dvh]'} shadow-2xl flex flex-col border-none animate-modal-enter overflow-hidden`} 
+        <div
+            className={`fixed inset-0 ${zIndexClass} bg-black/55 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'}`}
+            onClick={onClose}
+            dir={isEn ? 'ltr' : 'rtl'}
+        >
+            <div
+                className={`modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} ${isLandscape ? 'w-[56%] max-w-[360px] max-h-[84%] rounded-3xl' : 'w-full max-w-sm sm:max-w-2xl rounded-3xl max-h-[88dvh]'} flex flex-col border-0 overflow-hidden`}
                 style={{
-                    backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff',
-                    color: currentTheme?.modalText || currentTheme?.text || '#000000'
+                    fontFamily: p.fontFamily,
+                    backgroundColor: p.modalBg,
+                    color: p.modalText,
+                    border: 'none',
+                    outline: 'none',
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Header Bar - Identical to Colors & Customization Modal */}
-                <div className="p-3.5 shrink-0">
-                    <div 
-                        className="py-2 px-3 rounded-2xl flex items-center justify-between transition-colors quran-raised-card border-0"
+                {/* Canonical Raised Header */}
+                <div className={isLandscape ? "p-2.5 pb-1.5 shrink-0" : "p-3.5 pb-2 shrink-0"}>
+                    <div
+                        className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between quran-raised-card border-0`}
                         style={{
-                            backgroundColor: currentTheme?.id === 'deep_black' ? 'rgba(255, 255, 255, 0.08)' : `${accentColor}12`,
+                            backgroundColor: p.headerBg,
                         }}
                     >
-                        <span className="text-xs sm:text-sm font-black tracking-wide" style={{ color: accentColor }}>
-                            {isEn ? "Auto-Scroll Speed (Minutes)" : "وقت التمرير (بالدقائق)"}
+                        <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide`} style={{ color: p.headerAccent }}>
+                            {isEn ? 'Auto-Scroll Speed (Minutes)' : 'وقت التمرير (بالدقائق)'}
                         </span>
-                        <button 
-                            onClick={onClose} 
-                            className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0 cursor-pointer"
-                            style={{ color: accentColor }}
-                            title={isEn ? "Close" : "إغلاق"}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} rounded-full flex items-center justify-center cursor-pointer quran-raised-btn border-0`}
+                            style={{
+                                backgroundColor: p.closeBg,
+                                color: p.headerAccent,
+                            }}
+                            aria-label={isEn ? 'Close' : 'إغلاق'}
                         >
-                            <X size={16} />
+                            <X size={isLandscape ? 14 : 16} />
                         </button>
                     </div>
                 </div>
 
-                <div className={`p-3.5 overflow-y-auto flex-1 min-h-0 grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2.5' : 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5'}`}>
+                <div
+                    className={`${isLandscape ? 'p-2.5 pt-1.5 pb-3 grid-cols-4 gap-2' : 'p-3.5 pt-2 pb-4 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3'} overflow-y-auto flex-1 min-h-0 custom-scrollbar grid`}
+                >
                     {options.map(m => {
                         const isSelected = currentMinutes === m;
                         return (
-                            <button 
-                                key={m} 
-                                onClick={() => { onSelect(m); onClose(); }} 
-                                className={`p-2.5 rounded-xl text-center font-bold transition-all border-none quran-raised-btn flex flex-col items-center justify-center cursor-pointer ${isSelected ? 'theme-accent-btn quran-raised-btn-selected scale-105' : 'themed-card-bg'}`}
+                            <button
+                                key={m}
+                                type="button"
+                                onClick={() => {
+                                    onSelect(m);
+                                    onClose();
+                                }}
+                                className={`${isLandscape ? 'p-2 rounded-xl' : 'p-2.5 rounded-2xl'} text-center font-bold flex flex-col items-center justify-center cursor-pointer border-0 ${isSelected ? 'quran-raised-btn-selected scale-[1.02]' : 'quran-raised-btn'}`}
+                                style={{
+                                    backgroundColor: isSelected ? p.selectedBg : p.cardBg,
+                                    color: isSelected ? p.selectedText : p.cardText,
+                                }}
                             >
-                                <span className="text-sm font-black">{m}</span>
-                                <span className="text-[10px] block opacity-80 mt-0.5">{isEn ? "min" : "دقيقة"}</span>
+                                <span className={`${isLandscape ? 'text-xs' : 'text-sm'} font-black tabular-nums`} style={{ color: 'inherit' }}>
+                                    {m}
+                                </span>
+                                <span className={`${isLandscape ? 'text-[9px]' : 'text-[10px]'} block opacity-85 mt-0.5`} style={{ color: 'inherit' }}>
+                                    {isEn ? 'min' : 'دقيقة'}
+                                </span>
                             </button>
                         );
                     })}

@@ -50,7 +50,14 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
     }, [modals.add]);
 
     const canAddPhrase = newPhraseText.trim().length > 0;
-    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black' || themeKey === 'black_gold';
+    const isDarkSurface = Boolean(theme.isDark) || isBlackTheme;
+    const recessedInputShadow = isDarkSurface
+        ? 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -1px 1.5px rgba(255, 255, 255, 0.12)'
+        : 'inset 0 3px 6px rgba(15, 23, 42, 0.14), inset 0 -1.5px 2px rgba(255, 255, 255, 0.9), 0 1px 0 rgba(255, 255, 255, 0.85)';
+    const recessedInputSurfaceClass = isBlackTheme
+        ? 'bg-[#27272a] text-white placeholder:text-zinc-500'
+        : 'bg-slate-100/90 dark:bg-[#0F172A] text-slate-800 dark:text-white placeholder:text-slate-400';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
     const activeBorderColor = isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'transparent';
 
@@ -58,210 +65,208 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
         ? primaryColor
         : (counterColor || primaryColor);
     const isPreviewWhite = previewAccent === '#FFFFFF' || previewAccent === 'white' || previewAccent === '#fff';
+    const vividAccent = isPreviewWhite
+        ? (theme.palette?.[0] || '#F59E0B')
+        : previewAccent;
 
     const renderSkinMiniPreview = (skinId: TasbeehSkinType, isSelected: boolean) => {
-        const useDarkPreview = isSelected && isBlackTheme;
-        const beadBase = useDarkPreview
-            ? 'radial-gradient(circle at 30% 28%, #475569 0%, #1e293b 65%, #020617 100%)'
-            : isSelected
-                ? 'radial-gradient(circle at 30% 28%, #ffffff 0%, #f8fafc 60%, #cbd5e1 100%)'
-                : isPreviewWhite
-                    ? 'radial-gradient(circle at 30% 28%, #ffffff 0%, #e2e8f0 65%, #94a3b8 100%)'
-                    : `radial-gradient(circle at 30% 28%, rgba(255,255,255,0.85) 0%, ${previewAccent} 48%, #09090b 100%)`;
+        const beadBase = `radial-gradient(circle at 30% 28%, rgba(255,255,255,0.88) 0%, ${vividAccent} 48%, #09090b 100%)`;
 
-        if (skinId === 'modern') {
-            return (
-                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                    <div
-                        className="absolute inset-0 rounded-full"
-                        style={{
-                            border: `2.5px solid ${useDarkPreview ? 'rgba(15,23,42,0.45)' : isSelected ? 'rgba(255,255,255,0.55)' : `${previewAccent}45`}`
-                        }}
-                    />
-                    <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{
-                            background: beadBase,
-                            boxShadow: '0 4px 0 rgba(0,0,0,0.22), 0 6px 12px rgba(0,0,0,0.22), inset 0 2px 3px rgba(255,255,255,0.75)'
-                        }}
-                    >
-                        <span
-                            className="text-[10px] font-black"
-                            style={{ color: useDarkPreview ? '#ffffff' : (isSelected || isPreviewWhite ? '#0f172a' : '#ffffff') }}
-                        >
-                            {formatTasbeehNumber(33, language)}
-                        </span>
-                    </div>
-                </div>
-            );
-        }
-
-        if (skinId === 'classic') {
-            return (
-                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                    <div
-                        className="w-9 h-12 rounded-[14px] p-1.5 flex flex-col items-center justify-between"
-                        style={{
-                            background: useDarkPreview
-                                ? 'linear-gradient(155deg, #334155 0%, #0f172a 100%)'
-                                : isSelected
-                                    ? 'linear-gradient(155deg, #ffffff 0%, #e2e8f0 100%)'
-                                    : isPreviewWhite
-                                        ? 'linear-gradient(155deg, #ffffff 0%, #cbd5e1 100%)'
-                                        : `linear-gradient(155deg, ${previewAccent} 0%, rgba(0,0,0,0.32) 100%)`,
-                            backgroundColor: useDarkPreview ? '#1e293b' : (isSelected ? '#ffffff' : previewAccent),
-                            boxShadow: '0 4px 0 rgba(0,0,0,0.25), 0 6px 10px rgba(0,0,0,0.22), inset 0 1.5px 2px rgba(255,255,255,0.65)'
-                        }}
-                    >
+        const renderInnerPreview = () => {
+            if (skinId === 'modern') {
+                return (
+                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                         <div
-                            className="w-full h-3.5 rounded-[5px] flex items-center justify-center"
+                            className="absolute inset-0 rounded-full"
                             style={{
-                                background: '#cbd5c0',
-                                boxShadow: 'inset 0 1.5px 3px rgba(0,0,0,0.4)'
-                            }}
-                        >
-                            <span className="text-[7px] font-mono font-black text-slate-800 leading-none">33</span>
-                        </div>
-                        <div
-                            className="w-4 h-4 rounded-full"
-                            style={{
-                                background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #cbd5e1 100%)',
-                                boxShadow: '0 2px 0 #64748b, 0 3px 4px rgba(0,0,0,0.25)'
+                                border: `2.5px solid ${vividAccent}55`
                             }}
                         />
-                    </div>
-                </div>
-            );
-        }
-
-        if (skinId === 'beads') {
-            return (
-                <div className="relative w-12 h-12 flex flex-col items-center justify-center shrink-0">
-                    <div className="w-0.5 h-11 rounded-full bg-slate-400/70 absolute" />
-                    <div className="flex flex-col items-center gap-0.5 relative z-10">
                         <div
-                            className="w-3.5 h-3.5 rounded-full"
-                            style={{ background: beadBase, boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}
-                        />
-                        <div
-                            className="w-5 h-5 rounded-full relative"
-                            style={{ background: beadBase, boxShadow: '0 3px 6px rgba(0,0,0,0.3), inset 0 1.5px 2px rgba(255,255,255,0.75)' }}
+                            className="w-9 h-9 rounded-full flex items-center justify-center"
+                            style={{
+                                background: beadBase,
+                                boxShadow: '0 4px 0 rgba(0,0,0,0.22), 0 6px 12px rgba(0,0,0,0.22), inset 0 2px 3px rgba(255,255,255,0.75)'
+                            }}
                         >
-                            <div className="w-1.5 h-1 rounded-full bg-white/75 absolute top-1 left-1" />
+                            <span
+                                className="text-[10px] font-black"
+                                style={{ color: '#ffffff', textShadow: '0 1px 2px rgba(0,0,0,0.45)' }}
+                            >
+                                {formatTasbeehNumber(33, language)}
+                            </span>
                         </div>
-                        <div
-                            className="w-3.5 h-3.5 rounded-full"
-                            style={{ background: beadBase, boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}
-                        />
                     </div>
-                </div>
-            );
-        }
+                );
+            }
 
-        if (skinId === 'wheel') {
-            const miniBeads = 11;
-            const r = 17;
-            return (
-                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                    {Array.from({ length: miniBeads }).map((_, idx) => {
-                        const a = ((idx * 360) / miniBeads - 90) * (Math.PI / 180);
-                        const x = Math.cos(a) * r;
-                        const y = Math.sin(a) * r;
-                        return (
+            if (skinId === 'classic') {
+                return (
+                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                        <div
+                            className="w-9 h-12 rounded-[14px] p-1.5 flex flex-col items-center justify-between"
+                            style={{
+                                background: `linear-gradient(155deg, ${vividAccent} 0%, rgba(0,0,0,0.34) 100%)`,
+                                backgroundColor: vividAccent,
+                                boxShadow: '0 4px 0 rgba(0,0,0,0.25), 0 6px 10px rgba(0,0,0,0.22), inset 0 1.5px 2px rgba(255,255,255,0.65)'
+                            }}
+                        >
                             <div
-                                key={idx}
-                                className="absolute rounded-full"
+                                className="w-full h-3.5 rounded-[5px] flex items-center justify-center"
                                 style={{
-                                    width: idx === 0 ? '7px' : '5.5px',
-                                    height: idx === 0 ? '7px' : '5.5px',
-                                    transform: `translate(${x}px, ${y}px)`,
-                                    background: idx === 0
-                                        ? 'radial-gradient(circle at 30% 25%, #fef08a 0%, #d97706 80%)'
-                                        : beadBase,
-                                    boxShadow: '0 1.5px 3px rgba(0,0,0,0.3)'
+                                    background: '#cbd5c0',
+                                    boxShadow: 'inset 0 1.5px 3px rgba(0,0,0,0.4)'
+                                }}
+                            >
+                                <span className="text-[7px] font-mono font-black text-slate-800 leading-none">33</span>
+                            </div>
+                            <div
+                                className="w-4 h-4 rounded-full"
+                                style={{
+                                    background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #cbd5e1 100%)',
+                                    boxShadow: '0 2px 0 #64748b, 0 3px 4px rgba(0,0,0,0.25)'
                                 }}
                             />
-                        );
-                    })}
-                    <div
-                        className="w-5 h-5 rounded-full"
-                        style={{
-                            background: beadBase,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.25), inset 0 1px 2px rgba(255,255,255,0.8)'
-                        }}
-                    />
-                </div>
-            );
-        }
+                        </div>
+                    </div>
+                );
+            }
 
-        if (skinId === 'mechanical') {
+            if (skinId === 'beads') {
+                return (
+                    <div className="relative w-12 h-12 flex flex-col items-center justify-center shrink-0">
+                        <div className={`w-0.5 h-11 rounded-full absolute ${isBlackTheme && !isSelected ? 'bg-zinc-500/70' : 'bg-slate-400/80'}`} />
+                        <div className="flex flex-col items-center gap-0.5 relative z-10">
+                            <div
+                                className="w-3.5 h-3.5 rounded-full"
+                                style={{ background: beadBase, boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}
+                            />
+                            <div
+                                className="w-5 h-5 rounded-full relative"
+                                style={{ background: beadBase, boxShadow: '0 3px 6px rgba(0,0,0,0.3), inset 0 1.5px 2px rgba(255,255,255,0.75)' }}
+                            >
+                                <div className="w-1.5 h-1 rounded-full bg-white/75 absolute top-1 left-1" />
+                            </div>
+                            <div
+                                className="w-3.5 h-3.5 rounded-full"
+                                style={{ background: beadBase, boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}
+                            />
+                        </div>
+                    </div>
+                );
+            }
+
+            if (skinId === 'wheel') {
+                const miniBeads = 11;
+                const r = 17;
+                return (
+                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                        {Array.from({ length: miniBeads }).map((_, idx) => {
+                            const a = ((idx * 360) / miniBeads - 90) * (Math.PI / 180);
+                            const x = Math.cos(a) * r;
+                            const y = Math.sin(a) * r;
+                            return (
+                                <div
+                                    key={idx}
+                                    className="absolute rounded-full"
+                                    style={{
+                                        width: idx === 0 ? '7px' : '5.5px',
+                                        height: idx === 0 ? '7px' : '5.5px',
+                                        transform: `translate(${x}px, ${y}px)`,
+                                        background: idx === 0
+                                            ? 'radial-gradient(circle at 30% 25%, #fef08a 0%, #d97706 80%)'
+                                            : beadBase,
+                                        boxShadow: '0 1.5px 3px rgba(0,0,0,0.3)'
+                                    }}
+                                />
+                            );
+                        })}
+                        <div
+                            className="w-5 h-5 rounded-full"
+                            style={{
+                                background: beadBase,
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.25), inset 0 1px 2px rgba(255,255,255,0.8)'
+                            }}
+                        />
+                    </div>
+                );
+            }
+
+            if (skinId === 'mechanical') {
+                return (
+                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                        <div
+                            className="w-11 h-9 rounded-xl p-1 flex flex-col items-center justify-between"
+                            style={{
+                                background: `linear-gradient(155deg, ${vividAccent} 0%, rgba(0,0,0,0.34) 100%)`,
+                                backgroundColor: vividAccent,
+                                boxShadow: '0 3.5px 0 rgba(0,0,0,0.25), 0 5px 8px rgba(0,0,0,0.22), inset 0 1px 2px rgba(255,255,255,0.65)'
+                            }}
+                        >
+                            {/* 3 Miniature Drum Reels */}
+                            <div className="w-full h-3.5 rounded bg-slate-900/90 p-0.5 flex gap-0.5 items-center justify-center">
+                                {[0, 3, 3].map((n, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex-1 h-full rounded-[2px] bg-white flex items-center justify-center"
+                                        style={{ boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.25)' }}
+                                    >
+                                        <span className="text-[6px] font-black text-slate-900 leading-none">{formatTasbeehNumber(n, language)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Tactile Rocker Bar */}
+                            <div
+                                className="w-full h-2.5 rounded-md bg-white"
+                                style={{ boxShadow: '0 1.5px 0 #94a3b8' }}
+                            />
+                        </div>
+                    </div>
+                );
+            }
+
+            // 'crystal'
             return (
                 <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                     <div
-                        className="w-11 h-9 rounded-xl p-1 flex flex-col items-center justify-between"
+                        className="w-10 h-10 rounded-xl p-1 flex items-center justify-center"
                         style={{
-                            background: useDarkPreview
-                                ? 'linear-gradient(155deg, #334155 0%, #0f172a 100%)'
-                                : isSelected
-                                    ? 'linear-gradient(155deg, #ffffff 0%, #e2e8f0 100%)'
-                                    : isPreviewWhite
-                                        ? 'linear-gradient(155deg, #ffffff 0%, #cbd5e1 100%)'
-                                        : `linear-gradient(155deg, ${previewAccent} 0%, rgba(0,0,0,0.32) 100%)`,
-                            backgroundColor: useDarkPreview ? '#1e293b' : (isSelected ? '#ffffff' : previewAccent),
-                            boxShadow: '0 3.5px 0 rgba(0,0,0,0.25), 0 5px 8px rgba(0,0,0,0.22), inset 0 1px 2px rgba(255,255,255,0.65)'
+                            background: 'linear-gradient(155deg, #e2e8f0 0%, #94a3b8 100%)',
+                            boxShadow: '0 3px 0 #64748b, 0 5px 10px rgba(0,0,0,0.24)'
                         }}
                     >
-                        {/* 3 Miniature Drum Reels */}
-                        <div className="w-full h-3.5 rounded bg-slate-900/90 p-0.5 flex gap-0.5 items-center justify-center">
-                            {[0, 3, 3].map((n, i) => (
-                                <div
-                                    key={i}
-                                    className="flex-1 h-full rounded-[2px] bg-white flex items-center justify-center"
-                                    style={{ boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.25)' }}
-                                >
-                                    <span className="text-[6px] font-black text-slate-900 leading-none">{formatTasbeehNumber(n, language)}</span>
-                                </div>
-                            ))}
-                        </div>
-                        {/* Tactile Rocker Bar */}
                         <div
-                            className="w-full h-2.5 rounded-md bg-white"
-                            style={{ boxShadow: '0 1.5px 0 #94a3b8' }}
-                        />
+                            className="w-full h-full rounded-lg relative overflow-hidden flex items-center justify-center"
+                            style={{
+                                background: `linear-gradient(135deg, rgba(255,255,255,0.52) 0%, ${vividAccent} 48%, rgba(0,0,0,0.32) 100%)`,
+                                backgroundColor: vividAccent,
+                                boxShadow: 'inset 0 1.5px 2px rgba(255,255,255,0.85)'
+                            }}
+                        >
+                            <div className="w-4 h-4 rounded-sm rotate-45 border border-white/70 bg-white/25" />
+                        </div>
                     </div>
+                </div>
+            );
+        };
+
+        if (isSelected) {
+            return (
+                <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all"
+                    style={{
+                        backgroundColor: isBlackTheme ? '#18181b' : '#ffffff',
+                        boxShadow: isBlackTheme
+                            ? '0 3px 8px rgba(0,0,0,0.32), inset 0 1px 1px rgba(255,255,255,0.16)'
+                            : '0 3px 10px rgba(0,0,0,0.22), inset 0 1.5px 2px rgba(255,255,255,0.95)'
+                    }}
+                >
+                    {renderInnerPreview()}
                 </div>
             );
         }
 
-        // 'crystal'
-        return (
-            <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                <div
-                    className="w-10 h-10 rounded-xl p-1 flex items-center justify-center"
-                    style={{
-                        background: 'linear-gradient(155deg, #f8fafc 0%, #cbd5e1 100%)',
-                        boxShadow: '0 4px 0 #94a3b8, 0 6px 10px rgba(0,0,0,0.22)'
-                    }}
-                >
-                    <div
-                        className="w-full h-full rounded-lg relative overflow-hidden flex items-center justify-center"
-                        style={{
-                            background: useDarkPreview
-                                ? 'linear-gradient(135deg, #334155 0%, #0f172a 100%)'
-                                : isSelected
-                                    ? 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)'
-                                    : isPreviewWhite
-                                        ? 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)'
-                                        : `linear-gradient(135deg, rgba(255,255,255,0.5) 0%, ${previewAccent} 50%, rgba(0,0,0,0.28) 100%)`,
-                            backgroundColor: useDarkPreview ? '#1e293b' : (isSelected ? '#ffffff' : previewAccent),
-                            boxShadow: 'inset 0 1.5px 2px rgba(255,255,255,0.85)'
-                        }}
-                    >
-                        <div className="w-4 h-4 rounded-sm rotate-45 border border-white/55 bg-white/20" />
-                    </div>
-                </div>
-            </div>
-        );
+        return renderInnerPreview();
     };
 
     const skinOptions: { id: TasbeehSkinType; label: string }[] = [
@@ -291,7 +296,8 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                             handleSetTarget();
                         }
                     }}
-                    className="w-full p-3 rounded-xl text-center text-2xl font-bold focus:outline-none focus:ring-2 bg-card-bg-hover text-modal-text border border-modal-border"
+                    className={`border-0 w-full p-3.5 rounded-2xl text-center text-2xl font-bold focus:outline-none focus:ring-2 transition-all ${recessedInputSurfaceClass}`}
+                    style={{ boxShadow: recessedInputShadow }}
                 />
                 <div className="flex gap-3 pt-1">
                     <button 
@@ -327,7 +333,8 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                      }}
                      placeholder={tTasbeeh('addModalPlaceholder', language)} 
                      dir={isRTL ? 'rtl' : 'ltr'} 
-                     className="w-full p-3 rounded-xl text-lg focus:outline-none focus:ring-2 bg-card-bg-hover text-modal-text border border-modal-border"
+                     className={`border-0 w-full p-3.5 rounded-2xl text-lg font-semibold focus:outline-none focus:ring-2 transition-all ${recessedInputSurfaceClass}`}
+                     style={{ boxShadow: recessedInputShadow }}
                  />
                 <div className="flex gap-3 pt-1">
                     <button 
@@ -388,7 +395,6 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
             </ModalWrapper>
 
             {/* Select Phrase Modal */}
-<<<<<<< HEAD
             <ModalWrapper
                 isOpen={modals.phrase}
                 onClose={() => setModals((p: any) => ({...p, phrase: false}))}
@@ -447,27 +453,6 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                     >
                         {tTasbeeh('close', language)}
                     </button>
-=======
-            <ModalWrapper isOpen={modals.phrase} onClose={() => setModals((p: any) => ({...p, phrase: false}))} noStyles={true}>
-                <div className="overflow-y-auto max-h-[60dvh] bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white shadow-2xl rounded-2xl border border-slate-100 dark:border-white/10 custom-scrollbar">
-                    {phrases.map((p) => (
-                        <button 
-                             key={p.id} 
-                             onClick={() => { setActivePhrase(p.text); handleReset(); setModals((p: any) => ({...p, phrase: false})); }}
-                             className={`w-full px-4 py-3.5 flex items-center justify-between transition-all border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.99] ${activePhrase === p.text ? 'bg-black/5 dark:bg-white/10 font-bold' : ''}`}
-                             style={activePhrase === p.text ? { color: primaryColor } : {}}
-                        >
-                            <span className="text-base leading-relaxed font-amiri flex-1 text-start">
-                                {getPhraseDisplay(p.text, language)}
-                            </span>
-                            {activePhrase === p.text && (
-                                <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full" style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}>
-                                    <svg className="w-4 h-4" transform="scale(1.1)" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                                </div>
-                            )}
-                        </button>
-                    ))}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 </div>
             </ModalWrapper>
             

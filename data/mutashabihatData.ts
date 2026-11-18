@@ -607,19 +607,23 @@ interface IndexedAyah {
 }
 
 let cachedAllAyahs: IndexedAyah[] | null = null;
+let cachedAyahMap: Map<string, IndexedAyah> | null = null;
 let cachedTrigramIndex: Map<string, IndexedAyah[]> | null = null;
 let cachedBigramIndex: Map<string, IndexedAyah[]> | null = null;
 let cachedExactMap: Map<string, IndexedAyah[]> | null = null;
+const mutashabihatResultCache = new Map<string, MutashabihGroup>();
 
 function ensureConcordanceIndex(): {
   allAyahs: IndexedAyah[];
+  ayahMap: Map<string, IndexedAyah>;
   trigramIndex: Map<string, IndexedAyah[]>;
   bigramIndex: Map<string, IndexedAyah[]>;
   exactMap: Map<string, IndexedAyah[]>;
 } {
-  if (cachedAllAyahs && cachedTrigramIndex && cachedBigramIndex && cachedExactMap) {
+  if (cachedAllAyahs && cachedAyahMap && cachedTrigramIndex && cachedBigramIndex && cachedExactMap) {
     return {
       allAyahs: cachedAllAyahs,
+      ayahMap: cachedAyahMap,
       trigramIndex: cachedTrigramIndex,
       bigramIndex: cachedBigramIndex,
       exactMap: cachedExactMap
@@ -627,6 +631,7 @@ function ensureConcordanceIndex(): {
   }
 
   const allAyahs: IndexedAyah[] = [];
+  const ayahMap = new Map<string, IndexedAyah>();
   const trigramIndex = new Map<string, IndexedAyah[]>();
   const bigramIndex = new Map<string, IndexedAyah[]>();
   const exactMap = new Map<string, IndexedAyah[]>();
@@ -654,6 +659,7 @@ function ensureConcordanceIndex(): {
       };
 
       allAyahs.push(item);
+      ayahMap.set(`${sNum}:${aNum}`, item);
 
       // 1. Exact string indexing
       let exactList = exactMap.get(clean);
@@ -690,11 +696,12 @@ function ensureConcordanceIndex(): {
   }
 
   cachedAllAyahs = allAyahs;
+  cachedAyahMap = ayahMap;
   cachedTrigramIndex = trigramIndex;
   cachedBigramIndex = bigramIndex;
   cachedExactMap = exactMap;
 
-  return { allAyahs, trigramIndex, bigramIndex, exactMap };
+  return { allAyahs, ayahMap, trigramIndex, bigramIndex, exactMap };
 }
 
 /**
@@ -709,10 +716,12 @@ export function generateBalaghahInsight(
   candidateText: string,
   targetSurahName: string,
   candidateSurahName: string,
-  sharedPhrase: string = ''
+  sharedPhrase: string = '',
+  preCleanT?: string,
+  preCleanC?: string
 ): { insightAr: string; insightEn: string; reference: string; differenceHighlight: string } {
-  const cleanT = cleanQuranText(targetText);
-  const cleanC = cleanQuranText(candidateText);
+  const cleanT = preCleanT ?? cleanQuranText(targetText);
+  const cleanC = preCleanC ?? cleanQuranText(candidateText);
 
   const tWords = cleanT.split(' ').filter(Boolean);
   const cWords = cleanC.split(' ').filter(Boolean);
@@ -835,15 +844,20 @@ export function getMutashabihatForAyah(
   ayahNumber: number,
   passedVerseText?: string
 ): MutashabihGroup {
-  const { allAyahs, trigramIndex, bigramIndex, exactMap } = ensureConcordanceIndex();
+  const cacheKey = `${surahNumber}:${ayahNumber}`;
+  const cachedResult = mutashabihatResultCache.get(cacheKey);
+  if (cachedResult) return cachedResult;
+
+  const { ayahMap, trigramIndex, bigramIndex, exactMap } = ensureConcordanceIndex();
 
   // 1. أولاً: فحص ما إذا كانت الآية تنتمي لإحدى المجموعات التراثية الكبرى المحققة
   const classical = CLASSICAL_MUTASHABIHAT_GROUPS.find(g =>
     g.verses.some(v => v.surahNumber === surahNumber && v.ayahNumber === ayahNumber)
   );
 
-  // البحث عن الآية المستهدفة في المصحف
-  let target = allAyahs.find(x => x.surahNumber === surahNumber && x.ayahNumber === ayahNumber);
+  // البحث السريع O(1) عن الآية المستهدفة في المصحف
+  const indexedTarget = ayahMap.get(cacheKey);
+  let target = indexedTarget;
   if (!target) {
     const text = passedVerseText || '';
     const clean = cleanQuranText(text, surahNumber, ayahNumber);
@@ -865,33 +879,41 @@ export function getMutashabihatForAyah(
 
   // 2. البحث الحي في فهرس المصحف الشريف كاملاً (Dynamic Quran Concordance Engine)
   const candidateMap = new Map<string, IndexedAyah>();
+  const MAX_CANDIDATES = 120;
 
   // أ. التطابق التام في نص الآية (مثل فبأي آلاء ربكما تكذبان، ويل يومئذ للمكذبين، الم...)
   const exacts = exactMap.get(targetClean) || [];
   for (const ex of exacts) {
     if (ex.surahNumber === surahNumber && ex.ayahNumber === ayahNumber) continue;
     candidateMap.set(`${ex.surahNumber}:${ex.ayahNumber}`, ex);
+    if (candidateMap.size >= MAX_CANDIDATES) break;
   }
 
   // ب. استعلام المقاطع الثلاثية (Trigrams)
-  for (let i = 0; i <= targetLen - 3; i++) {
-    const tri = `${targetWords[i]} ${targetWords[i + 1]} ${targetWords[i + 2]}`;
-    const matched = trigramIndex.get(tri) || [];
-    for (const m of matched) {
-      if (m.surahNumber === surahNumber && m.ayahNumber === ayahNumber) continue;
-      candidateMap.set(`${m.surahNumber}:${m.ayahNumber}`, m);
+  if (candidateMap.size < MAX_CANDIDATES) {
+    for (let i = 0; i <= targetLen - 3; i++) {
+      const tri = `${targetWords[i]} ${targetWords[i + 1]} ${targetWords[i + 2]}`;
+      const matched = trigramIndex.get(tri) || [];
+      for (const m of matched) {
+        if (m.surahNumber === surahNumber && m.ayahNumber === ayahNumber) continue;
+        candidateMap.set(`${m.surahNumber}:${m.ayahNumber}`, m);
+        if (candidateMap.size >= MAX_CANDIDATES) break;
+      }
+      if (candidateMap.size >= MAX_CANDIDATES) break;
     }
   }
 
   // ج. للآيات القصيرة (أقل من 5 كلمات) استعلام المقاطع الثنائية
-  if (targetLen <= 4) {
+  if (targetLen <= 4 && candidateMap.size < MAX_CANDIDATES) {
     for (let i = 0; i <= targetLen - 2; i++) {
       const bi = `${targetWords[i]} ${targetWords[i + 1]}`;
       const matched = bigramIndex.get(bi) || [];
       for (const m of matched) {
         if (m.surahNumber === surahNumber && m.ayahNumber === ayahNumber) continue;
         candidateMap.set(`${m.surahNumber}:${m.ayahNumber}`, m);
+        if (candidateMap.size >= MAX_CANDIDATES) break;
       }
+      if (candidateMap.size >= MAX_CANDIDATES) break;
     }
   }
 
@@ -1005,7 +1027,9 @@ export function getMutashabihatForAyah(
         candidate.verseText,
         target.surahName,
         candidate.surahName,
-        matchedPhrase
+        matchedPhrase,
+        targetClean,
+        cClean
       );
 
       evaluatedMatches.push({
@@ -1031,6 +1055,8 @@ export function getMutashabihatForAyah(
   // ترتيب النتائج حسب قوة التشابه وتناسبها
   evaluatedMatches.sort((a, b) => (b.score || 0) - (a.score || 0));
 
+  let result: MutashabihGroup;
+
   // إذا كانت الآية تنتمي لمجموعة تراثية محققة، ندمج معلوماتها الثرية
   if (classical) {
     // دمج الآيات المستكشفة مع الآيات التراثية لضمان الشمول
@@ -1041,7 +1067,7 @@ export function getMutashabihatForAyah(
       }
     }
 
-    return {
+    result = {
       id: classical.id,
       topicAr: classical.topicAr,
       topicEn: classical.topicEn,
@@ -1051,10 +1077,8 @@ export function getMutashabihatForAyah(
       rhetoricalReference: classical.rhetoricalReference || 'درة التنزيل للإسكافي وملاك التأويل للغرناطي',
       verses: mergedVerses
     };
-  }
-
-  // إذا لم تكن مسجلة في التراث ولكن محرك البحث وجد نظائر حقيقية في المصحف:
-  if (evaluatedMatches.length > 0) {
+  } else if (evaluatedMatches.length > 0) {
+    // إذا لم تكن مسجلة في التراث ولكن محرك البحث وجد نظائر حقيقية في المصحف:
     const topMatch = evaluatedMatches[0];
     const sharedPhrase = topMatch.matchedPhrase || targetWords.slice(0, 3).join(' ');
     const surahNames = Array.from(new Set(evaluatedMatches.slice(0, 4).map(m => m.surahName))).join('، ');
@@ -1064,7 +1088,7 @@ export function getMutashabihatForAyah(
     const topBalaghah = evaluatedMatches[0]?.balaghahInsight;
     const rhetoricalSecretAr = topBalaghah || `أسرار الفروق البلاغية (استناداً إلى «درة التنزيل وغرة التأويل» للخطيب الإسكافي و«ملاك التأويل» لأحمد بن الزبير الغرناطي): تمايزت هذه المواضع بحسب سياق السورة؛ فما اقترن بالعطف كـ (الواو) كان لاسترسال قصة سابقة أو نعم متتابعة، وما جاء بلا عطف كان استئنافاً وتأسيساً، كما روعي الإفراد والجمع والتقديم والتأخير بحسب مقصد السورة.`;
 
-    return {
+    result = {
       id: `dynamic_${surahNumber}_${ayahNumber}`,
       topicAr,
       topicEn: `Ayah Verbal Concordance (${topMatch.matchedPhrase || ''})`,
@@ -1074,33 +1098,38 @@ export function getMutashabihatForAyah(
       rhetoricalReference: 'درة التنزيل وغرة التأويل للإسكافي / ملاك التأويل لابن الزبير الغرناطي',
       verses: evaluatedMatches
     };
+  } else {
+    // إذا كانت الآية فريدة اللفظ والنظم ولم يتكرر تركيبها (آية فريدة في القرآن الكريم)
+    result = {
+      id: `unique_${surahNumber}_${ayahNumber}`,
+      topicAr: `موضع فريد في النظم القرآني الكريم`,
+      topicEn: 'Unique Eloquent Quranic Expression',
+      isUniqueAyah: true,
+      summaryRuleAr: `هذه الآية الكريمة موضع فريد في كتاب الله تعالى؛ لم يتكرر نظمها وتركيب ألفاظها بهذا التتابع في سائر سور القرآن الكريم، وهو من دلائل إعجاز النظم وبلاغة السياق القرآني الخاص بسورة ${target.surahName}.`,
+      summaryRuleEn: 'This noble verse is uniquely composed in the Quranic corpus; its specific phrasing sequence is not repeated elsewhere, demonstrating context-specific eloquence.',
+      rhetoricalSecretAr: `اللطيفة البلاغية (درة التنزيل للإسكافي): انفراد النظم القرآني في هذا الموضع دون سائر القرآن دلالة على خصوصية المقصد في سورة ${target.surahName}، واقتضاء المقام صياغة شريفة جامعة لا تحتمل الإبدال أو التكرار.`,
+      rhetoricalReference: 'درة التنزيل وغرة التأويل للخطيب الإسكافي',
+      verses: [
+        {
+          surahNumber: target.surahNumber,
+          surahName: target.surahName,
+          ayahNumber: target.ayahNumber,
+          verseText: target.verseText,
+          juz: target.juz,
+          page: target.page,
+          matchType: 'exact',
+          matchTypeDesc: 'موضع فريد لا نظير للفظه',
+          highlightedDifference: 'نظم فريد متكامل',
+          contextExplanation: `انفردت سورة ${target.surahName} (آية ${target.ayahNumber}) بهذه الصياغة القرآنية الشريفة.`,
+          balaghahInsight: `بيان بلاغي معجز اختصت به سورة ${target.surahName} لمطابقة مقتضى الحال الإيماني والتشريعي الفريد للآية.`,
+          balaghahReference: 'درة التنزيل للإسكافي'
+        }
+      ]
+    };
   }
 
-  // إذا كانت الآية فريدة اللفظ والنظم ولم يتكرر تركيبها (آية فريدة في القرآن الكريم)
-  return {
-    id: `unique_${surahNumber}_${ayahNumber}`,
-    topicAr: `موضع فريد في النظم القرآني الكريم`,
-    topicEn: 'Unique Eloquent Quranic Expression',
-    isUniqueAyah: true,
-    summaryRuleAr: `هذه الآية الكريمة موضع فريد في كتاب الله تعالى؛ لم يتكرر نظمها وتركيب ألفاظها بهذا التتابع في سائر سور القرآن الكريم، وهو من دلائل إعجاز النظم وبلاغة السياق القرآني الخاص بسورة ${target.surahName}.`,
-    summaryRuleEn: 'This noble verse is uniquely composed in the Quranic corpus; its specific phrasing sequence is not repeated elsewhere, demonstrating context-specific eloquence.',
-    rhetoricalSecretAr: `اللطيفة البلاغية (درة التنزيل للإسكافي): انفراد النظم القرآني في هذا الموضع دون سائر القرآن دلالة على خصوصية المقصد في سورة ${target.surahName}، واقتضاء المقام صياغة شريفة جامعة لا تحتمل الإبدال أو التكرار.`,
-    rhetoricalReference: 'درة التنزيل وغرة التأويل للخطيب الإسكافي',
-    verses: [
-      {
-        surahNumber: target.surahNumber,
-        surahName: target.surahName,
-        ayahNumber: target.ayahNumber,
-        verseText: target.verseText,
-        juz: target.juz,
-        page: target.page,
-        matchType: 'exact',
-        matchTypeDesc: 'موضع فريد لا نظير للفظه',
-        highlightedDifference: 'نظم فريد متكامل',
-        contextExplanation: `انفردت سورة ${target.surahName} (آية ${target.ayahNumber}) بهذه الصياغة القرآنية الشريفة.`,
-        balaghahInsight: `بيان بلاغي معجز اختصت به سورة ${target.surahName} لمطابقة مقتضى الحال الإيماني والتشريعي الفريد للآية.`,
-        balaghahReference: 'درة التنزيل للإسكافي'
-      }
-    ]
-  };
+  if (indexedTarget) {
+    mutashabihatResultCache.set(cacheKey, result);
+  }
+  return result;
 }

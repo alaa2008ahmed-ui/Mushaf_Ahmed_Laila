@@ -15,27 +15,27 @@ const SajdahCardModal: FC<{
     const btnBorder = currentTheme?.btnBorder || 'transparent';
 
     return (
-        <div className={`fixed inset-0 z-[2000] bg-black/70 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
+        <div className={`fixed inset-0 z-[2000] bg-black/70 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'}`} onClick={onClose}>
             <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md rounded-3xl max-h-[90dvh]'} shadow-2xl flex flex-col border-0 overflow-hidden animate-modal-enter`} 
+                className={`modal-skinned ${isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%] rounded-3xl' : 'w-full max-w-md rounded-3xl max-h-[90dvh]'} shadow-2xl flex flex-col border-0 overflow-hidden`} 
                 onClick={e => e.stopPropagation()}
                 style={{ fontFamily: currentTheme?.font, border: 'none', outline: 'none' }}
             >
-                <div className="p-5 overflow-y-auto text-right leading-relaxed space-y-4 text-sm flex-1 min-h-0 custom-scrollbar">
+                <div className={`${isLandscape ? 'p-3.5 space-y-3 text-xs' : 'p-5 space-y-4 text-sm'} overflow-y-auto text-right leading-relaxed flex-1 min-h-0 custom-scrollbar`}>
                     <div>
-                        <p className="font-black text-base mb-1" style={{ color: accentColor }}>1. تعريف سجود التلاوة</p>
+                        <p className={`font-black ${isLandscape ? 'text-sm' : 'text-base'} mb-1`} style={{ color: accentColor }}>1. تعريف سجود التلاوة</p>
                         <p className="mt-1">هو سجود يؤديه القارئ أو المستمع عند قراءة آية من آيات السجود في القرآن الكريم، تعظيماً لله تعالى وإظهاراً للعبودية. وقد ثبت في صحيح مسلم عن أبي هريرة رضي الله عنه قال: قال رسول الله ﷺ:</p>
                         <blockquote 
-                            className="mt-2.5 p-3 text-sm italic rounded-2xl quran-raised-card border-0"
+                            className={`mt-2 ${isLandscape ? 'p-2.5 text-xs rounded-xl' : 'p-3 text-sm rounded-2xl'} italic quran-raised-card border-0`}
                         >
                             "إذَا قَرَأَ ابنُ آدَمَ السَّجْدَةَ فَسَجَدَ، اعْتَزَلَ الشَّيْطَانُ يَبْكِي، يقولُ: يا وَيْلَهُ، أُمِرَ ابنُ آدَمَ بالسُّجُودِ فَسَجَدَ فَلَهُ الجَنَّةُ، وأُمِرْتُ بالسُّجُودِ فأبَيْتُ فَلِيَ النَّارُ".
                         </blockquote>
                     </div>
 
                     <div>
-                        <p className="font-black text-base mb-1" style={{ color: accentColor }}>2. عدد آيات السجدة ومواضعها</p>
+                        <p className={`font-black ${isLandscape ? 'text-sm' : 'text-base'} mb-1`} style={{ color: accentColor }}>2. عدد آيات السجدة ومواضعها</p>
                         <p className="mt-1 mb-2">اتفق جمهور العلماء على وجود آيات السجود في القرآن، وأشهر الآراء أنها 15 سجدة، وهي موزعة كالآتي:</p>
-                        <div className={`grid ${isLandscape ? 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-5' : 'grid-cols-2'} gap-x-4 gap-y-2 text-xs p-4 rounded-2xl quran-raised-card border-0`}>
+                        <div className={`grid ${isLandscape ? 'grid-cols-3 gap-x-2.5 gap-y-1.5 text-[11px] p-2.5 rounded-xl' : 'grid-cols-2 gap-x-4 gap-y-2 text-xs p-4 rounded-2xl'} quran-raised-card border-0`}>
                             <div className="text-right">الأعراف: <b>{toArabic(206)}</b></div>
                             <div className="text-right">النمل: <b>{toArabic(26)}</b></div>
                             <div className="text-right">الرعد: <b>{toArabic(15)}</b></div>
@@ -98,10 +98,10 @@ const SajdahCardModal: FC<{
                         </ul>
                     </div>
                 </div>
-                <div className={`p-4 ${isLandscape ? 'modal-sheet-safe-bottom rounded-none' : 'rounded-b-3xl'} border-0 themed-card-bg`}>
+                <div className={`${isLandscape ? 'p-2.5' : 'p-4'} rounded-b-3xl border-0 themed-card-bg`}>
                     <button 
                         onClick={onClose} 
-                        className="w-full py-3.5 rounded-2xl font-bold transition-all active:scale-95 border-0 quran-raised-btn-selected shadow-md"
+                        className={`w-full ${isLandscape ? 'py-2 text-xs rounded-xl' : 'py-3.5 rounded-2xl'} font-bold transition-all active:scale-95 border-0 quran-raised-btn-selected shadow-md`}
                         style={{ 
                             backgroundColor: btnBg, 
                             color: btnText,

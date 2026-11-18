@@ -11,9 +11,75 @@ interface AutoSilentPlugin {
   openAppSettings(): Promise<void>;
   openLocationSettings(): Promise<{ success?: boolean; error?: string }>;
   setSilentNow(options: { silent: boolean; prayerName?: string }): Promise<void>;
+  checkTorchAvailability(): Promise<{ available: boolean; cameraId?: string; enabled?: boolean }>;
+  setTorchEnabled(options: { enabled: boolean }): Promise<{ success: boolean; enabled?: boolean; reason?: string; error?: string }>;
+  addListener?: (eventName: string, listenerFunc: (data: any) => void) => Promise<{ remove: () => Promise<void> }>;
 }
 
 const AutoSilentMode = registerPlugin<AutoSilentPlugin>('AutoSilentMode');
+
+/**
+ * Check whether the physical device has a hardware flash unit via native Android Camera2.
+ */
+export const checkNativeTorchAvailable = async (): Promise<{ available: boolean; enabled: boolean }> => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const res = await AutoSilentMode.checkTorchAvailability();
+      return {
+        available: Boolean(res?.available),
+        enabled: Boolean(res?.enabled),
+      };
+    } catch (e) {
+      console.warn('checkNativeTorchAvailable error:', e);
+    }
+  }
+  return { available: false, enabled: false };
+};
+
+/**
+ * Toggle the device hardware flashlight directly via native Android CameraManager.setTorchMode.
+ */
+export const setNativeTorchEnabled = async (
+  enabled: boolean
+): Promise<{ success: boolean; enabled?: boolean; reason?: string; error?: string }> => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      return await AutoSilentMode.setTorchEnabled({ enabled });
+    } catch (e: any) {
+      console.warn('setNativeTorchEnabled error:', e);
+      return { success: false, error: e?.message || 'Native torch call failed' };
+    }
+  }
+  return { success: false, reason: 'NOT_NATIVE' };
+};
+
+export const subscribeNativeTorchState = (
+  listener: (enabled: boolean) => void
+): (() => void) => {
+  if (!Capacitor.isNativePlatform() || typeof AutoSilentMode.addListener !== 'function') {
+    return () => {};
+  }
+  let handle: { remove: () => Promise<void> } | null = null;
+  let removed = false;
+  AutoSilentMode.addListener('torchStateChanged', (data: { enabled?: boolean }) => {
+    if (!removed && typeof data?.enabled === 'boolean') {
+      listener(data.enabled);
+    }
+  })
+    .then((h) => {
+      if (removed) {
+        h.remove().catch(() => {});
+      } else {
+        handle = h;
+      }
+    })
+    .catch(() => {});
+
+  return () => {
+    removed = true;
+    handle?.remove().catch(() => {});
+  };
+};
 
 /**
  * Open the native Android / OS application settings page directly

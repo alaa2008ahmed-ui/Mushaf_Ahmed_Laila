@@ -72,7 +72,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory, activeTab
                         >
                             <div className={`flex ${activeTab === 'grid' ? 'flex-col items-center gap-2.5' : 'items-center gap-3.5'}`}>
                                 <div 
-                                    className={`${activeTab === 'grid' ? 'w-14 h-14 rounded-2xl' : 'w-12 h-12 rounded-2xl'} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300`}
+                                    className={`app-3d-badge ${activeTab === 'grid' ? 'w-14 h-14 rounded-2xl' : 'w-12 h-12 rounded-2xl'} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300`}
                                     style={{ 
                                         backgroundColor: tokens.isDeepBlack ? 'rgba(255, 255, 255, 0.12)' : hexToRgba(color, 0.1),
                                         color: tokens.isDeepBlack ? '#FFFFFF' : color,

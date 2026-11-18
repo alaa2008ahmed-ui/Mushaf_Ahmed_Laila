@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { motion, AnimatePresence } from 'motion/react';
-import ThemePageLock from '../components/ThemePageLock';
 import { asmaulHusna, AsmaulHusnaItem } from '../data/asmaulHusnaData';
-import { Search, LayoutGrid, ListFilter, HelpCircle, X, Volume2, Share2, Copy, ZoomIn, ChevronDown } from 'lucide-react';
+import { Search, LayoutGrid, ListFilter, X, Volume2, Share2, Copy, ZoomIn, ChevronDown, Check } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { shareAsImage } from '../utils/shareAsImage';
@@ -12,12 +10,14 @@ import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/C
 import { ASMAUL_HUSNA_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
 const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, params?: any) => void; navParams?: any; }> = ({ onBack, onNavigate, navParams }) => {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const tokens = getModernFlatTokens(theme, themeKey);
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const { language } = useLanguage();
     const isEn = language === 'en';
     const innerSubBoxClass = `app-inner-3d-box border-0 ${tokens.isDeepBlack ? 'bg-[#18181b]' : 'bg-white dark:bg-[#0F172A]/85'}`;
@@ -228,7 +228,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
     };
 
     return (
-        <div className="h-[100dvh] flex flex-col overflow-hidden relative" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden relative" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif" }} dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar z-20" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-between w-full min-h-[44px]">
@@ -263,7 +263,6 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             >
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
-                            <ThemePageLock />
                             <button
                                 type="button"
                                 onClick={() => onNavigate('home')}
@@ -282,25 +281,32 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
             <div className="mb-4 pt-1 px-4 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0 overflow-visible" dir={isEn ? 'ltr' : 'rtl'}>
                 {/* Search Input */}
                 <div 
-                    className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible transition-all"
+                    className={`app-page-card border-0 relative flex-1 rounded-2xl ${tokens.isDeepBlack ? 'bg-[#18181b]' : 'bg-white dark:bg-[#1E293B]'} flex items-center overflow-visible transition-all focus-within:ring-2 focus-within:ring-opacity-40`}
+                    style={{ '--tw-ring-color': tokens.primaryColor } as any}
                 >
                     <input 
-                        type="text"
+                        type="text" 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={isEn ? "Search by name or meaning..." : "ابحث بالاسم أو المعنى..."}
-                        className={`w-full bg-transparent py-3 text-sm ${isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
+                        className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
                         style={{ color: 'var(--text-color)' }}
                     />
-                    <Search 
-                        className={`w-4 h-4 absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-40 pointer-events-none`} 
-                        style={{ color: 'var(--text-color)' }} 
-                    />
+                    <span
+                        className={`app-3d-badge border-0 absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none`}
+                        style={{
+                            backgroundColor: tokens.isDeepBlack ? 'rgba(255, 255, 255, 0.1)' : hexToRgba(tokens.primaryColor, 0.12),
+                            color: tokens.isDeepBlack ? '#FFFFFF' : tokens.primaryColor,
+                        }}
+                        aria-hidden="true"
+                    >
+                        <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
                     {searchQuery && (
                         <button 
                             type="button"
                             onClick={() => setSearchQuery('')}
-                            className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                            className={`app-page-card unified-3d-btn border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
                             title={isEn ? "Clear search" : "مسح البحث"}
                             aria-label={isEn ? "Clear search" : "مسح البحث"}
                         >
@@ -341,11 +347,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
             </div>
 
             <main className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 z-10">
-<<<<<<< HEAD
                 <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar pt-1.5 app-scroll-safe">
-=======
-                <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar pt-1 app-scroll-safe">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     {filteredNames.length === 0 ? (
                         <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] py-16 px-6 text-center max-w-xl mx-auto opacity-80 font-bold">
                             <Search className="w-10 h-10 mb-3 mx-auto opacity-40" />
@@ -364,7 +366,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 >
                                     {/* ID Badge */}
                                     <div 
-                                        className={`absolute top-2.5 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold ${isEn ? 'left-2.5' : 'right-2.5'}`}
+                                        className={`app-3d-badge absolute top-2.5 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold ${isEn ? 'left-2.5' : 'right-2.5'}`}
                                         style={{
                                             backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                             color: tokens.primaryColor
@@ -379,16 +381,16 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                                 <h3 className="text-lg sm:text-xl font-bold font-sans leading-tight group-hover:scale-105 transition-transform duration-300" style={{ color: 'var(--text-color)' }}>
                                                     {item.transliteration}
                                                 </h3>
-                                                <span className="text-xs sm:text-sm font-quran opacity-75 mt-1 truncate max-w-full px-1" style={{ color: tokens.subtextColor }}>
+                                                <span className="text-xs sm:text-sm font-cairo opacity-75 mt-1 truncate max-w-full px-1" style={{ color: tokens.subtextColor }}>
                                                     {item.name}
                                                 </span>
                                             </>
                                         ) : (
                                             <>
-                                                <h3 className="text-xl sm:text-2xl font-bold font-quran leading-tight group-hover:scale-105 transition-transform duration-300" style={{ color: 'var(--text-color)' }}>
+                                                <h3 className="text-xl sm:text-2xl font-bold font-cairo leading-tight group-hover:scale-105 transition-transform duration-300" style={{ color: 'var(--text-color)' }}>
                                                     {item.name}
                                                 </h3>
-                                                <span className="text-[10px] sm:text-xs font-semibold opacity-80 mt-1 truncate max-w-full px-1" style={{ color: tokens.subtextColor }}>
+                                                <span className="text-[10px] sm:text-xs font-semibold opacity-80 mt-1 truncate max-w-full px-1 font-cairo" style={{ color: tokens.subtextColor }}>
                                                     {item.transliteration}
                                                 </span>
                                             </>
@@ -408,7 +410,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 >
                                     <div className="flex justify-between items-center mb-3">
                                         <span 
-                                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border-0" 
+                                            className="app-3d-badge inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border-0" 
                                             style={{ 
                                                 backgroundColor: hexToRgba(tokens.primaryColor, 0.1), 
                                                 color: tokens.primaryColor 
@@ -417,7 +419,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                             {item.transliteration}
                                         </span>
                                         <div 
-                                            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                                            className="app-3d-badge w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
                                             style={{
                                                 backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                                 color: tokens.primaryColor
@@ -432,27 +434,27 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                             <h3 className="text-3xl sm:text-4xl font-bold font-sans" style={{ color: 'var(--text-color)' }}>
                                                 {item.transliteration}
                                             </h3>
-                                            <span className="text-base sm:text-lg font-quran opacity-75 mt-1 block" style={{ color: tokens.subtextColor }}>
+                                            <span className="text-base sm:text-lg font-cairo opacity-75 mt-1 block" style={{ color: tokens.subtextColor }}>
                                                 {item.name}
                                             </span>
                                         </div>
                                     ) : (
                                         <h3 
                                             onClick={() => setSelectedName(item)}
-                                            className="text-2xl sm:text-3xl font-bold font-quran text-center mb-2.5 cursor-pointer hover:opacity-80 transition-opacity" 
+                                            className="text-2xl sm:text-3xl font-bold font-cairo text-center mb-2.5 cursor-pointer hover:opacity-80 transition-opacity" 
                                             style={{ color: 'var(--text-color)' }}
                                         >
                                             {item.name}
                                         </h3>
                                     )}
 
-                                    <p className={`leading-[2.2] text-center select-none mb-3 px-2 ${isEn ? 'font-sans text-base sm:text-lg md:text-xl' : 'font-amiri text-xs sm:text-sm'}`} style={{ color: tokens.subtextColor }}>
+                                    <p className={`leading-[2.2] text-center select-none mb-3 px-2 ${isEn ? 'font-sans text-base sm:text-lg md:text-xl' : 'font-cairo text-xs sm:text-sm'}`} style={{ color: tokens.subtextColor }}>
                                         {isEn ? item.meaningEn : item.meaning}
                                     </p>
 
                                     {(item.evidence || item.evidenceEn) && (
                                         <div 
-                                            className={`text-center py-2.5 px-3.5 rounded-[14px] mb-3 leading-relaxed ${innerSubBoxClass} ${isEn ? 'font-sans text-sm sm:text-base' : 'font-amiri text-xs sm:text-sm'}`}
+                                            className={`text-center py-2.5 px-3.5 rounded-[14px] mb-3 leading-relaxed ${innerSubBoxClass} ${isEn ? 'font-sans text-sm sm:text-base' : 'font-cairo text-xs sm:text-sm'}`}
                                         >
                                             {renderEvidence(item.evidence, item.evidenceEn)}
                                         </div>
@@ -472,38 +474,29 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
             </main>
 
             {/* Modal Bottom Sheet: Full Details & Big Typography */}
-            <AnimatePresence>
                 {selectedName && (
                     <div 
-                        className="fixed inset-0 bg-black/60 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/65 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
                         onClick={() => setSelectedName(null)}
                     >
-                        <motion.div 
-                            initial={{ y: '100%', opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: '100%', opacity: 0 }}
-                            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-<<<<<<< HEAD
+                        <div 
                             className="app-page-card border-0 rounded-t-[28px] sm:rounded-[24px] w-full max-w-xl text-center relative flex flex-col max-h-[88dvh] overflow-hidden bg-white dark:bg-[#1E293B]" 
-=======
-                            className="rounded-t-[28px] sm:rounded-[24px] w-full max-w-xl text-center relative shadow-2xl flex flex-col max-h-[88dvh] overflow-hidden border-0" 
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             style={{ 
                                 color: 'var(--text-color)',
-                                fontFamily: theme.font 
+                                fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif" 
                             }} 
                             onClick={e => e.stopPropagation()}
                             dir={isEn ? 'ltr' : 'rtl'}
                         >
                             {/* Drag handle */}
                             <div className="pt-3 pb-1 flex justify-center sm:hidden">
-                                <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
+                                <div className="app-3d-drag-handle w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
                             </div>
 
                             {/* Header without X button */}
                             <div className="flex items-center justify-center px-5 pt-3 pb-2">
                                 <span 
-                                    className="px-3.5 py-1 rounded-full text-xs font-bold"
+                                    className="app-3d-badge px-3.5 py-1 rounded-full text-xs font-bold"
                                     style={{ 
                                         backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                         color: tokens.primaryColor
@@ -520,16 +513,16 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                             <h2 className="text-4xl sm:text-5xl font-bold font-sans mb-1 leading-normal" style={{ color: 'var(--text-color)' }}>
                                                 {selectedName.transliteration}
                                             </h2>
-                                            <span className="text-lg sm:text-xl font-quran opacity-75 block" style={{ color: tokens.primaryColor }}>
+                                            <span className="text-lg sm:text-xl font-cairo opacity-75 block" style={{ color: tokens.primaryColor }}>
                                                 {selectedName.name}
                                             </span>
                                         </>
                                     ) : (
                                         <>
-                                            <h2 className="text-4xl sm:text-5xl font-bold font-quran mb-1 leading-normal" style={{ color: 'var(--text-color)' }}>
+                                            <h2 className="text-4xl sm:text-5xl font-bold font-cairo mb-1 leading-normal" style={{ color: 'var(--text-color)' }}>
                                                 {selectedName.name}
                                             </h2>
-                                            <span className="text-sm font-semibold opacity-80" style={{ color: tokens.primaryColor }}>
+                                            <span className="text-sm font-semibold opacity-80 font-cairo" style={{ color: tokens.primaryColor }}>
                                                 {selectedName.transliteration}
                                             </span>
                                         </>
@@ -537,7 +530,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 </div>
 
                                 <div 
-                                    className={`p-4 sm:p-5 rounded-[18px] leading-[2.3] text-center ${innerSubBoxClass} ${isEn ? 'font-sans' : 'font-amiri'}`}
+                                    className={`p-4 sm:p-5 rounded-[18px] leading-[2.3] text-center ${innerSubBoxClass} ${isEn ? 'font-sans' : 'font-cairo'}`}
                                     style={{ 
                                         fontSize: `${modalFontSize}px`
                                     }}
@@ -552,7 +545,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
 
                                 {(selectedName.evidence || selectedName.evidenceEn) && (
                                     <div 
-                                        className={`p-4 rounded-[18px] leading-[2.2] text-center ${innerSubBoxClass} ${isEn ? 'font-sans' : 'font-amiri'}`}
+                                        className={`p-4 rounded-[18px] leading-[2.2] text-center ${innerSubBoxClass} ${isEn ? 'font-sans' : 'font-cairo'}`}
                                         style={{ 
                                             fontSize: `${modalFontSize - 1}px`
                                         }}
@@ -569,11 +562,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
 
                             {/* Footer Actions with dynamic safe-area bottom elevation */}
                             <div 
-<<<<<<< HEAD
                                 className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 app-3d-divider-top flex justify-center items-center gap-3 sm:gap-4 overflow-visible"
-=======
-                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex justify-center items-center gap-3 sm:gap-4"
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 {/* Audio */}
                                 <button 
@@ -630,25 +619,25 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     <ChevronDown className="w-5 h-5" />
                                 </button>
                             </div>
-                        </motion.div>
+                        </div>
                     </div>
                 )}
-            </AnimatePresence>
 
             {/* Toast Notification */}
-            <AnimatePresence>
                 {toastMessage && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 pointer-events-none"
+                    <div 
+                        className="app-3d-toast fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 -translate-x-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words flex items-center justify-center gap-2.5 pointer-events-none"
+                        style={toast3D.style}
                     >
-                        <i className="fa-solid fa-check text-green-400"></i>
-                        {toastMessage}
-                    </motion.div>
+                        <span
+                            className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                            style={toast3D.iconStyle}
+                        >
+                            <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                        <span>{toastMessage}</span>
+                    </div>
                 )}
-            </AnimatePresence>
 
             <CommunitySpotlightGuide
                 isOpen={showGuide}

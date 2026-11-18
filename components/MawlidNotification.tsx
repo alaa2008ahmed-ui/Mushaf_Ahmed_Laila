@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { X, Heart, Star, Volume2, VolumeX, Share2, Check, Sparkles, Moon, Calendar } from 'lucide-react';
 import moment from 'moment-hijri';
 import { Capacitor } from '@capacitor/core';
@@ -254,23 +254,24 @@ const MawlidNotification: React.FC = () => {
         }
     };
 
+    if (!isOpen) return null;
+
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div 
-                    className="fixed inset-0 z-[3000] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md"
-                    dir="rtl"
-                >
-                    <motion.div 
-                        initial={{ scale: 0.88, opacity: 0, y: 24 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.88, opacity: 0, y: 24 }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className="relative w-full max-w-md max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-3xl shadow-2xl border"
+        <div 
+            className="fixed inset-0 z-[3000] flex items-center justify-center p-3 sm:p-4 bg-black/75"
+            dir="rtl"
+        >
+            <div 
+                className="relative w-full max-w-md max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-3xl"
                         style={{ 
-                            backgroundColor: isBlackTheme ? '#0f0f11' : (theme.cardBg || '#ffffff'), 
+                            background: isBlackTheme
+                                ? 'linear-gradient(168deg, #21212b 0%, #14141b 65%, #0c0c10 100%)'
+                                : `linear-gradient(180deg, #ffffff 0%, ${theme.cardBg || '#ffffff'} 70%, #f1f5f9 100%)`, 
                             color: isBlackTheme ? '#ffffff' : theme.textColor,
-                            borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.2)' : `${accentColor}40`
+                            border: isBlackTheme ? '1px solid rgba(255, 255, 255, 0.16)' : `1px solid ${accentColor}38`,
+                            boxShadow: isBlackTheme
+                                ? '0 8px 0 #050508, 0 24px 48px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.14)'
+                                : `0 8px 0 ${accentColor}26, 0 24px 48px rgba(15, 23, 42, 0.28), inset 0 2px 2px rgba(255, 255, 255, 0.96)`
                         }}
                     >
                         {/* Decorative Top Ambient Glow */}
@@ -285,11 +286,18 @@ const MawlidNotification: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={toggleSound}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border active:scale-95 shadow-sm cursor-pointer"
+                                className="unified-3d-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer"
                                 style={{
-                                    backgroundColor: isPlayingSound ? `${accentColor}25` : (isBlackTheme ? '#1e1e24' : '#f3f4f6'),
-                                    borderColor: isPlayingSound ? accentColor : 'transparent',
-                                    color: isPlayingSound ? accentColor : (isBlackTheme ? '#e5e7eb' : '#4b5563')
+                                    background: isPlayingSound
+                                        ? `linear-gradient(180deg, ${accentColor}30 0%, ${accentColor}1c 100%)`
+                                        : (isBlackTheme ? 'linear-gradient(180deg, #2d2d39 0%, #1f1f28 100%)' : 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)'),
+                                    border: isPlayingSound
+                                        ? `1px solid ${accentColor}`
+                                        : (isBlackTheme ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(148,163,184,0.35)'),
+                                    color: isPlayingSound ? accentColor : (isBlackTheme ? '#e5e7eb' : '#334155'),
+                                    boxShadow: isBlackTheme
+                                        ? '0 3px 0 #07070b, 0 5px 10px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.18)'
+                                        : '0 3px 0 rgba(100,116,139,0.22), 0 5px 10px rgba(0,0,0,0.08), inset 0 1.5px 1px rgba(255,255,255,0.95)'
                                 }}
                                 title={isPlayingSound ? "كتم النغمة" : "تشغيل النغمة"}
                             >
@@ -311,10 +319,20 @@ const MawlidNotification: React.FC = () => {
                             <button 
                                 type="button"
                                 onClick={handleClose}
-                                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="unified-3d-btn w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+                                style={{
+                                    background: isBlackTheme
+                                        ? 'linear-gradient(180deg, #2d2d39 0%, #1f1f28 100%)'
+                                        : 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
+                                    color: isBlackTheme ? '#f8fafc' : '#334155',
+                                    border: isBlackTheme ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(148,163,184,0.35)',
+                                    boxShadow: isBlackTheme
+                                        ? '0 3px 0 #07070b, 0 5px 10px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.18)'
+                                        : '0 3px 0 rgba(100,116,139,0.22), 0 4px 8px rgba(0,0,0,0.08), inset 0 1.5px 1px rgba(255,255,255,0.95)'
+                                }}
                                 aria-label="إغلاق التهنئة"
                             >
-                                <X size={20} />
+                                <X size={18} />
                             </button>
                         </div>
                         
@@ -322,11 +340,16 @@ const MawlidNotification: React.FC = () => {
                             
                             {/* شارة المناسبة المباركة */}
                             <div 
-                                className="px-3.5 py-1 rounded-full text-xs font-bold tracking-wide mb-4 shadow-sm border"
+                                className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wide mb-4"
                                 style={{
-                                    backgroundColor: `${accentColor}18`,
+                                    background: isBlackTheme
+                                        ? `linear-gradient(180deg, ${accentColor}28 0%, ${accentColor}16 100%)`
+                                        : `linear-gradient(180deg, #ffffff 0%, ${accentColor}16 100%)`,
                                     color: accentColor,
-                                    borderColor: `${accentColor}35`
+                                    border: `1px solid ${accentColor}40`,
+                                    boxShadow: isBlackTheme
+                                        ? `0 3px 0 #07070b, inset 0 1px 1px rgba(255,255,255,0.16)`
+                                        : `0 3px 0 ${accentColor}26, inset 0 1.5px 1px rgba(255,255,255,0.95)`
                                 }}
                             >
                                 <span>{currentOccasion.badge}</span>
@@ -343,10 +366,15 @@ const MawlidNotification: React.FC = () => {
                                     repeat: Infinity,
                                     ease: "easeInOut"
                                 }}
-                                className="mb-4 p-4 rounded-3xl shadow-lg border"
+                                className="mb-4 p-4 rounded-3xl"
                                 style={{ 
-                                    backgroundColor: isBlackTheme ? '#18181b' : '#ffffff',
-                                    borderColor: `${accentColor}30`
+                                    background: isBlackTheme
+                                        ? 'linear-gradient(180deg, #272732 0%, #1a1a22 100%)'
+                                        : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+                                    border: `1px solid ${accentColor}38`,
+                                    boxShadow: isBlackTheme
+                                        ? `0 6px 0 #07070b, 0 12px 24px rgba(0,0,0,0.6), inset 0 2px 2px rgba(255,255,255,0.18)`
+                                        : `0 6px 0 ${accentColor}2a, 0 12px 24px ${accentColor}1f, inset 0 2px 2px rgba(255,255,255,0.98)`
                                 }}
                             >
                                 {renderOccasionIcon()}
@@ -367,10 +395,15 @@ const MawlidNotification: React.FC = () => {
 
                             {/* بطاقة التكبيرات / الاقتباس الإسلامي */}
                             <div 
-                                className="w-full p-3.5 rounded-2xl mb-4 border relative text-center"
+                                className="w-full p-4 rounded-2xl mb-4 relative text-center"
                                 style={{
-                                    backgroundColor: isBlackTheme ? '#141416' : '#f9fafb',
-                                    borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'
+                                    background: isBlackTheme
+                                        ? 'linear-gradient(180deg, #1b1b24 0%, #13131a 100%)'
+                                        : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+                                    border: isBlackTheme ? '1px solid rgba(255, 255, 255, 0.1)' : `1px solid ${accentColor}24`,
+                                    boxShadow: isBlackTheme
+                                        ? '0 4px 0 #07070b, inset 0 1.5px 1px rgba(255,255,255,0.1)'
+                                        : '0 4px 0 rgba(15,23,42,0.08), inset 0 1.5px 1px rgba(255,255,255,0.98)'
                                 }}
                             >
                                 <p 
@@ -387,14 +420,18 @@ const MawlidNotification: React.FC = () => {
                             </p>
 
                             {/* أزرار الإجراءات */}
-                            <div className="w-full flex flex-col gap-2.5">
+                            <div className="w-full flex flex-col gap-3">
                                 <button
                                     type="button"
                                     onClick={handleClose}
-                                    className="w-full py-3 px-4 rounded-2xl font-black text-sm sm:text-base shadow-lg transition-transform active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                                    className="unified-3d-btn w-full py-3.5 px-4 rounded-2xl font-black text-sm sm:text-base cursor-pointer flex items-center justify-center gap-2 relative overflow-hidden"
                                     style={{ 
-                                        backgroundColor: accentColor, 
-                                        color: '#ffffff' 
+                                        background: `linear-gradient(180deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                                        color: '#ffffff',
+                                        border: '1px solid rgba(255,255,255,0.28)',
+                                        boxShadow: isBlackTheme
+                                            ? `0 5px 0 #07070b, 0 10px 20px ${accentColor}40, inset 0 1.5px 1.5px rgba(255,255,255,0.38)`
+                                            : `0 5px 0 rgba(0,0,0,0.26), 0 10px 20px ${accentColor}38, inset 0 1.5px 1.5px rgba(255,255,255,0.45)`
                                     }}
                                 >
                                     <span>{currentOccasion.actionText}</span>
@@ -403,11 +440,16 @@ const MawlidNotification: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleShare}
-                                    className="w-full py-2.5 px-4 rounded-2xl font-bold text-xs sm:text-sm border transition-colors flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                                    className="unified-3d-btn w-full py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
                                     style={{
-                                        backgroundColor: isBlackTheme ? '#18181b' : '#f3f4f6',
-                                        borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                                        color: isBlackTheme ? '#ffffff' : '#374151'
+                                        background: isBlackTheme
+                                            ? 'linear-gradient(180deg, #272733 0%, #1b1b24 100%)'
+                                            : 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
+                                        border: isBlackTheme ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(148, 163, 184, 0.35)',
+                                        color: isBlackTheme ? '#ffffff' : '#1e293b',
+                                        boxShadow: isBlackTheme
+                                            ? '0 4px 0 #07070b, 0 6px 14px rgba(0,0,0,0.48), inset 0 1.5px 1px rgba(255,255,255,0.16)'
+                                            : '0 4px 0 rgba(100,116,139,0.22), 0 6px 14px rgba(15,23,42,0.08), inset 0 1.5px 1px rgba(255,255,255,0.95)'
                                     }}
                                 >
                                     {copied ? (
@@ -454,10 +496,8 @@ const MawlidNotification: React.FC = () => {
                                 <Sparkles size={14} />
                             </motion.div>
                         ))}
-                    </motion.div>
+                    </div>
                 </div>
-            )}
-        </AnimatePresence>
     );
 };
 

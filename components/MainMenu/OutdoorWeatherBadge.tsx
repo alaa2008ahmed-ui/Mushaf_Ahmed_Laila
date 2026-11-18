@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  CloudRain, 
-  Sun, 
-  Moon, 
-  Wind, 
-  Droplets, 
+import {
+  CloudRain,
+  Sun,
+  Moon,
+  Wind,
+  Droplets,
   Footprints,
-  Sparkles,
   CloudSun,
   X,
-  Info,
   Sunset
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -316,11 +314,11 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
   // Modal Content with top X button only and no bottom close button
   const modalContent = isModalOpen && typeof document !== 'undefined' ? createPortal(
     <div
-      className="fixed inset-0 z-[999999] flex items-center justify-center p-3.5 bg-black/40 backdrop-blur-xs pointer-events-auto animate-fadeIn"
+      className="fixed inset-0 z-[999999] flex items-center justify-center p-3.5 bg-black/55 pointer-events-auto"
       onClick={handleClose}
     >
       <div
-        className={`w-full max-w-[345px] sm:max-w-[365px] rounded-3xl p-4 relative border overflow-hidden transition-all ${themeStyles.modalBg}`}
+        className={`w-full max-w-[345px] sm:max-w-[365px] rounded-3xl p-4 relative border overflow-hidden ${themeStyles.modalBg}`}
         onClick={(e) => e.stopPropagation()}
         dir={isEn ? 'ltr' : 'rtl'}
       >

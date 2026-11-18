@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, getAyahCountText, SURAH_NAMES_AR, getEffectiveWordHighlightColor } from './constants';
+import React, { useRef } from 'react';
+import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, SURAH_NAMES_AR, getEffectiveWordHighlightColor } from './constants';
 import SurahHeader from './SurahHeader';
 
 interface MushafPageProps {

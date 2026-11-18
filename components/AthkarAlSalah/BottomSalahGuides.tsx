@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 
@@ -102,7 +101,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
     const hadithsTitle = isEn ? 'Hadiths on the Virtues of Sunan' : 'أحاديث في فضل السنن';
     const hadithsSummary = isEn ? '4 Authentic Prophetic Hadiths' : '٤ أحاديث نبوية صحيحة';
     const hadithsHtmlAr = `
-        <div class="space-y-4 text-xl md:text-2xl text-right font-amiri pb-2" dir="rtl">
+        <div class="space-y-4 text-xl md:text-2xl text-right font-cairo pb-2" dir="rtl">
             <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">عن أم حبيبة رضي الله عنها قالت: سمعت رسول الله ﷺ يقول: <span style="color: ${theme.palette[0]}; font-weight: bold;">"مَنْ صَلَّى فِي يَوْمٍ وَلَيْلَةٍ ثِنْتَيْ عَشْرَةَ رَكْعَةً بُنِيَ لَهُ بَيْتٌ فِي الْجَنَّةِ"</span>.</p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- رواه مسلم</p>
@@ -147,7 +146,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
     const sahwSummary = isEn ? 'Comprehensive Guide, Timings & Rulings' : 'أسبابه ومواضعه وأحكامه بالتفصيل';
     
     const sahwHtmlAr = `
-        <div class="space-y-5 text-right font-amiri text-lg md:text-xl leading-relaxed pb-2" dir="rtl">
+        <div class="space-y-5 text-right font-cairo text-lg md:text-xl leading-relaxed pb-2" dir="rtl">
             <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <h4 class="font-bold text-xl mb-1" style="color: ${theme.palette[0]};">ما هو سجود السهو وحكمه؟</h4>
                 <p class="opacity-90 leading-relaxed">
@@ -160,7 +159,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 
                 <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <div class="flex items-center gap-2 font-bold mb-1.5" style="color: ${theme.palette[0]};">
-                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[0]};">١</span>
+                        <span class="app-3d-badge w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[0]};">١</span>
                         <span>الزيادة في الصلاة (سجوده بعد السلام):</span>
                     </div>
                     <p class="text-base opacity-90 leading-relaxed">
@@ -170,7 +169,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
                 <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <div class="flex items-center gap-2 font-bold mb-1.5" style="color: ${theme.palette[1]};">
-                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[1]};">٢</span>
+                        <span class="app-3d-badge w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[1]};">٢</span>
                         <span>النقص في الصلاة (سجوده قبل السلام):</span>
                     </div>
                     <p class="text-base opacity-90 leading-relaxed">
@@ -181,7 +180,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
                 <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <div class="flex items-center gap-2 font-bold mb-1.5" style="color: ${theme.palette[0]};">
-                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[0]};">٣</span>
+                        <span class="app-3d-badge w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[0]};">٣</span>
                         <span>الشك في عدد الركعات:</span>
                     </div>
                     <p class="text-base opacity-90 leading-relaxed">
@@ -341,7 +340,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            className="app-3d-badge w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                             style={{
                                 backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
                                 color: primaryColor
@@ -370,13 +369,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </button>
 
                 {/* Collapsible Content */}
-                <AnimatePresence initial={false}>
                     {openCardId === 'sunan' && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.28, ease: 'easeInOut' }}
+                        <div
                             className="overflow-hidden rounded-b-2xl border-t border-black/5 dark:border-white/5"
                         >
                             <div className="p-4 sm:p-5">
@@ -457,9 +451,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     )}
-                </AnimatePresence>
             </div>
 
             {/* --- CARD 2: Hadiths on Sunan --- */}
@@ -476,7 +469,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            className="app-3d-badge w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                             style={{
                                 backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
                                 color: primaryColor
@@ -505,13 +498,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </button>
 
                 {/* Collapsible Content */}
-                <AnimatePresence initial={false}>
                     {openCardId === 'hadiths' && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.28, ease: 'easeInOut' }}
+                        <div
                             className="overflow-hidden rounded-b-2xl border-t border-black/5 dark:border-white/5"
                         >
                             <div className="p-4 sm:p-5">
@@ -612,9 +600,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     )}
-                </AnimatePresence>
             </div>
 
             {/* --- CARD 3: Sujood As-Sahw (سهو الصلاة) --- */}
@@ -631,7 +618,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            className="app-3d-badge w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                             style={{
                                 backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
                                 color: primaryColor
@@ -660,13 +647,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </button>
 
                 {/* Collapsible Content */}
-                <AnimatePresence initial={false}>
                     {openCardId === 'sahw' && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.28, ease: 'easeInOut' }}
+                        <div
                             className="overflow-hidden rounded-b-2xl border-t border-black/5 dark:border-white/10"
                         >
                             <div className="p-4 sm:p-5">
@@ -725,9 +707,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     dangerouslySetInnerHTML={{ __html: isEn ? sahwHtmlEn : sahwHtmlAr }}
                                 />
                             </div>
-                        </motion.div>
+                        </div>
                     )}
-                </AnimatePresence>
             </div>
         </div>
     );

@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ISLAMIC_SITES_DATA, IslamicSite } from '../data/islamicSitesData';
-import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { shareAsImage } from '../utils/shareAsImage';
-import { motion, AnimatePresence } from 'framer-motion';
+import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { markPageAsSeen } from '../utils/badgeManager';
-import { HelpCircle, Search, X, Link, Copy, Share2, ExternalLink, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Search, Copy, Share2, ExternalLink, Check, ZoomIn, Volume2, VolumeX, ChevronDown } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ISLAMIC_SITES_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 interface IslamicSitesPageProps {
     onBack: () => void;
@@ -18,13 +18,17 @@ interface IslamicSitesPageProps {
 }
 
 const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate }) => {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const tokens = getModernFlatTokens(theme, themeKey);
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const { language } = useLanguage();
     const isEn = language === 'en';
     const innerSubBoxClass = `app-inner-3d-box border-0 ${tokens.isDeepBlack ? 'bg-[#18181b]' : 'bg-white dark:bg-[#0F172A]/85'}`;
 
-    const [selectedSite, setSelectedSite] = useState<IslamicSite | null>(null);
+    const [zoomedSite, setZoomedSite] = useState<IslamicSite | null>(null);
+    const [zoomFontSize, setZoomFontSize] = useState<number>(20);
+    const [copiedInZoom, setCopiedInZoom] = useState(false);
+    const [playingText, setPlayingText] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [toastMessage, setToastMessage] = useState('');
     const [showGuide, setShowGuide] = useState(false);
@@ -37,16 +41,42 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
     }, []);
 
     useEffect(() => {
+        const unsubscribe = subscribeTTS(setPlayingText);
+        return () => {
+            unsubscribe();
+            stopTTS();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (zoomedSite) {
+            document.body.classList.add('zoom-modal-active');
+            document.body.setAttribute('data-zoom-modal', 'true');
+            window.dispatchEvent(new CustomEvent('modal-state-changed', { detail: { isOpen: true, type: 'zoom' } }));
+        } else {
+            document.body.classList.remove('zoom-modal-active');
+            document.body.removeAttribute('data-zoom-modal');
+            window.dispatchEvent(new CustomEvent('modal-state-changed', { detail: { isOpen: false, type: 'zoom' } }));
+            stopTTS();
+            setCopiedInZoom(false);
+        }
+        return () => {
+            document.body.classList.remove('zoom-modal-active');
+            document.body.removeAttribute('data-zoom-modal');
+        };
+    }, [zoomedSite]);
+
+    useEffect(() => {
         const interceptor = () => {
-            if (selectedSite) {
-                setSelectedSite(null);
+            if (zoomedSite) {
+                setZoomedSite(null);
                 return true;
             }
             return false;
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [selectedSite]);
+    }, [zoomedSite]);
 
     const showToast = (msg: string) => {
         setToastMessage(msg);
@@ -60,11 +90,6 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
         }).catch(() => {
             showToast(isEn ? 'Failed to copy, please copy manually' : 'تعذر النسخ، يرجى نسخ الرابط يدوياً');
         });
-    };
-
-    const handleOpenUrl = (url: string, e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
-        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const cleanSiteName = (name: string) => {
@@ -106,13 +131,21 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
             source: site.url,
             category: cat || (isEn ? 'Islamic Websites' : 'مواقع إسلامية'),
             theme,
+            isEn,
+            language: isEn ? 'en' : 'ar',
             setToastMessage: showToast
         });
     };
 
+    const handleOpenZoom = (site: IslamicSite, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setZoomFontSize(20);
+        setZoomedSite(site);
+    };
+
     const handleHomeClick = () => {
-        if (selectedSite) {
-            setSelectedSite(null);
+        if (zoomedSite) {
+            setZoomedSite(null);
         } else {
             onBack();
         }
@@ -131,9 +164,10 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
         );
     });
 
-    const currentIndex = selectedSite ? ISLAMIC_SITES_DATA.findIndex(s => s.id === selectedSite.id) : -1;
-    const prevSite = currentIndex > 0 ? ISLAMIC_SITES_DATA[currentIndex - 1] : null;
-    const nextSite = currentIndex >= 0 && currentIndex < ISLAMIC_SITES_DATA.length - 1 ? ISLAMIC_SITES_DATA[currentIndex + 1] : null;
+    const zoomPlainAudioText = zoomedSite
+        ? `${getSiteName(zoomedSite)}. ${getSiteDescription(zoomedSite)}`
+        : '';
+    const isZoomAudioPlaying = Boolean(zoomedSite && playingText === zoomPlainAudioText);
 
     return (
         <div 
@@ -159,8 +193,8 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
 
                         {/* Title */}
                         <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-bold truncate">
-                                {selectedSite ? getSiteName(selectedSite) : (isEn ? 'Islamic Websites' : 'مواقع إسلامية')}
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-bold truncate font-cairo">
+                                {isEn ? 'Islamic Websites' : 'مواقع إسلامية'}
                             </h1>
                         </div>
 
@@ -176,7 +210,6 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                             >
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
-                            <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer"
@@ -192,324 +225,305 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
 
             {/* Main Content Area */}
             <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-4 pt-3 app-scroll-safe">
-                <AnimatePresence mode="wait">
-                    {selectedSite ? (
-                        /* Detail Page View for Selected Website - Modern Flat Surface */
-                        <motion.div
-                            key={`site-detail-${selectedSite.id}`}
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            transition={{ duration: 0.2 }}
-                            className="max-w-2xl mx-auto space-y-4 pb-2"
+                {/* 25 Islamic Sites Cards Grid - Embossed 3D Cards */}
+                <div
+                    key="sites-list"
+                    className="space-y-4 max-w-4xl mx-auto pb-2"
+                >
+                    {/* Modern 3D Search Bar matching Adia */}
+                    <div className="mb-6 max-w-4xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
+                        <div
+                            className={`app-page-card border-0 relative flex-1 rounded-2xl ${tokens.isDeepBlack ? 'bg-[#18181b]' : 'bg-white dark:bg-[#1E293B]'} transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible`}
+                            style={{ '--tw-ring-color': tokens.primaryColor } as any}
                         >
-                            {/* Category Tag */}
-                            <div className={`flex items-center ${isEn ? 'justify-start' : 'justify-end'}`}>
-                                <span 
-                                    className="text-xs px-3.5 py-1 rounded-full font-bold border-0"
-                                    style={{
-                                        backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
-                                        color: tokens.primaryColor
-                                    }}
-                                >
-                                    {getSiteCategory(selectedSite)}
-                                </span>
-                            </div>
-
-                            {/* Hero Card */}
-                            <div 
-                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-5 sm:p-6 rounded-[18px] relative overflow-visible"
+                            <span
+                                className={`app-3d-badge border-0 absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none`}
+                                style={{
+                                    backgroundColor: tokens.isDeepBlack ? 'rgba(255, 255, 255, 0.1)' : hexToRgba(tokens.primaryColor, 0.12),
+                                    color: tokens.isDeepBlack ? '#FFFFFF' : tokens.primaryColor,
+                                }}
+                                aria-hidden="true"
                             >
-                                <div className={`flex flex-col sm:flex-row items-center ${isEn ? 'sm:items-start text-center sm:text-left' : 'sm:items-start text-center sm:text-right'} gap-4`}>
-                                    <div 
-                                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-[18px] flex items-center justify-center shrink-0 border-0"
-                                        style={{ 
+                                <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                            </span>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder={isEn ? 'Search Islamic websites...' : 'بحث في المواقع الإسلامية...'}
+                                className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${
+                                    isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'
+                                } placeholder-gray-400 dark:placeholder-gray-500`}
+                                style={{ color: 'var(--text-color)' }}
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery('')}
+                                    className={`app-page-card unified-3d-btn border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                    aria-label={isEn ? 'Clear search' : 'مسح البحث'}
+                                >
+                                    <i className="fa-solid fa-times text-xs"></i>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 25 Cards Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pb-2">
+                        {filteredSites.map((site) => (
+                            <div
+                                key={site.id}
+                                onClick={() => handleOpenZoom(site)}
+                                className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] h-full p-4.5 rounded-[18px] transition-all flex flex-col justify-between gap-3 relative overflow-visible cursor-pointer group"
+                            >
+                                {/* Top row: Category tag & Actions */}
+                                <div className="flex items-center justify-between gap-2 overflow-visible">
+                                    <span 
+                                        className="app-3d-badge text-[11px] font-bold px-3 py-1 rounded-full border-0 truncate max-w-[150px] sm:max-w-none"
+                                        style={{
                                             backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                             color: tokens.primaryColor
                                         }}
                                     >
-                                        <i className={`${selectedSite.icon} text-3xl sm:text-4xl`}></i>
-                                    </div>
-
-                                    <div className="flex-1 space-y-2">
-                                        <div className={`flex flex-wrap items-center justify-center ${isEn ? 'sm:justify-start' : 'sm:justify-start'} gap-2`}>
-                                            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-color)' }}>
-                                                {getSiteName(selectedSite)}
-                                            </h2>
-                                            <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2.5 py-0.5 rounded-full border-0">
-                                                <i className="fa-solid fa-circle-check text-[10px]"></i>
-                                                {isEn ? 'Verified Islamic Platform' : 'منصة إسلامية معتمدة'}
-                                            </span>
-                                        </div>
-
-                                        <p className="text-sm font-medium" style={{ color: tokens.subtextColor }}>
-                                            {isEn ? 'Category: ' : 'التصنيف: '}
-                                            {getSiteCategory(selectedSite)}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* URL & Quick Actions Card */}
-                            <div 
-                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-5 rounded-[18px] space-y-3.5 overflow-visible"
-                            >
-                                <div className="flex items-center justify-between text-xs font-bold opacity-75">
-                                    <span className="flex items-center gap-1.5" style={{ color: tokens.primaryColor }}>
-                                        <Link className="w-3.5 h-3.5" />
-                                        {isEn ? 'Website URL' : 'رابط الموقع الإلكتروني'}
+                                        {getSiteCategory(site)}
                                     </span>
-                                    <span style={{ color: tokens.subtextColor }}>{isEn ? 'Click to visit directly' : 'انقر للفتح المباشر'}</span>
-                                </div>
-
-                                <div 
-                                    className={`p-3.5 rounded-[14px] flex items-center justify-between gap-3 overflow-visible ${innerSubBoxClass}`}
-                                >
-                                    <div className="flex items-center gap-2 flex-1 min-w-0" dir="ltr">
-                                        <i className="fa-solid fa-lock text-xs text-emerald-500 shrink-0"></i>
-                                        <span className="text-xs sm:text-sm font-mono truncate text-left select-all text-blue-600 dark:text-blue-400 font-semibold">
-                                            {selectedSite.url}
-                                        </span>
-                                    </div>
 
                                     <div className="flex items-center gap-2 shrink-0 overflow-visible">
                                         <button
                                             type="button"
-                                            onClick={(e) => handleCopyUrl(selectedSite.url, e)}
-                                            className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            onClick={(e) => handleOpenZoom(site, e)}
+                                            className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
-                                            title={isEn ? 'Copy Link' : 'نسخ الرابط'}
+                                            title={isEn ? 'Zoom' : 'تكبير'}
+                                            aria-label={isEn ? 'Zoom' : 'تكبير'}
                                         >
-                                            <Copy className="w-4 h-4" />
+                                            <ZoomIn className="w-3.5 h-3.5" />
                                         </button>
+
                                         <button
                                             type="button"
-                                            onClick={(e) => handleShareSite(selectedSite, e)}
-                                            className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            onClick={(e) => handleShareSite(site, e)}
+                                            className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
                                             title={isEn ? 'Share' : 'مشاركة'}
+                                            aria-label={isEn ? 'Share' : 'مشاركة'}
                                         >
-                                            <Share2 className="w-4 h-4" />
+                                            <Share2 className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleCopyUrl(site.url, e)}
+                                            className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
+                                            title={isEn ? 'Copy Link' : 'نسخ الرابط'}
+                                            aria-label={isEn ? 'Copy Link' : 'نسخ الرابط'}
+                                        >
+                                            <Copy className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 </div>
 
-                                {/* Primary Open Link Button */}
-                                <button
-                                    type="button"
-                                    onClick={() => handleOpenUrl(selectedSite.url)}
-                                    className="app-page-card border-0 w-full py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all text-white cursor-pointer"
-                                    style={{ backgroundColor: tokens.primaryColor }}
-                                >
-                                    <ExternalLink className="w-4 h-4" />
-                                    <span>
-                                        {isEn 
-                                            ? `Visit ${getSiteName(selectedSite)} Now` 
-                                            : `زيارة ${cleanSiteName(selectedSite.name)} الآن`}
-                                    </span>
-                                </button>
-                            </div>
-
-                            {/* Detailed Description */}
-                            <div 
-                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-5 sm:p-6 rounded-[18px] space-y-4 overflow-visible"
-                            >
-                                <div className="flex items-center gap-2 app-3d-divider border-0 pb-3">
-                                    <h3 className="text-lg font-bold" style={{ color: 'var(--text-color)' }}>
-                                        {isEn ? 'About the Website' : 'نبذة عن محتوى الموقع'}
+                                {/* Middle: Name & Description */}
+                                <div className="flex-1 min-w-0 space-y-1">
+                                    <h3 className={`font-bold text-sm sm:text-base leading-snug line-clamp-1 ${isEn ? 'font-sans' : 'font-cairo'}`} style={{ color: 'var(--text-color)' }}>
+                                        {getSiteName(site)}
                                     </h3>
-                                </div>
-
-                                <div 
-<<<<<<< HEAD
-                                    className={`leading-[2.2] text-sm sm:text-base p-4 rounded-[14px] ${innerSubBoxClass} ${isEn ? 'text-left' : 'text-right'} whitespace-pre-line`}
-=======
-                                    className={`leading-[2.2] text-sm sm:text-base p-4 rounded-[14px] border-0 ${isEn ? 'text-left' : 'text-right'} whitespace-pre-line`}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                                    style={{ 
-                                        color: 'var(--text-color)'
-                                    }}
-                                >
-                                    {getSiteDescription(selectedSite)}
-                                </div>
-
-                                {/* Highlights / Features */}
-                                {getSiteFeatures(selectedSite) && getSiteFeatures(selectedSite).length > 0 && (
-                                    <div className="space-y-2 pt-2">
-                                        <h4 className="text-xs font-bold" style={{ color: tokens.primaryColor }}>
-                                            {isEn ? 'Key Sections & Features:' : 'أبرز أقسام وخدمات الموقع:'}
-                                        </h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 overflow-visible">
-                                            {getSiteFeatures(selectedSite).map((feature, fIdx) => (
-                                                <div 
-                                                    key={fIdx}
-                                                    className={`flex items-center gap-2 text-xs font-semibold p-3 rounded-xl ${innerSubBoxClass}`}
-                                                >
-                                                    <i className="fa-solid fa-check text-emerald-500 text-[10px]"></i>
-                                                    <span style={{ color: 'var(--text-color)' }}>{feature}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Next / Prev Navigation */}
-                            <div className="grid grid-cols-2 gap-3 pt-2 pb-1 overflow-visible">
-                                {prevSite ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedSite(prevSite)}
-                                        className={`app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[18px] ${isEn ? 'text-left' : 'text-right'} transition-all cursor-pointer`}
-                                    >
-                                        <span className="text-[10px] opacity-60 block" style={{ color: tokens.subtextColor }}>
-                                            {isEn ? 'Previous Site' : 'الموقع السابق'}
-                                        </span>
-                                        <span className="text-xs font-bold block truncate" style={{ color: 'var(--text-color)' }}>
-                                            {getSiteName(prevSite)}
-                                        </span>
-                                    </button>
-                                ) : (
-                                    <div />
-                                )}
-
-                                {nextSite ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedSite(nextSite)}
-                                        className={`app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[18px] ${isEn ? 'text-right' : 'text-left'} transition-all cursor-pointer`}
-                                    >
-                                        <span className="text-[10px] opacity-60 block" style={{ color: tokens.subtextColor }}>
-                                            {isEn ? 'Next Site' : 'الموقع التالي'}
-                                        </span>
-                                        <span className="text-xs font-bold block truncate" style={{ color: 'var(--text-color)' }}>
-                                            {getSiteName(nextSite)}
-                                        </span>
-                                    </button>
-                                ) : (
-                                    <div />
-                                )}
-                            </div>
-                        </motion.div>
-                    ) : (
-                        /* 25 Islamic Sites Cards Grid - Embossed 3D Cards */
-                        <motion.div
-                            key="sites-list"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="space-y-4 max-w-4xl mx-auto pb-2"
-                        >
-                            {/* Search Bar - Embossed 3D */}
-                            <div 
-                                className="app-page-card border-0 relative rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible transition-all"
-                            >
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder={isEn ? 'Search Islamic websites...' : 'بحث في المواقع الإسلامية...'}
-                                    className={`w-full ${isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'} py-3 text-sm bg-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
-                                    style={{ color: 'var(--text-color)' }}
-                                />
-                                <Search 
-                                    className={`w-4 h-4 absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 opacity-40 pointer-events-none`} 
-                                    style={{ color: 'var(--text-color)' }}
-                                />
-                                {searchQuery && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchQuery('')}
-                                        className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
-                                        aria-label={isEn ? 'Clear search' : 'مسح البحث'}
-                                    >
-                                        <X className="w-3.5 h-3.5" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* 25 Cards Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pb-2">
-                                {filteredSites.map((site) => (
-                                    <div
-                                        key={site.id}
-                                        onClick={() => setSelectedSite(site)}
-                                        className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] h-full p-4.5 rounded-[18px] transition-all flex flex-col justify-between gap-3 relative overflow-visible cursor-pointer group"
-                                    >
-                                        {/* Top row: Category tag & Actions */}
-                                        <div className="flex items-center justify-between gap-2 overflow-visible">
-                                            <span 
-                                                className="text-[11px] font-bold px-3 py-1 rounded-full border-0 truncate max-w-[150px] sm:max-w-none"
-                                                style={{
-                                                    backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
-                                                    color: tokens.primaryColor
-                                                }}
-                                            >
-                                                {getSiteCategory(site)}
-                                            </span>
-
-                                            <div className="flex items-center gap-2 shrink-0 overflow-visible">
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => handleOpenUrl(site.url, e)}
-                                                    className="app-page-card border-0 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all flex items-center justify-center text-white cursor-pointer shrink-0"
-                                                    style={{ backgroundColor: tokens.primaryColor }}
-                                                    title={isEn ? 'Open website directly' : 'فتح الموقع مباشرة'}
-                                                >
-                                                    <span>{isEn ? 'Visit' : 'زيارة'}</span>
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => handleShareSite(site, e)}
-                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
-                                                    style={{ color: 'var(--text-color)' }}
-                                                    title={isEn ? 'Share' : 'مشاركة'}
-                                                >
-                                                    <Share2 className="w-3.5 h-3.5" />
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedSite(site);
-                                                    }}
-                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
-                                                    style={{ color: 'var(--text-color)' }}
-                                                    title={isEn ? 'View Details' : 'عرض التفاصيل'}
-                                                    aria-label={isEn ? 'View Details' : 'عرض التفاصيل'}
-                                                >
-                                                    {isEn ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Middle: Name & Description */}
-                                        <div className="flex-1 min-w-0 space-y-1">
-                                            <h3 className="font-bold text-sm sm:text-base leading-snug line-clamp-1" style={{ color: 'var(--text-color)' }}>
-                                                {getSiteName(site)}
-                                            </h3>
-                                            <p className="text-xs opacity-75 line-clamp-2 leading-relaxed" style={{ color: tokens.subtextColor }}>
-                                                {getSiteDescription(site)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {filteredSites.length === 0 && (
-                                <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] text-center py-12 px-6 opacity-80">
-                                    <Search className="w-10 h-10 mb-3 mx-auto opacity-40" />
-                                    <p className="text-sm font-bold">
-                                        {isEn ? 'No websites match your search' : 'لا توجد مواقع تطابق بحثك'}
+                                    <p className={`text-xs opacity-75 line-clamp-2 leading-relaxed ${isEn ? 'font-sans' : 'font-cairo'}`} style={{ color: tokens.subtextColor }}>
+                                        {getSiteDescription(site)}
                                     </p>
                                 </div>
-                            )}
-                        </motion.div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {filteredSites.length === 0 && (
+                        <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] text-center py-12 px-6 opacity-80">
+                            <Search className="w-10 h-10 mb-3 mx-auto opacity-40" />
+                            <p className="text-sm font-bold font-cairo">
+                                {isEn ? 'No websites match your search' : 'لا توجد مواقع تطابق بحثك'}
+                            </p>
+                        </div>
                     )}
-                </AnimatePresence>
+                </div>
             </main>
+
+            {/* Bottom Zoom Sheet Modal - Cairo Font & Bottom Action Buttons matching Adia/Adhkar */}
+            {zoomedSite && (
+                <div
+                    className="fixed inset-0 bg-black/65 z-[120] flex flex-col justify-end select-none"
+                    onClick={() => setZoomedSite(null)}
+                    dir={isEn ? 'ltr' : 'rtl'}
+                >
+                    <div
+                        className="app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative bg-white dark:bg-[#1E293B]"
+                        style={{
+                            color: 'var(--text-color)',
+                            fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Top Drag Handle & Category Badge */}
+                        <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
+                            <div className="app-3d-drag-handle w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700 mb-2" />
+                            <div className="w-full flex items-center justify-center">
+                                <span
+                                    className="app-3d-badge px-3.5 py-1 rounded-full text-xs font-bold font-cairo"
+                                    style={{
+                                        backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
+                                        color: tokens.primaryColor,
+                                    }}
+                                >
+                                    {getSiteCategory(zoomedSite)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Scrollable Content Area */}
+                        <div className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4 space-y-4">
+                            <h2
+                                className={`font-bold text-center leading-snug ${isEn ? 'font-sans' : 'font-cairo'}`}
+                                style={{
+                                    color: tokens.primaryColor,
+                                    fontSize: `${zoomFontSize + 4}px`,
+                                }}
+                            >
+                                {getSiteName(zoomedSite)}
+                            </h2>
+
+                            <p
+                                className={`leading-loose font-medium text-center whitespace-pre-line ${isEn ? 'font-sans' : 'font-cairo'}`}
+                                style={{
+                                    color: 'var(--text-color)',
+                                    fontSize: `${zoomFontSize}px`,
+                                }}
+                            >
+                                {getSiteDescription(zoomedSite)}
+                            </p>
+
+                            {/* Features */}
+                            {getSiteFeatures(zoomedSite) && getSiteFeatures(zoomedSite).length > 0 && (
+                                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                                    {getSiteFeatures(zoomedSite).map((feature, fIdx) => (
+                                        <span
+                                            key={fIdx}
+                                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl ${innerSubBoxClass} ${isEn ? 'font-sans' : 'font-cairo'}`}
+                                            style={{ color: 'var(--text-color)' }}
+                                        >
+                                            <i className="fa-solid fa-check text-emerald-500 text-[10px]"></i>
+                                            <span>{feature}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Direct Website URL Link */}
+                            <div className="flex justify-center pt-1">
+                                <a
+                                    href={zoomedSite.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`app-3d-badge inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${innerSubBoxClass}`}
+                                    style={{ color: tokens.primaryColor }}
+                                    dir="ltr"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="truncate max-w-[260px] sm:max-w-sm">{zoomedSite.url}</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Bottom Action Bar (Audio, Share, Copy URL, Zoom, ChevronDown) */}
+                        <div
+                            className="px-4 pt-3 pb-2 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5 overflow-visible"
+                        >
+                            {/* Audio Button */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isZoomAudioPlaying) {
+                                        stopTTS();
+                                    } else {
+                                        playTTS(zoomPlainAudioText, {
+                                            isEn,
+                                            onToast: (msg) => showToast(msg),
+                                        });
+                                    }
+                                }}
+                                className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                style={{
+                                    backgroundColor: isZoomAudioPlaying ? hexToRgba(tokens.primaryColor, 0.15) : undefined,
+                                    color: isZoomAudioPlaying ? '#EF4444' : tokens.textColor,
+                                }}
+                                title={isEn ? (isZoomAudioPlaying ? 'Stop audio' : 'Play audio') : (isZoomAudioPlaying ? 'إيقاف الصوت' : 'استماع صوتي')}
+                            >
+                                {isZoomAudioPlaying ? <VolumeX className="w-5 h-5 text-red-500 animate-pulse" /> : <Volume2 className="w-5 h-5" />}
+                            </button>
+
+                            {/* Share Button */}
+                            <button
+                                type="button"
+                                onClick={(e) => handleShareSite(zoomedSite, e)}
+                                className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                style={{ color: tokens.textColor }}
+                                title={isEn ? 'Share Image' : 'مشاركة كصورة'}
+                            >
+                                <Share2 className="w-5 h-5" />
+                            </button>
+
+                            {/* Copy URL Button */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(zoomedSite.url).then(() => {
+                                        setCopiedInZoom(true);
+                                        setTimeout(() => setCopiedInZoom(false), 2000);
+                                        showToast(isEn ? 'Website link copied successfully' : 'تم نسخ رابط الموقع بنجاح');
+                                    }).catch(() => {
+                                        showToast(isEn ? 'Failed to copy, please copy manually' : 'تعذر النسخ، يرجى نسخ الرابط يدوياً');
+                                    });
+                                }}
+                                className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                style={{
+                                    backgroundColor: copiedInZoom ? '#10B981' : undefined,
+                                    color: copiedInZoom ? '#FFFFFF' : tokens.textColor,
+                                }}
+                                title={isEn ? 'Copy Link' : 'نسخ الرابط'}
+                            >
+                                {copiedInZoom ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5" />}
+                            </button>
+
+                            {/* Zoom Font Size Button */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setZoomFontSize((prev) => (prev >= 32 ? 18 : prev + 4));
+                                }}
+                                className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                style={{ color: tokens.textColor }}
+                                title={isEn ? 'Enlarge font size' : 'تكبير حجم الخط'}
+                            >
+                                <ZoomIn className="w-5 h-5" />
+                            </button>
+
+                            {/* Hide Modal Button */}
+                            <button
+                                type="button"
+                                onClick={() => setZoomedSite(null)}
+                                className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                style={{ color: tokens.textColor }}
+                                title={isEn ? 'Hide list' : 'إخفاء القائمة'}
+                            >
+                                <ChevronDown className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <CommunitySpotlightGuide
                 isOpen={showGuide}
@@ -523,19 +537,23 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
             />
 
             {/* Toast Notification */}
-            <AnimatePresence>
-                {toastMessage && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 30, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: 30, x: '-50%' }}
-                        className="fixed left-1/2 z-[200] bg-gray-900 text-white px-5 py-2.5 rounded-full shadow-2xl font-bold text-xs text-center whitespace-nowrap border-0"
-                        style={{ bottom: 'calc(var(--app-bottom-clearance) + 1rem)' }}
+            {toastMessage && (
+                <div 
+                    className="app-3d-toast fixed left-1/2 -translate-x-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words border-0 flex items-center justify-center gap-2.5 pointer-events-none"
+                    style={{
+                        bottom: 'calc(var(--app-bottom-clearance) + 1rem)',
+                        ...toast3D.style,
+                    }}
+                >
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
                     >
-                        {toastMessage}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                    <span>{toastMessage}</span>
+                </div>
+            )}
         </div>
     );
 };

@@ -1,21 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import ThemePageLock from '../components/ThemePageLock';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { VisualQibla, ARQibla, SunMoonQibla, ShadowQibla } from '../components/QiblaModes';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { useLanguage } from '../context/LanguageContext';
-import { HelpCircle, Compass, MapPin, Eye, Sun, SunDim } from 'lucide-react';
+import { Compass, MapPin, Sun } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { QIBLA_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { openLocationSettings, requestLocationPermission } from '../utils/permissionHelper';
-<<<<<<< HEAD
 import { hexToRgba } from '../utils/flatDesignTokens';
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
 // --- Helper Functions ---
 const toRad = (deg: number) => deg * Math.PI / 180;
@@ -346,7 +342,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                         <div className={`flex items-center gap-1 z-10 ${isEn ? 'order-1' : 'order-1'}`}>
                             <button
                                 onClick={onBack}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
                                 title={isEn ? 'Back' : 'رجوع'}
                                 aria-label={isEn ? 'Back' : 'رجوع'}
                             >
@@ -354,7 +350,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             </button>
                             <button
                                 onClick={handleRefreshLocation}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
                                 title={isEn ? 'Refresh Location' : 'تحديث الموقع'}
                                 aria-label={isEn ? 'Refresh Location' : 'تحديث الموقع'}
                             >
@@ -364,7 +360,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
 
                         {/* عنوان الصفحة في الوسط */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi font-bold truncate px-24">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo font-bold truncate px-28">
                                 {isEn ? 'Qibla Direction' : t('page.qibla_title', 'اتجاه القبلة')}
                             </h1>
                         </div>
@@ -374,17 +370,16 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             <button
                                 type="button"
                                 onClick={() => setShowGuide(true)}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
                                 style={{ color: 'var(--top-bar-text, inherit)' }}
                                 title={isEn ? "Qibla Guide" : "دليل اتجاه القبلة"}
                                 aria-label={isEn ? "Qibla Guide" : "دليل اتجاه القبلة"}
                             >
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
-                            <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
                                 title={isEn ? "Home" : "الصفحة الرئيسية"}
                                 aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                             >
@@ -433,12 +428,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
             <main className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden px-4 pt-4 text-center app-scroll-safe z-10">
                  {error && (
                      <div 
-<<<<<<< HEAD
                          className="app-page-card border-0 p-3.5 rounded-2xl w-full max-w-md mx-auto mb-4 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold text-xs" 
-=======
-                         className="p-3.5 rounded-2xl w-full max-w-md mx-auto mb-4 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 font-bold text-xs" 
-                         style={{ borderRadius: '16px' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                      >
                          {error}
                      </div>
@@ -451,11 +441,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                  
                 {activeMode === 'compass' && (
                     <div className="flex flex-col items-center justify-start w-full pt-8 sm:pt-10">
-<<<<<<< HEAD
                         {/* واجهة البوصلة */}
-=======
-                        {/* واجهة البوصلة: دائرة بتظليل ناعم Neumorphic / مسطح بدون حلقة سوداء صلبة */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         <div 
                             onMouseDown={handleTouchOrMouseDown}
                             onMouseMove={handleTouchOrMouseMove}
@@ -464,15 +450,8 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             onTouchStart={handleTouchOrMouseDown}
                             onTouchMove={handleTouchOrMouseMove}
                             onTouchEnd={handleTouchOrMouseUp}
-<<<<<<< HEAD
                             className={`app-page-card relative w-64 h-64 md:w-80 md:h-80 rounded-full border-0 flex items-center justify-center transition-all duration-300 cursor-grab active:cursor-grabbing ${surfaceCardClass} ${
                                 isAligned ? 'ring-4 ring-green-500' : ''
-=======
-                            className={`relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center transition-all duration-300 cursor-grab active:cursor-grabbing ${
-                                isBlackTheme 
-                                    ? 'bg-[#18181b] border border-white/10' 
-                                    : 'bg-white'
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             }`}
                         >
                             
@@ -537,32 +516,18 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             {/* النقطة المركزية */}
                             {!isAligned && (
                                 <div 
-<<<<<<< HEAD
                                     className="border-0 absolute w-5 h-5 rounded-full transition-all duration-300 pointer-events-none" 
                                     style={{ backgroundColor: primaryColor }}
-=======
-                                    className="absolute w-3.5 h-3.5 rounded-full border-2 border-white shadow-md transition-all duration-300 pointer-events-none" 
-                                    style={{ 
-                                        backgroundColor: primaryColor,
-                                        boxShadow: `0 0 10px ${primaryColor}80` 
-                                    }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 ></div>
                             )}
                         </div>
 
                         {permissionStatus === 'prompt' && (
                             <button
-<<<<<<< HEAD
                                 type="button"
                                 onClick={requestSensorPermission}
                                 className="app-page-card border-0 mt-5 px-5 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer"
                                 style={{ backgroundColor: primaryColor, color: btnTextColor }}
-=======
-                                onClick={requestSensorPermission}
-                                className="mt-4 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
-                                style={{ backgroundColor: primaryColor }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 {isEn ? 'Enable Motion Sensors' : 'تفعيل حساس البوصلة والحركة'}
                             </button>
@@ -571,21 +536,12 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                         {/* بطاقة المعلومات السفلية */}
                         {qiblaDirection !== null && (
                             <div 
-<<<<<<< HEAD
                                 className={`app-page-card border-0 p-4 sm:p-5 rounded-2xl transition-all duration-300 w-72 mt-9 mb-4 shrink-0 text-center space-y-1.5 ${surfaceCardClass}`}
-=======
-                                className={`app-page-card border-0 p-4 sm:p-5 rounded-2xl transition-all duration-300 w-72 mt-9 mb-4 shrink-0 text-center ${
-                                    isBlackTheme 
-                                        ? 'bg-[#18181b] text-white' 
-                                        : 'bg-white text-slate-800'
-                                }`}
-                                style={{ borderRadius: '16px', border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 {/* زاوية القبلة */}
                                 <div className="flex items-center justify-center">
                                     <span 
-                                        className="px-4 py-1.5 rounded-2xl text-3xl font-black font-mono tracking-tight leading-none tabular-nums"
+                                        className="app-3d-badge border-0 px-4 py-1.5 rounded-2xl text-3xl font-black font-mono tracking-tight leading-none tabular-nums"
                                         style={{
                                             backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.1),
                                             color: primaryColor
@@ -614,11 +570,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             <button
                                 type="button"
                                 onClick={handleOpenLocationSettings}
-<<<<<<< HEAD
                                 className={`app-page-card border-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-center text-xs sm:text-sm font-black transition-all cursor-pointer ${surfaceCardClass}`}
-=======
-                                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-center text-xs sm:text-sm font-extrabold transition-all active:scale-95 cursor-pointer underline decoration-2 underline-offset-4"
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 style={{
                                     color: isBlackTheme ? '#FBBF24' : primaryColor,
                                 }}

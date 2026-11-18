@@ -139,13 +139,30 @@
 .quran-reader-container.dark .mushaf-page { background-color: var(--qr-bg, #000); color: var(--qr-text, #fff); }
 
 .modal-skinned {
-    transition: all 0.3s ease;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    transition: none;
     border: none !important;
     box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 1.5px rgba(255, 255, 255, 0.5) !important;
     background-color: var(--qr-modal-bg, #ffffff);
     color: var(--qr-modal-text, #000000);
+}
+
+.zoom-modal-sheet.modal-skinned {
+    box-shadow: 0 -10px 34px -4px rgba(0, 0, 0, 0.24), 0 -3px 10px rgba(0, 0, 0, 0.10), inset 0 2.5px 2px rgba(255, 255, 255, 0.92) !important;
+}
+
+.dark .zoom-modal-sheet.modal-skinned,
+.zoom-modal-sheet.modal-skinned.quran-3d-dark {
+    box-shadow: 0 -12px 38px -2px rgba(0, 0, 0, 0.85), 0 -3px 12px rgba(0, 0, 0, 0.65), inset 0 2px 2px rgba(255, 255, 255, 0.2) !important;
+}
+
+.zoom-modal-action-bar-3d {
+    border: none !important;
+    box-shadow: 0 -6px 18px -4px rgba(0, 0, 0, 0.09), inset 0 1.5px 1px rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark .zoom-modal-action-bar-3d,
+.quran-3d-dark .zoom-modal-action-bar-3d {
+    box-shadow: 0 -8px 22px -4px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.12) !important;
 }
 
 .theme-header-bg {
@@ -607,67 +624,118 @@
 .btn-purple { width: 100%; } 
 .btn-purple:hover { opacity: 0.9; }
 
-/* 3D Embossed Raised Buttons & Cards (Matching Home Page & Bars, Borderless) */
+/* 3D Embossed Raised Buttons & Cards (Exact Adia/Adhkar 6.5px Tactile Standard, Borderless) */
 .quran-raised-btn {
     border: none !important;
     outline: none !important;
-    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16), 0 6px 14px rgba(0, 0, 0, 0.08), inset 0 1px 1.5px rgba(255, 255, 255, 0.75) !important;
-    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.12s ease, background-color 0.15s ease, opacity 0.15s ease !important;
+    box-shadow: 0 6.5px 0 rgba(0, 0, 0, 0.13), 0 12px 24px -2px rgba(0, 0, 0, 0.11), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05) !important;
+    transition: transform 0.08s ease !important;
     cursor: pointer;
 }
 
-.quran-raised-btn:hover {
-    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.18), 0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1.5px rgba(255, 255, 255, 0.85) !important;
-    transform: translateY(-1px);
+.quran-raised-btn:not(:disabled):hover {
+    box-shadow: 0 8.5px 0 rgba(0, 0, 0, 0.14), 0 16px 30px -3px rgba(0, 0, 0, 0.14), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05) !important;
+    transform: translateY(-2px);
 }
 
-.quran-raised-btn:active {
-    transform: translateY(2px) scale(0.98) !important;
-    box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+.quran-raised-btn:not(:disabled):active {
+    transform: translateY(4px) scale(0.99) !important;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.14), 0 4px 10px rgba(0, 0, 0, 0.08), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -1.5px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
-.dark .quran-raised-btn {
-    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), 0 6px 14px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+.dark .quran-raised-btn,
+.quran-3d-dark .quran-raised-btn,
+.quran-reader-container[data-quran-theme="deep_black"] .quran-raised-btn,
+.quran-reader-container[data-quran-theme^="i_"] .quran-raised-btn {
+    border: none !important;
+    outline: none !important;
+    box-shadow: 0 6.5px 0 #0d0d10, 0 14px 28px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.22), inset 0 -2.5px 5px rgba(0, 0, 0, 0.65) !important;
 }
 
-.dark .quran-raised-btn:hover {
-    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.5), 0 8px 18px rgba(0, 0, 0, 0.6), inset 0 1px 1.5px rgba(255, 255, 255, 0.2) !important;
-    transform: translateY(-1px);
+.dark .quran-raised-btn:not(:disabled):hover,
+.quran-3d-dark .quran-raised-btn:not(:disabled):hover,
+.quran-reader-container[data-quran-theme="deep_black"] .quran-raised-btn:not(:disabled):hover,
+.quran-reader-container[data-quran-theme^="i_"] .quran-raised-btn:not(:disabled):hover {
+    box-shadow: 0 8.5px 0 #0d0d10, 0 16px 30px -3px rgba(0, 0, 0, 0.8), inset 0 2px 2px rgba(255, 255, 255, 0.28), inset 0 -2.5px 5px rgba(0, 0, 0, 0.5) !important;
+    transform: translateY(-2px);
 }
 
-.dark .quran-raised-btn:active {
-    box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.6), 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+.dark .quran-raised-btn:not(:disabled):active,
+.quran-3d-dark .quran-raised-btn:not(:disabled):active,
+.quran-reader-container[data-quran-theme="deep_black"] .quran-raised-btn:not(:disabled):active,
+.quran-reader-container[data-quran-theme^="i_"] .quran-raised-btn:not(:disabled):active {
+    transform: translateY(4px) scale(0.99) !important;
+    box-shadow: 0 2px 0 #0d0d10, 0 4px 10px rgba(0, 0, 0, 0.45), inset 0 2px 2px rgba(255, 255, 255, 0.25), inset 0 -1.5px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
 .quran-raised-btn-selected {
     border: none !important;
     outline: none !important;
-    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.22), 0 7px 16px rgba(0, 0, 0, 0.14), inset 0 1px 1.5px rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 6.5px 0 rgba(0, 0, 0, 0.22), 0 12px 24px -2px rgba(0, 0, 0, 0.18), inset 0 2px 2px rgba(255, 255, 255, 0.48), inset 0 -2.5px 4px rgba(0, 0, 0, 0.18) !important;
+    transition: transform 0.08s ease !important;
+    cursor: pointer;
 }
 
-.dark .quran-raised-btn-selected {
-    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.55), 0 7px 16px rgba(0, 0, 0, 0.7), inset 0 1px 1.5px rgba(255, 255, 255, 0.25) !important;
+.quran-raised-btn-selected:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8.5px 0 rgba(0, 0, 0, 0.24), 0 16px 30px -3px rgba(0, 0, 0, 0.22), inset 0 2px 2px rgba(255, 255, 255, 0.52), inset 0 -2.5px 4px rgba(0, 0, 0, 0.18) !important;
+}
+
+.quran-raised-btn-selected:not(:disabled):active {
+    transform: translateY(4px) scale(0.99) !important;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0, 0, 0, 0.14), inset 0 2px 2px rgba(255, 255, 255, 0.42), inset 0 -1.5px 3px rgba(0, 0, 0, 0.16) !important;
+}
+
+.dark .quran-raised-btn-selected,
+.quran-3d-dark .quran-raised-btn-selected,
+.quran-reader-container[data-quran-theme="deep_black"] .quran-raised-btn-selected,
+.quran-reader-container[data-quran-theme^="i_"] .quran-raised-btn-selected {
+    box-shadow: 0 6.5px 0 #09090b, 0 14px 26px rgba(0, 0, 0, 0.78), inset 0 2px 2px rgba(255, 255, 255, 0.35), inset 0 -2.5px 4px rgba(0, 0, 0, 0.45) !important;
+}
+
+.dark .quran-raised-btn-selected:not(:disabled):hover,
+.quran-3d-dark .quran-raised-btn-selected:not(:disabled):hover,
+.quran-reader-container[data-quran-theme="deep_black"] .quran-raised-btn-selected:not(:disabled):hover,
+.quran-reader-container[data-quran-theme^="i_"] .quran-raised-btn-selected:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8.5px 0 #09090b, 0 16px 30px -3px rgba(0, 0, 0, 0.82), inset 0 2px 2px rgba(255, 255, 255, 0.38), inset 0 -2.5px 4px rgba(0, 0, 0, 0.45) !important;
+}
+
+.dark .quran-raised-btn-selected:not(:disabled):active,
+.quran-3d-dark .quran-raised-btn-selected:not(:disabled):active,
+.quran-reader-container[data-quran-theme="deep_black"] .quran-raised-btn-selected:not(:disabled):active,
+.quran-reader-container[data-quran-theme^="i_"] .quran-raised-btn-selected:not(:disabled):active {
+    transform: translateY(4px) scale(0.99) !important;
+    box-shadow: 0 2px 0 #09090b, 0 4px 10px rgba(0, 0, 0, 0.55), inset 0 2px 2px rgba(255, 255, 255, 0.3), inset 0 -1.5px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
 .quran-raised-card {
     border: none !important;
     outline: none !important;
-    box-shadow: 0 3.5px 0 rgba(0, 0, 0, 0.12), 0 6px 16px -2px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.75) !important;
-    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    box-shadow: 0 6.5px 0 rgba(0, 0, 0, 0.13), 0 12px 24px -2px rgba(0, 0, 0, 0.11), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05) !important;
 }
 
-.dark .quran-raised-card {
-    box-shadow: 0 3.5px 0 rgba(0, 0, 0, 0.4), 0 6px 16px -2px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.12) !important;
+.dark .quran-raised-card,
+.quran-3d-dark .quran-raised-card,
+.quran-reader-container[data-quran-theme="deep_black"] .quran-raised-card,
+.quran-reader-container[data-quran-theme^="i_"] .quran-raised-card {
+    border: none !important;
+    outline: none !important;
+    box-shadow: 0 6.5px 0 #0d0d10, 0 14px 28px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.22), inset 0 -2.5px 5px rgba(0, 0, 0, 0.65) !important;
 }
 
 .quran-raised-card-selected {
     border: none !important;
     outline: none !important;
-    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2), 0 7px 16px rgba(0, 0, 0, 0.12), inset 0 1px 1.5px rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 0 6.5px 0 rgba(0, 0, 0, 0.22), 0 12px 24px -2px rgba(0, 0, 0, 0.18), inset 0 2px 2px rgba(255, 255, 255, 0.48), inset 0 -2.5px 4px rgba(0, 0, 0, 0.18) !important;
+    transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 0.18s cubic-bezier(0.2, 0.8, 0.4, 1) !important;
 }
 
-.dark .quran-raised-card-selected {
-    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.55), 0 7px 16px rgba(0, 0, 0, 0.65), inset 0 1px 1.5px rgba(255, 255, 255, 0.22) !important;
+.dark .quran-raised-card-selected,
+.quran-3d-dark .quran-raised-card-selected,
+.quran-reader-container[data-quran-theme="deep_black"] .quran-raised-card-selected,
+.quran-reader-container[data-quran-theme^="i_"] .quran-raised-card-selected {
+    box-shadow: 0 6.5px 0 #09090b, 0 14px 26px rgba(0, 0, 0, 0.78), inset 0 2px 2px rgba(255, 255, 255, 0.35), inset 0 -2.5px 4px rgba(0, 0, 0, 0.45) !important;
 }
 
 #header {
@@ -698,52 +766,35 @@
     box-shadow: 0 -6px 24px -2px rgba(0, 0, 0, 0.7), 0 -2px 8px -1px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
 }
 
-/* 3D Sculpted & Embossed Icon Styling (Inner & Outer Depth) */
-.quran-reader-container svg,
-.quran-reader-container i.fa-solid,
-.quran-reader-container i.fas,
+/* Clean lightweight icon rendering (avoids expensive software drop-shadow rasterization inside modals & lists) */
 .top-bar-text-button svg,
 .top-bar-text-button i,
 .bottom-bar-button svg,
-.bottom-bar-button i,
-#floating-menu svg,
-#floating-menu i,
-.quran-3d-icon {
-    filter: drop-shadow(0 2px 2.5px rgba(0, 0, 0, 0.28)) drop-shadow(0 -0.8px 0.5px rgba(255, 255, 255, 0.7));
+.bottom-bar-button i {
     stroke-width: 2.3px !important;
     stroke-linecap: round;
     stroke-linejoin: round;
     display: inline-block;
-    transition: filter 0.2s ease, transform 0.15s ease;
 }
 
-.dark .quran-reader-container svg,
-.dark .quran-reader-container i.fa-solid,
-.dark .quran-reader-container i.fas,
-.dark .top-bar-text-button svg,
-.dark .top-bar-text-button i,
-.dark .bottom-bar-button svg,
-.dark .bottom-bar-button i,
-.dark #floating-menu svg,
-.dark #floating-menu i,
-.dark .quran-3d-icon {
-    filter: drop-shadow(0 2.5px 3.5px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.35));
+.modal-skinned svg,
+.modal-skinned i,
+.zoom-modal-sheet svg,
+.zoom-modal-sheet i {
+    filter: none !important;
+    -webkit-filter: none !important;
+    transition: none !important;
 }
 
-.top-bar-text-button:active svg,
-.top-bar-text-button:active i,
-.bottom-bar-button:active svg,
-.bottom-bar-button:active i {
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
-}
 #mushaf-content {
     padding-left: var(--logical-safe-left) !important;
     padding-right: var(--logical-safe-right) !important;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto !important;
 }
 
-@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+@keyframes fadeIn { from { opacity: 1; } to { opacity: 1; } }
+.animate-fadeIn { animation: none !important; }
 
 /* MODAL & UI STYLES FROM HTML */
 
@@ -754,9 +805,7 @@
 .search-context-label { font-size: 0.8rem; opacity: 0.7; display: block; font-family: var(--font-amiri); font-weight: bold; }
 .dark .search-context-ayah, .dark .search-context-label { color: #e2e8f0 !important; }
 
-.theme-card { border: 2px solid transparent; transition: all 0.2s ease-in-out; display: flex; flex-direction: column; align-items: center; padding: 0.75rem; border-radius: 0.75rem; cursor: pointer; }
-.theme-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.theme-card.selected { border-color: var(--theme-card-border-color, #10b981); box-shadow: 0 0 0 3px var(--theme-card-shadow-color, rgba(16, 185, 129, 0.3)); }
+.theme-card { border: none; display: flex; flex-direction: column; align-items: center; padding: 0.75rem; border-radius: 1rem; cursor: pointer; }
 
 .custom-select-wrapper { position: relative; width: 100%; }
 .custom-select-display { height: 36px; border: 1px solid; border-radius: 0.5rem; padding: 0 12px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; text-align: center; font-family: var(--font-ui); transition: all 0.3s ease; }
@@ -797,14 +846,16 @@
     right: -400px;
     z-index: 3000;
     transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    background-color: white;
-    color: #1f2937;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 0.5rem 0.75rem;
+    background-color: var(--qr-modal-bg, #ffffff);
+    color: var(--qr-modal-text, #1f2937);
+    border: none !important;
+    outline: none !important;
+    border-radius: 9999px;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.24), 0 12px 24px -2px rgba(0, 0, 0, 0.24), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.9), inset 0 -2px 3px rgba(0, 0, 0, 0.08) !important;
+    padding: 0.45rem 0.85rem 0.45rem 0.55rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.55rem;
     font-family: var(--font-ui);
     font-size: 0.8rem;
     font-weight: bold;
@@ -815,20 +866,24 @@
     right: calc(16px + var(--logical-safe-right));
 }
 
-.dark .marker-notification {
-    background-color: #1f2937;
-    color: white;
+.dark .marker-notification,
+.quran-reader-container[data-quran-theme="deep_black"] .marker-notification {
+    background-color: var(--qr-modal-bg, #18181b);
+    color: #ffffff;
+    box-shadow: 0 5px 0 #050507, 0 14px 28px rgba(0, 0, 0, 0.78), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.22), inset 0 -2px 4px rgba(0, 0, 0, 0.55) !important;
 }
 
 .marker-icon {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.8rem;
     flex-shrink: 0;
+    border: none !important;
+    box-shadow: 0 2.5px 0 rgba(0, 0, 0, 0.22), 0 4px 8px rgba(0, 0, 0, 0.16), inset 0 1.5px 1px rgba(255, 255, 255, 0.5), inset 0 -1.5px 2px rgba(0, 0, 0, 0.18) !important;
 }
 
 .marker-text {
@@ -840,23 +895,47 @@
     top: calc(3.5rem + var(--logical-safe-top) + 12px);
     left: 50%;
     transform: translateX(-50%) translateY(-16px);
-    background-color: #000000;
-    color: white;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 0.9rem;
+    background-color: var(--qr-modal-bg, #ffffff);
+    color: var(--qr-modal-text, #1f2937);
+    min-width: 100px;
+    height: 41px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    font-family: var(--font-ui);
+    font-weight: 800;
+    line-height: 1;
     z-index: 105;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255,255,255,0.1);
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.25s ease, color 0.25s ease;
+    border: none !important;
+    outline: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 .reading-timer.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
-    pointer-events: auto;
+    pointer-events: none;
+}
+.dark .reading-timer,
+.quran-reader-container[data-quran-theme="deep_black"] .reading-timer {
+    background-color: var(--qr-modal-bg, #18181b);
+    color: #ffffff;
+}
+.reading-timer-text {
+    font-size: 1.38rem;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    display: inline-block;
+}
+.quran-reader-container.hide-toolbars-autoscroll .reading-timer,
+.quran-reader-container.landscape-ui-hidden .reading-timer {
+    top: calc(var(--logical-safe-top) + 12px);
 }
 
 @keyframes pulse-red {
@@ -903,11 +982,22 @@
     }
 }
 
-/* Fix modals in landscape mode */
+/* Fix modals in landscape mode — keep all popups compact (< 65% horizontal width) */
 .quran-reader-container.landscape-mode .modal-skinned:not(.toast-element) {
-    max-height: 95% !important;
-    width: 95% !important;
-    max-width: 800px !important;
+    max-height: 86% !important;
+    max-width: min(64%, 450px) !important;
+}
+.quran-reader-container.landscape-mode .modal-skinned.ayah-context-menu {
+    max-width: min(56%, 340px) !important;
+    max-height: 85% !important;
+}
+.quran-reader-container.landscape-mode .zoom-modal-sheet {
+    max-width: min(62%, 440px) !important;
+    max-height: 86% !important;
+}
+.quran-reader-container.landscape-mode .compact-landscape-modal {
+    max-width: min(64%, 450px) !important;
+    max-height: 86% !important;
 }
 
 .quran-reader-container.landscape-mode {
@@ -1005,20 +1095,22 @@
     transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     max-width: 90%; 
     font-family: var(--font-ui);
-    background-color: white;
-    color: #1f2937;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    padding: 1rem 1rem;
+    background-color: var(--qr-modal-bg, #ffffff);
+    color: var(--qr-modal-text, #1f2937);
+    border: none !important;
+    outline: none !important;
+    border-radius: 9999px;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.24), 0 12px 24px -2px rgba(0, 0, 0, 0.24), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.9), inset 0 -2px 3px rgba(0, 0, 0, 0.08) !important;
+    padding: 0.75rem 1.15rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
 }
-.dark #message-toast {
-    background-color: #1f2937;
-    color: white;
-    border-color: #374151;
+.dark #message-toast,
+.quran-reader-container[data-quran-theme="deep_black"] #message-toast {
+    background-color: var(--qr-modal-bg, #18181b);
+    color: #ffffff;
+    box-shadow: 0 5px 0 #050507, 0 14px 28px rgba(0, 0, 0, 0.78), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.22), inset 0 -2px 4px rgba(0, 0, 0, 0.55) !important;
 }
 #message-toast.show {
     right: calc(16px + var(--logical-safe-right));

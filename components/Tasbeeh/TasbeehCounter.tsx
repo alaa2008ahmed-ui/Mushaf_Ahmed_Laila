@@ -75,7 +75,15 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
                         }}
                     >
                         {/* Top Gloss Highlight */}
-                        <div className="w-16 h-1 rounded-full bg-white/35 mb-2.5" />
+                        <div
+                            className="w-16 h-1 rounded-full mb-2.5"
+                            style={{
+                                background: isWhite ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.38)',
+                                boxShadow: isWhite
+                                    ? '0 1.5px 0 rgba(15,23,42,0.12), inset 0 1px 1px rgba(255,255,255,0.95)'
+                                    : '0 1.5px 0 rgba(0,0,0,0.28), inset 0 1px 1px rgba(255,255,255,0.65)'
+                            }}
+                        />
 
                         {/* Recessed 3D Digital LCD Screen */}
                         <div
@@ -460,7 +468,15 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
                             {/* Top Metallic Screw/Highlight Detail */}
                             <div className="w-full flex items-center justify-between px-2">
                                 <div className="w-2 h-2 rounded-full bg-white/45 shadow-inner" />
-                                <div className="w-16 h-1 rounded-full bg-white/35" />
+                                <div
+                                    className="w-16 h-1 rounded-full"
+                                    style={{
+                                        background: isWhite ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.38)',
+                                        boxShadow: isWhite
+                                            ? '0 1.5px 0 rgba(15,23,42,0.12), inset 0 1px 1px rgba(255,255,255,0.95)'
+                                            : '0 1.5px 0 rgba(0,0,0,0.28), inset 0 1px 1px rgba(255,255,255,0.65)'
+                                    }}
+                                />
                                 <div className="w-2 h-2 rounded-full bg-white/45 shadow-inner" />
                             </div>
 
@@ -507,14 +523,25 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
                             {/* Target Progress Bar Strip */}
                             {target > 0 && (
-                                <div className="w-full h-1.5 rounded-full bg-black/25 overflow-hidden p-[1px]">
+                                <div
+                                    className="w-full h-2 rounded-full bg-black/25 overflow-hidden p-[1.5px]"
+                                    style={{
+                                        boxShadow: isWhite
+                                            ? 'inset 0 2px 4px rgba(15, 23, 42, 0.35), inset 0 -1px 1px rgba(255, 255, 255, 0.9), 0 1px 0 rgba(255, 255, 255, 0.7)'
+                                            : 'inset 0 2px 4px rgba(0, 0, 0, 0.68), inset 0 -1px 1px rgba(255, 255, 255, 0.28), 0 1px 0 rgba(255, 255, 255, 0.22)'
+                                    }}
+                                >
                                     <motion.div
                                         className="h-full rounded-full"
                                         animate={{ width: `${progress}%` }}
                                         transition={{ duration: 0.3, ease: 'easeOut' }}
                                         style={{
-                                            background: isWhite ? '#0f172a' : '#ffffff',
-                                            boxShadow: '0 0 8px rgba(255,255,255,0.75)'
+                                            background: isWhite
+                                                ? 'linear-gradient(180deg, #334155 0%, #0f172a 100%)'
+                                                : 'linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%)',
+                                            boxShadow: isWhite
+                                                ? '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.35)'
+                                                : '0 0 8px rgba(255,255,255,0.75), inset 0 1px 1px rgba(255,255,255,0.95), inset 0 -1px 1px rgba(0,0,0,0.2)'
                                         }}
                                     />
                                 </div>
@@ -535,9 +562,9 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
                                 }}
                             >
                                 {/* Left tactile grip ribs */}
-                                <div className="flex gap-1 opacity-40">
-                                    <span className="w-1 h-4 rounded-full bg-slate-600" />
-                                    <span className="w-1 h-4 rounded-full bg-slate-600" />
+                                <div className="flex gap-1 opacity-60">
+                                    <span className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg, #94a3b8 0%, #475569 100%)', boxShadow: '0 1px 0 rgba(255,255,255,0.8), inset 0 1px 1px rgba(0,0,0,0.35)' }} />
+                                    <span className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg, #94a3b8 0%, #475569 100%)', boxShadow: '0 1px 0 rgba(255,255,255,0.8), inset 0 1px 1px rgba(0,0,0,0.35)' }} />
                                 </div>
 
                                 <span className="text-sm font-black tracking-wide">
@@ -545,9 +572,9 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
                                 </span>
 
                                 {/* Right tactile grip ribs */}
-                                <div className="flex gap-1 opacity-40">
-                                    <span className="w-1 h-4 rounded-full bg-slate-600" />
-                                    <span className="w-1 h-4 rounded-full bg-slate-600" />
+                                <div className="flex gap-1 opacity-60">
+                                    <span className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg, #94a3b8 0%, #475569 100%)', boxShadow: '0 1px 0 rgba(255,255,255,0.8), inset 0 1px 1px rgba(0,0,0,0.35)' }} />
+                                    <span className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg, #94a3b8 0%, #475569 100%)', boxShadow: '0 1px 0 rgba(255,255,255,0.8), inset 0 1px 1px rgba(0,0,0,0.35)' }} />
                                 </div>
                             </motion.button>
                         </div>
@@ -660,7 +687,15 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
                     </span>
                     
                     {/* Ripple/Glow highlight bar */}
-                    {!isWhite && <div className="absolute bottom-4 w-12 h-1 rounded-full bg-white opacity-25"></div>}
+                    {!isWhite && (
+                        <div
+                            className="absolute bottom-4 w-12 h-1 rounded-full"
+                            style={{
+                                background: 'rgba(255,255,255,0.3)',
+                                boxShadow: '0 1.5px 0 rgba(0,0,0,0.22), inset 0 1px 1px rgba(255,255,255,0.65)'
+                            }}
+                        />
+                    )}
                 </motion.button>
             </div>
         );

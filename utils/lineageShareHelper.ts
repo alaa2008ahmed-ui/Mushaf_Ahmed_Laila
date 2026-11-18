@@ -1,6 +1,7 @@
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { encodeHighResCompactImage } from './shareAsImage';
 
 interface PropheticLineageShareOptions {
     fullName: string;
@@ -83,12 +84,14 @@ export async function renderPropheticLineagePoster(options: PropheticLineageShar
     }
 
     const width = 1080;
-    const height = 1920; // Exact 9:16 vertical smartphone screen resolution
+    const height = 1920; // Logical 9:16 coordinate space
+    const hiDpiScale = 2; // 2160x3840 Ultra-HD output
     const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = width * hiDpiScale;
+    canvas.height = height * hiDpiScale;
     const ctx = canvas.getContext('2d')!;
 
+    ctx.scale(hiDpiScale, hiDpiScale);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.direction = 'rtl';
@@ -361,7 +364,7 @@ export async function sharePropheticLineageImage(options: PropheticLineageShareO
 
     try {
         const canvas = await renderPropheticLineagePoster(options);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.96);
+        const dataUrl = encodeHighResCompactImage(canvas, 380 * 1024, 0.88, 0.68);
 
         if (!dataUrl || dataUrl === 'data:,') {
             throw new Error('Canvas toDataURL returned empty data');

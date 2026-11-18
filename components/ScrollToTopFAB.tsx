@@ -19,10 +19,7 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
     isQuranPage, 
     currentPage: ctxCurrentPage, 
     isNightMode, 
-    homeLayout: ctxHomeLayout, 
-    homeThemeVariant,
-    theme, 
-    themeKey 
+    homeThemeVariant
   } = useTheme();
 
   const [visible, setVisible] = useState(false);
@@ -115,17 +112,6 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
     return () => window.removeEventListener('reset-home-cards-layout', handleResetLayout);
   }, []);
 
-  // Active home layout mode: 'classic' or 'modern'
-  const [activeLayout, setActiveLayout] = useState<'classic' | 'modern'>(() => {
-    try {
-      const saved = localStorage.getItem('home_layout_system');
-      if (saved === 'classic' || saved === 'modern') return saved;
-      return (ctxHomeLayout === 'classic' ? 'classic' : 'modern');
-    } catch {
-      return 'modern';
-    }
-  });
-
   useEffect(() => {
     const checkModalState = () => {
       if (typeof document === 'undefined') return;
@@ -168,23 +154,6 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
       window.removeEventListener('modal-state-changed', handleModalEvent);
       observer.disconnect();
     };
-  }, []);
-
-  useEffect(() => {
-    if (ctxHomeLayout === 'classic' || ctxHomeLayout === 'modern') {
-      setActiveLayout(ctxHomeLayout as 'classic' | 'modern');
-    }
-  }, [ctxHomeLayout]);
-
-  useEffect(() => {
-    const handleLayoutChange = (e: any) => {
-      const next = e?.detail;
-      if (next === 'classic' || next === 'modern') {
-        setActiveLayout(next);
-      }
-    };
-    window.addEventListener('home-layout-changed', handleLayoutChange);
-    return () => window.removeEventListener('home-layout-changed', handleLayoutChange);
   }, []);
 
   useEffect(() => {
@@ -396,120 +365,58 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
     return null;
   }
 
-  // 2. يظهر فقط فى التصميم الكلاسيكى والتصميم الذكى فقط (الصفحة الرئيسية لكلا التصميمين)
+  // 2. يظهر فقط فى الصفحة الرئيسية للتصميم الذكي
   if (effectivePage !== 'home') {
     return null;
   }
 
-  // 3. تتغير ألوان وهيئة الزر بشكل منفصل بكل تصميم:
+  // 3. تتغير ألوان وهيئة الزر حسب السمة النشطة في التصميم الذكي
   let buttonStyle: React.CSSProperties = {};
   let iconColor = '#FFFFFF';
   let buttonClasses = '';
 
-  if (activeLayout === 'modern') {
-    // التصميم الذكي الحديث
-    if (isNightMode) {
-      // فى الثيم الاسود قم بتغيير لون الاطار والسهم الى اللون الابيض
-      buttonStyle = {
-        background: 'linear-gradient(145deg, #18181b 0%, #111111 60%, #09090b 100%)',
-        border: '1.5px solid #FFFFFF',
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.85), 0 0 14px rgba(255, 255, 255, 0.3)',
-      };
-      iconColor = '#FFFFFF';
-      buttonClasses = 'hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]';
-    } else {
-      if (homeThemeVariant === 'sky') {
-        buttonStyle = {
-          background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
-          border: '1.5px solid #38BDF8',
-          boxShadow: '0 6px 18px rgba(3, 105, 161, 0.42), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
-        };
-        iconColor = '#FFFFFF';
-        buttonClasses = 'hover:brightness-105';
-      } else if (homeThemeVariant === 'emerald') {
-        buttonStyle = {
-          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-          border: '1.5px solid #34D399',
-          boxShadow: '0 6px 18px rgba(4, 120, 87, 0.42), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
-        };
-        iconColor = '#FFFFFF';
-        buttonClasses = 'hover:brightness-105';
-      } else if (homeThemeVariant === 'burgundy') {
-        // فى الثيم العنابى قم بتغير لون الزر الى العنابى الغامق والسهم باللون الابيض
-        buttonStyle = {
-          background: 'linear-gradient(135deg, #881337 0%, #701a75 100%)',
-          border: '1.5px solid #9f1239',
-          boxShadow: '0 6px 18px rgba(136, 19, 55, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35)',
-        };
-        iconColor = '#FFFFFF';
-        buttonClasses = 'hover:brightness-105';
-      } else {
-        buttonStyle = {
-          background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
-          border: '1.5px solid #F59E0B',
-          boxShadow: '0 6px 18px rgba(180, 83, 9, 0.42), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
-        };
-        iconColor = '#FFFFFF';
-        buttonClasses = 'hover:brightness-105';
-      }
-    }
+  if (isNightMode) {
+    buttonStyle = {
+      background: 'linear-gradient(160deg, #27272a 0%, #18181b 55%, #09090b 100%)',
+      border: 'none',
+      boxShadow: '0 5px 0 #3f3f46, 0 12px 24px rgba(0, 0, 0, 0.85), 0 0 12px rgba(255, 255, 255, 0.2), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.38), inset 0 -2px 4px rgba(0, 0, 0, 0.65)',
+    };
+    iconColor = '#FFFFFF';
+    buttonClasses = 'unified-3d-fab';
   } else {
-    // التصميم الكلاسيكي
-    const isBlackTheme = isNightMode || themeKey === 'deep_black' || theme?.name === 'اسود' || (theme?.bgColor === '#000000' && !themeKey.includes('gold'));
-    const isBlackGoldTheme = themeKey === 'black_gold';
-    const isShinyGoldTheme = themeKey === 'shiny_gold';
-    const isSkyTheme = themeKey === 'sky_mode';
-    const isEmeraldTheme = themeKey === 'emerald_mode';
-    const isBurgundyTheme = themeKey === 'burgundy_mode' || themeKey === 'burgundy' || theme?.name === 'العنابي';
-
-    if (isBlackGoldTheme || isBlackTheme) {
+    if (homeThemeVariant === 'sky') {
       buttonStyle = {
-        background: '#111111',
-        border: '1.5px solid #FFFFFF',
-        boxShadow: '0 6px 18px rgba(0, 0, 0, 0.8), 0 0 12px rgba(255, 255, 255, 0.25)',
+        background: 'linear-gradient(160deg, #0ea5e9 0%, #0284c7 55%, #0369a1 100%)',
+        border: 'none',
+        boxShadow: '0 5px 0 #075985, 0 12px 22px -2px rgba(2, 132, 199, 0.45), inset 0 2px 1.5px rgba(255, 255, 255, 0.5), inset 0 -2px 4px rgba(0, 0, 0, 0.18)',
       };
       iconColor = '#FFFFFF';
-    } else if (isShinyGoldTheme) {
+      buttonClasses = 'unified-3d-fab hover:brightness-105';
+    } else if (homeThemeVariant === 'emerald') {
       buttonStyle = {
-        background: 'linear-gradient(135deg, #EAB308 0%, #D97706 100%)',
-        border: '1.5px solid #CA8A04',
-        boxShadow: '0 6px 18px rgba(217, 119, 6, 0.35)',
+        background: 'linear-gradient(160deg, #10b981 0%, #059669 55%, #047857 100%)',
+        border: 'none',
+        boxShadow: '0 5px 0 #065f46, 0 12px 22px -2px rgba(5, 150, 105, 0.45), inset 0 2px 1.5px rgba(255, 255, 255, 0.5), inset 0 -2px 4px rgba(0, 0, 0, 0.18)',
       };
       iconColor = '#FFFFFF';
-    } else if (isSkyTheme) {
+      buttonClasses = 'unified-3d-fab hover:brightness-105';
+    } else if (homeThemeVariant === 'burgundy') {
       buttonStyle = {
-        background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
-        border: '1.5px solid #38BDF8',
-        boxShadow: '0 6px 18px rgba(3, 105, 161, 0.42)',
+        background: 'linear-gradient(160deg, #be123c 0%, #9f1239 55%, #881337 100%)',
+        border: 'none',
+        boxShadow: '0 5px 0 #4c0519, 0 12px 22px -2px rgba(136, 19, 55, 0.48), inset 0 2px 1.5px rgba(255, 255, 255, 0.45), inset 0 -2px 4px rgba(0, 0, 0, 0.22)',
       };
       iconColor = '#FFFFFF';
-    } else if (isEmeraldTheme) {
-      buttonStyle = {
-        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-        border: '1.5px solid #34D399',
-        boxShadow: '0 6px 18px rgba(4, 120, 87, 0.42)',
-      };
-      iconColor = '#FFFFFF';
-    } else if (isBurgundyTheme) {
-      buttonStyle = {
-        background: 'linear-gradient(135deg, #881337 0%, #701a75 100%)',
-        border: '1.5px solid #9f1239',
-        boxShadow: '0 6px 18px rgba(136, 19, 55, 0.45)',
-      };
-      iconColor = '#FFFFFF';
+      buttonClasses = 'unified-3d-fab hover:brightness-105';
     } else {
-      const primaryColor = theme?.palette?.[0] || theme?.btnBg || theme?.accent || '#2E7D5E';
-      const isDark = theme?.isDark;
       buttonStyle = {
-        background: primaryColor,
-        border: theme?.btnBorder && theme.btnBorder !== 'none' 
-          ? theme.btnBorder 
-          : (isDark ? '1.5px solid rgba(255, 255, 255, 0.3)' : '1.5px solid rgba(0, 0, 0, 0.12)'),
-        boxShadow: '0 6px 18px rgba(0, 0, 0, 0.25)',
+        background: 'linear-gradient(160deg, #fbbf24 0%, #f59e0b 55%, #e08b08 100%)',
+        border: 'none',
+        boxShadow: '0 5px 0 #b45309, 0 12px 22px -2px rgba(217, 119, 6, 0.34), inset 0 2px 1.5px rgba(255, 255, 255, 0.62), inset 0 -2px 4px rgba(146, 64, 14, 0.14)',
       };
-      iconColor = theme?.btnText || (isDark ? '#FFFFFF' : '#FFFFFF');
+      iconColor = '#FFFFFF';
+      buttonClasses = 'unified-3d-fab hover:brightness-105';
     }
-    buttonClasses = 'hover:scale-105';
   }
 
   // In Edit Mode, force visibility so user can drag it easily anywhere
@@ -577,7 +484,12 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
 
         {/* Drag handle tooltip in edit mode */}
         {editMode && (
-          <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap pointer-events-none flex items-center gap-1 font-cairo">
+          <div
+            className="app-3d-badge border-0 absolute -top-7 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full whitespace-nowrap pointer-events-none flex items-center gap-1 font-cairo"
+            style={{
+              boxShadow: '0 3px 0 #b45309, 0 6px 12px rgba(0, 0, 0, 0.35), inset 0 1.5px 1px rgba(255, 255, 255, 0.72)',
+            }}
+          >
             <span>اسحب</span>
           </div>
         )}

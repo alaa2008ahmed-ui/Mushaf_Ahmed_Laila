@@ -18,10 +18,7 @@ interface PrayerAlertVolumeSliderProps {
     className?: string;
     hideHeader?: boolean;
     showDescription?: boolean;
-<<<<<<< HEAD
     use3dAdiaStyle?: boolean;
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }
 
 export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = ({
@@ -37,12 +34,8 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
     subtextColor,
     className = '',
     hideHeader = false,
-<<<<<<< HEAD
     showDescription = false,
     use3dAdiaStyle = false
-=======
-    showDescription = false
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }) => {
     const { language, isRTL, dir } = useLanguage();
     const isEn = language === 'en';
@@ -97,43 +90,27 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
 
     const effectiveTextColor = textColor || (isBlackTheme ? '#ffffff' : '#0f172a');
     const effectiveSubtextColor = subtextColor || (isBlackTheme ? '#a1a1aa' : '#64748b');
-<<<<<<< HEAD
     const effectiveCardBg = cardBg || (isBlackTheme ? '#18181b' : '#ffffff');
     const effectiveBorderColor = cardBorderColor || (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)');
     const selectedTextColor = (isBlackTheme && primaryColor.toLowerCase() === '#ffffff') ? '#000000' : '#ffffff';
-=======
-    const effectiveCardBg = cardBg || (isBlackTheme ? '#1e1e24' : '#ffffff');
-    const effectiveBorderColor = cardBorderColor || (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)');
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     const VolumeIcon = volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2;
 
     return (
         <div 
             dir={dir}
-<<<<<<< HEAD
             className={use3dAdiaStyle
                 ? `p-3.5 rounded-2xl app-page-card border-0 transition-all space-y-2.5 overflow-visible ${className}`
-                : `p-3 rounded-2xl border transition-all space-y-2 shadow-2xs ${className}`
+                : `p-3.5 rounded-2xl app-page-card border-0 transition-all space-y-2.5 overflow-visible ${className}`
             }
-            style={use3dAdiaStyle
-                ? { backgroundColor: effectiveCardBg }
-                : { backgroundColor: effectiveCardBg, borderColor: effectiveBorderColor }
-            }
-=======
-            className={`p-3 rounded-2xl border transition-all space-y-2 shadow-2xs ${className}`}
-            style={{ 
-                backgroundColor: effectiveCardBg, 
-                borderColor: effectiveBorderColor 
-            }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+            style={{ backgroundColor: effectiveCardBg }}
         >
             {/* Header: Icon + Title + Value Badge + Test Button (Optional) */}
             {!hideHeader && (
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                         <div 
-                            className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                            className="app-3d-badge w-6.5 h-6.5 rounded-lg flex items-center justify-center shrink-0 transition-colors"
                             style={{ 
                                 backgroundColor: volume === 0 ? 'rgba(239, 68, 68, 0.15)' : `${primaryColor}18`,
                                 color: volume === 0 ? '#ef4444' : primaryColor
@@ -145,7 +122,7 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                             {tPrayer('alertVolumeTitle', language)}
                         </span>
                         <span 
-                            className="text-[10px] font-black px-1.5 py-0.2 rounded-full shrink-0"
+                            className="app-3d-badge text-[10px] font-black px-2 py-0.5 rounded-full shrink-0"
                             style={{
                                 backgroundColor: volume === 0 ? 'rgba(239, 68, 68, 0.15)' : `${primaryColor}20`,
                                 color: volume === 0 ? '#ef4444' : primaryColor
@@ -158,22 +135,19 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                     <button
                         type="button"
                         onClick={handleTogglePreview}
-<<<<<<< HEAD
                         className={use3dAdiaStyle
                             ? "px-2.5 py-1 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 app-page-card border-0"
-                            : "px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0 shadow-2xs"
+                            : "unified-3d-btn px-2.5 py-1 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 border-0"
                         }
                         style={use3dAdiaStyle ? {
                             backgroundColor: isPlayingPreview ? '#ef4444' : (isBlackTheme ? '#27272a' : '#ffffff'),
                             color: isPlayingPreview ? '#ffffff' : primaryColor
                         } : {
-=======
-                        className="px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0 shadow-2xs"
-                        style={{
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                            backgroundColor: isPlayingPreview ? '#ef4444' : `${primaryColor}18`,
+                            backgroundColor: isPlayingPreview ? '#ef4444' : (isBlackTheme ? '#27272a' : '#ffffff'),
                             color: isPlayingPreview ? '#ffffff' : primaryColor,
-                            border: `1px solid ${isPlayingPreview ? '#ef4444' : `${primaryColor}35`}`
+                            boxShadow: isBlackTheme
+                                ? '0 3px 0 #09090b, 0 5px 10px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.16)'
+                                : '0 3px 0 rgba(0,0,0,0.12), 0 5px 10px rgba(0,0,0,0.08), inset 0 1.5px 1px rgba(255,255,255,0.95)'
                         }}
                         title={isPlayingPreview ? tPrayer('stopAlertSound', language) : tPrayer('testAlertSound', language)}
                     >
@@ -193,11 +167,7 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
             )}
 
             {/* Range Slider Track */}
-<<<<<<< HEAD
-            <div className={`relative flex items-center ${use3dAdiaStyle ? 'py-1.5' : 'py-1'}`}>
-=======
-            <div className="relative flex items-center py-1">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+            <div className={`relative flex items-center ${use3dAdiaStyle ? 'py-1.5' : 'py-1.5'}`}>
                 <input
                     type="range"
                     min="0"
@@ -205,7 +175,7 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                     step="5"
                     value={volume}
                     onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                    className="w-full h-2.5 rounded-lg appearance-none cursor-pointer focus:outline-hidden touch-none"
+                    className="app-3d-range w-full h-2.5 rounded-full appearance-none cursor-pointer focus:outline-hidden touch-none"
                     style={{
                         background: `linear-gradient(${isRTL ? 'to left' : 'to right'}, ${primaryColor} 0%, ${primaryColor} ${volume}%, ${isBlackTheme ? '#33333b' : '#e2e8f0'} ${volume}%, ${isBlackTheme ? '#33333b' : '#e2e8f0'} 100%)`,
                         accentColor: primaryColor
@@ -215,11 +185,7 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
             </div>
 
             {/* Preset 1-tap Buttons (كتم / 35% / 70% / 100%) */}
-<<<<<<< HEAD
-            <div className={`flex items-center justify-between overflow-visible ${use3dAdiaStyle ? 'gap-2.5 pt-1 pb-1' : 'gap-1.5 pt-0.5'}`}>
-=======
-            <div className="flex items-center justify-between gap-1.5 pt-0.5">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+            <div className="flex items-center justify-between overflow-visible gap-2.5 pt-1 pb-1">
                 {presets.map((preset) => {
                     const isSelected = volume === preset.value;
                     return (
@@ -227,12 +193,9 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                             key={preset.value}
                             type="button"
                             onClick={() => handleVolumeChange(preset.value)}
-<<<<<<< HEAD
                             className={use3dAdiaStyle
                                 ? `flex-1 py-1.5 px-1 rounded-xl text-xs transition-all cursor-pointer text-center app-page-card border-0 ${isSelected ? 'font-extrabold' : 'font-bold'}`
-                                : `flex-1 py-1 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
-                                    isSelected ? 'shadow-2xs scale-102 font-extrabold' : 'opacity-70 hover:opacity-100'
-                                }`
+                                : `unified-3d-btn flex-1 py-1.5 px-1 rounded-xl text-xs transition-all cursor-pointer text-center border-0 ${isSelected ? 'font-extrabold' : 'font-bold'}`
                             }
                             style={use3dAdiaStyle ? {
                                 backgroundColor: isSelected
@@ -240,16 +203,17 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                                     : (isBlackTheme ? '#27272a' : '#ffffff'),
                                 color: isSelected ? selectedTextColor : effectiveTextColor
                             } : {
-=======
-                            className={`flex-1 py-1 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
-                                isSelected ? 'shadow-2xs scale-102 font-extrabold' : 'opacity-70 hover:opacity-100'
-                            }`}
-                            style={{
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 backgroundColor: isSelected 
                                     ? primaryColor 
-                                    : (isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
-                                color: isSelected ? '#ffffff' : effectiveTextColor
+                                    : (isBlackTheme ? '#27272a' : '#ffffff'),
+                                color: isSelected ? selectedTextColor : effectiveTextColor,
+                                boxShadow: isSelected
+                                    ? (isBlackTheme
+                                        ? '0 3.5px 0 #52525b, 0 6px 12px rgba(0,0,0,0.45), inset 0 1.5px 1px rgba(255,255,255,0.45)'
+                                        : '0 3.5px 0 rgba(0,0,0,0.24), 0 6px 12px rgba(0,0,0,0.14), inset 0 1.5px 1px rgba(255,255,255,0.4)')
+                                    : (isBlackTheme
+                                        ? '0 3.5px 0 #09090b, 0 6px 12px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.14)'
+                                        : '0 3.5px 0 rgba(0,0,0,0.12), 0 5px 10px rgba(0,0,0,0.08), inset 0 1.5px 1px rgba(255,255,255,0.95)')
                             }}
                         >
                             {preset.label}

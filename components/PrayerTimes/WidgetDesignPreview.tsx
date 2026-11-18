@@ -14,8 +14,9 @@ import {
     syncWidgetThemeColors,
     getWidgetThemePalette
 } from '../../utils/widgetUtils';
-import { Check, Sparkles, Smartphone, Layers, Moon, Clock, RefreshCw, ZoomIn, Info, Sliders, Palette, Eye, X } from 'lucide-react';
+import { Check, Sparkles, Smartphone, Layers, Clock, RefreshCw, ZoomIn, Info, Sliders, Palette, Eye, X } from 'lucide-react';
 import { Preferences } from '@capacitor/preferences';
+import { getToast3DStyles } from '../../utils/toast3DStyles';
 
 interface WidgetDesignPreviewProps {
     onClose?: () => void;
@@ -26,7 +27,9 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
     const isEn = language === 'en';
     const { times, dates, nextPrayer } = usePrayerTimes();
     const countdown = usePrayerCountdown();
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
+    const isDark = Boolean(theme.isDark) || Boolean(isNightMode) || themeKey === 'deep_black' || themeKey === 'black_gold' || theme.bgColor === '#000000';
 
     const [selectedStyle, setSelectedStyle] = useState<WidgetStyleType>('classic');
     const [savedStyle, setSavedStyle] = useState<WidgetStyleType>('classic');
@@ -275,11 +278,11 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
     const activeMeta = stylesMeta.find(s => s.id === selectedStyle) || stylesMeta[0];
 
     const content = (
-        <div className="space-y-4 max-w-2xl mx-auto w-full font-cairo" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className={`settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''} space-y-4 max-w-2xl mx-auto w-full font-cairo`} dir={isRTL ? 'rtl' : 'ltr'}>
             {/* Header info */}
             <div className="flex items-center justify-between gap-2 border-b pb-3 border-black/10 dark:border-white/10">
-                <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="app-3d-badge w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
                         <Smartphone className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
@@ -292,11 +295,15 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => setShowGuide(prev => !prev)}
-                        className="px-2.5 py-1.5 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        className="app-page-card border-0 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:translate-y-0.5"
+                        style={{
+                            backgroundColor: isDark ? '#27272a' : '#f8fafc',
+                            color: isDark ? '#f1f5f9' : '#1e293b',
+                        }}
                     >
                         <Info className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{isEn ? 'How to Add' : 'طريقة الإضافة'}</span>
@@ -305,7 +312,11 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                         <button
                             type="button"
                             onClick={onClose}
-                            className="p-1.5 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                            className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all cursor-pointer active:translate-y-0.5"
+                            style={{
+                                backgroundColor: isDark ? '#27272a' : '#f8fafc',
+                                color: isDark ? '#f1f5f9' : '#1e293b',
+                            }}
                             title={isEn ? "Close" : "إغلاق"}
                         >
                             <X className="w-5 h-5" />
@@ -316,7 +327,10 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
 
             {/* Guide Collapse */}
             {showGuide && (
-                <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs leading-relaxed space-y-2">
+                <div
+                    className="app-inner-3d-box border-0 p-3.5 rounded-2xl text-xs leading-relaxed space-y-2"
+                    style={{ backgroundColor: isDark ? 'rgba(6, 78, 59, 0.4)' : '#ecfdf5' }}
+                >
                     <p className="font-bold text-emerald-800 dark:text-emerald-300">
                         {isEn ? 'How to add widgets to your Android phone:' : 'خطوات إضافة الودجت على شاشة هاتفك الأندرويد:'}
                     </p>
@@ -330,7 +344,7 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
             )}
 
             {/* Style Selector Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {stylesMeta.map((s) => {
                     const isSelected = selectedStyle === s.id;
                     const isDefault = savedStyle === s.id;
@@ -343,27 +357,32 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                                 setSelectedStyle(s.id);
                                 handleSaveAllSettings(s.id);
                             }}
-                            className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
-                                isSelected
-                                    ? 'border-emerald-500 bg-emerald-500/10 shadow-md scale-[1.01]'
-                                    : 'border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 hover:border-black/20 dark:hover:border-white/20'
+                            className={`app-page-card tasbeeh-pressable border-0 p-3.5 rounded-2xl transition-all cursor-pointer relative flex flex-col justify-between ${
+                                isSelected ? 'ring-2 ring-emerald-500 scale-[1.01]' : ''
                             }`}
+                            style={{
+                                backgroundColor: isSelected
+                                    ? (isDark ? '#0b2b22' : '#ecfdf5')
+                                    : (isDark ? '#1e1e24' : '#ffffff'),
+                            }}
                         >
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-1">
                                     <div className="flex items-center gap-1.5 min-w-0">
-                                        <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-emerald-500' : 'opacity-60'}`} />
+                                        <div className="app-3d-badge w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/15">
+                                            <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-emerald-500' : 'opacity-70'}`} />
+                                        </div>
                                         <span className="font-bold text-xs sm:text-[13px] truncate">
                                             {isEn ? s.titleEn : s.titleAr}
                                         </span>
                                     </div>
                                     {isDefault && (
-                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
+                                        <span className="app-3d-badge text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
                                             {isEn ? 'Active' : 'المعتمد'}
                                         </span>
                                     )}
                                 </div>
-                                <span className="inline-block text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                                <span className="app-3d-badge inline-block text-[9.5px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
                                     {isEn ? s.badgeEn : s.badgeAr}
                                 </span>
                                 <p className="text-[10.5px] opacity-75 line-clamp-2 leading-relaxed">
@@ -377,11 +396,23 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                                     e.stopPropagation();
                                     handleSaveAllSettings(s.id);
                                 }}
-                                className={`mt-2.5 w-full py-1.5 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                                    isDefault
-                                        ? 'bg-emerald-600 text-white shadow-xs'
-                                        : 'bg-black/10 dark:bg-white/15 hover:bg-emerald-600 hover:text-white'
-                                }`}
+                                className="unified-3d-btn border-0 mt-3 w-full py-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer active:translate-y-0.5"
+                                style={{
+                                    backgroundImage: isDefault
+                                        ? 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.06) 100%)'
+                                        : 'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(0,0,0,0.04) 100%)',
+                                    backgroundColor: isDefault
+                                        ? '#059669'
+                                        : (isDark ? '#27272a' : '#f1f5f9'),
+                                    color: isDefault
+                                        ? '#ffffff'
+                                        : (isDark ? '#e2e8f0' : '#1e293b'),
+                                    boxShadow: isDefault
+                                        ? '0 3px 0 #047857, 0 5px 12px rgba(5,150,105,0.35), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                        : (isDark
+                                            ? '0 3px 0 #09090b, 0 4px 10px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                            : '0 3px 0 #cbd5e1, 0 4px 10px rgba(15,23,42,0.08), inset 0 1px 1px rgba(255,255,255,0.95)')
+                                }}
                             >
                                 <Check className="w-3.5 h-3.5" />
                                 <span>{isDefault ? (isEn ? 'Current Default' : 'التصميم المعتمد حالياً') : (isEn ? 'Set as Default' : 'اعتماد كتصميم رئيسي')}</span>
@@ -392,21 +423,29 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
             </div>
 
             {/* Widget Customization Controls strictly for currently selected style */}
-            <div className="p-4 rounded-3xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 space-y-3.5">
+            <div
+                className="app-page-card border-0 p-4 rounded-3xl space-y-3.5"
+                style={{ backgroundColor: isDark ? '#1c1c21' : '#f8fafc' }}
+            >
                 <div className="flex items-center justify-between border-b pb-2.5 border-black/10 dark:border-white/10">
                     <div className="flex items-center gap-2">
-                        <Sliders className="w-4 h-4 text-amber-500" />
+                        <div className="app-3d-badge w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                            <Sliders className="w-3.5 h-3.5 text-amber-500" />
+                        </div>
                         <h4 className="font-bold text-xs sm:text-sm">
                             {isEn ? 'Widget Customization & Settings' : 'تخصيص وإعدادات التصميم المحدد'}
                         </h4>
                     </div>
-                    <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white font-black text-[11px] shadow-sm">
+                    <span className="app-3d-badge px-2.5 py-1 rounded-xl bg-emerald-600 text-white font-black text-[11px]">
                         {isEn ? activeMeta.titleEn : activeMeta.titleAr}
                     </span>
                 </div>
 
                 {/* Scope Notice */}
-                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                <div
+                    className="app-inner-3d-box border-0 p-2.5 rounded-xl text-[11px] font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2"
+                    style={{ backgroundColor: isDark ? 'rgba(120, 53, 15, 0.28)' : '#fffbeb' }}
+                >
                     <Info className="w-4 h-4 shrink-0 text-amber-500" />
                     <span>
                         {isEn 
@@ -416,13 +455,19 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                 </div>
 
                 {/* 1. Transparency / Opacity Slider for Selected Style */}
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs font-bold">
                         <span className="flex items-center gap-1.5 opacity-90">
                             <Eye className="w-3.5 h-3.5 text-emerald-500" />
                             <span>{isEn ? `Opacity for ${activeMeta.titleEn}:` : `درجة الشفافية لتصميم (${activeMeta.titleAr}) فقط:`}</span>
                         </span>
-                        <span className="text-amber-500 font-mono text-sm" dir="ltr">{Math.round(currentSettings.opacity * 100)}%</span>
+                        <span
+                            className="app-3d-badge px-2.5 py-0.5 rounded-lg text-amber-600 dark:text-amber-400 font-mono text-xs font-black"
+                            style={{ backgroundColor: isDark ? '#27272a' : '#ffffff' }}
+                            dir="ltr"
+                        >
+                            {Math.round(currentSettings.opacity * 100)}%
+                        </span>
                     </div>
 
                     <input
@@ -435,40 +480,51 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                             const val = parseFloat(e.target.value);
                             updateCurrentSetting('opacity', val);
                         }}
-                        className="w-full accent-emerald-500 cursor-pointer h-2 bg-black/10 dark:bg-white/15 rounded-lg"
+                        className="app-3d-range w-full cursor-pointer"
                     />
 
-                    <div className="flex items-center justify-between gap-1 pt-1">
+                    <div className="flex items-center justify-between gap-1.5 pt-1">
                         {[
                             { labelAr: '100% معتم', labelEn: 'Solid', val: 1.0 },
                             { labelAr: '95% مشرق', labelEn: 'Vibrant', val: 0.95 },
                             { labelAr: '80% زجاجي', labelEn: 'Glass', val: 0.80 },
                             { labelAr: '60% متوازن', labelEn: 'Semi', val: 0.60 }
-                        ].map((btn) => (
-                            <button
-                                key={btn.val}
-                                type="button"
-                                onClick={() => updateCurrentSetting('opacity', btn.val)}
-                                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                                    Math.abs(currentSettings.opacity - btn.val) < 0.05
-                                        ? 'bg-emerald-600 text-white shadow-xs'
-                                        : 'bg-black/5 dark:bg-white/10 opacity-75 hover:opacity-100'
-                                }`}
-                            >
-                                {isEn ? btn.labelEn : btn.labelAr}
-                            </button>
-                        ))}
+                        ].map((btn) => {
+                            const isActive = Math.abs(currentSettings.opacity - btn.val) < 0.05;
+                            return (
+                                <button
+                                    key={btn.val}
+                                    type="button"
+                                    onClick={() => updateCurrentSetting('opacity', btn.val)}
+                                    className="unified-3d-btn border-0 flex-1 px-2 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer active:translate-y-0.5"
+                                    style={{
+                                        backgroundImage: isActive
+                                            ? 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.06) 100%)'
+                                            : 'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(0,0,0,0.04) 100%)',
+                                        backgroundColor: isActive ? '#059669' : (isDark ? '#27272a' : '#ffffff'),
+                                        color: isActive ? '#ffffff' : (isDark ? '#e2e8f0' : '#334155'),
+                                        boxShadow: isActive
+                                            ? '0 3px 0 #047857, 0 5px 12px rgba(5,150,105,0.3), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                            : (isDark
+                                                ? '0 3px 0 #09090b, 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                                : '0 3px 0 #cbd5e1, 0 4px 8px rgba(15,23,42,0.07), inset 0 1px 1px rgba(255,255,255,0.95)')
+                                    }}
+                                >
+                                    {isEn ? btn.labelEn : btn.labelAr}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
                 {/* 2. Color Scheme / Theme Selector for Selected Style (18 Vibrant Presets) */}
-                <div className="space-y-1.5 pt-1">
+                <div className="space-y-2 pt-1">
                     <span className="block text-xs font-bold opacity-90 flex items-center gap-1.5">
                         <Palette className="w-3.5 h-3.5 text-amber-500" />
                         <span>{isEn ? 'Color Palette Theme for this Widget:' : 'قائمة الثيمات الجديدة المتاحة لهذا الودجت:'}</span>
                     </span>
 
-                    <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto pr-1">
+                    <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto p-0.5 pr-1">
                         {[
                             { id: 'golden_trio', labelAr: 'عنبري', labelEn: 'Amber', bgHex: '#F8DE8A' },
                             { id: 'royal_gold_3d', labelAr: 'ذهبي', labelEn: 'Gold', bgHex: '#5E2E00' },
@@ -486,101 +542,132 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                             { id: 'default', labelAr: 'أخضر', labelEn: 'Green', bgHex: '#064E3B' },
                             { id: 'royal_navy', labelAr: 'كحلي', labelEn: 'Navy', bgHex: '#0F172A' },
                             { id: 'deep_black', labelAr: 'أسود', labelEn: 'Black', bgHex: '#000000' }
-                        ].map((t) => (
-                            <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => updateCurrentSetting('themeChoice', t.id)}
-                                className={`p-2 rounded-xl text-[10.5px] font-bold text-center transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
-                                    currentSettings.themeChoice === t.id
-                                        ? 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-400'
-                                        : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
-                                }`}
-                            >
-                                <span className="truncate">{isEn ? t.labelEn : t.labelAr}</span>
-                                <span 
-                                    className="w-3.5 h-3.5 rounded-full shrink-0 border border-white/40 shadow-xs" 
-                                    style={{ backgroundColor: t.bgHex }} 
-                                />
-                            </button>
-                        ))}
+                        ].map((t) => {
+                            const isThemeSelected = currentSettings.themeChoice === t.id;
+                            return (
+                                <button
+                                    key={t.id}
+                                    type="button"
+                                    onClick={() => updateCurrentSetting('themeChoice', t.id)}
+                                    className={`unified-3d-btn border-0 p-2 rounded-xl text-[10.5px] font-bold text-center transition-all cursor-pointer flex items-center justify-between gap-1.5 active:translate-y-0.5 ${
+                                        isThemeSelected ? 'ring-2 ring-emerald-400' : ''
+                                    }`}
+                                    style={{
+                                        backgroundImage: isThemeSelected
+                                            ? 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.06) 100%)'
+                                            : 'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(0,0,0,0.03) 100%)',
+                                        backgroundColor: isThemeSelected ? '#059669' : (isDark ? '#27272a' : '#ffffff'),
+                                        color: isThemeSelected ? '#ffffff' : (isDark ? '#e2e8f0' : '#1e293b'),
+                                        boxShadow: isThemeSelected
+                                            ? '0 3px 0 #047857, 0 5px 12px rgba(5,150,105,0.3), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                            : (isDark
+                                                ? '0 3px 0 #09090b, 0 4px 8px rgba(0,0,0,0.38), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                                : '0 3px 0 #cbd5e1, 0 4px 8px rgba(15,23,42,0.06), inset 0 1px 1px rgba(255,255,255,0.95)')
+                                    }}
+                                >
+                                    <span className="truncate">{isEn ? t.labelEn : t.labelAr}</span>
+                                    <span
+                                        className="app-3d-badge w-4 h-4 rounded-full shrink-0 border border-white/50"
+                                        style={{ backgroundColor: t.bgHex }}
+                                    />
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
                 {/* 3. Text & Highlighting Color for Selected Style */}
-                <div className="space-y-1.5 pt-1">
+                <div className="space-y-2 pt-1">
                     <span className="block text-xs font-bold opacity-90">
                         {isEn ? 'Highlight & Countdown Color:' : 'لون الإبراز والعداد التنازلي:'}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
                             { id: 'gold', labelAr: 'ذهبي ساطع', labelEn: 'Radiant Gold', hex: '#FBBF24' },
                             { id: 'emerald', labelAr: 'زمردي مشرق', labelEn: 'Bright Emerald', hex: '#34D399' },
                             { id: 'white', labelAr: 'أبيض ناصع', labelEn: 'Pure White', hex: '#FFFFFF' },
                             { id: 'amber', labelAr: 'كهرماني دافئ', labelEn: 'Warm Amber', hex: '#F59E0B' }
-                        ].map((c) => (
-                            <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => updateCurrentSetting('textColor', c.id)}
-                                className={`flex-1 py-1.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                                    currentSettings.textColor === c.id
-                                        ? 'ring-2 ring-emerald-500 shadow-xs bg-emerald-500/15'
-                                        : 'opacity-70 hover:opacity-100'
-                                }`}
-                                style={{ backgroundColor: 'rgba(0,0,0,0.15)', color: c.hex }}
-                            >
-                                <span className="w-2.5 h-2.5 rounded-full border border-white/20" style={{ backgroundColor: c.hex }} />
-                                <span>{isEn ? c.labelEn : c.labelAr}</span>
-                            </button>
-                        ))}
+                        ].map((c) => {
+                            const isColorActive = currentSettings.textColor === c.id;
+                            return (
+                                <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() => updateCurrentSetting('textColor', c.id)}
+                                    className={`unified-3d-btn border-0 py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer active:translate-y-0.5 ${
+                                        isColorActive ? 'ring-2 ring-emerald-400' : 'opacity-85 hover:opacity-100'
+                                    }`}
+                                    style={{
+                                        backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.16) 100%)',
+                                        backgroundColor: isColorActive ? '#1e293b' : '#18181b',
+                                        color: c.hex,
+                                        boxShadow: '0 3px 0 #020617, 0 5px 12px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.18)',
+                                    }}
+                                >
+                                    <span className="app-3d-badge w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: c.hex }} />
+                                    <span className="truncate">{isEn ? c.labelEn : c.labelAr}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
                 {/* 4. Content Visibility Toggles */}
                 {selectedStyle !== 'single' ? (
-                    <div className="space-y-2 pt-1 border-t border-black/10 dark:border-white/10">
+                    <div className="space-y-2 pt-2 border-t border-black/10 dark:border-white/10">
                         <span className="block text-xs font-bold opacity-90">
                             {isEn ? 'Show / Hide Widget Elements:' : 'خيارات إظهار وإخفاء المحتوى:'}
                         </span>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <button
-                                type="button"
-                                onClick={() => updateCurrentSetting('showDate', !currentSettings.showDate)}
-                                className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                                    currentSettings.showDate ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
-                                }`}
-                            >
-                                <span>{isEn ? 'Show Date' : 'إظهار التاريخ'}</span>
-                                <Check className={`w-3.5 h-3.5 ${currentSettings.showDate ? 'opacity-100' : 'opacity-0'}`} />
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => updateCurrentSetting('showNight', !currentSettings.showNight)}
-                                className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                                    currentSettings.showNight ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
-                                }`}
-                            >
-                                <span>{isEn ? 'Show Night Times' : 'أوقات قيام الليل'}</span>
-                                <Check className={`w-3.5 h-3.5 ${currentSettings.showNight ? 'opacity-100' : 'opacity-0'}`} />
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => updateCurrentSetting('showCountdown', !currentSettings.showCountdown)}
-                                className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                                    currentSettings.showCountdown ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
-                                }`}
-                            >
-                                <span>{isEn ? 'Show Countdown' : 'العد التنازلي'}</span>
-                                <Check className={`w-3.5 h-3.5 ${currentSettings.showCountdown ? 'opacity-100' : 'opacity-0'}`} />
-                            </button>
+                            {[
+                                { key: 'showDate' as const, labelEn: 'Show Date', labelAr: 'إظهار التاريخ', active: currentSettings.showDate },
+                                { key: 'showNight' as const, labelEn: 'Show Night Times', labelAr: 'أوقات قيام الليل', active: currentSettings.showNight },
+                                { key: 'showCountdown' as const, labelEn: 'Show Countdown', labelAr: 'العد التنازلي', active: currentSettings.showCountdown },
+                            ].map((item) => (
+                                <button
+                                    key={item.key}
+                                    type="button"
+                                    onClick={() => updateCurrentSetting(item.key, !item.active)}
+                                    className="unified-3d-btn border-0 p-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer active:translate-y-0.5"
+                                    style={{
+                                        backgroundImage: item.active
+                                            ? 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.04) 100%)'
+                                            : 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(0,0,0,0.03) 100%)',
+                                        backgroundColor: item.active
+                                            ? (isDark ? '#064e3b' : '#ecfdf5')
+                                            : (isDark ? '#27272a' : '#ffffff'),
+                                        color: item.active
+                                            ? (isDark ? '#6ee7b7' : '#047857')
+                                            : (isDark ? '#94a3b8' : '#64748b'),
+                                        boxShadow: item.active
+                                            ? (isDark
+                                                ? '0 3px 0 #022c22, 0 5px 12px rgba(6,78,59,0.4), inset 0 1px 1px rgba(255,255,255,0.18)'
+                                                : '0 3px 0 #a7f3d0, 0 4px 10px rgba(16,185,129,0.15), inset 0 1px 1px rgba(255,255,255,0.95)')
+                                            : (isDark
+                                                ? '0 3px 0 #09090b, 0 4px 8px rgba(0,0,0,0.38), inset 0 1px 1px rgba(255,255,255,0.08)'
+                                                : '0 3px 0 #cbd5e1, 0 4px 8px rgba(15,23,42,0.06), inset 0 1px 1px rgba(255,255,255,0.95)')
+                                    }}
+                                >
+                                    <span>{isEn ? item.labelEn : item.labelAr}</span>
+                                    <span
+                                        className="app-3d-badge w-5 h-5 rounded-lg flex items-center justify-center shrink-0"
+                                        style={{
+                                            backgroundColor: item.active ? '#10b981' : (isDark ? '#18181b' : '#e2e8f0'),
+                                            color: '#ffffff',
+                                        }}
+                                    >
+                                        <Check className={`w-3 h-3 ${item.active ? 'opacity-100' : 'opacity-0'}`} />
+                                    </span>
+                                </button>
+                            ))}
                         </div>
                     </div>
                 ) : (
-                    <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
+                    <div
+                        className="app-inner-3d-box border-0 p-3 rounded-2xl text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2"
+                        style={{ backgroundColor: isDark ? 'rgba(6, 78, 59, 0.35)' : '#ecfdf5' }}
+                    >
                         <Info className="w-4 h-4 shrink-0 text-emerald-500" />
                         <span>
                             {isEn 
@@ -594,7 +681,12 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                 <button
                     type="button"
                     onClick={() => handleSaveAllSettings()}
-                    className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-98 cursor-pointer mt-2"
+                    className="unified-3d-btn border-0 w-full py-3 rounded-2xl text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:translate-y-0.5 cursor-pointer mt-2"
+                    style={{
+                        backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.06) 100%)',
+                        backgroundColor: '#059669',
+                        boxShadow: '0 5px 0 #047857, 0 10px 22px rgba(5,150,105,0.35), inset 0 1.5px 1px rgba(255,255,255,0.4)',
+                    }}
                 >
                     <Check className="w-4 h-4" />
                     <span>{isEn ? 'Save & Apply Customization to Phone Widgets' : 'اعتماد وحفظ إعدادات هذا التصميم للتطبيق المصغر'}</span>
@@ -602,9 +694,14 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
             </div>
 
             {/* Resize Simulation Bar */}
-            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+            <div
+                className="app-page-card border-0 flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl"
+                style={{ backgroundColor: isDark ? '#1c1c21' : '#f8fafc' }}
+            >
                 <div className="flex items-center gap-2">
-                    <ZoomIn className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <div className="app-3d-badge w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                        <ZoomIn className="w-3.5 h-3.5 text-emerald-500" />
+                    </div>
                     <span className="text-xs font-bold">
                         {isEn ? 'Simulate Widget Resizing (Auto Text Scaling):' : 'معاينة تكبير وتصغير الودجت (تكبير النصوص تلقائياً):'}
                     </span>
@@ -615,26 +712,42 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                         { label: isEn ? 'Normal' : 'عادي', scale: 1 },
                         { label: isEn ? 'Medium' : 'متوسط', scale: 1.15 },
                         { label: isEn ? 'Large' : 'مكبر', scale: 1.3 }
-                    ].map(btn => (
-                        <button
-                            key={btn.scale}
-                            type="button"
-                            onClick={() => setPreviewScale(btn.scale)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                                previewScale === btn.scale
-                                    ? 'bg-emerald-600 text-white shadow-xs'
-                                    : 'bg-black/5 dark:bg-white/10 opacity-80'
-                            }`}
-                        >
-                            {btn.label}
-                        </button>
-                    ))}
+                    ].map(btn => {
+                        const isScaleActive = previewScale === btn.scale;
+                        return (
+                            <button
+                                key={btn.scale}
+                                type="button"
+                                onClick={() => setPreviewScale(btn.scale)}
+                                className="unified-3d-btn border-0 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer active:translate-y-0.5"
+                                style={{
+                                    backgroundImage: isScaleActive
+                                        ? 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.06) 100%)'
+                                        : 'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(0,0,0,0.04) 100%)',
+                                    backgroundColor: isScaleActive ? '#059669' : (isDark ? '#27272a' : '#ffffff'),
+                                    color: isScaleActive ? '#ffffff' : (isDark ? '#e2e8f0' : '#334155'),
+                                    boxShadow: isScaleActive
+                                        ? '0 3px 0 #047857, 0 5px 12px rgba(5,150,105,0.3), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                        : (isDark
+                                            ? '0 3px 0 #09090b, 0 4px 8px rgba(0,0,0,0.38), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                            : '0 3px 0 #cbd5e1, 0 4px 8px rgba(15,23,42,0.07), inset 0 1px 1px rgba(255,255,255,0.95)')
+                                }}
+                            >
+                                {btn.label}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
             {/* Live Interactive 3D Mockup Container */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-radial from-slate-900 to-black border-2 border-emerald-500/30 shadow-2xl overflow-hidden relative">
-                <div className="absolute top-2 start-3 flex items-center gap-1 text-[10px] font-mono text-slate-300">
+            <div
+                className="p-4 sm:p-6 rounded-3xl bg-radial from-slate-900 to-black border-0 overflow-hidden relative"
+                style={{
+                    boxShadow: '0 8px 0 #020617, 0 20px 42px rgba(0,0,0,0.48), inset 0 2px 2px rgba(255,255,255,0.16)',
+                }}
+            >
+                <div className="absolute top-2.5 start-3.5 flex items-center gap-1 text-[10px] font-mono text-slate-300">
                     <span>LIVE WIDGET PREVIEW</span>
                     <span>•</span>
                     <span className="text-emerald-400 font-bold">{selectedStyle.toUpperCase()}</span>
@@ -897,8 +1010,16 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
 
             {/* Toast feedback */}
             {isSavedToast && (
-                <div className="fixed bottom-[calc(5.75rem+var(--app-safe-bottom,0px))] start-1/2 -translate-x-1/2 z-[99999999] px-4 py-2.5 rounded-2xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce">
-                    <Check className="w-4 h-4" />
+                <div
+                    className="app-3d-toast border-0 fixed bottom-[calc(5.75rem+var(--app-safe-bottom,0px))] start-1/2 -translate-x-1/2 z-[99999999] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 animate-fadeIn pointer-events-none"
+                    style={toast3D.style}
+                >
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
+                    >
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
                     <span>{isEn ? 'Widget settings & customization saved & synchronized!' : 'تم حفظ إعدادات التصميم بنجاح ومزامنته مع هاتفك! ✨'}</span>
                 </div>
             )}
@@ -907,9 +1028,16 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
 
     if (onClose) {
         return (
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[1300] flex items-center justify-center p-3 sm:p-5 animate-fadeIn" onClick={onClose}>
-                <div 
-                    className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-slate-100 rounded-3xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-black/10 dark:border-white/10"
+            <div className={`settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''} fixed inset-0 bg-black/75 z-[1300] flex items-center justify-center p-3 sm:p-5`} onClick={onClose}>
+                <div
+                    className="rounded-3xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6 border-0"
+                    style={{
+                        backgroundColor: isDark ? '#141418' : '#ffffff',
+                        color: isDark ? '#f1f5f9' : '#1e293b',
+                        boxShadow: isDark
+                            ? '0 8px 0 #050507, 0 24px 54px rgba(0,0,0,0.85), inset 0 1px 1px rgba(255,255,255,0.12)'
+                            : '0 8px 0 #cbd5e1, 0 24px 54px rgba(15,23,42,0.28), inset 0 2px 2px rgba(255,255,255,0.95)',
+                    }}
                     onClick={e => e.stopPropagation()}
                 >
                     {content}

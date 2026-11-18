@@ -22,8 +22,14 @@ export interface ModernFlatTokens {
 }
 
 export function getModernFlatTokens(theme: Theme, themeKey?: string): ModernFlatTokens {
-    const isDark = Boolean(theme.isDark);
-    const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+    const isDeepBlack =
+        theme.bgColor === '#000000' ||
+        theme.name === 'أبيض وأسود' ||
+        theme.name === 'اسود' ||
+        theme.name === 'الأسود والذهبي' ||
+        themeKey === 'deep_black' ||
+        themeKey === 'black_gold';
+    const isDark = Boolean(theme.isDark) || isDeepBlack;
     const primaryColor = isDeepBlack ? 'rgba(255, 255, 255, 0.25)' : (theme.palette?.[0] || theme.accent || '#059669');
     const secondaryColor = isDeepBlack ? '#E2E8F0' : (theme.palette?.[1] || theme.palette?.[0] || primaryColor);
     const themeActiveTextColor = '#FFFFFF';

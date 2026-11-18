@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ZoomIn, Copy, Check, Share2, Volume2, VolumeX, BookOpen, Search, ExternalLink } from 'lucide-react';
+import { ChevronDown, ZoomIn, Copy, Check, Share2, Volume2, VolumeX, BookOpen, Search, ExternalLink, X } from 'lucide-react';
 import { THEMATIC_CATEGORIES, ThematicCategory, ThematicConcept, ThematicVerse } from '../../data/thematicQuranData';
 import { useLanguage } from '../../context/LanguageContext';
 import { SURAH_NAMES_EN, toArabic } from './constants';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface ThematicEncyclopediaModalProps {
   isOpen: boolean;
@@ -66,11 +67,7 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
 
   if (!isOpen) return null;
 
-  const themeAccent = currentTheme?.accent || '#10b981';
-  const isDark = currentTheme?.id === 'deep_black';
-  const themeAccentColor = isDark ? '#ffffff' : themeAccent;
-  const modalBg = currentTheme?.modalBg || currentTheme?.bg || '#ffffff';
-  const modalText = currentTheme?.modalText || currentTheme?.text || '#000000';
+  const p = resolveQuranModalPalette(currentTheme);
 
   const conceptTitleText = isEn ? (selectedConcept.titleEn || selectedConcept.titleAr) : selectedConcept.titleAr;
   const conceptDescText = isEn ? (selectedConcept.descriptionEn || selectedConcept.descriptionAr) : selectedConcept.descriptionAr;
@@ -153,86 +150,102 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[1300] bg-black/65 backdrop-blur-xs flex flex-col justify-end select-none animate-fadeIn"
+      className={`fixed inset-0 z-[1300] bg-black/70 flex flex-col select-none ${isLandscape ? 'justify-center items-center p-2.5' : 'justify-end'}`}
       onClick={onClose}
       dir={dir}
     >
       <div 
-        className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col overflow-hidden relative shadow-2xl animate-modal-enter ${
-          isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'
+        className={`zoom-modal-sheet modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} flex flex-col overflow-hidden relative shadow-2xl border-0 ${
+          isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%] rounded-3xl' : 'w-full max-w-xl mx-auto rounded-t-[32px] max-h-[88dvh]'
         }`}
         style={{ 
-          backgroundColor: modalBg, 
-          color: modalText,
-          fontFamily: currentTheme?.font || "'Cairo', sans-serif"
+          backgroundColor: p.modalBg, 
+          color: p.modalText,
+          fontFamily: p.fontFamily || "'Cairo', sans-serif",
+          border: 'none',
+          outline: 'none'
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Drag Handle & Category Badge */}
-        <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
-          <div className="w-12 h-1.5 rounded-full mb-2.5 bg-slate-300 dark:bg-zinc-700 opacity-70 mx-auto" />
+        {/* Canonical Raised 3D Header */}
+        <div className={`${isLandscape ? 'pt-2.5 px-3 pb-1.5' : 'pt-3 px-4 sm:px-5 pb-2'} shrink-0 flex flex-col`}>
+          {!isLandscape && (
+            <div className="app-3d-drag-handle w-12 h-1.5 rounded-full mb-2.5 bg-slate-300/80 dark:bg-zinc-600/80 mx-auto" />
+          )}
           
-          <div className="w-full flex flex-col items-center justify-center relative px-2">
-            <span 
-              className="px-4 py-1.5 rounded-full text-xs font-extrabold shadow-2xs border transition-all"
-              style={{
-                backgroundColor: `${themeAccent}18`,
-                borderColor: `${themeAccent}40`,
-                color: themeAccentColor
-              }}
-            >
+          <div 
+            className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between gap-2 quran-raised-card border-0`}
+            style={{ backgroundColor: p.headerBg }}
+          >
+            <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide truncate`} style={{ color: p.headerAccent }}>
               {isEn ? "Thematic Quranic Encyclopedia" : "الموسوعة والفهرس الموضوعي للقرآن"}
             </span>
+            <button 
+              type="button"
+              onClick={onClose} 
+              className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer shrink-0`}
+              style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+              aria-label={isEn ? "Close" : "إغلاق"}
+            >
+              <X size={isLandscape ? 14 : 16} />
+            </button>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="px-6 pt-2 pb-1 shrink-0">
+        {/* 3D Search Bar */}
+        <div className={`${isLandscape ? 'px-3 pt-1 pb-2' : 'px-4 sm:px-5 pt-1.5 pb-3'} shrink-0`}>
           <div 
-            className="flex items-center gap-2 px-3.5 py-2 rounded-2xl border transition-all"
+            className={`flex items-center gap-2 ${isLandscape ? 'px-3 py-1.5 rounded-xl' : 'px-3.5 py-2.5 rounded-2xl'} border-0 quran-raised-card`}
             style={{
-              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-              borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+              backgroundColor: p.cardBg,
+              color: p.cardText
             }}
           >
-            <Search size={16} className="opacity-50" />
+            <Search size={isLandscape ? 14 : 16} style={{ color: p.headerAccent }} />
             <input 
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={isEn ? "Search topics (e.g. Sabr, Parents, Tawheed)..." : "ابحث في المفاهيم الموضوعية (مثل: الصبر، التوكل، بر الوالدين)..."}
-              className="bg-transparent border-0 outline-none w-full text-xs sm:text-sm placeholder:opacity-50 font-bold"
-              style={{ color: modalText }}
+              className={`bg-transparent border-0 outline-none w-full ${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} placeholder:opacity-50 font-bold`}
+              style={{ color: p.cardText }}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="p-1 opacity-60 hover:opacity-100">
-                ×
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="w-6 h-6 rounded-full quran-raised-btn border-0 flex items-center justify-center shrink-0 cursor-pointer"
+                style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+              >
+                <X size={12} className="quran-3d-icon" />
               </button>
             )}
           </div>
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-6 py-3">
+        <div className={`overflow-y-auto custom-scrollbar flex-1 min-h-0 ${isLandscape ? 'px-3 pt-1 pb-3 space-y-2.5' : 'px-4 sm:px-5 pt-1 pb-5 space-y-3'}`}>
           {!allFilteredConcepts ? (
             <>
               {/* Category Pills Header */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 custom-scrollbar">
+              <div className="flex items-center gap-2.5 overflow-x-auto pt-1 pb-3 px-1 custom-scrollbar">
                 {THEMATIC_CATEGORIES.map((cat) => {
                   const isSelected = selectedCategory.id === cat.id;
                   const catLabel = isEn ? (cat.nameEn || cat.nameAr) : cat.nameAr;
                   return (
                     <button
                       key={cat.id}
+                      type="button"
                       onClick={() => {
                         setSelectedCategory(cat);
                         setSelectedConcept(cat.concepts[0]);
                       }}
-                      className="px-3.5 py-1.5 rounded-xl font-extrabold text-xs whitespace-nowrap border transition-all quran-raised-btn"
+                      className={`px-3.5 py-2 rounded-2xl font-extrabold text-xs whitespace-nowrap border-0 cursor-pointer shrink-0 ${
+                        isSelected ? 'quran-raised-btn-selected' : 'quran-raised-btn'
+                      }`}
                       style={{
-                        backgroundColor: isSelected ? `${themeAccent}25` : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'),
-                        borderColor: isSelected ? themeAccentColor : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'),
-                        color: isSelected ? themeAccentColor : modalText
+                        backgroundColor: isSelected ? undefined : p.cardBg,
+                        color: isSelected ? p.selectedText : p.cardText
                       }}
                     >
                       {catLabel}
@@ -242,19 +255,21 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
               </div>
 
               {/* Concept Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 custom-scrollbar">
+              <div className="flex items-center gap-2.5 overflow-x-auto pt-0.5 pb-3.5 px-1 custom-scrollbar">
                 {selectedCategory.concepts.map((c) => {
                   const isSelected = selectedConcept.id === c.id;
                   const cTitle = isEn ? (c.titleEn || c.titleAr) : c.titleAr;
                   return (
                     <button
                       key={c.id}
+                      type="button"
                       onClick={() => setSelectedConcept(c)}
-                      className="px-3 py-1 rounded-lg font-bold text-xs whitespace-nowrap border transition-all quran-raised-btn"
+                      className={`px-3.5 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap border-0 cursor-pointer shrink-0 ${
+                        isSelected ? 'quran-raised-btn-selected' : 'quran-raised-btn'
+                      }`}
                       style={{
-                        backgroundColor: isSelected ? `${themeAccent}18` : 'transparent',
-                        borderColor: isSelected ? themeAccentColor : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
-                        color: isSelected ? themeAccentColor : modalText
+                        backgroundColor: isSelected ? undefined : p.cardBg,
+                        color: isSelected ? p.selectedText : p.cardText
                       }}
                     >
                       {cTitle}
@@ -265,21 +280,21 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
 
               {/* Concept Header Card */}
               <div 
-                className="p-4 rounded-2xl border quran-raised-card space-y-2 mb-3"
-                style={{ backgroundColor: `${themeAccent}08`, borderColor: `${themeAccent}20` }}
+                className="p-4 rounded-2xl border-0 quran-raised-card space-y-2"
+                style={{ backgroundColor: p.cardBg, color: p.cardText }}
               >
-                <h4 className="font-extrabold text-base" style={{ color: themeAccentColor }}>
+                <h4 className="font-extrabold text-base" style={{ color: p.headerAccent }}>
                   {conceptTitleText}
                 </h4>
-                <p className="text-xs sm:text-sm font-bold leading-[2] opacity-90 select-text" style={{ fontSize: `${fontSize}px` }}>
+                <p className="text-xs sm:text-sm font-bold leading-[2] select-text" style={{ fontSize: `${fontSize}px`, color: p.cardText }}>
                   {conceptDescText}
                 </p>
               </div>
 
               {/* Linked Verses */}
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2 font-bold text-xs opacity-80">
-                  <BookOpen size={16} style={{ color: themeAccentColor }} />
+              <div className="space-y-4 pt-1">
+                <div className="flex items-center gap-2 font-bold text-xs px-1" style={{ color: p.headerAccent }}>
+                  <BookOpen size={16} style={{ color: p.headerAccent }} />
                   <span>
                     {isEn ? `Quranic verses related to «${conceptTitleText}»:` : `الآيات القرآنية المرتبطة بـ «${conceptTitleText}»:`}
                   </span>
@@ -288,40 +303,42 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
                 {selectedConcept.verses.map((v, idx) => {
                   const vSurahName = isEn ? (SURAH_NAMES_EN[v.surahNumber - 1] || v.surahName) : v.surahName;
                   const vKeyMeaning = isEn ? (v.keyMeaningEn || v.keyMeaningAr) : v.keyMeaningAr;
+                  const isCopiedAyah = copiedAyahKey === `${v.surahNumber}:${v.ayahNumber}`;
                   return (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-2xl border transition-all quran-raised-card"
+                      className="p-4 rounded-2xl border-0 quran-raised-card"
                       style={{
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+                        backgroundColor: p.cardBg,
+                        color: p.cardText
                       }}
                     >
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-2">
                         <span className="font-extrabold text-xs text-emerald-600 dark:text-emerald-400">
                           {vSurahName} - {isEn ? `Ayah ${v.ayahNumber}` : `آية ${toArabic(v.ayahNumber)}`}
                         </span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <button
+                            type="button"
                             onClick={(e) => handleCopySingleVerse(e, v)}
-                            className="p-1 rounded-xl text-xs font-bold flex items-center justify-center border transition-all quran-raised-btn"
+                            className="p-1.5 rounded-xl text-xs font-bold flex items-center justify-center border-0 quran-raised-btn cursor-pointer"
                             style={{ 
-                              backgroundColor: copiedAyahKey === `${v.surahNumber}:${v.ayahNumber}` ? '#10b98125' : `${themeAccent}14`, 
-                              borderColor: copiedAyahKey === `${v.surahNumber}:${v.ayahNumber}` ? '#10b981' : `${themeAccent}25`, 
-                              color: copiedAyahKey === `${v.surahNumber}:${v.ayahNumber}` ? '#10b981' : themeAccentColor 
+                              backgroundColor: isCopiedAyah ? '#10b981' : p.closeBg, 
+                              color: isCopiedAyah ? '#ffffff' : p.headerAccent 
                             }}
                             title={isEn ? "Copy Ayah" : "نسخ الآية"}
                           >
-                            {copiedAyahKey === `${v.surahNumber}:${v.ayahNumber}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                            {isCopiedAyah ? <Check size={12} className="text-white" /> : <Copy size={12} />}
                           </button>
                           {onJumpToAyah && (
                             <button
+                              type="button"
                               onClick={() => {
                                 onJumpToAyah(v.surahNumber, v.ayahNumber);
                                 onClose();
                               }}
-                              className="px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 border transition-all quran-raised-btn"
-                              style={{ backgroundColor: `${themeAccent}18`, borderColor: `${themeAccent}30`, color: themeAccentColor }}
+                              className="px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border-0 quran-raised-btn cursor-pointer"
+                              style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
                             >
                               <span>{isEn ? "Jump" : "انتقال"}</span>
                               <ExternalLink size={12} />
@@ -330,11 +347,11 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
                         </div>
                       </div>
 
-                      <p className="text-xs sm:text-sm font-bold leading-[2.1] select-text" dir="rtl">
+                      <p className="text-xs sm:text-sm font-bold leading-[2.1] select-text" dir="rtl" style={{ color: p.cardText }}>
                         {v.verseSnippet}
                       </p>
 
-                      <div className="mt-2 text-[11px] font-extrabold opacity-80 text-amber-600 dark:text-amber-400">
+                      <div className="mt-2.5 px-3 py-1.5 rounded-xl text-[11px] font-extrabold text-amber-700 dark:text-amber-300" style={{ backgroundColor: p.subtleBg }}>
                         💡 {isEn ? 'Key purpose & theme:' : 'المقصد والمفهوم:'} {vKeyMeaning}
                       </div>
                     </div>
@@ -344,13 +361,13 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
             </>
           ) : (
             /* Search Results View */
-            <div className="space-y-3">
-              <div className="font-bold text-xs opacity-80">
+            <div className="space-y-4">
+              <div className="font-bold text-xs px-1" style={{ color: p.mutedText }}>
                 {isEn ? `Search results for «${searchQuery}» (${allFilteredConcepts.length}):` : `نتائج البحث عن «${searchQuery}» (${allFilteredConcepts.length}):`}
               </div>
 
               {allFilteredConcepts.length === 0 ? (
-                <div className="py-8 text-center text-sm opacity-60 font-bold">
+                <div className="p-6 rounded-2xl border-0 quran-raised-card text-center text-sm font-bold" style={{ backgroundColor: p.cardBg, color: p.mutedText }}>
                   {isEn ? "No matching topics found in the encyclopedia." : "لم يتم العثور على نتائج متطابقة في الموسوعة."}
                 </div>
               ) : (
@@ -358,8 +375,9 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
                   const cTitle = isEn ? (concept.titleEn || concept.titleAr) : concept.titleAr;
                   const cDesc = isEn ? (concept.descriptionEn || concept.descriptionAr) : concept.descriptionAr;
                   return (
-                    <div
+                    <button
                       key={idx}
+                      type="button"
                       onClick={() => {
                         const parentCat = THEMATIC_CATEGORIES.find(cat => cat.concepts.some(c => c.id === concept.id));
                         if (parentCat) {
@@ -368,24 +386,24 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
                         setSelectedConcept(concept);
                         setSearchQuery('');
                       }}
-                      className="p-3.5 rounded-2xl border cursor-pointer transition-all quran-raised-btn space-y-1.5"
+                      className="w-full text-start p-4 rounded-2xl border-0 cursor-pointer quran-raised-btn space-y-1.5"
                       style={{
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+                        backgroundColor: p.cardBg,
+                        color: p.cardText
                       }}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
                           {cTitle}
                         </span>
-                        <span className="text-[10px] opacity-60 font-bold px-2 py-0.5 rounded-lg border">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ backgroundColor: p.subtleBg, color: p.headerAccent }}>
                           {categoryName}
                         </span>
                       </div>
-                      <p className="text-xs font-bold opacity-80 line-clamp-2">
+                      <p className="text-xs font-bold line-clamp-2" style={{ color: p.mutedText }}>
                         {cDesc}
                       </p>
-                    </div>
+                    </button>
                   );
                 })
               )}
@@ -393,70 +411,76 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
           )}
         </div>
 
-        {/* Bottom Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
+        {/* Sculpted 3D Bottom Action Bar */}
         <div 
-          className="pt-3 px-6 modal-sheet-safe-bottom border-t shrink-0 flex items-center justify-center gap-3 sm:gap-4 font-cairo border-slate-200/50 dark:border-white/10"
+          data-toast-bottom-bar="true"
+          className={`${isLandscape ? 'pt-2 pb-2.5 px-3 gap-3' : 'pt-3.5 pb-4 px-6 modal-sheet-safe-bottom gap-3.5 sm:gap-4'} shrink-0 flex items-center justify-center font-cairo zoom-modal-action-bar-3d`}
           dir="rtl"
           style={{
-            backgroundColor: modalBg
+            backgroundColor: p.modalBg
           }}
         >
           {/* 1. Audio / Recitation Play Button (RIGHTMOST in RTL) */}
           <button 
+            type="button"
             onClick={handlePlayAudio}
-            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 ${
-              isPlaying ? 'ring-2 ring-red-400/80 animate-pulse' : 'quran-raised-card'
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn ${
+              isPlaying ? 'ring-2 ring-red-400/80 animate-pulse' : ''
             }`}
             style={{ 
-              backgroundColor: isPlaying ? '#dc2626' : `${themeAccent}18`, 
-              color: isPlaying ? '#ffffff' : themeAccentColor 
+              backgroundColor: isPlaying ? '#dc2626' : p.closeBg, 
+              color: isPlaying ? '#ffffff' : p.headerAccent 
             }}
             title={isPlaying ? (isEn ? "Stop Audio" : "إيقاف الصوت") : (isEn ? "Listen" : "استماع")}
           >
-            {isPlaying ? <VolumeX size={20} className="text-white animate-pulse" /> : <Volume2 size={20} style={{ color: themeAccentColor }} />}
+            {isPlaying ? <VolumeX size={isLandscape ? 17 : 20} className="text-white animate-pulse" /> : <Volume2 size={isLandscape ? 17 : 20} style={{ color: p.headerAccent }} />}
           </button>
 
           {/* 2. Share Button */}
           <button 
+            type="button"
             onClick={handleShare}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 quran-raised-card"
-            style={{ backgroundColor: `${themeAccent}18`, color: themeAccentColor }}
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn`}
+            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
             title={isEn ? "Share" : "مشاركة"}
           >
-            <Share2 size={20} style={{ color: themeAccentColor }} />
+            <Share2 size={isLandscape ? 17 : 20} style={{ color: p.headerAccent }} />
           </button>
 
           {/* 3. Copy Button */}
           <button 
+            type="button"
             onClick={handleCopy}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 quran-raised-card"
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn`}
             style={{ 
-              backgroundColor: copied ? '#10b981' : `${themeAccent}18`, 
-              color: copied ? '#ffffff' : themeAccentColor 
+              backgroundColor: copied ? '#10b981' : p.closeBg, 
+              color: copied ? '#ffffff' : p.headerAccent 
             }}
             title={isEn ? "Copy" : "نسخ"}
           >
-            {copied ? <Check size={20} className="text-white stroke-[2.5]" /> : <Copy size={20} style={{ color: themeAccentColor }} />}
+            {copied ? <Check size={isLandscape ? 17 : 20} className="text-white stroke-[2.5]" /> : <Copy size={isLandscape ? 17 : 20} style={{ color: p.headerAccent }} />}
           </button>
 
           {/* 4. Zoom Button */}
           <button 
+            type="button"
             onClick={handleToggleZoom}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 quran-raised-card"
-            style={{ backgroundColor: `${themeAccent}18`, color: themeAccentColor }}
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn`}
+            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
             title={isEn ? "Text Size" : "حجم الخط"}
           >
-            <ZoomIn size={20} style={{ color: themeAccentColor }} />
+            <ZoomIn size={isLandscape ? 17 : 20} style={{ color: p.headerAccent }} />
           </button>
 
           {/* 5. Chevron Down / Hide Modal Button (LEFTMOST in RTL) */}
           <button 
+            type="button"
             onClick={onClose}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 quran-raised-card"
-            style={{ backgroundColor: `${themeAccent}18`, color: themeAccentColor }}
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn`}
+            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
             title={isEn ? "Close" : "إغلاق"}
           >
-            <ChevronDown size={22} style={{ color: themeAccentColor }} />
+            <ChevronDown size={isLandscape ? 18 : 22} style={{ color: p.headerAccent }} />
           </button>
         </div>
       </div>

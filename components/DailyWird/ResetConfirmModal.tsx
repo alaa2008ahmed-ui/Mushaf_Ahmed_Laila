@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, X, AlertTriangle } from 'lucide-react';
 
 interface ResetConfirmModalProps {
@@ -20,33 +19,27 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#2E7D5E')));
     const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
 
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" dir={isEn ? 'ltr' : 'rtl'}>
-                    {/* Backdrop */}
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                    />
+    if (!isOpen) return null;
 
-                    {/* Modal Content */}
-                    <motion.div 
-                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className={`app-page-card border-0 relative w-full max-w-sm rounded-[28px] p-6 overflow-hidden ${
-                            isBlackTheme ? 'bg-[#18181b] text-white' : 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white'
-                        }`}
+    return (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" dir={isEn ? 'ltr' : 'rtl'}>
+            {/* Backdrop */}
+            <div 
+                onClick={onClose}
+                className="absolute inset-0 bg-black/65"
+            />
+
+            {/* Modal Content */}
+            <div 
+                className={`app-page-card border-0 relative w-full max-w-sm rounded-[28px] p-6 overflow-hidden ${
+                    isBlackTheme ? 'bg-[#18181b] text-white' : 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white'
+                }`}
                         style={{ fontFamily: theme.font }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex flex-col items-center text-center relative z-10">
                             <div 
-                                className={`border-0 w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+                                className={`app-3d-badge border-0 w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
                                     isBlackTheme ? 'bg-white/10' : 'bg-red-50 dark:bg-red-950/40'
                                 }`}
                                 style={{
@@ -60,7 +53,7 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
                                 {isEn ? 'Reset Khatma Plan' : 'إعادة تعيين الختمة'}
                             </h3>
                             
-                            <div className="border-0 flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                            <div className="app-inner-3d-box border-0 flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
                                 <AlertTriangle size={14} />
                                 <span>{isEn ? 'Irreversible Action' : 'إجراء لا يمكن التراجع عنه'}</span>
                             </div>
@@ -93,10 +86,8 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
                                 </button>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
-            )}
-        </AnimatePresence>
     );
 };
 

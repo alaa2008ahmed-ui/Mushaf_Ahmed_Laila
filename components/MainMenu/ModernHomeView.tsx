@@ -1,37 +1,28 @@
 import { QiblaIcon } from '../QiblaIcon';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { 
-  Search, 
-  Zap, 
-  MapPin, 
-  Sun, 
-  Moon, 
-  CloudSun, 
-  Sunset, 
-  Clock, 
-  BookOpen, 
-  RotateCcw, 
-  Sparkles, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  Search,
+  MapPin,
+  Sun,
+  Clock,
+  BookOpen,
+  RotateCcw,
+  Sparkles,
+  ChevronLeft,
   ChevronDown,
-  CheckCircle2, 
-  LayoutGrid, 
-  Compass, 
-  Heart, 
-  ShieldCheck, 
-  BookMarked, 
-  Calendar, 
-  Share2, 
-  Copy, 
-  Maximize2, 
+  Compass,
+  ShieldCheck,
+  BookMarked,
+  Calendar,
+  Share2,
+  Copy,
+  Maximize2,
   ZoomIn,
-  Globe, 
-  ExternalLink, 
-  QrCode, 
-  Check, 
-  Library, 
-  Wrench,
+  Globe,
+  ExternalLink,
+  QrCode,
+  Check,
+  Library,
   HeartHandshake,
   ScrollText,
   Mic,
@@ -46,13 +37,6 @@ import {
   CheckSquare,
   Calculator,
   CalendarDays,
-  ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
-  X,
-  HelpCircle,
-  Lightbulb,
-  ChevronUp,
   GripVertical
 } from 'lucide-react';
 import { motion, Reorder, useDragControls } from 'framer-motion';
@@ -63,8 +47,7 @@ import { useSeenPages, markPageAsSeen } from '../../utils/badgeManager';
 import { usePrayerTimes, computeTimesSync } from '../../context/PrayerTimesContext';
 import { useVoiceControl } from '../../context/VoiceControlContext';
 import { useHabitTracker } from '../../hooks/useHabitTracker';
-import { prayerNamesAr } from '../../data/prayerTimesData';
-import { PRAYER_NAMES_EN, getLocalizedLocationName } from '../../utils/prayerTimesTranslations';
+import { getLocalizedLocationName } from '../../utils/prayerTimesTranslations';
 import { checkSupportsDST, applyOffset } from '../../utils/prayerTimesUtils';
 import { SURAH_NAMES_AR, SURAH_NAMES_EN, toArabic, JUZ_MAP } from '../QuranReader/constants';
 import { quranData as quranJsonData } from '../../utils/quranData';
@@ -1763,7 +1746,6 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
 
   const renderSeasonalCard = () => (
       <SmartSeasonalStrip
-        layoutMode="modern"
         onNavigate={onNavigate}
       />
   );
@@ -1908,7 +1890,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
         className="w-full golden-3d-card p-3.5 sm:p-4 select-none"
       >
         {/* الصف العلوي: قسم البحث وبجواره زر التحكم الصوتي */}
-        <div className="flex items-stretch gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           <div 
             onClick={() => {
               recordAppVisit('search');
@@ -1926,7 +1908,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             </div>
           </div>
 
-          {/* أيقونة التحكم الصوتي فقط باللون الذهبي بدون أي بطاقة خلفية */}
+          {/* زر التحكم الصوتي الدائري المجسم 3D */}
           {showVoiceIcon && (
             <button
               id="modern-voice-control-btn"
@@ -1939,24 +1921,52 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                   setToastMessage(isEn ? 'Voice control disabled' : 'تم تعطيل التحكم الصوتي');
                 }
               }}
-              className="shrink-0 p-2 sm:p-2.5 flex items-center justify-center cursor-pointer select-none transition-all duration-200 active:scale-90 hover:scale-110 bg-transparent border-none outline-none"
+              className="unified-3d-fab shrink-0 w-11 h-11 rounded-full flex items-center justify-center cursor-pointer select-none relative overflow-hidden outline-none"
+              style={
+                isNightMode
+                  ? {
+                      background: 'linear-gradient(180deg, #2b2b36 0%, #191921 100%)',
+                      border: isEnabled ? '1px solid rgba(245, 158, 11, 0.55)' : '1px solid rgba(255, 255, 255, 0.22)',
+                      boxShadow: isEnabled
+                        ? '0 4.5px 0 #09090d, 0 8px 18px rgba(245, 158, 11, 0.28), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.24)'
+                        : '0 4.5px 0 #09090d, 0 8px 16px rgba(0, 0, 0, 0.55), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.2)',
+                    }
+                  : {
+                      background: homeThemeVariant === 'sky'
+                        ? 'linear-gradient(180deg, #ffffff 0%, #ebf5fd 65%, #dbeafe 100%)'
+                        : homeThemeVariant === 'emerald'
+                          ? 'linear-gradient(180deg, #ffffff 0%, #ecfdf5 65%, #d1fae5 100%)'
+                          : homeThemeVariant === 'burgundy'
+                            ? 'linear-gradient(180deg, #ffffff 0%, #fff1f2 65%, #ffe4e6 100%)'
+                            : 'linear-gradient(180deg, #ffffff 0%, #fffbeb 65%, #fef3c7 100%)',
+                      border: '1px solid rgba(255, 255, 255, 0.92)',
+                      boxShadow: homeThemeVariant === 'sky'
+                        ? '0 4.5px 0 rgba(3, 105, 161, 0.28), 0 8px 16px rgba(2, 132, 199, 0.16), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.98)'
+                        : homeThemeVariant === 'emerald'
+                          ? '0 4.5px 0 rgba(4, 120, 87, 0.28), 0 8px 16px rgba(5, 150, 105, 0.16), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.98)'
+                          : homeThemeVariant === 'burgundy'
+                            ? '0 4.5px 0 rgba(159, 18, 57, 0.28), 0 8px 16px rgba(159, 18, 57, 0.16), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.98)'
+                            : '0 4.5px 0 rgba(180, 83, 9, 0.28), 0 8px 16px rgba(180, 83, 9, 0.16), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.98)',
+                    }
+              }
               title={
                 isEnabled 
                   ? (isEn ? 'Voice control is active (Tap to disable)' : 'التحكم الصوتي مفعّل (انقر للتعطيل)') 
                   : (isEn ? 'Voice control is disabled (Tap to enable)' : 'التحكم الصوتي معطّل (انقر للتفعيل)')
               }
             >
+              <div className="absolute inset-x-1 top-0.5 h-[44%] rounded-t-full bg-gradient-to-b from-white/50 via-white/15 to-transparent pointer-events-none" />
               {isEnabled ? (
-                <div className="relative flex items-center justify-center">
-                  <Mic className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
+                <div className="relative z-10 flex items-center justify-center">
+                  <Mic className="w-5 h-5 sm:w-[22px] sm:h-[22px] drop-shadow-xs voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: voicePingColor }}></span>
                     <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: voiceIconColor }}></span>
                   </span>
                 </div>
               ) : (
-                <div className="relative flex items-center justify-center">
-                  <MicOff className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
+                <div className="relative z-10 flex items-center justify-center">
+                  <MicOff className="w-5 h-5 sm:w-[22px] sm:h-[22px] drop-shadow-xs voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
                 </div>
               )}
             </button>
@@ -2012,7 +2022,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                       />
                       {service.isNew && (
                         <span 
-                          className={`new-app-badge absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-white font-black text-[8px] shadow-sm leading-none z-10 ${
+                          className={`app-3d-badge new-app-badge absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-white font-black text-[8px] leading-none z-10 ${
                             isBurgundyTheme
                               ? 'bg-rose-900'
                               : isSkyTheme 
@@ -2188,7 +2198,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                         />
                         {service.isNew && (
                           <span 
-                            className={`new-app-badge absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-white font-black text-[9px] shadow-sm leading-none z-10 ${
+                            className={`app-3d-badge new-app-badge absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-white font-black text-[9px] leading-none z-10 ${
                               isBurgundyTheme
                                 ? 'bg-rose-900'
                                 : isSkyTheme 
@@ -2460,7 +2470,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
 
             {isDhikrMenuOpen && (
               <div 
-                className={`absolute z-50 top-full mt-1.5 w-full backdrop-blur-md rounded-2xl shadow-2xl p-1.5 space-y-1 max-h-56 overflow-y-auto font-cairo border ${
+                className={`absolute z-50 top-full mt-1.5 w-full rounded-2xl shadow-2xl p-1.5 space-y-1 max-h-56 overflow-y-auto font-cairo border ${
                   isNightMode || isBlackTheme
                     ? 'bg-zinc-900/95 border-zinc-700/80 text-zinc-100'
                     : isSkyTheme
@@ -2521,7 +2531,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
 
             {isTargetMenuOpen && (
               <div 
-                className={`absolute z-50 top-full mt-1.5 w-full backdrop-blur-md rounded-2xl shadow-2xl p-1.5 space-y-1 font-cairo border ${
+                className={`absolute z-50 top-full mt-1.5 w-full rounded-2xl shadow-2xl p-1.5 space-y-1 font-cairo border ${
                   isNightMode || isBlackTheme
                     ? 'bg-zinc-900/95 border-zinc-700/80 text-zinc-100'
                     : isSkyTheme
@@ -2640,11 +2650,15 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center justify-center gap-0.5 min-[360px]:gap-1 text-xs font-bold overflow-x-auto scrollbar-none max-w-full pt-1 pb-2 px-1">
+          <div className="flex items-center justify-between sm:justify-center gap-0.5 sm:gap-1.5 w-full font-bold pt-1 pb-2">
             <button
               type="button"
               onClick={() => setActiveEventTab('occasions')}
-              className={`px-2 min-[360px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[10.5px] min-[360px]:text-[11px] min-[400px]:text-xs flex items-center justify-center shrink-0 ${
+              style={{
+                fontSize: isEn ? 'clamp(8.5px, 2.5vw, 12px)' : 'clamp(9.5px, 2.8vw, 12px)',
+                paddingInline: 'clamp(4px, 1.6vw, 10px)',
+              }}
+              className={`py-1 rounded-full transition-all cursor-pointer flex items-center justify-center whitespace-nowrap min-w-0 ${
                 activeEventTab === 'occasions' 
                   ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none') 
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
@@ -2657,7 +2671,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('wisdom')}
-              className={`px-2 min-[360px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[10.5px] min-[360px]:text-[11px] min-[400px]:text-xs flex items-center justify-center shrink-0 ${
+              style={{
+                fontSize: isEn ? 'clamp(8.5px, 2.5vw, 12px)' : 'clamp(9.5px, 2.8vw, 12px)',
+                paddingInline: 'clamp(4px, 1.6vw, 10px)',
+              }}
+              className={`py-1 rounded-full transition-all cursor-pointer flex items-center justify-center whitespace-nowrap min-w-0 ${
                 activeEventTab === 'wisdom' 
                   ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none') 
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
@@ -2670,7 +2688,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('memory')}
-              className={`px-2 min-[360px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[10.5px] min-[360px]:text-[11px] min-[400px]:text-xs flex items-center justify-center shrink-0 ${
+              style={{
+                fontSize: isEn ? 'clamp(8.5px, 2.5vw, 12px)' : 'clamp(9.5px, 2.8vw, 12px)',
+                paddingInline: 'clamp(4px, 1.6vw, 10px)',
+              }}
+              className={`py-1 rounded-full transition-all cursor-pointer flex items-center justify-center whitespace-nowrap min-w-0 ${
                 activeEventTab === 'memory' 
                   ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none') 
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
@@ -2683,7 +2705,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('event')}
-              className={`px-2 min-[360px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[10.5px] min-[360px]:text-[11px] min-[400px]:text-xs flex items-center justify-center shrink-0 ${
+              style={{
+                fontSize: isEn ? 'clamp(8.5px, 2.5vw, 12px)' : 'clamp(9.5px, 2.8vw, 12px)',
+                paddingInline: 'clamp(4px, 1.6vw, 10px)',
+              }}
+              className={`py-1 rounded-full transition-all cursor-pointer flex items-center justify-center whitespace-nowrap min-w-0 ${
                 activeEventTab === 'event' 
                   ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none') 
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
@@ -2696,22 +2722,52 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </div>
         </div>
 
-        {/* شارة التاريخ والعام أو الحكمة ديناميكياً بحسب التبويب النشط */}
-        <div className="flex items-center justify-center gap-2 mb-2.5 flex-wrap">
-          {activeEventTab === 'wisdom' && currentWisdom && (
-            <>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg golden-3d-inset text-[#451A03] font-bold text-xs">
-                <Sparkles className="w-3.5 h-3.5 text-amber-800" />
-                <span>{isEn ? currentWisdom.categoryEn : currentWisdom.categoryAr}</span>
-              </div>
-              <span className="px-2 py-0.5 rounded-lg golden-3d-inset text-amber-950 font-extrabold text-xs">
-                {isEn ? currentWisdom.authorEn : currentWisdom.authorAr}
-              </span>
-            </>
-          )}
+        {/* شارة التاريخ والمحتوى داخل شبكة موحدة تحفظ ارتفاع البطاقة ثابتاً عند التبديل بين التبويبات */}
+        <div className="grid grid-cols-1 my-1 min-h-[128px]">
+          {/* تبويب: حكمة اليوم */}
+          <div
+            aria-hidden={activeEventTab !== 'wisdom'}
+            className={`col-start-1 row-start-1 flex flex-col transition-opacity duration-200 ${
+              activeEventTab === 'wisdom'
+                ? 'opacity-100 pointer-events-auto z-10'
+                : 'opacity-0 invisible pointer-events-none select-none'
+            }`}
+          >
+            {currentWisdom && (
+              <>
+                <div className="flex items-center justify-center gap-2 mb-2.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg golden-3d-inset text-[#451A03] font-bold text-xs">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-800" />
+                    <span>{isEn ? currentWisdom.categoryEn : currentWisdom.categoryAr}</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-lg golden-3d-inset text-amber-950 font-extrabold text-xs">
+                    {isEn ? currentWisdom.authorEn : currentWisdom.authorAr}
+                  </span>
+                </div>
+                <div className="flex-1 flex flex-col justify-center my-1 text-start">
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-xs sm:text-sm font-bold font-cairo ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#451A03]'}`}>
+                      {isEn ? currentWisdom.titleEn : currentWisdom.titleAr}
+                    </span>
+                    <p className={`text-xs sm:text-sm font-semibold leading-relaxed line-clamp-3 ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#3B1703]'}`}>
+                      "{isEn ? currentWisdom.textEn : currentWisdom.textAr}"
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
-          {activeEventTab === 'event' && (
-            <>
+          {/* تبويب: حدث اليوم */}
+          <div
+            aria-hidden={activeEventTab !== 'event'}
+            className={`col-start-1 row-start-1 flex flex-col transition-opacity duration-200 ${
+              activeEventTab === 'event'
+                ? 'opacity-100 pointer-events-auto z-10'
+                : 'opacity-0 invisible pointer-events-none select-none'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2 mb-2.5 flex-wrap">
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg golden-3d-inset text-[#451A03] font-bold text-xs">
                 <Calendar className="w-3.5 h-3.5 text-amber-800" />
                 <span>{onThisDayEvent?.dateStr || moment().format(isEn ? 'dddd, D MMMM' : 'dddd، D MMMM')}</span>
@@ -2721,11 +2777,24 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                   {isEn ? `Year ${onThisDayEvent.year} AD` : `عام ${toArabic(onThisDayEvent.year)} م`}
                 </span>
               ) : null}
-            </>
-          )}
+            </div>
+            <div className="flex-1 flex flex-col justify-center my-1 text-start">
+              <p className={`text-xs sm:text-sm font-semibold leading-relaxed line-clamp-4 ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#3B1703]'}`}>
+                {isEn ? (onThisDayEvent?.textEn || onThisDayEvent?.text) : onThisDayEvent?.text || (isEn ? 'Events on this day in history' : 'حدث في مثل هذا اليوم من التاريخ الإسلامي والعالمي')}
+              </p>
+            </div>
+          </div>
 
-          {activeEventTab === 'memory' && (
-            <>
+          {/* تبويب: ذاكرة الإسلام */}
+          <div
+            aria-hidden={activeEventTab !== 'memory'}
+            className={`col-start-1 row-start-1 flex flex-col transition-opacity duration-200 ${
+              activeEventTab === 'memory'
+                ? 'opacity-100 pointer-events-auto z-10'
+                : 'opacity-0 invisible pointer-events-none select-none'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2 mb-2.5 flex-wrap">
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg golden-3d-inset text-[#451A03] font-bold text-xs">
                 <ScrollText className="w-3.5 h-3.5 text-amber-800" />
                 <span>{isEn ? 'Islamic History' : 'ذاكرة التاريخ الإسلامي'}</span>
@@ -2737,11 +2806,31 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                     : `${currentHistoryMemoryEvent.hijriYearAr} • ${currentHistoryMemoryEvent.gregorianYearAr}`}
                 </span>
               )}
-            </>
-          )}
+            </div>
+            {currentHistoryMemoryEvent && (
+              <div className="flex-1 flex flex-col justify-center my-1 text-start">
+                <div className="flex flex-col gap-1">
+                  <span className={`text-xs sm:text-sm font-bold font-cairo ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#451A03]'}`}>
+                    {isEn ? currentHistoryMemoryEvent.titleEn : currentHistoryMemoryEvent.titleAr}
+                  </span>
+                  <p className={`text-xs sm:text-sm font-semibold leading-relaxed line-clamp-3 ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#3B1703]'}`}>
+                    {isEn ? currentHistoryMemoryEvent.descriptionEn : currentHistoryMemoryEvent.descriptionAr}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
-          {activeEventTab === 'occasions' && (
-            <>
+          {/* تبويب: المناسبات */}
+          <div
+            aria-hidden={activeEventTab !== 'occasions'}
+            className={`col-start-1 row-start-1 flex flex-col transition-opacity duration-200 ${
+              activeEventTab === 'occasions'
+                ? 'opacity-100 pointer-events-auto z-10'
+                : 'opacity-0 invisible pointer-events-none select-none'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2 mb-2.5 flex-wrap">
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg golden-3d-inset text-[#451A03] font-bold text-xs">
                 <Calendar className="w-3.5 h-3.5 text-amber-800" />
                 <span>{currentOccasion?.dateStr || moment().format(isEn ? 'dddd, D MMMM' : 'dddd، D MMMM')}</span>
@@ -2755,57 +2844,27 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                         : (isEn ? `Passed: ${formatNumber(Math.abs(currentOccasion.daysRemaining))} days` : `مرت: ${toArabic(Math.abs(currentOccasion.daysRemaining))} يوم`))}
                 </span>
               )}
-            </>
-          )}
-        </div>
-
-        {/* محتوى الحكمة أو الحدث أو الذكرى أو المناسبة بدقة وجمالية */}
-        <div className="min-h-[64px] flex flex-col justify-center my-2 text-start">
-          {activeEventTab === 'wisdom' && currentWisdom && (
-            <div className="flex flex-col gap-1">
-              <span className={`text-xs sm:text-sm font-bold font-cairo ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#451A03]'}`}>
-                {isEn ? currentWisdom.titleEn : currentWisdom.titleAr}
-              </span>
-              <p className={`text-xs sm:text-sm font-semibold leading-relaxed line-clamp-3 ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#3B1703]'}`}>
-                "{isEn ? currentWisdom.textEn : currentWisdom.textAr}"
-              </p>
             </div>
-          )}
-
-          {activeEventTab === 'event' && (
-            <p className={`text-xs sm:text-sm font-semibold leading-relaxed line-clamp-4 ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#3B1703]'}`}>
-              {isEn ? (onThisDayEvent?.textEn || onThisDayEvent?.text) : onThisDayEvent?.text || (isEn ? 'Events on this day in history' : 'حدث في مثل هذا اليوم من التاريخ الإسلامي والعالمي')}
-            </p>
-          )}
-
-          {activeEventTab === 'memory' && currentHistoryMemoryEvent && (
-            <div className="flex flex-col gap-1">
-              <span className={`text-xs sm:text-sm font-bold font-cairo ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#451A03]'}`}>
-                {isEn ? currentHistoryMemoryEvent.titleEn : currentHistoryMemoryEvent.titleAr}
-              </span>
-              <p className={`text-xs sm:text-sm font-semibold leading-relaxed line-clamp-3 ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#3B1703]'}`}>
-                {isEn ? currentHistoryMemoryEvent.descriptionEn : currentHistoryMemoryEvent.descriptionAr}
-              </p>
-            </div>
-          )}
-
-          {activeEventTab === 'occasions' && currentOccasion && (
-            <div className="flex flex-col gap-1">
-              <span className={`text-xs sm:text-sm font-bold font-cairo ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#451A03]'}`}>
-                {translateEventName(currentOccasion.name)}
-              </span>
-              {(currentOccasion.historicalYearAr || currentOccasion.historicalYearEn) && (
-                <span className={`text-[11px] sm:text-xs font-extrabold ${isNightMode || isBlackTheme ? 'text-amber-300' : 'text-amber-900'}`}>
-                  {isEn
-                    ? `Historical Event Date: ${currentOccasion.historicalYearEn || currentOccasion.historicalYearAr}`
-                    : `تاريخ الحدث الأصلي: ${currentOccasion.historicalYearAr}`}
-                </span>
-              )}
-              <p className={`text-xs sm:text-sm font-medium leading-relaxed ${isNightMode || isBlackTheme ? 'text-white/90' : 'text-amber-950/80'}`}>
-                {currentOccasion.dateStr} • {currentOccasion.gregorianDateStr}
-              </p>
-            </div>
-          )}
+            {currentOccasion && (
+              <div className="flex-1 flex flex-col justify-center my-1 text-start">
+                <div className="flex flex-col gap-1">
+                  <span className={`text-xs sm:text-sm font-bold font-cairo ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#451A03]'}`}>
+                    {translateEventName(currentOccasion.name)}
+                  </span>
+                  {(currentOccasion.historicalYearAr || currentOccasion.historicalYearEn) && (
+                    <span className={`text-[11px] sm:text-xs font-extrabold ${isNightMode || isBlackTheme ? 'text-amber-300' : 'text-amber-900'}`}>
+                      {isEn
+                        ? `Historical Event Date: ${currentOccasion.historicalYearEn || currentOccasion.historicalYearAr}`
+                        : `تاريخ الحدث الأصلي: ${currentOccasion.historicalYearAr}`}
+                    </span>
+                  )}
+                  <p className={`text-xs sm:text-sm font-medium leading-relaxed ${isNightMode || isBlackTheme ? 'text-white/90' : 'text-amber-950/80'}`}>
+                    {currentOccasion.dateStr} • {currentOccasion.gregorianDateStr}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* أزرار الإجراءات السفلية */}
@@ -2967,9 +3026,17 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </button>
         </div>
 
-        {/* محتوى التبويب الأول: شارك التطبيق */}
-        {activeBottomCardTab === 'share' && (
-          <div className="space-y-3 animate-fadeIn">
+        {/* حاوية شبكة موحدة تحفظ ارتفاع البطاقة ثابتاً لا يتغير عند التبديل بين التبويبات الثلاثة */}
+        <div className="grid grid-cols-1">
+          {/* محتوى التبويب الأول: شارك التطبيق */}
+          <div
+            aria-hidden={activeBottomCardTab !== 'share'}
+            className={`col-start-1 row-start-1 flex flex-col justify-between gap-3 transition-opacity duration-200 ${
+              activeBottomCardTab === 'share'
+                ? 'opacity-100 pointer-events-auto z-10'
+                : 'opacity-0 invisible pointer-events-none select-none'
+            }`}
+          >
             {/* المربع القرآني */}
             <div className="w-full p-3.5 rounded-2xl golden-3d-inset text-center flex flex-col items-center gap-1">
               <p className="gold-accent-text font-cairo text-sm sm:text-base font-bold text-[#451A03]">
@@ -3023,14 +3090,21 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               </button>
             </div>
           </div>
-        )}
 
-        {/* محتوى التبويب الثاني: تصفح التطبيق */}
-        {activeBottomCardTab === 'browse' && (
-          <div className="space-y-3 animate-fadeIn">
-            <p className="text-xs sm:text-sm text-amber-900/90 font-medium leading-relaxed text-center py-2 px-2 font-cairo">
-              {isEn ? 'To open the app on your browser or iPhone, tap the link' : 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط'}
-            </p>
+          {/* محتوى التبويب الثاني: تصفح التطبيق */}
+          <div
+            aria-hidden={activeBottomCardTab !== 'browse'}
+            className={`col-start-1 row-start-1 flex flex-col justify-between gap-3 transition-opacity duration-200 ${
+              activeBottomCardTab === 'browse'
+                ? 'opacity-100 pointer-events-auto z-10'
+                : 'opacity-0 invisible pointer-events-none select-none'
+            }`}
+          >
+            <div className="flex-1 flex items-center justify-center px-3">
+              <p className="text-base sm:text-lg text-[#451A03] font-bold leading-loose text-center py-2 font-cairo max-w-[270px] sm:max-w-[315px] text-balance">
+                {isEn ? 'To open the app on your browser or iPhone, tap the link' : 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط'}
+              </p>
+            </div>
 
             <div className="flex items-center justify-between gap-2.5 pt-1">
               <a
@@ -3062,11 +3136,16 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               </button>
             </div>
           </div>
-        )}
 
-        {/* محتوى التبويب الثالث: الدعم الفني (الواتساب) */}
-        {activeBottomCardTab === 'support' && (
-          <div className="space-y-3 animate-fadeIn">
+          {/* محتوى التبويب الثالث: الدعم الفني (الواتساب) */}
+          <div
+            aria-hidden={activeBottomCardTab !== 'support'}
+            className={`col-start-1 row-start-1 flex flex-col justify-between gap-3 transition-opacity duration-200 ${
+              activeBottomCardTab === 'support'
+                ? 'opacity-100 pointer-events-auto z-10'
+                : 'opacity-0 invisible pointer-events-none select-none'
+            }`}
+          >
             {/* بطاقة معلومات التواصل مع علاء أحمد المرشدى */}
             <div className="w-full p-3.5 rounded-2xl golden-3d-inset text-center flex flex-col items-center gap-1">
               <div className={`modern-gold-icon-box w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center mb-1 text-emerald-700 dark:text-emerald-400 ${(isNightMode || isBlackTheme) ? '' : 'border border-emerald-500/30'}`}>
@@ -3101,7 +3180,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
   );
 
@@ -3183,7 +3262,6 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             return (
               <SmartSeasonalStrip
                 key={`modern-card-container-seasonal`}
-                layoutMode="modern"
                 onNavigate={onNavigate}
               />
             );

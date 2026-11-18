@@ -106,10 +106,10 @@ function darkenColor(hex: string, factor: number = 0.35): string {
  * For "default", returns the Modern Smart Design in Gold ("التصميم الذكي الحديث باللون الذهبي").
  */
 export function getWidgetThemePalette(themeKey: string, theme?: any) {
-  const matchedPreset = theme || (presetThemes as any)[themeKey] || (presetThemes as any).default;
+  const matchedPreset = theme || (presetThemes as any)[themeKey] || (presetThemes as any).shiny_gold;
   const isDark = matchedPreset.isDark ?? (
     themeKey === 'deep_black' ||
-    ['evening_tranquility', 'electric_violet', 'midnight_neon', 'royal_purple', 'desert_night', 'ocean_peace', 'deep_forest', 'midnight_glass'].includes(themeKey) ||
+    themeKey === 'black_gold' ||
     matchedPreset.bgColor === '#000000' ||
     (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'))
   );

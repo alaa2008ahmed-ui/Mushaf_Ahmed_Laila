@@ -1,5 +1,4 @@
 import React from 'react';
-import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { useShowPageGuides } from '../../utils/guideManager';
 
@@ -55,12 +54,12 @@ const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHo
 
                     {/* Page title in center */}
                     <div className="text-center px-12 w-full min-w-0">
-                        <h1 className={`app-top-bar__title text-lg sm:text-xl truncate ${isEn ? 'font-sans font-bold' : 'font-kufi'}`}>
+                        <h1 className={`app-top-bar__title text-lg sm:text-xl truncate ${isEn ? 'font-sans font-bold' : 'font-cairo'}`}>
                             {localizedTitle}
                         </h1>
                     </div>
 
-                    {/* Home, Guide, and Theme lock: Right in LTR, Left in RTL */}
+                    {/* Home and Guide: Right in LTR, Left in RTL */}
                     <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                         {onOpenGuide && showPageGuides && (
                             <button
@@ -73,7 +72,6 @@ const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHo
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                         )}
-                        <ThemePageLock />
                         {onHome && (
                             <button
                                 onClick={onHome}

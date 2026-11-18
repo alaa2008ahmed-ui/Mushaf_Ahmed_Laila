@@ -1,57 +1,31 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import ThemesSidebar from '../components/MainMenu/ThemesSidebar';
 import { useTheme } from '../context/ThemeContext';
-import WhatsAppButton from '../components/WhatsAppButton';
-import InteractiveBackground from '../components/InteractiveBackground';
-import MenuCustomizationModal from '../components/MenuCustomizationModal';
-import PasscodeModal from '../components/PasscodeModal';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { getThemeEditModeStyles } from '../utils/themeEditStyles';
-import TitleSection from '../components/MainMenu/TitleSection';
-import GridSection from '../components/MainMenu/GridSection';
 import FloatingNeonTicker from '../components/FloatingNeonTicker';
-import { Palette, LayoutDashboard, LayoutGrid, Moon, Sun, Check, HelpCircle, RotateCcw, Settings } from 'lucide-react';
+import { Palette, Check, HelpCircle, RotateCcw, Settings } from 'lucide-react';
 import ModernHomeView from '../components/MainMenu/ModernHomeView';
 import HomeScreenSettingsModal from '../components/MainMenu/HomeScreenSettingsModal';
-<<<<<<< HEAD
 import { prewarmShareDesignThumbs } from '../components/MainMenu/ShareDesignSelectorSection';
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
-import { SMART_HOME_PAGE_STEPS, getDynamicSmartHomeSteps } from '../components/Community/communityTourSteps';
+import { CommunitySpotlightGuide } from '../components/Community/CommunitySpotlightGuide';
+import { getDynamicSmartHomeSteps } from '../components/Community/communityTourSteps';
 import { useShowPageGuides } from '../utils/guideManager';
-import { showGlobalAppToast } from '../utils/appNotificationSettings';
-import VoiceControlToggle from '../components/VoiceControlToggle';
 import { useVoiceControl } from '../context/VoiceControlContext';
-import { prayerNamesAr } from '../data/prayerTimesData';
 import { quranData as rawQuranData } from '../utils/quranData';
 import { SURAH_NAMES_AR, toArabic } from '../components/QuranReader/constants';
 import { ON_THIS_DAY_EVENTS } from '../data/onThisDayEvents';
 import { shareAsImage } from '../utils/shareAsImage';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Share as CapacitorShare } from '@capacitor/share';
 import { Preferences } from '@capacitor/preferences';
-import { Capacitor } from '@capacitor/core';
 import moment from 'moment-hijri';
-import HabitTrackerCard from '../components/MainMenu/HabitTrackerCard';
-import TawafCounterCard from '../components/MainMenu/TawafCounterCard';
-import SmartSeasonalStrip from '../components/MainMenu/SmartSeasonalStrip';
-import HomePrayerCard from '../components/MainMenu/HomePrayerCard';
-import OnThisDayCard from '../components/MainMenu/OnThisDayCard';
-import IslamicEventsCard from '../components/MainMenu/IslamicEventsCard';
-import WebAppCard from '../components/MainMenu/WebAppCard';
-import ShareAppCard from '../components/MainMenu/ShareAppCard';
-import IslamicEventsBottomSheet from '../components/MainMenu/IslamicEventsBottomSheet';
-import OnThisDayBottomSheet from '../components/MainMenu/OnThisDayBottomSheet';
-import IslamicHistoryMemoryCard from '../components/MainMenu/IslamicHistoryMemoryCard';
-import IslamicHistoryMemoryBottomSheet from '../components/MainMenu/IslamicHistoryMemoryBottomSheet';
 import UnifiedEventZoomModal from '../components/MainMenu/UnifiedEventZoomModal';
 import { HISTORICAL_EVENTS_TRANSLATED, formatCalendarNumber } from '../utils/calendarTranslations';
 import { useLanguage } from '../context/LanguageContext';
 import { loadDayEvents, getTranslatedEventText, OnThisDayItem } from '../utils/onThisDayService';
 import { islamicEvents as ISLAMIC_EVENTS } from '../data/calendarData';
+import { showGlobalAppToast } from '../utils/appNotificationSettings';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 const HIJRI_MONTHS = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"];
 const GREGORIAN_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
@@ -124,80 +98,7 @@ export const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق 
 🤍 شاركه مع أهلك وأحبابك..
 فالدال على الخير كفاعله، واجعله صدقة جارية لك ولوالديك. 🤲🌱`;
 
-const CURRENT_LAYOUT_VERSION = 'v2026_sections_layout_v11';
-
-const ALL_POSSIBLE_ITEMS = [
-    // القسم الأول: القرآن الكريم (التركيز الرئيسي للتطبيق)
-    { id: 'quran', label: "القرآن الكريم", className: "col-span-6 h-14", colorIndex: 0 },
-    { id: 'listen', label: "الاستماع للقرآن", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'memorization', label: "التحفيظ", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'daily-wird', label: "الورد اليومي", className: "col-span-2 h-11", colorIndex: 1 },
-
-    // القسم الثاني: العبادات اليومية
-    { id: 'prayer-times', label: "مواقيت الصلاة", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'salah-adhkar', label: "أذكار الصلاة", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'qibla', label: "البوصلة", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'sabah-masaa', label: "الأذكار", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'adia', label: "الأدعية", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'tasbeeh', label: "التسبيح", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'others', label: "الرقية الشرعية", className: "col-span-2 h-11", colorIndex: 0 },
-
-    // القسم الثالث: المكتبة الإسلامية
-    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'ten-promised', label: "العشرة المبشرون", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'divine-miracles', label: "المعجزات الإلهية", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'hisn-muslim', label: "حصن المسلم", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'hajj-umrah', label: "الحج والعمرة", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'asmaul-husna', label: "أسماء الله", className: "col-span-2 h-11", colorIndex: 0 },
-
-    // القسم الرابع: خدمات إضافية
-    { id: 'habit-tracker', label: "مربّي العبادات", className: "col-span-3 h-11", colorIndex: 0 },
-    { id: 'calculators', label: "الحاسبة الشرعية", className: "col-span-3 h-11", colorIndex: 1 },
-    { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'calendar', label: "التقويم", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'islamic-sites', label: "مواقع إسلامية", className: "col-span-2 h-11", colorIndex: 1 },
-
-    // شريط التحكم السفلي
-    { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
-];
-
-const DEFAULT_MENU_ITEMS = [
-    // القسم الأول: القرآن الكريم (التركيز الرئيسي للتطبيق)
-    { id: 'quran', label: "القرآن الكريم", className: "col-span-6 h-14", colorIndex: 0 },
-    { id: 'listen', label: "الاستماع للقرآن", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'memorization', label: "التحفيظ", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'daily-wird', label: "الورد اليومي", className: "col-span-2 h-11", colorIndex: 1 },
-
-    // القسم الثاني: العبادات اليومية
-    { id: 'prayer-times', label: "مواقيت الصلاة", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'salah-adhkar', label: "أذكار الصلاة", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'qibla', label: "البوصلة", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'sabah-masaa', label: "الأذكار", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'adia', label: "الأدعية", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'tasbeeh', label: "التسبيح", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'others', label: "الرقية الشرعية", className: "col-span-2 h-11", colorIndex: 0 },
-
-    // القسم الثالث: المكتبة الإسلامية
-    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'ten-promised', label: "العشرة المبشرون", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'divine-miracles', label: "المعجزات الإلهية", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'hisn-muslim', label: "حصن المسلم", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'hajj-umrah', label: "الحج والعمرة", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'asmaul-husna', label: "أسماء الله", className: "col-span-2 h-11", colorIndex: 0 },
-
-    // القسم الرابع: خدمات إضافية
-    { id: 'habit-tracker', label: "مربّي العبادات", className: "col-span-3 h-11", colorIndex: 0 },
-    { id: 'calculators', label: "الحاسبة الشرعية", className: "col-span-3 h-11", colorIndex: 1 },
-    { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'calendar', label: "التقويم", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'islamic-sites', label: "مواقع إسلامية", className: "col-span-2 h-11", colorIndex: 1 },
-
-    // شريط التحكم السفلي
-    { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
-];
-
-
-function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
+function MainMenu({ onNavigate }: { onNavigate: (pageId: string, params?: any) => void }) {
   const showPageGuides = useShowPageGuides();
   const { showVoiceIcon } = useVoiceControl();
   const { 
@@ -221,6 +122,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     setHomeThemeVariant, 
     setNightModeActive 
   } = useTheme();
+  const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
 
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -285,9 +187,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const cardButtonColor = isBlackTheme ? '#000000' : theme.palette[0];
   const cardButtonTextColor = isBlackTheme ? '#FFFFFF' : '#FFFFFF';
 
-  // نظام تصميم الصفحة الرئيسية: حصر كامل على التصميم الذكي الحديث 'modern' وتأمين إخفاء التصميم الكلاسيكي تماماً
-  const homeLayoutMode = 'modern' as const;
-
   // التأكد من حفظ وضع التصميم الحديث دائماً في التخزين
   useEffect(() => {
     try {
@@ -295,48 +194,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     } catch {}
     Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
   }, []);
-  const [visibleItems, setVisibleItems] = useState<string[]>(() => {
-    const savedVersion = localStorage.getItem('menu_layout_version_v2');
-    if (savedVersion !== CURRENT_LAYOUT_VERSION) {
-        return DEFAULT_MENU_ITEMS.map(i => i.id);
-    }
-    const savedVisible = localStorage.getItem('visibleMenuItems');
-    if (savedVisible) {
-        try {
-            return JSON.parse(savedVisible);
-        } catch (e) {
-            return DEFAULT_MENU_ITEMS.map(i => i.id);
-        }
-    }
-    return DEFAULT_MENU_ITEMS.map(i => i.id);
-  });
-  const [menuItems, setMenuItems] = useState(() => {
-    const savedVersion = localStorage.getItem('menu_layout_version_v2');
-    if (savedVersion !== CURRENT_LAYOUT_VERSION) {
-        localStorage.setItem('menu_layout_version_v2', CURRENT_LAYOUT_VERSION);
-        localStorage.setItem('menuLayout', JSON.stringify(DEFAULT_MENU_ITEMS));
-        localStorage.setItem('visibleMenuItems', JSON.stringify(DEFAULT_MENU_ITEMS.map(i => i.id)));
-        try {
-            const seen = JSON.parse(localStorage.getItem('app_seen_pages_badge_v1') || '[]');
-            const updatedSeen = Array.isArray(seen) ? seen.filter((id: string) => id !== 'others' && id !== 'islamic-sites') : [];
-            localStorage.setItem('app_seen_pages_badge_v1', JSON.stringify(updatedSeen));
-        } catch {}
-        return DEFAULT_MENU_ITEMS;
-    }
-    const savedLayout = localStorage.getItem('menuLayout');
-    if (savedLayout) {
-        try {
-            return JSON.parse(savedLayout);
-        } catch (e) {
-            return DEFAULT_MENU_ITEMS;
-        }
-    }
-    return DEFAULT_MENU_ITEMS;
-  });
-  const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
-  const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isThemesSidebarOpen, setIsThemesSidebarOpen] = useState(false);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('home-edit-mode-changed', { detail: { isEditMode } }));
@@ -417,6 +275,47 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
+  useLayoutEffect(() => {
+    try {
+      const focusCard = sessionStorage.getItem('main_menu_focus_card');
+      if (focusCard !== 'tawaf') return;
+
+      const centerTawafCard = () => {
+        const container = scrollContainerRef.current;
+        if (!container) return false;
+        const cardEl =
+          document.getElementById('modern-card-container-tawaf') ||
+          document.getElementById('modern-tawaf-counter-card');
+        if (!cardEl) return false;
+
+        const containerRect = container.getBoundingClientRect();
+        const cardRect = cardEl.getBoundingClientRect();
+        const cardCenterInContent = (cardRect.top - containerRect.top) + container.scrollTop + (cardRect.height / 2);
+        const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
+        const targetScroll = Math.min(maxScroll, Math.max(0, Math.round(cardCenterInContent - (containerRect.height / 2))));
+        container.scrollTop = targetScroll;
+        sessionStorage.setItem('main_menu_scroll_top', String(targetScroll));
+        return true;
+      };
+
+      centerTawafCard();
+      const rafId = requestAnimationFrame(() => {
+        centerTawafCard();
+      });
+      const timerId = window.setTimeout(() => {
+        centerTawafCard();
+        try {
+          sessionStorage.removeItem('main_menu_focus_card');
+        } catch {}
+      }, 80);
+
+      return () => {
+        cancelAnimationFrame(rafId);
+        clearTimeout(timerId);
+      };
+    } catch {}
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       setIsLandscape(window.innerWidth > window.innerHeight);
@@ -426,8 +325,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
     // Restore saved scroll position when returning to main menu
     try {
+      const focusCard = sessionStorage.getItem('main_menu_focus_card');
       const savedScrollTop = sessionStorage.getItem('main_menu_scroll_top');
-      if (savedScrollTop && scrollContainerRef.current) {
+      if (!focusCard && savedScrollTop && scrollContainerRef.current) {
         const targetScroll = parseInt(savedScrollTop, 10);
         if (!isNaN(targetScroll) && targetScroll > 0) {
           requestAnimationFrame(() => {
@@ -833,7 +733,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               }
           }
       } catch (e) {
-          console.error("Error loading last read ayah", e);
+          console.warn("Error loading last read ayah", e);
       }
     };
 
@@ -847,49 +747,29 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   }, []);
 
 
-  useEffect(() => {
-    const savedVersion = localStorage.getItem('menu_layout_version_v2');
-    if (savedVersion !== CURRENT_LAYOUT_VERSION) {
-        localStorage.setItem('menu_layout_version_v2', CURRENT_LAYOUT_VERSION);
-        localStorage.setItem('menuLayout', JSON.stringify(DEFAULT_MENU_ITEMS));
-        localStorage.setItem('visibleMenuItems', JSON.stringify(DEFAULT_MENU_ITEMS.map(i => i.id)));
-        setMenuItems(DEFAULT_MENU_ITEMS);
-        setVisibleItems(DEFAULT_MENU_ITEMS.map(i => i.id));
-    }
-  }, []);
-
-  const handleCancelEdit = () => {
-      const savedLayout = localStorage.getItem('menuLayout');
-      if (savedLayout) {
-          setMenuItems(JSON.parse(savedLayout));
-      } else {
-          setMenuItems(DEFAULT_MENU_ITEMS);
-      }
+  const handleCancelEdit = useCallback(() => {
+      window.dispatchEvent(new CustomEvent('save-home-cards-layout'));
       setIsEditMode(false);
-      if (navigator.vibrate) navigator.vibrate(50);
-  };
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate(50); } catch {}
+      }
+  }, []);
 
   const mainMenuBackStateRef = useRef({
       showSettingsModal,
       showSmartHomeGuide,
-      isThemesSidebarOpen,
       showExpandedHistoryMemoryModal,
       showExpandedEventsModal,
       showExpandedUpcomingEventModal,
-      isPasscodeOpen,
-      isCustomizationOpen,
       isEditMode,
       handleCancelEdit,
   });
   mainMenuBackStateRef.current = {
       showSettingsModal,
       showSmartHomeGuide,
-      isThemesSidebarOpen,
       showExpandedHistoryMemoryModal,
       showExpandedEventsModal,
       showExpandedUpcomingEventModal,
-      isPasscodeOpen,
-      isCustomizationOpen,
       isEditMode,
       handleCancelEdit,
   };
@@ -905,10 +785,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               setShowSmartHomeGuide(false);
               return true;
           }
-          if (s.isThemesSidebarOpen) {
-              setIsThemesSidebarOpen(false);
-              return true;
-          }
           if (s.showExpandedHistoryMemoryModal) {
               setShowExpandedHistoryMemoryModal(false);
               return true;
@@ -921,14 +797,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               setShowExpandedUpcomingEventModal(false);
               return true;
           }
-          if (s.isPasscodeOpen) {
-              setIsPasscodeOpen(false);
-              return true;
-          }
-          if (s.isCustomizationOpen) {
-              setIsCustomizationOpen(false);
-              return true;
-          }
           if (s.isEditMode) {
               s.handleCancelEdit();
               return true;
@@ -938,28 +806,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       const unregister = registerBackInterceptor(interceptor);
       return unregister;
   }, []);
-
-  const handleSaveCustomization = (selectedIds: string[]) => {
-      setVisibleItems(selectedIds);
-      localStorage.setItem('visibleMenuItems', JSON.stringify(selectedIds));
-  };
-
-  const handleSaveLayout = () => {
-      localStorage.setItem('menuLayout', JSON.stringify(menuItems));
-      setIsEditMode(false);
-      // Haptic feedback
-      if (navigator.vibrate) navigator.vibrate(50);
-  };
-
-  const handleResetLayout = () => {
-      setMenuItems(DEFAULT_MENU_ITEMS);
-      localStorage.setItem('menu_layout_version_v2', CURRENT_LAYOUT_VERSION);
-      localStorage.setItem('menuLayout', JSON.stringify(DEFAULT_MENU_ITEMS));
-      localStorage.setItem('visibleMenuItems', JSON.stringify(DEFAULT_MENU_ITEMS.map(i => i.id)));
-      setVisibleItems(DEFAULT_MENU_ITEMS.map(i => i.id));
-      setIsEditMode(false);
-      if (navigator.vibrate) navigator.vibrate(50);
-  };
 
   return (
     <div 
@@ -1043,155 +889,240 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                     }}
                   />
 
-                  {/* 2. قائمة الخيارات المنبثقة: مضمونة فوق خلفية الإغلاق (z-[999995]) */}
-                  <div
-                    id="theme-dropdown-menu-container"
-                    className={`fixed z-[999995] rounded-2xl p-1.5 shadow-2xl transition-all duration-150 animate-in fade-in zoom-in-95 font-cairo select-none border min-w-[140px] ${
-                      isNightMode
-                        ? 'bg-[#18181f] border-amber-500/40 text-white shadow-[0_12px_32px_rgba(0,0,0,0.85)]'
-                        : isSkyTheme
-                          ? 'bg-white border-sky-300 text-slate-900 shadow-[0_12px_32px_rgba(2,132,199,0.22)]'
-                          : isEmeraldTheme
-                            ? 'bg-white border-emerald-300 text-slate-900 shadow-[0_12px_32px_rgba(5,150,105,0.22)]'
-                            : isBurgundyTheme
-                              ? 'bg-white border-rose-300 text-slate-900 shadow-[0_12px_32px_rgba(159,18,57,0.22)]'
-                              : 'bg-white border-amber-300 text-slate-900 shadow-[0_12px_32px_rgba(217,119,6,0.22)]'
-                    }`}
-                    style={{
-                      top: menuPos ? `${menuPos.top}px` : '48px',
-                      right: menuPos ? `${menuPos.right}px` : '12px',
-                      left: 'auto',
-                      direction: language === 'en' ? 'ltr' : 'rtl'
-                    }}
-                  >
-                    {/* 1. الوضع الذهبي */}
-                    {(isNightMode || homeThemeVariant !== 'gold') && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (isNightMode) {
-                            setNightModeActive(false);
+                  {/* 2. قائمة الخيارات المنبثقة: متطابقة الخلفية مع الثيم الحالي ومجسمة ثلاثية الأبعاد (z-[999995]) */}
+                  {(() => {
+                    const activeThemeDark = isNightMode || isBlackTheme;
+                    const menuContainerStyle: React.CSSProperties = activeThemeDark
+                      ? {
+                          background: 'linear-gradient(168deg, #282832 0%, #1b1b23 52%, #131319 100%)',
+                          color: '#FFFFFF',
+                          border: '1px solid rgba(255, 255, 255, 0.14)',
+                          boxShadow: '0 6px 0 #09090d, 0 18px 34px rgba(0, 0, 0, 0.9), inset 0 2px 1.5px rgba(255, 255, 255, 0.2), inset 0 -2.5px 5px rgba(0, 0, 0, 0.7)',
+                        }
+                      : isSkyTheme
+                        ? {
+                            background: 'linear-gradient(145deg, #F0F9FF 0%, #E0F2FE 28%, #BAE6FD 72%, #7DD3FC 100%)',
+                            color: '#0F172A',
+                            border: '1.5px solid rgba(14, 165, 233, 0.45)',
+                            boxShadow: '0 6px 0 rgba(2, 132, 199, 0.28), 0 16px 32px rgba(2, 132, 199, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 5px rgba(3, 105, 161, 0.14)',
                           }
-                          setHomeThemeVariant('gold');
-                          setShowThemeMenu(false);
-                          showGlobalAppToast(language === 'en' ? 'Theme: Gold Mode' : 'ثيم: الوضع الذهبي');
-                        }}
-                        className={`w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border ${
-                          isNightMode
-                            ? 'bg-transparent text-zinc-100 hover:bg-white/10 active:bg-white/20 border-transparent'
-                            : 'bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent'
-                        }`}
-                      >
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-amber-500 ring-2 ring-amber-400/30" />
-                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
-                          {language === 'en' ? 'Gold Mode' : 'الوضع الذهبي'}
-                        </span>
-                      </button>
-                    )}
+                        : isEmeraldTheme
+                          ? {
+                              background: 'linear-gradient(145deg, #F0FDF4 0%, #DCFCE7 28%, #A7F3D0 72%, #6EE7B7 100%)',
+                              color: '#0F172A',
+                              border: '1.5px solid rgba(16, 185, 129, 0.45)',
+                              boxShadow: '0 6px 0 rgba(5, 150, 105, 0.28), 0 16px 32px rgba(5, 150, 105, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 5px rgba(4, 120, 87, 0.14)',
+                            }
+                          : isBurgundyTheme
+                            ? {
+                                background: 'linear-gradient(145deg, #FFF1F2 0%, #FFE4E6 28%, #FECDD3 72%, #FDA4AF 100%)',
+                                color: '#0F172A',
+                                border: '1.5px solid rgba(225, 29, 72, 0.45)',
+                                boxShadow: '0 6px 0 rgba(159, 18, 57, 0.28), 0 16px 32px rgba(159, 18, 57, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 5px rgba(136, 19, 55, 0.14)',
+                              }
+                            : {
+                                background: 'linear-gradient(145deg, #FFFDF2 0%, #FEF9C3 28%, #FDE68A 72%, #FCD34D 100%)',
+                                color: '#0F172A',
+                                border: '1.5px solid rgba(217, 119, 6, 0.45)',
+                                boxShadow: '0 6px 0 rgba(180, 115, 20, 0.28), 0 16px 32px rgba(180, 115, 20, 0.24), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 5px rgba(146, 64, 14, 0.14)',
+                              };
 
-                    {/* 2. الوضع الليلى */}
-                    {!isNightMode && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setNightModeActive(true);
-                          setShowThemeMenu(false);
-                          showGlobalAppToast(language === 'en' ? 'Theme: Night Mode' : 'ثيم: الوضع الليلي');
-                        }}
-                        className="w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent"
-                      >
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-slate-500 ring-2 ring-slate-400/30" />
-                        <span className="text-slate-900 font-black">
-                          {language === 'en' ? 'Night Mode' : 'الوضع الليلى'}
-                        </span>
-                      </button>
-                    )}
-
-                    {/* 3. الوضع السماوى */}
-                    {(isNightMode || homeThemeVariant !== 'sky') && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (isNightMode) {
-                            setNightModeActive(false);
+                    const itemButtonStyle: React.CSSProperties = activeThemeDark
+                      ? {
+                          background: 'linear-gradient(180deg, #2b2b36 0%, #1f1f28 100%)',
+                          color: '#FFFFFF',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          boxShadow: '0 3.5px 0 #0a0a0f, 0 6px 12px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.16), inset 0 -1.5px 2px rgba(0, 0, 0, 0.4)',
+                        }
+                      : isSkyTheme
+                        ? {
+                            background: 'linear-gradient(180deg, #f5faff 0%, #ebf5fd 65%, #e1f1fb 100%)',
+                            color: '#0F172A',
+                            border: '1px solid rgba(186, 230, 253, 0.95)',
+                            boxShadow: '0 3.5px 0 rgba(14, 165, 233, 0.22), 0 6px 12px rgba(2, 132, 199, 0.14), inset 0 1.5px 1px rgba(255, 255, 255, 0.95), inset 0 -1.5px 2px rgba(14, 165, 233, 0.06)',
                           }
-                          setHomeThemeVariant('sky');
-                          setShowThemeMenu(false);
-                          showGlobalAppToast(language === 'en' ? 'Theme: Sky Mode' : 'ثيم: الوضع السماوي');
-                        }}
-                        className={`w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 ${
-                          isNightMode
-                            ? 'bg-transparent text-zinc-100 hover:bg-white/10 active:bg-white/20 border-transparent'
-                            : 'bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent'
-                        }`}
-                      >
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-sky-500 ring-2 ring-sky-400/30" />
-                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
-                          {language === 'en' ? 'Sky Mode' : 'الوضع السماوى'}
-                        </span>
-                      </button>
-                    )}
+                        : isEmeraldTheme
+                          ? {
+                              background: 'linear-gradient(180deg, #f4fbf7 0%, #eaf8f0 65%, #e0f4e8 100%)',
+                              color: '#0F172A',
+                              border: '1px solid rgba(167, 243, 208, 0.95)',
+                              boxShadow: '0 3.5px 0 rgba(16, 185, 129, 0.22), 0 6px 12px rgba(5, 150, 105, 0.14), inset 0 1.5px 1px rgba(255, 255, 255, 0.95), inset 0 -1.5px 2px rgba(16, 185, 129, 0.06)',
+                            }
+                          : isBurgundyTheme
+                            ? {
+                                background: 'linear-gradient(180deg, #fef4f6 0%, #fde9ec 65%, #fce1e6 100%)',
+                                color: '#0F172A',
+                                border: '1px solid rgba(254, 205, 211, 0.95)',
+                                boxShadow: '0 3.5px 0 rgba(225, 29, 72, 0.22), 0 6px 12px rgba(159, 18, 57, 0.14), inset 0 1.5px 1px rgba(255, 255, 255, 0.95), inset 0 -1.5px 2px rgba(225, 29, 72, 0.06)',
+                              }
+                            : {
+                                background: 'linear-gradient(180deg, #fffef9 0%, #fef9ed 65%, #fdf4df 100%)',
+                                color: '#0F172A',
+                                border: '1px solid rgba(254, 240, 199, 0.95)',
+                                boxShadow: '0 3.5px 0 rgba(217, 119, 6, 0.22), 0 6px 12px rgba(180, 115, 20, 0.14), inset 0 1.5px 1px rgba(255, 255, 255, 0.95), inset 0 -1.5px 2px rgba(217, 119, 6, 0.06)',
+                              };
 
-                    {/* 4. الوضع الزمردى */}
-                    {(isNightMode || homeThemeVariant !== 'emerald') && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (isNightMode) {
-                            setNightModeActive(false);
-                          }
-                          setHomeThemeVariant('emerald');
-                          setShowThemeMenu(false);
-                          showGlobalAppToast(language === 'en' ? 'Theme: Emerald Mode' : 'ثيم: الوضع الزمردي');
+                    return (
+                      <div
+                        id="theme-dropdown-menu-container"
+                        className="fixed z-[999995] rounded-2xl p-2.5 flex flex-col gap-2 transition-all duration-150 animate-in fade-in zoom-in-95 font-cairo select-none min-w-[164px]"
+                        style={{
+                          ...menuContainerStyle,
+                          top: menuPos ? `${menuPos.top}px` : '48px',
+                          right: menuPos ? `${menuPos.right}px` : '12px',
+                          left: 'auto',
+                          direction: language === 'en' ? 'ltr' : 'rtl'
                         }}
-                        className={`w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 ${
-                          isNightMode
-                            ? 'bg-transparent text-zinc-100 hover:bg-white/10 active:bg-white/20 border-transparent'
-                            : 'bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent'
-                        }`}
                       >
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-emerald-500 ring-2 ring-emerald-400/30" />
-                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
-                          {language === 'en' ? 'Emerald Mode' : 'الوضع الزمردى'}
-                        </span>
-                      </button>
-                    )}
+                        {/* 1. الوضع الذهبي */}
+                        {(isNightMode || homeThemeVariant !== 'gold') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (isNightMode) {
+                                setNightModeActive(false);
+                              }
+                              setHomeThemeVariant('gold');
+                              setShowThemeMenu(false);
+                              showGlobalAppToast(language === 'en' ? 'Theme: Gold Mode' : 'ثيم: الوضع الذهبي');
+                            }}
+                            className="w-full px-3 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all duration-150 cursor-pointer hover:-translate-y-[1px] active:translate-y-[2px]"
+                            style={itemButtonStyle}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0"
+                              style={{
+                                background: 'radial-gradient(circle at 32% 30%, #fde047 0%, #f59e0b 58%, #b45309 100%)',
+                                boxShadow: '0 2px 4px rgba(180, 83, 9, 0.4), inset 0 1.5px 2px rgba(255, 255, 255, 0.75)',
+                              }}
+                            />
+                            <span className={activeThemeDark ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                              {language === 'en' ? 'Gold Mode' : 'الوضع الذهبي'}
+                            </span>
+                          </button>
+                        )}
 
-                    {/* 5. الوضع العنابي */}
-                    {(isNightMode || homeThemeVariant !== 'burgundy') && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (isNightMode) {
-                            setNightModeActive(false);
-                          }
-                          setHomeThemeVariant('burgundy');
-                          setShowThemeMenu(false);
-                          showGlobalAppToast(language === 'en' ? 'Theme: Burgundy Mode' : 'ثيم: الوضع العنابي');
-                        }}
-                        className={`w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 ${
-                          isNightMode
-                            ? 'bg-transparent text-zinc-100 hover:bg-white/10 active:bg-white/20 border-transparent'
-                            : 'bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent'
-                        }`}
-                      >
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-rose-800 ring-2 ring-rose-700/30" />
-                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
-                          {language === 'en' ? 'Burgundy Mode' : 'الوضع العنابي'}
-                        </span>
-                      </button>
-                    )}
-                  </div>
+                        {/* 2. الوضع الليلى */}
+                        {!isNightMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setNightModeActive(true);
+                              setShowThemeMenu(false);
+                              showGlobalAppToast(language === 'en' ? 'Theme: Night Mode' : 'ثيم: الوضع الليلي');
+                            }}
+                            className="w-full px-3 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all duration-150 cursor-pointer hover:-translate-y-[1px] active:translate-y-[2px]"
+                            style={itemButtonStyle}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0"
+                              style={{
+                                background: 'radial-gradient(circle at 32% 30%, #94a3b8 0%, #475569 58%, #1e293b 100%)',
+                                boxShadow: '0 2px 4px rgba(15, 23, 42, 0.4), inset 0 1.5px 2px rgba(255, 255, 255, 0.65)',
+                              }}
+                            />
+                            <span className="text-slate-900 font-black">
+                              {language === 'en' ? 'Night Mode' : 'الوضع الليلى'}
+                            </span>
+                          </button>
+                        )}
+
+                        {/* 3. الوضع السماوى */}
+                        {(isNightMode || homeThemeVariant !== 'sky') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (isNightMode) {
+                                setNightModeActive(false);
+                              }
+                              setHomeThemeVariant('sky');
+                              setShowThemeMenu(false);
+                              showGlobalAppToast(language === 'en' ? 'Theme: Sky Mode' : 'ثيم: الوضع السماوي');
+                            }}
+                            className="w-full px-3 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all duration-150 cursor-pointer hover:-translate-y-[1px] active:translate-y-[2px]"
+                            style={itemButtonStyle}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0"
+                              style={{
+                                background: 'radial-gradient(circle at 32% 30%, #7dd3fc 0%, #0ea5e9 58%, #0369a1 100%)',
+                                boxShadow: '0 2px 4px rgba(3, 105, 161, 0.4), inset 0 1.5px 2px rgba(255, 255, 255, 0.75)',
+                              }}
+                            />
+                            <span className={activeThemeDark ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                              {language === 'en' ? 'Sky Mode' : 'الوضع السماوى'}
+                            </span>
+                          </button>
+                        )}
+
+                        {/* 4. الوضع الزمردى */}
+                        {(isNightMode || homeThemeVariant !== 'emerald') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (isNightMode) {
+                                setNightModeActive(false);
+                              }
+                              setHomeThemeVariant('emerald');
+                              setShowThemeMenu(false);
+                              showGlobalAppToast(language === 'en' ? 'Theme: Emerald Mode' : 'ثيم: الوضع الزمردي');
+                            }}
+                            className="w-full px-3 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all duration-150 cursor-pointer hover:-translate-y-[1px] active:translate-y-[2px]"
+                            style={itemButtonStyle}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0"
+                              style={{
+                                background: 'radial-gradient(circle at 32% 30%, #6ee7b7 0%, #10b981 58%, #047857 100%)',
+                                boxShadow: '0 2px 4px rgba(4, 120, 87, 0.4), inset 0 1.5px 2px rgba(255, 255, 255, 0.75)',
+                              }}
+                            />
+                            <span className={activeThemeDark ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                              {language === 'en' ? 'Emerald Mode' : 'الوضع الزمردى'}
+                            </span>
+                          </button>
+                        )}
+
+                        {/* 5. الوضع العنابي */}
+                        {(isNightMode || homeThemeVariant !== 'burgundy') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (isNightMode) {
+                                setNightModeActive(false);
+                              }
+                              setHomeThemeVariant('burgundy');
+                              setShowThemeMenu(false);
+                              showGlobalAppToast(language === 'en' ? 'Theme: Burgundy Mode' : 'ثيم: الوضع العنابي');
+                            }}
+                            className="w-full px-3 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all duration-150 cursor-pointer hover:-translate-y-[1px] active:translate-y-[2px]"
+                            style={itemButtonStyle}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0"
+                              style={{
+                                background: 'radial-gradient(circle at 32% 30%, #fb7185 0%, #be123c 58%, #881337 100%)',
+                                boxShadow: '0 2px 4px rgba(136, 19, 55, 0.4), inset 0 1.5px 2px rgba(255, 255, 255, 0.7)',
+                              }}
+                            />
+                            <span className={activeThemeDark ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                              {language === 'en' ? 'Burgundy Mode' : 'الوضع العنابي'}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>,
                 document.body
               )}
@@ -1392,7 +1323,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               </p>
 
               {/* الشريط الإعلاني المتحرك إذا تم تفعيله */}
-              <FloatingNeonTicker layoutMode={homeLayoutMode} />
+              <FloatingNeonTicker layoutMode="modern" />
             </div>
           </div>
 
@@ -1443,7 +1374,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             ? `${currentHistoryMemoryEvent.hijriYearEn} • ${currentHistoryMemoryEvent.gregorianYearEn}`
             : `${currentHistoryMemoryEvent.hijriYearAr} • ${currentHistoryMemoryEvent.gregorianYearAr}`}
           setToastMessage={setToastMessage}
-          isGolden={homeLayoutMode === 'modern'}
+          isGolden={true}
           onNextEvent={handleNextHistoryMemoryEvent}
         />
       )}
@@ -1461,7 +1392,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             ? `${onThisDayEvent.dateStr} • Year ${onThisDayEvent.year} AD`
             : `${onThisDayEvent.dateStr} • عام ${formatNumber(onThisDayEvent.year)} م`}
           setToastMessage={setToastMessage}
-          isGolden={homeLayoutMode === 'modern'}
+          isGolden={true}
           onNextEvent={handleNextEvent}
         />
       )}
@@ -1487,7 +1418,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             return `${hist}${ev.dateStr} • ${ev.gregorianDateStr} (${status})`;
           })()}
           setToastMessage={setToastMessage}
-          isGolden={homeLayoutMode === 'modern'}
+          isGolden={true}
           onNextEvent={() => setEventIndex(prev => (prev + 1) % (upcomingEvents.length || 1))}
         />
       )}
@@ -1500,46 +1431,26 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
         isEn={language === 'en'}
       />
 
-      <ThemesSidebar 
-        isOpen={isThemesSidebarOpen}
-        onClose={() => setIsThemesSidebarOpen(false)}
-      />
-      
-      <PasscodeModal 
-        isOpen={isPasscodeOpen}
-        onClose={() => setIsPasscodeOpen(false)}
-        onSuccess={() => setIsCustomizationOpen(true)}
-        isLandscape={isLandscape}
-      />
-
-      <MenuCustomizationModal 
-        isOpen={isCustomizationOpen}
-        onClose={() => setIsCustomizationOpen(false)}
-        allItems={ALL_POSSIBLE_ITEMS}
-        visibleIds={visibleItems}
-        onSave={handleSaveCustomization}
-        isLandscape={isLandscape}
-      />
-
       <HomeScreenSettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         onNavigate={onNavigate}
       />
 
-      <AnimatePresence>
-        {toastMessage && (
-            <motion.div 
-                initial={{ opacity: 0, y: 30, x: '-50%' }}
-                animate={{ opacity: 1, y: 0, x: '-50%' }}
-                exit={{ opacity: 0, y: 30, x: '-50%' }}
-                className="fixed bottom-[calc(var(--app-bottom-clearance,5.25rem)+1rem)] left-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none shadow-xl"
-                style={editStyles.toast}
+      {toastMessage && (
+        <div 
+            className="app-3d-toast fixed bottom-[calc(var(--app-bottom-clearance,5.25rem)+1rem)] left-1/2 -translate-x-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none flex items-center justify-center gap-2.5"
+            style={toast3D.style}
+        >
+            <span
+                className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                style={toast3D.iconStyle}
             >
-                {toastMessage}
-            </motion.div>
-        )}
-      </AnimatePresence>
+                <Check className="w-3 h-3 stroke-[3]" />
+            </span>
+            <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

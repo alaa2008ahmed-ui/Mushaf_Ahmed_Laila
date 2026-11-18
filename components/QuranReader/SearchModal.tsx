@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toArabic, isDarkQuranTheme, SURAH_NAMES_EN } from './constants';
-import { X, ChevronLeft } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
-import { renderTajweedTextHtml } from './MushafPage';
 import { useLanguage } from '../../context/LanguageContext';
 import { 
     loadQuranEnglishTranslation, 
@@ -290,27 +289,67 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
     };
 
     return (
-        <div className="fixed top-0 left-0 right-0 z-[1200] flex items-center justify-center overflow-hidden" style={{ top: 0, left: 0, right: 0, height: `${initialHeight}px`, backgroundColor: 'rgba(0,0,0,0.5)' }} dir={isRTL ? "rtl" : "ltr"} onClick={onClose}>
-            <div className="w-full h-full flex flex-col overflow-hidden shadow-2xl border-0" style={{ backgroundColor: currentTheme?.bg || '#ffffff', border: 'none', outline: 'none' }} onClick={e => e.stopPropagation()}>
-                <div className="flex-1 w-full flex flex-col overflow-hidden" style={{ color: currentTheme?.text || '#000000' }}>
+        <div
+            className={isLandscape
+                ? "fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center p-2.5 overflow-hidden"
+                : "fixed top-0 left-0 right-0 z-[1200] flex items-center justify-center overflow-hidden"
+            }
+            style={isLandscape ? undefined : { top: 0, left: 0, right: 0, height: `${initialHeight}px`, backgroundColor: 'rgba(0,0,0,0.5)' }}
+            dir={isRTL ? "rtl" : "ltr"}
+            onClick={onClose}
+        >
+            <div
+                className={isLandscape
+                    ? `modal-skinned compact-landscape-modal ${isDarkTheme ? 'quran-3d-dark' : ''} w-[62%] max-w-[440px] h-[86%] max-h-[86%] rounded-3xl flex flex-col overflow-hidden shadow-2xl border-0`
+                    : "w-full h-full flex flex-col overflow-hidden shadow-2xl border-0"
+                }
+                style={{ backgroundColor: currentTheme?.bg || '#ffffff', border: 'none', outline: 'none' }}
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="flex-1 min-h-0 w-full flex flex-col overflow-hidden" style={{ color: currentTheme?.text || '#000000' }}>
                     
-                    {/* Full Screen Modal Header without top back button */}
-                    <div className="p-3 flex items-center justify-center shrink-0 relative" style={{ backgroundColor: currentTheme?.bg || '#ffffff', paddingTop: 'calc(0.75rem + var(--app-safe-top, 0px))' }}>
-                        <h3 className="text-sm font-extrabold px-6 py-2 rounded-xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text }}>
-                            <svg className="w-4 h-4 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981') }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <span>{isEn ? "Advanced Search in Quran" : "البحث المتقدم"}</span>
-                        </h3>
-                    </div>
+                    {/* Modal Header */}
+                    {isLandscape ? (
+                        <div className="pt-2.5 px-3 pb-1.5 shrink-0">
+                            <div
+                                className="py-1.5 px-3 rounded-xl flex items-center justify-between gap-2 quran-raised-card border-0"
+                                style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff' }}
+                            >
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <svg className="w-3.5 h-3.5 shrink-0 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981') }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    <h3 className="text-xs font-extrabold truncate" style={{ color: currentTheme?.text }}>
+                                        {isEn ? "Advanced Search in Quran" : "البحث المتقدم"}
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="w-7 h-7 rounded-full quran-raised-btn flex items-center justify-center border-0 shrink-0 cursor-pointer"
+                                    style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', color: currentTheme?.text }}
+                                    aria-label={isEn ? "Close" : "إغلاق"}
+                                >
+                                    <X className="w-3.5 h-3.5 quran-3d-icon" />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-3 flex items-center justify-center shrink-0 relative" style={{ backgroundColor: currentTheme?.bg || '#ffffff', paddingTop: 'calc(0.75rem + var(--app-safe-top, 0px))' }}>
+                            <h3 className="text-sm font-extrabold px-6 py-2 rounded-xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text }}>
+                                <svg className="w-4 h-4 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981') }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                <span>{isEn ? "Advanced Search in Quran" : "البحث المتقدم"}</span>
+                            </h3>
+                        </div>
+                    )}
 
                     {/* Search Input Section */}
-                    <div className="px-4 py-3 shrink-0 z-10" style={{ backgroundColor: currentTheme?.bg || '#ffffff' }}>
+                    <div className={`${isLandscape ? 'px-3 py-1.5' : 'px-4 py-3'} shrink-0 z-10`} style={{ backgroundColor: currentTheme?.bg || '#ffffff' }}>
                         <div className="relative">
                             <input 
                                 type="text" 
                                 value={query}
                                 onChange={(e) => handleSearchInput(e.target.value)}
                                 placeholder={isEn ? "Search for an ayah, word, or in Hisn Al-Muslim..." : "ابحث عن آية، أو كلمة، أو في حصن المسلم..."} 
-                                className={`w-full p-3.5 ${isRTL ? "pl-12 pr-12" : "pr-12 pl-12"} rounded-2xl quran-raised-card font-bold border-none outline-none transition-all`}
+                                className={`w-full ${isLandscape ? 'py-2 px-10 text-xs rounded-xl' : `p-3.5 ${isRTL ? "pl-12 pr-12" : "pr-12 pl-12"} rounded-2xl`} quran-raised-card font-bold border-none outline-none transition-all`}
                                 style={{ 
                                     backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff',
                                     color: currentTheme?.text || '#000000',
@@ -321,51 +360,53 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                             {query && (
                                 <button 
                                     onClick={() => handleSearchInput('')}
-                                    className={`absolute ${isRTL ? "right-3" : "left-3"} top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-lg quran-raised-btn flex items-center justify-center transition-all`}
+                                    className={`absolute ${isRTL ? "right-2.5" : "left-2.5"} top-1/2 transform -translate-y-1/2 ${isLandscape ? 'w-6 h-6' : 'w-7 h-7'} rounded-lg quran-raised-btn flex items-center justify-center transition-all`}
                                     style={{ 
                                         backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                                         color: currentTheme?.text 
                                     }}
                                     title={isEn ? "Clear Search" : "مسح البحث"}
                                 >
-                                    <X className="w-4 h-4 quran-3d-icon" />
+                                    <X className={`${isLandscape ? 'w-3.5 h-3.5' : 'w-4 h-4'} quran-3d-icon`} />
                                 </button>
                             )}
                             <button 
                                 onClick={() => performSearch(query)} 
-                                className={`absolute ${isRTL ? "left-2.5" : "right-2.5"} top-1/2 transform -translate-y-1/2 p-2 rounded-xl quran-raised-btn-selected flex items-center justify-center transition`}
+                                className={`absolute ${isRTL ? "left-2" : "right-2"} top-1/2 transform -translate-y-1/2 ${isLandscape ? 'p-1.5 rounded-lg' : 'p-2 rounded-xl'} quran-raised-btn-selected flex items-center justify-center transition`}
                                 style={{ backgroundColor: currentTheme?.accent || '#10b981', color: '#ffffff' }}
                             >
-                                <svg className="w-4 h-4 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                <svg className={`${isLandscape ? 'w-3.5 h-3.5' : 'w-4 h-4'} quran-3d-icon`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             </button>
                         </div>
-                        <div className="text-xs text-center mt-2 font-bold opacity-60" style={{ color: currentTheme?.text }}>{searchStats}</div>
+                        {searchStats && (
+                            <div className={`${isLandscape ? 'text-[10px] mt-1' : 'text-xs mt-2'} text-center font-bold opacity-60`} style={{ color: currentTheme?.text }}>{searchStats}</div>
+                        )}
                     </div>
 
                     <div 
-                        className="flex-1 min-h-0 overflow-y-auto p-4 relative space-y-3 scrollbar-hide" 
+                        className={`flex-1 min-h-0 overflow-y-auto ${isLandscape ? 'px-3 py-1.5 space-y-2' : 'p-4 space-y-3'} relative scrollbar-hide`} 
                         style={{ 
                             backgroundColor: currentTheme?.bg || '#ffffff'
                         }}
                     >
                     {isSearching && (
-                        <div className="text-center mt-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
-                            <p className="mt-2 opacity-60 font-bold">{isEn ? "Searching..." : "جاري البحث..."}</p>
+                        <div className={`text-center ${isLandscape ? 'mt-4' : 'mt-8'}`}>
+                            <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-emerald-500 mx-auto"></div>
+                            <p className="mt-2 text-xs opacity-60 font-bold">{isEn ? "Searching..." : "جاري البحث..."}</p>
                         </div>
                     )}
                     
                     {!isSearching && results.length === 0 && query.trim() !== '' && (
-                        <div className="text-center opacity-40 mt-10">
-                            <svg className="w-16 h-16 mx-auto mb-4 opacity-50 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <p className="font-bold">{isEn ? "No results found for your search" : "لا توجد نتائج لبحثك"}</p>
+                        <div className={`text-center opacity-40 ${isLandscape ? 'mt-5' : 'mt-10'}`}>
+                            <svg className={`${isLandscape ? 'w-10 h-10 mb-2' : 'w-16 h-16 mb-4'} mx-auto opacity-50 quran-3d-icon`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <p className={`font-bold ${isLandscape ? 'text-xs' : ''}`}>{isEn ? "No results found for your search" : "لا توجد نتائج لبحثك"}</p>
                         </div>
                     )}
 
                     {!isSearching && results.length === 0 && query.trim() === '' && (
-                        <div className="text-center opacity-40 mt-10">
-                            <svg className="w-16 h-16 mx-auto mb-4 opacity-50 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <p className="font-bold">{isEn ? "Start searching for an ayah, word, or in Hisn Al-Muslim" : "ابدأ البحث عن آية، أو كلمة، أو في حصن المسلم"}</p>
+                        <div className={`text-center opacity-40 ${isLandscape ? 'mt-5' : 'mt-10'}`}>
+                            <svg className={`${isLandscape ? 'w-10 h-10 mb-2' : 'w-16 h-16 mb-4'} mx-auto opacity-50 quran-3d-icon`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <p className={`font-bold ${isLandscape ? 'text-xs' : ''}`}>{isEn ? "Start searching for an ayah, word, or in Hisn Al-Muslim" : "ابدأ البحث عن آية، أو كلمة، أو في حصن المسلم"}</p>
                         </div>
                     )}
 
@@ -381,21 +422,21 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                             return acc + 1;
                         }, 0);
                         return (
-                            <div key={surahNum} className="mb-3 rounded-2xl overflow-hidden border-0">
+                            <div key={surahNum} className={`${isLandscape ? 'mb-2 rounded-xl' : 'mb-3 rounded-2xl'} overflow-hidden border-0`}>
                                 <button 
                                     onClick={() => toggleSurah(surahNum)}
-                                    className="w-full flex justify-between items-center p-3.5 quran-raised-btn rounded-2xl transition-all"
+                                    className={`w-full flex justify-between items-center ${isLandscape ? 'p-2.5 rounded-xl' : 'p-3.5 rounded-2xl'} quran-raised-btn transition-all`}
                                     style={{ 
                                         backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff',
                                         color: currentTheme?.text,
                                         border: 'none',
                                     }}
                                 >
-                                    <h4 className="font-amiri-quran text-xl font-bold" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981') }}>
+                                    <h4 className={`font-amiri-quran ${isLandscape ? 'text-base' : 'text-xl'} font-bold`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981') }}>
                                         {surahDisplayName}
                                     </h4>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-white text-[11px] px-2.5 py-0.5 rounded-full font-bold quran-raised-card" style={{ backgroundColor: currentTheme?.accent || '#10b981', border: 'none' }}>
+                                        <span className="text-white text-[10px] px-2 py-0.5 rounded-full font-bold quran-raised-card" style={{ backgroundColor: currentTheme?.accent || '#10b981', border: 'none' }}>
                                             {isEn ? (
                                                 surahWordOccurrences > group.ayahs.length 
                                                     ? `${group.ayahs.length} Ayahs (${surahWordOccurrences} matches)` 
@@ -416,28 +457,28 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                 </button>
                                 
                                 {isExpanded && (
-                                    <div className={`p-2.5 mt-2 rounded-2xl ${isLandscape ? 'grid grid-cols-2 gap-2.5' : 'space-y-2.5'}`} style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
+                                    <div className={`${isLandscape ? 'p-2 mt-1.5 rounded-xl grid grid-cols-2 gap-2' : 'p-2.5 mt-2 rounded-2xl space-y-2.5'}`} style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
                                         {group.ayahs.map((r, idx) => (
-                                            <div key={idx} className="search-context-block search-main-ayah !mb-0 p-3.5 rounded-2xl quran-raised-card cursor-pointer transition-all active:scale-[0.98]" 
+                                            <div key={idx} className={`search-context-block search-main-ayah !mb-0 ${isLandscape ? 'p-2.5 rounded-xl' : 'p-3.5 rounded-2xl'} quran-raised-card cursor-pointer transition-all active:scale-[0.98]`} 
                                                 style={{ 
                                                     backgroundColor: isDarkTheme ? (currentTheme?.cardBg || 'rgba(255,255,255,0.05)') : '#ffffff',
                                                     border: 'none',
                                                 }}
                                                 onClick={() => { onSelect(r.surah, r.ayah); onClose(); }}>
-                                                <div className="search-context-label !text-[10px] !mb-1.5 font-bold opacity-60" style={{ color: currentTheme?.text }}>
+                                                <div className="search-context-label !text-[10px] !mb-1 font-bold opacity-60" style={{ color: currentTheme?.text }}>
                                                     {isEn ? `Ayah ${r.ayah} - Page ${r.page}` : `آية ${toArabic(r.ayah)} - صفحة ${toArabic(r.page)}`}
                                                 </div>
                                                 {(isEn || readingMode === 'translation' || readingMode === 'bilingual') && r.textEn ? (
-                                                    <div className="space-y-1.5 text-left mb-2" dir="ltr">
-                                                        <div className="text-sm font-medium leading-relaxed" style={{ color: currentTheme?.text }}>
+                                                    <div className="space-y-1 text-left mb-1" dir="ltr">
+                                                        <div className={`${isLandscape ? 'text-xs' : 'text-sm'} font-medium leading-relaxed`} style={{ color: currentTheme?.text }}>
                                                             {highlightText(r.textEn, r.highlightRegex)}
                                                         </div>
-                                                        <div className="search-context-ayah !text-sm font-amiri-quran text-right opacity-70" dir="rtl" style={{ color: currentTheme?.text }}>
+                                                        <div className={`search-context-ayah ${isLandscape ? '!text-xs' : '!text-sm'} font-amiri-quran text-right opacity-70`} dir="rtl" style={{ color: currentTheme?.text }}>
                                                             {r.text}
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="search-context-ayah !text-base font-amiri-quran" style={{ color: currentTheme?.text, letterSpacing: 0, fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"', textRendering: 'optimizeLegibility' }}>
+                                                    <div className={`search-context-ayah ${isLandscape ? '!text-sm' : '!text-base'} font-amiri-quran`} style={{ color: currentTheme?.text, letterSpacing: 0, fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"', textRendering: 'optimizeLegibility' }}>
                                                         {highlightText(r.text, r.highlightRegex)}
                                                     </div>
                                                 )}
@@ -452,7 +493,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                     {!isSearching && results.length > visibleCount && (
                         <button 
                             onClick={() => setVisibleCount(prev => prev + 100)}
-                            className="w-full py-3.5 mt-4 rounded-2xl font-bold transition quran-raised-btn-selected"
+                            className={`w-full ${isLandscape ? 'py-2.5 mt-2 rounded-xl text-xs' : 'py-3.5 mt-4 rounded-2xl'} font-bold transition quran-raised-btn-selected`}
                             style={{ backgroundColor: currentTheme?.accent || '#10b981', color: '#ffffff', border: 'none' }}
                         >
                             {isEn ? `Show more results (${results.length - visibleCount} remaining)` : `عرض المزيد من النتائج (${toArabic(results.length - visibleCount)} متبقية)`}
@@ -461,14 +502,14 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                 </div>
                 <div 
                     data-toast-bottom-bar="true"
-                    className="px-3.5 pt-3.5 modal-sheet-safe-bottom flex gap-2 shrink-0 z-10" 
+                    className={`${isLandscape ? 'px-3 pt-1.5 pb-2.5' : 'px-3.5 pt-3.5 modal-sheet-safe-bottom'} flex gap-2 shrink-0 z-10`} 
                     style={{ 
                         backgroundColor: currentTheme?.bg || '#ffffff'
                     }}
                 >
                     <button 
                         onClick={onClose} 
-                        className="flex-1 py-3.5 rounded-2xl text-xs font-bold w-full transition-all quran-raised-btn"
+                        className={`flex-1 ${isLandscape ? 'py-2 rounded-xl' : 'py-3.5 rounded-2xl'} text-xs font-bold w-full transition-all quran-raised-btn`}
                         style={{ 
                             backgroundColor: currentTheme?.btnBg || (currentTheme?.text === '#ffffff' ? 'rgba(255,255,255,0.08)' : '#ffffff'), 
                             color: currentTheme?.btnText || currentTheme?.text, 

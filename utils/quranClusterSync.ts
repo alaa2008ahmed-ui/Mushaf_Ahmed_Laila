@@ -147,7 +147,7 @@ export const syncClusterSettings = (
         localStorage.setItem('quran_settings_v', serialized);
         localStorage.setItem('quran_settings_h', serialized);
 
-        const layouts = ['classic', 'modern'] as const;
+        const layouts = ['modern'] as const;
         const orients = ['v', 'h'] as const;
 
         ALL_READING_MODES.forEach(m => {
@@ -183,7 +183,7 @@ export const syncClusterSettings = (
 export const syncClusterTheme = (
     _cluster: ReadingCluster | string,
     themeId: string,
-    currentLayout: 'classic' | 'modern' = 'modern',
+    currentLayout: 'modern' = 'modern',
     isLandscape: boolean = false
 ) => {
     try {

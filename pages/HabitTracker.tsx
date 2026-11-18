@@ -1,15 +1,13 @@
 import React, { useEffect, useLayoutEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ChevronLeft, CheckCircle, Clock, Heart, BookOpen, Plus, Minus, Medal, Award, Star, Trash2, Sparkles, Share2, Calendar, RotateCcw, Check, HelpCircle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, Clock, Heart, BookOpen, Plus, Minus, Medal, Award, Star, Trash2, Sparkles, Calendar, RotateCcw, Check, X } from 'lucide-react';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { WORSHIP_MENTOR_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import moment from 'moment-hijri';
-import { useHabitTracker, DailyRecord, HabitCategory, defaultRecord, CustomHabit } from '../hooks/useHabitTracker';
+import { useHabitTracker, HabitCategory, defaultRecord, CustomHabit, HABIT_WEIGHTS } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useShowPageGuides } from '../utils/guideManager';
-import ThemePageLock from '../components/ThemePageLock';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
@@ -18,10 +16,10 @@ import Confetti from 'react-dom-confetti';
 import HabitArchive from '../components/HabitArchive';
 import WeeklyAchievementModal from '../components/WeeklyAchievementModal';
 import CustomHabitModal from '../components/CustomHabitModal';
-import { shareDailyHabitCard } from '../utils/habitShareHelper';
 import { gregorianMonths, hijriMonths } from '../data/calendarData';
 import { hexToRgba } from '../utils/flatDesignTokens';
 import { getCalculator3DStyles } from '../utils/calculator3DStyles';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 const HIJRI_MONTHS_EN = [
   'Muharram', 'Safar', 'Rabi I', 'Rabi II', 'Jumada I', 'Jumada II',
@@ -48,44 +46,125 @@ interface HabitTrackerProps {
   onNavigate: (id: string, params?: any) => void; 
 }
 
-const ProgressRing = ({ progress, size = 100, strokeWidth = 8, color }: { progress: number, size?: number, strokeWidth?: number, color: string }) => {
+const ProgressRing = ({
+  progress,
+  size = 100,
+  strokeWidth = 8,
+  color,
+  isDark = false,
+  isBlackTheme = false,
+}: {
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+  color: string;
+  isDark?: boolean;
+  isBlackTheme?: boolean;
+}) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
+  const ringFilterId = React.useId();
+  const innerSize = Math.max(24, Math.round(size - strokeWidth * 2 - 6));
+
+  const outerRingStyle: React.CSSProperties = isDark
+    ? {
+        width: size + 8,
+        height: size + 8,
+        background: isBlackTheme
+          ? 'linear-gradient(145deg, #27272a 0%, #09090b 100%)'
+          : 'linear-gradient(145deg, #334155 0%, #1e293b 100%)',
+        boxShadow: isBlackTheme
+          ? '0 4.5px 0 #000000, 0 8px 16px -2px rgba(0, 0, 0, 0.72), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.16), inset 0 -2px 4px rgba(0, 0, 0, 0.5)'
+          : '0 4.5px 0 #0f172a, 0 8px 16px -2px rgba(0, 0, 0, 0.5), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.15), inset 0 -2px 4px rgba(0, 0, 0, 0.35)',
+      }
+    : {
+        width: size + 8,
+        height: size + 8,
+        background: 'linear-gradient(145deg, #ffffff 0%, #eef2f6 100%)',
+        boxShadow:
+          '0 4.5px 0 rgba(0, 0, 0, 0.14), 0 8px 16px -2px rgba(0, 0, 0, 0.12), inset 0 2px 2px rgba(255, 255, 255, 0.98), inset 0 -2px 4px rgba(0, 0, 0, 0.08)',
+      };
+
+  const innerCapStyle: React.CSSProperties = isDark
+    ? {
+        width: innerSize,
+        height: innerSize,
+        background: isBlackTheme
+          ? 'linear-gradient(160deg, #18181b 0%, #09090b 100%)'
+          : 'linear-gradient(160deg, #273549 0%, #172030 100%)',
+        boxShadow:
+          '0 2px 4px rgba(0, 0, 0, 0.55), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.12), inset 0 -1.5px 2px rgba(0, 0, 0, 0.45)',
+      }
+    : {
+        width: innerSize,
+        height: innerSize,
+        background: 'linear-gradient(160deg, #ffffff 0%, #f1f5f9 100%)',
+        boxShadow:
+          '0 2.5px 5px rgba(0, 0, 0, 0.12), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.98), inset 0 -1.5px 2px rgba(0, 0, 0, 0.06)',
+      };
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="transparent" className="text-gray-200 dark:text-zinc-700" />
-        <motion.circle
-          cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth} fill="transparent"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset }}
-          transition={{ duration: 1.5, ease: 'easeOut' }}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute text-xl font-bold font-sans" style={{ color }}>{progress}%</div>
+    <div
+      className="relative rounded-full flex items-center justify-center shrink-0"
+      style={outerRingStyle}
+    >
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="transform -rotate-90 overflow-visible">
+          <defs>
+            <filter id={ringFilterId} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="1.5" stdDeviation="1.4" floodColor="rgba(0,0,0,0.28)" />
+            </filter>
+          </defs>
+          {/* Recessed groove track */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={isDark ? 'rgba(255, 255, 255, 0.09)' : 'rgba(148, 163, 184, 0.28)'}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            filter={`url(#${ringFilterId})`}
+          />
+        </svg>
+        <div
+          className="absolute rounded-full flex items-center justify-center"
+          style={innerCapStyle}
+        >
+          <span
+            className="font-black font-sans leading-none tracking-tight"
+            style={{
+              color: isBlackTheme ? '#FFFFFF' : color,
+              fontSize: size <= 70 ? '1.2rem' : '1.55rem',
+            }}
+          >
+            {progress}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };
 
 const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   const showPageGuides = useShowPageGuides();
-<<<<<<< HEAD
   const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
   const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
+  const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
   const { language } = useLanguage();
   const isEn = language === 'en';
   const hexColor = s3d.primaryColor;
-=======
-  const { theme, themeKey } = useTheme();
-  const tokens = getModernFlatTokens(theme, themeKey);
-  const { language } = useLanguage();
-  const isEn = language === 'en';
-  const hexColor = tokens.primaryColor;
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   // Dynamic today string for habits & auto-update at 12:00 AM midnight
   const [todayStr, setTodayStr] = useState<string>(() => moment().format('YYYY-MM-DD'));
   const [selectedDate, setSelectedDate] = useState<string>(() => moment().format('YYYY-MM-DD'));
@@ -136,9 +215,9 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   const [activeStreakMsg, setActiveStreakMsg] = useState('');
   const [showWeeklyModal, setShowWeeklyModal] = useState(false);
   const [showCustomHabitModal, setShowCustomHabitModal] = useState(false);
+  const [showPointsModal, setShowPointsModal] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<{ id: string; title: string } | null>(null);
   const [trackerToast, setTrackerToast] = useState('');
-  const [isSharingDaily, setIsSharingDaily] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
@@ -206,15 +285,15 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
       : (hijriMonths[hMonth - 1]?.name || '');
 
     return {
-      selectedGregorianShort: isEn ? gregShort : `${gregShort} م`,
-      selectedHijriShort: isEn ? `${hDay} ${hijriMonthLabel}` : `${hDay} ${hijriMonthLabel} هـ`,
+      selectedGregorianShort: gregShort,
+      selectedHijriShort: `${hDay} ${hijriMonthLabel}`,
       selectedHijriDate: isEn ? `${hDay} ${hijriMonthLabel} ${hYear} AH` : `${hDay} ${hijriMonthLabel} ${hYear} هـ`
     };
   }, [selectedDate, isEn, selectedMoment]);
 
   const achievementHeaderRowRef = useRef<HTMLDivElement>(null);
   const achievementTitleRef = useRef<HTMLHeadingElement>(null);
-  const achievementBadgeRef = useRef<HTMLSpanElement>(null);
+  const achievementBadgeRef = useRef<HTMLButtonElement>(null);
   const [achievementTitleSize, setAchievementTitleSize] = useState<number>(14);
 
   const fitAchievementHeaderRow = useCallback(() => {
@@ -260,6 +339,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   }, [fitAchievementHeaderRow, viewMode]);
 
   const handleHomeClick = () => {
+    if (showPointsModal) {
+      setShowPointsModal(false);
+      return;
+    }
     if (showWeeklyModal) {
       setShowWeeklyModal(false);
       return;
@@ -279,6 +362,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
     const interceptor = () => {
       if (showGuide) {
         setShowGuide(false);
+        return true;
+      }
+      if (showPointsModal) {
+        setShowPointsModal(false);
         return true;
       }
       if (showWeeklyModal) {
@@ -301,7 +388,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
     };
     const unregister = registerBackInterceptor(interceptor);
     return unregister;
-  }, [viewMode, showWeeklyModal, showCustomHabitModal, habitToDelete]);
+  }, [viewMode, showWeeklyModal, showCustomHabitModal, showPointsModal, showGuide, habitToDelete]);
 
   const heatmapData = useMemo(() => getHeatmapData(), [records, todayStr, selectedDate]);
 
@@ -444,48 +531,46 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
       <div 
         key={id} 
         id={`prayer-card-${id}`} 
-        className={`app-page-card border-0 rounded-2xl p-3.5 mb-0 transition-all ${s3d.surfaceCardClass}`}
+        className={`app-page-card border-0 rounded-2xl p-2.5 sm:p-3.5 mb-0 min-w-0 transition-all ${s3d.surfaceCardClass}`}
       >
-         <span className="font-extrabold text-sm block mb-2.5 px-1" style={{ color: s3d.textColor }}>{label}</span>
-         <div className="flex gap-2 overflow-visible pb-1">
-            <motion.button 
-               whileTap={{ scale: 0.95 }}
+         <span className="font-extrabold text-sm block mb-2 sm:mb-2.5 px-1" style={{ color: s3d.textColor }}>{label}</span>
+         <div className="flex items-center gap-1.5 sm:gap-2 w-full min-w-0 overflow-visible pb-1.5">
+            <button 
                onClick={() => handleToggle('prayers', fardId)}
-               className={`app-page-card border-0 flex-1 flex items-center justify-between py-2.5 px-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+               className={`app-page-card border-0 flex-1 min-w-0 flex items-center justify-between gap-1 py-2 sm:py-2.5 px-1.5 sm:px-2.5 rounded-xl text-[10.5px] sm:text-xs leading-tight active:scale-95 transition-transform cursor-pointer ${
                   isFardCompleted
                     ? 'font-black'
                     : `font-bold ${s3d.surfaceCardClass}`
                }`}
                style={isFardCompleted ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
             >
-               <span>{isEn ? 'Fard' : 'الفريضة'}</span>
-               <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+               <span className="truncate min-w-0">{isEn ? 'Fard' : 'الفريضة'}</span>
+               <div className={`app-3d-badge w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 rounded-full flex items-center justify-center ${
                  isFardCompleted
                    ? (s3d.isBlackTheme ? 'bg-black/15' : 'bg-white/25')
                    : (s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10')
                }`}>
-                  {isFardCompleted && <CheckCircle className="w-3 h-3" style={{ color: s3d.btnTextColor }} />}
+                  {isFardCompleted && <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" style={{ color: s3d.btnTextColor }} />}
                </div>
-            </motion.button>
-            <motion.button 
-               whileTap={{ scale: 0.95 }}
+            </button>
+            <button 
                onClick={() => handleToggle('prayers', sunnahId)}
-               className={`app-page-card border-0 flex-1 flex items-center justify-between py-2.5 px-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+               className={`app-page-card border-0 flex-1 min-w-0 flex items-center justify-between gap-1 py-2 sm:py-2.5 px-1.5 sm:px-2.5 rounded-xl text-[10.5px] sm:text-xs leading-tight active:scale-95 transition-transform cursor-pointer ${
                   isSunnahCompleted
                     ? 'font-black'
                     : `font-bold ${s3d.surfaceCardClass}`
                }`}
                style={isSunnahCompleted ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
             >
-               <span>{isEn ? 'Sunnah' : 'السنة'}</span>
-               <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+               <span className="truncate min-w-0">{isEn ? 'Sunnah' : 'السنة'}</span>
+               <div className={`app-3d-badge w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 rounded-full flex items-center justify-center ${
                  isSunnahCompleted
                    ? (s3d.isBlackTheme ? 'bg-black/15' : 'bg-white/25')
                    : (s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10')
                }`}>
-                  {isSunnahCompleted && <CheckCircle className="w-3 h-3" style={{ color: s3d.btnTextColor }} />}
+                  {isSunnahCompleted && <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" style={{ color: s3d.btnTextColor }} />}
                </div>
-            </motion.button>
+            </button>
          </div>
       </div>
     );
@@ -496,11 +581,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
     const streak = getStreak(category, habitId);
     
     return (
-      <motion.button
+      <button
         key={`${category}-${habitId}`}
-        whileTap={{ scale: 0.97 }}
         onClick={() => handleToggle(category, habitId)}
-        className={`app-page-card border-0 w-full flex items-center justify-between p-3.5 rounded-2xl mb-0 transition-all cursor-pointer ${s3d.surfaceCardClass}`}
+        className={`app-page-card border-0 w-full flex items-center justify-between p-3.5 rounded-2xl mb-0 active:scale-[0.98] transition-transform cursor-pointer ${s3d.surfaceCardClass}`}
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="font-bold text-xs sm:text-sm px-1 truncate" style={{ color: s3d.textColor }}>
@@ -509,12 +593,12 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {streak > 1 && (
-            <div className="border-0 flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px] font-bold">
+            <div className="app-3d-badge border-0 flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px] font-bold">
               <span>🔥</span> {streak}
             </div>
           )}
           <div 
-            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+            className={`app-3d-badge w-7 h-7 rounded-full flex items-center justify-center ${
               isCompleted ? '' : (s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10')
             }`}
             style={isCompleted ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
@@ -522,7 +606,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
             {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" style={{ color: s3d.btnTextColor }} /> : <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-zinc-600" />}
           </div>
         </div>
-      </motion.button>
+      </button>
     );
   };
 
@@ -550,7 +634,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         className={`app-page-card border-0 relative flex items-center justify-between p-3.5 rounded-2xl transition-all ${s3d.surfaceCardClass}`}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0 pr-1">
-          <span className={`border-0 w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 select-none ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+          <span className={`app-3d-badge border-0 w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 select-none ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
             {habit.icon || '⭐'}
           </span>
           <div className="flex-1 min-w-0">
@@ -559,11 +643,11 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                 {habit.title}
               </span>
               {isScheduledToday ? (
-                <span className="border-0 text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+                <span className="app-3d-badge border-0 text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
                   {isSelectedToday ? 'اليوم 🌟' : 'مجدول 🌟'}
                 </span>
               ) : (
-                <span className={`border-0 text-[10px] px-2.5 py-0.5 rounded-full font-semibold shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`} style={{ color: s3d.subtextColor }}>
+                <span className={`app-3d-badge border-0 text-[10px] px-2.5 py-0.5 rounded-full font-semibold shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`} style={{ color: s3d.subtextColor }}>
                   {scheduleLabel}
                 </span>
               )}
@@ -578,22 +662,21 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
 
         <div className="flex items-center gap-2 shrink-0 overflow-visible pb-1">
           {streak > 1 && (
-            <div className="border-0 flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px] font-bold">
+            <div className="app-3d-badge border-0 flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px] font-bold">
               <span>🔥</span> {streak}
             </div>
           )}
 
-          <motion.button
-            whileTap={{ scale: 0.92 }}
+          <button
             onClick={() => handleToggle('custom', habit.id)}
-            className={`app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+            className={`app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-transform cursor-pointer ${
               isCompleted ? '' : s3d.surfaceCardClass
             }`}
             style={isCompleted ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
             title={isCompleted ? (isEn ? 'Completed' : 'تم الإنجاز') : (isEn ? 'Mark as completed' : 'تحديد كمنجز')}
           >
             {isCompleted ? <Check className="w-4 h-4 stroke-[3]" style={{ color: s3d.btnTextColor }} /> : <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-zinc-600" />}
-          </motion.button>
+          </button>
 
           <button
             onClick={() => setHabitToDelete({ id: habit.id, title: habit.title })}
@@ -612,34 +695,65 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
     const isDayToday = day.date === todayStr;
     const isDaySelected = day.date === selectedDate;
 
-    let bg = '';
+    let topColor = '';
+    let bottomColor = '';
+    let lipColor = '';
+
     if (day.progress === 100) {
-      bg = hexColor;
+      // الأخضر الزمردي الداكن (إنجاز كامل)
+      topColor = '#10b981';
+      bottomColor = '#047857';
+      lipColor = s3d.isDark ? '#022c22' : '#065f46';
     } else if (day.progress >= 75) {
-      bg = hexToRgba(hexColor, 0.8);
+      topColor = '#34d399';
+      bottomColor = '#059669';
+      lipColor = s3d.isDark ? '#064e3b' : '#047857';
     } else if (day.progress >= 50) {
-      bg = hexToRgba(hexColor, 0.55);
+      topColor = '#34d399';
+      bottomColor = '#10b981';
+      lipColor = s3d.isDark ? '#065f46' : '#059669';
     } else if (day.progress >= 25) {
-      bg = hexToRgba(hexColor, 0.35);
+      topColor = '#4ade80';
+      bottomColor = '#16a34a';
+      lipColor = s3d.isDark ? '#14532d' : '#15803d';
     } else if (day.progress > 0) {
-      bg = hexToRgba(hexColor, 0.2);
+      topColor = '#6ee7b7';
+      bottomColor = '#22c55e';
+      lipColor = s3d.isDark ? '#166534' : '#16a34a';
     } else if (isDayToday) {
-      bg = hexToRgba(hexColor, 0.15);
+      // اليوم الحالي دون تسجيل: البنفسجي
+      topColor = '#a78bfa';
+      bottomColor = '#7c3aed';
+      lipColor = s3d.isDark ? '#4c1d95' : '#5b21b6';
     } else if (isPast) {
-      bg = hexToRgba(hexColor, 0.08);
+      // الأيام السابقة دون تسجيل: العنبر الدافئ
+      topColor = '#fbbf24';
+      bottomColor = '#d97706';
+      lipColor = s3d.isDark ? '#78350f' : '#b45309';
     } else {
-      bg = 'rgba(156, 163, 175, 0.18)';
+      // الأيام التالية (القادمة): الأزرق السماوي
+      topColor = '#38bdf8';
+      bottomColor = '#0284c7';
+      lipColor = s3d.isDark ? '#0c4a6e' : '#0369a1';
     }
 
+    const baseBoxShadow = s3d.isDark
+      ? `0 2.5px 0 ${lipColor}, 0 4px 7px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.35), inset 0 -1px 1.5px rgba(0, 0, 0, 0.3)`
+      : `0 2.5px 0 ${lipColor}, 0 3px 6px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.55), inset 0 -1px 1.5px rgba(0, 0, 0, 0.15)`;
+
     const inlineStyle: React.CSSProperties = {
-      backgroundColor: bg,
+      backgroundColor: bottomColor,
+      backgroundImage: `linear-gradient(180deg, ${topColor} 0%, ${bottomColor} 100%)`,
       border: 'none',
-      borderRadius: '5px',
+      borderRadius: '4.5px',
+      boxShadow: baseBoxShadow,
+      opacity: 1,
     };
 
     if (isDaySelected) {
-      inlineStyle.boxShadow = `0 0 0 2px ${hexColor}`;
-      inlineStyle.transform = 'scale(1.18)';
+      const ringColor = s3d.isDark ? '#FFFFFF' : '#0f172a';
+      inlineStyle.boxShadow = `0 0 0 2px ${ringColor}, 0 0 8px ${ringColor}40, ${baseBoxShadow}`;
+      inlineStyle.transform = 'scale(1.18) translateY(-1px)';
       inlineStyle.zIndex = 10;
     }
 
@@ -651,7 +765,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
           setSelectedDate(day.date);
           showTrackerToast(isEn ? `Showing worships for ${day.date}` : `عرض عبادات يوم ${day.date}`);
         }}
-        className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-all hover:scale-115 cursor-pointer flex-grow-0 shrink-0 border-0"
+        className="w-full max-w-[15px] aspect-square mx-auto transition-all hover:scale-110 active:translate-y-[1px] cursor-pointer border-0"
         style={inlineStyle}
         title={`${day.date}: ${day.progress}% (${isEn ? 'Tap to view' : 'انقر للعرض والتسجيل'})`}
       />
@@ -673,11 +787,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   }
 
   return (
-<<<<<<< HEAD
     <div className="h-[100dvh] flex flex-col relative overflow-hidden" style={{ backgroundColor: s3d.pageBgColor, color: s3d.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
-=======
-    <div className="h-[100dvh] flex flex-col relative overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       <header className="app-top-bar shrink-0">
           <div className="app-top-bar__inner">
               <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -713,7 +823,6 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                                     <i className="fa-solid fa-circle-question text-lg"></i>
                                 </button>
                             )}
-                            <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
@@ -732,13 +841,11 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         
         {/* Past Day Notice Banner */}
         {!isSelectedToday && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className={`app-page-card border-0 rounded-3xl p-3.5 px-4 mb-4 flex items-center justify-between gap-2 text-xs ${s3d.surfaceCardClass}`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className={`border-0 w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>🗓️</span>
+              <span className={`app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>🗓️</span>
               <span className="truncate font-semibold" style={{ color: s3d.textColor }}>
                 {isEn ? `You are recording habits for a past day:` : `أنت تسجل عبادات يوم سابق:`} <b className="font-extrabold underline">{selectedDayName} ({selectedDate})</b>
               </span>
@@ -750,7 +857,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
             >
               {isEn ? 'Back to today' : 'العودة لليوم'}
             </button>
-          </motion.div>
+          </div>
         )}
 
         {/* Daily Achievement Card - 3D Sculpted */}
@@ -770,40 +877,42 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                         ({selectedGregorianShort} • {selectedHijriShort})
                     </span>
                 </h2>
-                <span
+                <button
+                    type="button"
                     id="habit-score-badge"
                     ref={achievementBadgeRef}
-                    className="border-0 text-xs font-black px-3 py-1.5 rounded-full whitespace-nowrap shrink-0"
+                    onClick={() => setShowPointsModal(true)}
+                    className="app-3d-badge border-0 text-xs font-black px-3 py-1.5 rounded-full whitespace-nowrap shrink-0 cursor-pointer active:scale-95 transition-transform"
                     style={{
                         backgroundColor: hexToRgba(hexColor, s3d.isBlackTheme ? 0.2 : 0.1),
                         color: s3d.isBlackTheme ? '#FFFFFF' : hexColor
                     }}
+                    title={isEn ? 'Tap to see how points are distributed' : 'اضغط لمعرفة طريقة توزيع النقاط'}
+                    aria-label={isEn ? 'Points distribution details' : 'تفاصيل توزيع النقاط'}
                 >
                     {scoreBreakdown.totalEarned} / {scoreBreakdown.totalAvailable} {isEn ? 'pts' : 'نقطة'}
-                </span>
+                </button>
             </div>
 
             <div className="flex items-end justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2.5 flex-wrap mb-3 overflow-visible pb-1.5">
-                    <motion.button
+                    <button
                        id="weekly-card-btn"
-                       whileTap={{ scale: 0.95 }}
                        onClick={() => setShowWeeklyModal(true)}
-                       className="app-page-card border-0 flex items-center justify-center px-4 py-2 rounded-2xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer"
+                       className="app-page-card border-0 flex items-center justify-center px-4 py-2 rounded-2xl text-xs sm:text-sm font-black active:scale-95 transition-transform shrink-0 whitespace-nowrap cursor-pointer"
                        style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
                     >
-                       <span>{isEn ? 'Weekly' : 'الأسبوع'}</span>
-                    </motion.button>
+                       <span>{isEn ? 'Achievements' : 'الإنجازات'}</span>
+                    </button>
 
-                    <motion.button
+                    <button
                        id="habit-archive-btn"
-                       whileTap={{ scale: 0.95 }}
                        onClick={() => setViewMode('archive')}
-                       className={`app-page-card border-0 flex items-center justify-center px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${s3d.surfaceCardClass}`}
+                       className={`app-page-card border-0 flex items-center justify-center px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold active:scale-95 transition-transform shrink-0 whitespace-nowrap cursor-pointer ${s3d.surfaceCardClass}`}
                     >
                        <span>{isEn ? 'Record' : 'السجل'}</span>
-                    </motion.button>
+                    </button>
                   </div>
 
                   {progress === 100 && (
@@ -813,17 +922,24 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                   )}
                   
                   {/* Heatmap Row */}
-                  <div id="habit-heatmap-grid" className="flex flex-col gap-1.5 w-full mt-1.5 pe-1" dir={isEn ? 'ltr' : 'rtl'}>
-                    <div className="flex justify-start gap-1 w-full overflow-hidden py-0.5">
+                  <div id="habit-heatmap-grid" className="flex flex-col gap-1.5 w-full mt-1.5 pe-1 overflow-visible" dir={isEn ? 'ltr' : 'rtl'}>
+                    <div className="grid grid-cols-[repeat(15,minmax(0,1fr))] gap-[3px] sm:gap-1 w-full overflow-visible py-1 px-0.5">
                       {heatmapData.slice(0, Math.ceil(heatmapData.length / 2)).map((day, i) => renderHeatmapBox(day, i))}
                     </div>
-                    <div className="flex justify-start gap-1 w-full overflow-hidden py-0.5">
+                    <div className="grid grid-cols-[repeat(15,minmax(0,1fr))] gap-[3px] sm:gap-1 w-full overflow-visible py-1 px-0.5">
                       {heatmapData.slice(Math.ceil(heatmapData.length / 2)).map((day, i) => renderHeatmapBox(day, i + Math.ceil(heatmapData.length / 2)))}
                     </div>
                   </div>
                 </div>
-                <div id="habit-progress-ring" className="shrink-0 flex flex-col items-center justify-end self-end pb-0.5 ps-2">
-                  <ProgressRing progress={progress} color={hexColor} size={62} strokeWidth={5.5} />
+                <div id="habit-progress-ring" className="shrink-0 flex flex-col items-center justify-end self-end pb-1 ps-2">
+                  <ProgressRing
+                    progress={progress}
+                    color={hexColor}
+                    size={62}
+                    strokeWidth={6}
+                    isDark={s3d.isDark}
+                    isBlackTheme={s3d.isBlackTheme}
+                  />
                 </div>
             </div>
         </div>
@@ -831,12 +947,12 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         {/* Prayers */}
         <section id="habit-prayers-fard-sunnah-section" className="mb-6">
           <h3 className="text-sm font-extrabold mb-3 flex items-center gap-2.5" style={{ color: s3d.textColor }}>
-            <span className={`border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+            <span className={`app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
               <Clock className="w-4 h-4" style={{ color: hexColor }} />
             </span>
             {isEn ? 'Obligatory Prayers & Sunnah' : 'الصلوات المكتوبة والسنن الرواتب'}
           </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {prayersList.map(habit => renderPrayerCard(habit.id, habit.label))}
           </div>
         </section>
@@ -844,7 +960,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         {/* Additional Prayers */}
         <section id="habit-nawafil-section" className="mb-6">
           <h3 className="text-sm font-extrabold mb-3 flex items-center gap-2.5" style={{ color: s3d.textColor }}>
-            <span className={`border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+            <span className={`app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
               <Heart className="w-4 h-4" style={{ color: hexColor }} />
             </span>
             {isEn ? 'Supererogatory Prayers' : 'صلوات النوافل'}
@@ -858,20 +974,20 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         <section id="quran-habit-section" className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-extrabold flex items-center gap-2.5" style={{ color: s3d.textColor }}>
-              <span className={`border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+              <span className={`app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                 <BookOpen className="w-4 h-4" style={{ color: hexColor }} />
               </span>
               {isEn ? 'Quran Recitation' : 'الورد القرآني'}
             </h3>
             <div className="flex items-center gap-2">
               {autoSyncEnabled && isSelectedToday && (
-                <span className="border-0 text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <span className="app-3d-badge border-0 text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   <span>{isEn ? 'Auto ⚡' : 'تلقائي ⚡'}</span>
                 </span>
               )}
               {(currentRecord.quran?.pages || 0) > 0 && (
-                <span className="border-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                <span className="app-3d-badge border-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                   {isEn ? 'Done ✓' : 'مكتمل ✓'}
                 </span>
               )}
@@ -908,7 +1024,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                   );
                 })()}
               </div>
-              <div className={`border-0 flex items-center gap-2 rounded-2xl p-1.5 pb-2 overflow-visible ${s3d.recessedInputClass}`}>
+              <div className={`app-3d-recessed-field border-0 flex items-center gap-2 rounded-2xl p-1.5 pb-2 overflow-visible ${s3d.recessedInputClass}`}>
                  <button 
                     type="button"
                     onClick={() => setQuranPages(selectedDate, Math.max(0, (currentRecord.quran?.pages || 0) - 1))}
@@ -943,7 +1059,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         {/* Adhkar */}
         <section id="habit-adhkar-section" className="mb-6">
           <h3 className="text-sm font-extrabold mb-3 flex items-center gap-2.5" style={{ color: s3d.textColor }}>
-            <span className={`border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+            <span className={`app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
               <Heart className="w-4 h-4" style={{ color: hexColor }} />
             </span>
             {isEn ? 'Adhkar' : 'الأذكار'}
@@ -956,7 +1072,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         {/* Ethics & Parents */}
         <section id="habit-ethics-section" className="mb-8">
           <h3 className="text-sm font-extrabold mb-3 flex items-center gap-2.5" style={{ color: s3d.textColor }}>
-            <span className={`border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+            <span className={`app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
               <Medal className="w-4 h-4" style={{ color: hexColor }} />
             </span>
             {isEn ? 'Kindness & Ethics' : 'بر الوالدين والأخلاق'}
@@ -970,26 +1086,25 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         <section id="custom-habits-section" className="mb-8">
           <div className="flex items-center justify-between mb-3 gap-2 overflow-visible pb-1">
             <h3 className="text-sm font-extrabold flex items-center gap-2.5" style={{ color: s3d.textColor }}>
-              <span className={`border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+              <span className={`app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                 <Star className="w-4 h-4 text-amber-500" />
               </span>
               <span>{isEn ? 'Custom Habits' : 'العبادات والعادات المخصصة'}</span>
               {filteredCustomHabits.length > 0 && (
-                <span className={`border-0 text-xs font-bold px-2.5 py-0.5 rounded-full ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`} style={{ color: s3d.subtextColor }}>
+                <span className={`app-3d-badge border-0 text-xs font-bold px-2.5 py-0.5 rounded-full ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`} style={{ color: s3d.subtextColor }}>
                   {filteredCustomHabits.length}
                 </span>
               )}
             </h3>
-            <motion.button
+            <button
               id="habit-add-custom-btn"
-              whileTap={{ scale: 0.95 }}
               onClick={() => setShowCustomHabitModal(true)}
-              className="app-page-card border-0 flex items-center gap-1.5 text-xs font-black px-3.5 py-2 rounded-2xl transition-all cursor-pointer shrink-0"
+              className="app-page-card border-0 flex items-center gap-1.5 text-xs font-black px-3.5 py-2 rounded-2xl active:scale-95 transition-transform cursor-pointer shrink-0"
               style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.75]" />
               <span>{isEn ? 'Add Habit' : 'إضافة عبادة'}</span>
-            </motion.button>
+            </button>
           </div>
 
           {filteredCustomHabits.length > 0 && (
@@ -1004,15 +1119,14 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
           id="habit-date-navigation-card"
           className={`app-page-card border-0 rounded-3xl p-3.5 pb-4 mb-4 flex items-center justify-between gap-2 overflow-visible ${s3d.surfaceCardClass}`}
         >
-          <motion.button
-            whileTap={{ scale: 0.92 }}
+          <button
             onClick={() => setSelectedDate(prev => moment(prev).subtract(1, 'day').format('YYYY-MM-DD'))}
-            className={`app-page-card border-0 w-11 h-11 rounded-2xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${s3d.surfaceCardClass}`}
+            className={`app-page-card border-0 w-11 h-11 rounded-2xl active:scale-95 transition-transform flex items-center justify-center shrink-0 cursor-pointer ${s3d.surfaceCardClass}`}
             title={isEn ? 'Previous Day' : 'اليوم السابق'}
             aria-label={isEn ? 'Previous Day' : 'اليوم السابق'}
           >
             {isEn ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-          </motion.button>
+          </button>
 
           <div className="flex-1 flex flex-col items-center justify-center min-w-0 gap-2 overflow-visible pb-1">
             <div className="flex items-center gap-2 flex-wrap justify-center overflow-visible">
@@ -1026,7 +1140,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                 <span>{selectedDayName}{isEn ? ', ' : '، '}{selectedFormattedDate}</span>
               </button>
               {isSelectedToday ? (
-                <span className="border-0 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <span className="app-3d-badge border-0 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
                   {isEn ? 'Today' : 'اليوم'}
                 </span>
               ) : (
@@ -1063,145 +1177,366 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
             />
           </div>
 
-          <motion.button
-            whileTap={isSelectedToday ? undefined : { scale: 0.92 }}
+          <button
             disabled={isSelectedToday}
             onClick={() => setSelectedDate(prev => moment(prev).add(1, 'day').format('YYYY-MM-DD'))}
-            className={`app-page-card border-0 w-11 h-11 rounded-2xl transition-all flex items-center justify-center shrink-0 ${s3d.surfaceCardClass} ${
+            className={`app-page-card border-0 w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${s3d.surfaceCardClass} ${
               isSelectedToday
                 ? 'opacity-35 cursor-not-allowed'
-                : 'cursor-pointer'
+                : 'cursor-pointer active:scale-95 transition-transform'
             }`}
             title={isSelectedToday ? (isEn ? 'Cannot record future days' : 'لا يمكن تسجيل أيام مستقبلية') : (isEn ? 'Next Day' : 'اليوم التالي')}
-            aria-label={isEn ? 'Next Day' : 'اليوم التالي'}
+            aria-label={isSelectedToday ? (isEn ? 'Cannot record future days' : 'لا يمكن تسجيل أيام مستقبلية') : (isEn ? 'Next Day' : 'اليوم التالي')}
           >
             {isEn ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-          </motion.button>
+          </button>
         </div>
 
         {/* Footer Sentence */}
-<<<<<<< HEAD
         <div className={`text-center pt-4 px-6 border-t ${s3d.dividerClass}`}>
            <p className="text-sm font-semibold opacity-75 leading-relaxed font-amiri" style={{ color: s3d.subtextColor }}>
-=======
-        <div className="text-center pt-4 px-6 border-t border-slate-100 dark:border-zinc-800">
-           <p className="text-sm font-semibold opacity-70 leading-relaxed font-amiri" style={{ color: tokens.subtextColor }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {isEn ? "Your consistency in worship is the greatest gift to you and to the spirits of Ahmed and Laila." : "استمرارك في العبادة هو أعظم هدية لك ولروح أحمد وليلى"}
            </p>
         </div>
       </main>
 
       {/* Streak Achievement Modal */}
-      <AnimatePresence>
-        {showStreakMedal && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 50 }}
-            className={`app-page-card border-0 fixed inset-x-0 bottom-20 mx-auto w-[90%] max-w-sm rounded-3xl p-6 text-center z-50 ${s3d.surfaceCardClass}`}
-          >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0">
-               <Confetti active={showStreakMedal} config={CONFETTI_CONFIG} />
+      {showStreakMedal && (
+        <div 
+          className={`app-page-card border-0 fixed inset-x-0 bottom-20 mx-auto w-[90%] max-w-sm rounded-3xl p-6 text-center z-50 ${s3d.surfaceCardClass}`}
+        >
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0">
+             <Confetti active={showStreakMedal} config={CONFETTI_CONFIG} />
+          </div>
+          <div className="relative z-10 flex flex-col items-center">
+            <div 
+              className="app-3d-badge border-0 w-16 h-16 flex items-center justify-center rounded-full mb-4"
+              style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
+            >
+              <Medal className="w-8 h-8" style={{ color: s3d.btnTextColor }} />
             </div>
-            <div className="relative z-10 flex flex-col items-center">
-              <div 
-                className="w-16 h-16 flex items-center justify-center rounded-full mb-4"
-                style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
-              >
-                <Medal className="w-8 h-8" style={{ color: s3d.btnTextColor }} />
-              </div>
-              <h3 className="text-xl font-extrabold mb-2" style={{ color: s3d.textColor }}>{isEn ? 'Consistency Medal' : 'وسام الاستمرارية'}</h3>
-              <p className="font-semibold" style={{ color: s3d.subtextColor }}>{activeStreakMsg}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <h3 className="text-xl font-extrabold mb-2" style={{ color: s3d.textColor }}>{isEn ? 'Consistency Medal' : 'وسام الاستمرارية'}</h3>
+            <p className="font-semibold" style={{ color: s3d.subtextColor }}>{activeStreakMsg}</p>
+          </div>
+        </div>
+      )}
 
       {/* Weekly Achievement Card Modal */}
-      <AnimatePresence>
-        {showWeeklyModal && (
-          <WeeklyAchievementModal
-            records={records}
-            getDailyProgress={getDailyProgress}
-            customHabits={customHabits}
-            theme={theme}
-            hexColor={hexColor}
-            isBlackTheme={s3d.isBlackTheme}
-            onClose={() => setShowWeeklyModal(false)}
-          />
-        )}
-      </AnimatePresence>
+      {showWeeklyModal && (
+        <WeeklyAchievementModal
+          records={records}
+          getDailyProgress={getDailyProgress}
+          customHabits={customHabits}
+          theme={theme}
+          hexColor={hexColor}
+          isBlackTheme={s3d.isBlackTheme}
+          onClose={() => setShowWeeklyModal(false)}
+        />
+      )}
 
       {/* Custom Habit Modal */}
-      <AnimatePresence>
-        {showCustomHabitModal && (
-          <CustomHabitModal
-            hexColor={hexColor}
-            isBlackTheme={s3d.isBlackTheme}
-            onClose={() => setShowCustomHabitModal(false)}
-            onAdded={(title) => showTrackerToast(isEn ? `Habit "${title}" added successfully 🌿` : `تمت إضافة "${title}" بنجاح 🌿`)}
-            onNavigate={onNavigate}
-          />
-        )}
-      </AnimatePresence>
+      {showCustomHabitModal && (
+        <CustomHabitModal
+          hexColor={hexColor}
+          isBlackTheme={s3d.isBlackTheme}
+          onClose={() => setShowCustomHabitModal(false)}
+          onAdded={(title) => showTrackerToast(isEn ? `Habit "${title}" added successfully 🌿` : `تمت إضافة "${title}" بنجاح 🌿`)}
+          onNavigate={onNavigate}
+        />
+      )}
 
       {/* Delete Confirmation Dialog - Modal Bottom Sheet style */}
-      <AnimatePresence>
-        {habitToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={isEn ? 'ltr' : 'rtl'} onClick={() => setHabitToDelete(null)}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className={`app-page-card border-0 w-full max-w-xs rounded-3xl p-6 text-center ${s3d.surfaceCardClass}`}
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="border-0 w-12 h-12 rounded-2xl bg-red-500/15 text-red-500 flex items-center justify-center mx-auto mb-3.5">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-extrabold mb-1.5" style={{ color: s3d.textColor }}>
-                {isEn ? 'Delete Habit' : 'حذف العبادة'}
-              </h3>
-              <p className="text-xs mb-5 leading-relaxed font-medium" style={{ color: s3d.subtextColor }}>
-                {isEn ? `Are you sure you want to delete the habit "${habitToDelete.title}"?` : `هل أنت متأكد من حذف عبادة "${habitToDelete.title}"؟`}
-              </p>
-              <div className="flex gap-2.5 overflow-visible pb-1">
-                <button
-                  onClick={handleConfirmDelete}
-                  className="app-page-card border-0 flex-1 py-3 rounded-2xl text-white font-black text-xs cursor-pointer transition-all"
-                  style={{
-                    backgroundColor: '#DC2626',
-                    color: '#FFFFFF'
-                  }}
-                >
-                  {isEn ? 'Yes, Delete' : 'نعم، حذف'}
-                </button>
-                <button
-                  onClick={() => setHabitToDelete(null)}
-                  className={`app-page-card border-0 flex-1 py-3 rounded-2xl font-bold text-xs cursor-pointer ${s3d.surfaceCardClass}`}
-                >
-                  {isEn ? 'Cancel' : 'إلغاء'}
-                </button>
-              </div>
-            </motion.div>
+      {habitToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65" dir={isEn ? 'ltr' : 'rtl'} onClick={() => setHabitToDelete(null)}>
+          <div
+            className={`app-page-card border-0 w-full max-w-xs rounded-3xl p-6 text-center ${s3d.surfaceCardClass}`}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="app-3d-badge border-0 w-12 h-12 rounded-2xl bg-red-500/15 text-red-500 flex items-center justify-center mx-auto mb-3.5">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-extrabold mb-1.5" style={{ color: s3d.textColor }}>
+              {isEn ? 'Delete Habit' : 'حذف العبادة'}
+            </h3>
+            <p className="text-xs mb-5 leading-relaxed font-medium" style={{ color: s3d.subtextColor }}>
+              {isEn ? `Are you sure you want to delete the habit "${habitToDelete.title}"?` : `هل أنت متأكد من حذف عبادة "${habitToDelete.title}"؟`}
+            </p>
+            <div className="flex gap-2.5 overflow-visible pb-1">
+              <button
+                onClick={handleConfirmDelete}
+                className="app-page-card border-0 flex-1 py-3 rounded-2xl text-white font-black text-xs cursor-pointer transition-all"
+                style={{
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF'
+                }}
+              >
+                {isEn ? 'Yes, Delete' : 'نعم، حذف'}
+              </button>
+              <button
+                onClick={() => setHabitToDelete(null)}
+                className={`app-page-card border-0 flex-1 py-3 rounded-2xl font-bold text-xs cursor-pointer ${s3d.surfaceCardClass}`}
+              >
+                {isEn ? 'Cancel' : 'إلغاء'}
+              </button>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
+      {/* Points Distribution Explanation Modal */}
+      {showPointsModal && (() => {
+          const baseTotal =
+            Object.values(HABIT_WEIGHTS.fard).reduce((a, b) => a + b, 0) +
+            Object.values(HABIT_WEIGHTS.sunnah).reduce((a, b) => a + b, 0) +
+            Object.values(HABIT_WEIGHTS.nawafil).reduce((a, b) => a + b, 0) +
+            HABIT_WEIGHTS.quranMax +
+            Object.values(HABIT_WEIGHTS.adhkar).reduce((a, b) => a + b, 0) +
+            Object.values(HABIT_WEIGHTS.ethics).reduce((a, b) => a + b, 0);
+
+          const customAvailableTotal = filteredCustomHabits.length * HABIT_WEIGHTS.customHabit;
+
+          const distributionSections = [
+            {
+              id: 'fard',
+              title: isEn ? 'Obligatory Prayers (5 Prayers)' : 'الصلوات المكتوبة (الفرائض الخمس)',
+              earned: scoreBreakdown.fardPoints,
+              max: 35,
+              detail: isEn
+                ? '7 pts per prayer (Fajr, Dhuhr, Asr, Maghrib, Isha)'
+                : '7 نقاط لكل صلاة مفروضة (5 × 7 نقاط)',
+            },
+            {
+              id: 'sunnah',
+              title: isEn ? 'Regular Sunnah Prayers' : 'السنن الرواتب',
+              earned: scoreBreakdown.sunnahPoints,
+              max: 10,
+              detail: isEn
+                ? '2 pts for each prayer’s Sunnah (5 × 2 pts)'
+                : 'نقطتان لكل سنة راتبة مع الصلوات الخمس (5 × 2 نقاط)',
+            },
+            {
+              id: 'nawafil',
+              title: isEn ? 'Voluntary Prayers & Qiyam' : 'النوافل وقيام الليل',
+              earned: scoreBreakdown.nawafilPoints,
+              max: 13,
+              detail: isEn
+                ? 'Witr (3) • Qiyam (3) • Duha (2) • Masjid, Tasabih, Hajah, Tawbah, Istikharah (1 pt each)'
+                : 'الشفع والوتر (3) • قيام الليل (3) • الضحى (2) • تحية المسجد، التسابيح، الحاجة، التوبة، الاستخارة (نقطة لكل صلاة)',
+            },
+            {
+              id: 'quran',
+              title: isEn ? 'Quran Recitation' : 'الورد القرآني',
+              earned: scoreBreakdown.quranPoints,
+              max: HABIT_WEIGHTS.quranMax,
+              detail: isEn
+                ? 'Up to 15 pts based on pages read (from 1 page up to 20+ pages / full Juz)'
+                : 'تصل إلى 15 نقطة حسب عدد الصفحات المقروءة (تبدأ من صفحة واحدة وتكتمل عند 20 صفحة فأكثر)',
+            },
+            {
+              id: 'adhkar',
+              title: isEn ? 'Daily Adhkar' : 'الأذكار اليومية',
+              earned: scoreBreakdown.adhkarPoints,
+              max: 15,
+              detail: isEn
+                ? 'Morning (4) • Evening (4) • Salah Adhkar (3) • Istighfar (2) • Supplications (2)'
+                : 'أذكار الصباح (4) • المساء (4) • الصلاة (3) • الاستغفار (2) • الأدعية (2)',
+            },
+            {
+              id: 'ethics',
+              title: isEn ? 'Kindness, Charity & Ethics' : 'بر الوالدين والأخلاق والصدقة',
+              earned: scoreBreakdown.ethicsPoints,
+              max: 15,
+              detail: isEn
+                ? 'Parents (5) • Charity (5) • Visiting Relatives (3) • Visiting Sick (2)'
+                : 'بر الوالدين (5) • الصدقة (5) • صلة الرحم (3) • زيارة مريض (2)',
+            },
+          ];
+
+          return (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65"
+              dir={isEn ? 'ltr' : 'rtl'}
+              onClick={() => setShowPointsModal(false)}
+            >
+              <div
+                className={`app-page-card border-0 w-full max-w-md rounded-3xl overflow-hidden flex flex-col max-h-[88dvh] ${s3d.surfaceCardClass}`}
+                style={{ fontFamily: theme.font }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className={`flex items-center justify-between px-4 sm:px-5 py-3.5 border-b ${s3d.dividerClass} shrink-0`}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`app-3d-badge border-0 w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                      <Award className="w-4.5 h-4.5" style={{ color: hexColor }} />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="font-extrabold text-sm sm:text-base truncate" style={{ color: s3d.textColor }}>
+                        {isEn ? 'Points Distribution' : 'طريقة توزيع النقاط'}
+                      </h3>
+                      <p className="text-[11px] font-bold" style={{ color: s3d.subtextColor }}>
+                        {isEn
+                          ? `Earned ${scoreBreakdown.totalEarned} of ${scoreBreakdown.totalAvailable} pts (${scoreBreakdown.percentage}%)`
+                          : `المكتسب ${scoreBreakdown.totalEarned} من أصل ${scoreBreakdown.totalAvailable} نقطة (${scoreBreakdown.percentage}%)`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPointsModal(false)}
+                    className={`app-3d-badge border-0 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-transform active:scale-90 shrink-0 ${s3d.isBlackTheme ? 'bg-white/10 text-white' : 'bg-slate-100 dark:bg-white/10'}`}
+                    style={{ color: s3d.textColor }}
+                    aria-label={isEn ? 'Close' : 'إغلاق'}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-4 sm:p-5 overflow-y-auto space-y-3 hide-scrollbar">
+                  {/* Simple Summary Box */}
+                  <div
+                    className="app-inner-3d-box border-0 rounded-2xl p-3.5 text-xs leading-relaxed font-semibold"
+                    style={{ backgroundColor: s3d.softResultBg, color: s3d.textColor }}
+                  >
+                    {isEn ? (
+                      <>
+                        Base daily worships total <b>{baseTotal} pts</b>. Your daily percentage equals your earned points divided by today&apos;s total (<b>{scoreBreakdown.totalAvailable} pts</b>). Any scheduled custom habit added automatically adds <b>+{HABIT_WEIGHTS.customHabit} pts</b>.
+                      </>
+                    ) : (
+                      <>
+                        مجموع نقاط العبادات الأساسية <b>{baseTotal} نقطة</b>، وتُحسب نسبتك اليومية بقسمة نقاطك المكتسبة على إجمالي نقاط اليوم المتاحة (<b>{scoreBreakdown.totalAvailable} نقطة</b>). وكل عبادة مخصصة مجدولة تضيف <b>+{HABIT_WEIGHTS.customHabit} نقاط</b> تلقائياً.
+                      </>
+                    )}
+                  </div>
+
+                  {/* Base Categories */}
+                  <div className="space-y-2">
+                    {distributionSections.map((sec) => (
+                      <div
+                        key={sec.id}
+                        className={`app-3d-recessed-field border-0 rounded-2xl p-3 ${s3d.recessedInputClass}`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="font-extrabold text-xs sm:text-[13px]" style={{ color: s3d.textColor }}>
+                            {sec.title}
+                          </span>
+                          <span
+                            className="app-3d-badge border-0 text-[11px] font-black px-2.5 py-0.5 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: hexToRgba(hexColor, s3d.isBlackTheme ? 0.2 : 0.12),
+                              color: s3d.isBlackTheme ? '#FFFFFF' : hexColor,
+                            }}
+                          >
+                            {sec.earned} / {sec.max} {isEn ? 'pts' : 'نقطة'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed font-medium" style={{ color: s3d.subtextColor }}>
+                          {sec.detail}
+                        </p>
+                      </div>
+                    ))}
+
+                    {/* Dynamic Custom Habits Section */}
+                    <div
+                      className={`app-3d-recessed-field border-0 rounded-2xl p-3 ${s3d.recessedInputClass}`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-extrabold text-xs sm:text-[13px] flex items-center gap-1.5" style={{ color: s3d.textColor }}>
+                          <Star className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span>{isEn ? 'Added Custom Habits' : 'العبادات المخصصة المضافة'}</span>
+                        </span>
+                        <span
+                          className="app-3d-badge border-0 text-[11px] font-black px-2.5 py-0.5 rounded-full shrink-0"
+                          style={{
+                            backgroundColor: hexToRgba(hexColor, s3d.isBlackTheme ? 0.2 : 0.12),
+                            color: s3d.isBlackTheme ? '#FFFFFF' : hexColor,
+                          }}
+                        >
+                          {scoreBreakdown.customPoints} / {customAvailableTotal} {isEn ? 'pts' : 'نقطة'}
+                        </span>
+                      </div>
+
+                      {filteredCustomHabits.length > 0 ? (
+                        <div className="mt-2 space-y-1.5">
+                          <p className="text-[11px] font-medium mb-1.5" style={{ color: s3d.subtextColor }}>
+                            {isEn
+                              ? `${filteredCustomHabits.length} scheduled custom habit(s) today (+${HABIT_WEIGHTS.customHabit} pts each):`
+                              : `${filteredCustomHabits.length} عبادة مخصصة مجدولة لهذا اليوم (+${HABIT_WEIGHTS.customHabit} نقاط لكل عبادة):`}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {filteredCustomHabits.map((habit) => {
+                              const isDone = !!(currentRecord.custom && currentRecord.custom[habit.id]);
+                              return (
+                                <span
+                                  key={habit.id}
+                                  className={`app-3d-badge border-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold ${
+                                    isDone
+                                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                      : s3d.isBlackTheme
+                                        ? 'bg-white/10 text-zinc-200'
+                                        : 'bg-white dark:bg-slate-800'
+                                  }`}
+                                  style={!isDone ? { color: s3d.textColor } : undefined}
+                                >
+                                  <span>{habit.icon || '⭐'}</span>
+                                  <span className="truncate max-w-[140px]">{habit.title}</span>
+                                  <span className="opacity-75 font-black">({HABIT_WEIGHTS.customHabit})</span>
+                                  {isDone && <Check className="w-3 h-3 stroke-[3]" />}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] leading-relaxed font-medium" style={{ color: s3d.subtextColor }}>
+                          {isEn
+                            ? `No custom habits scheduled for this day yet. Each added habit automatically adds +${HABIT_WEIGHTS.customHabit} pts to the total.`
+                            : `لا توجد عبادات مخصصة مجدولة لهذا اليوم حالياً؛ وعند إضافة أي عبادة جديدة يرتفع المجموع تلقائياً بمقدار ${HABIT_WEIGHTS.customHabit} نقاط لكل عبادة.`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Total Equation Footer */}
+                <div className={`px-4 sm:px-5 py-3 border-t ${s3d.dividerClass} shrink-0 flex items-center justify-between gap-2`}>
+                  <span className="text-[11px] font-bold" style={{ color: s3d.subtextColor }}>
+                    {filteredCustomHabits.length > 0
+                      ? (isEn
+                          ? `Total: ${baseTotal} + ${customAvailableTotal} custom`
+                          : `المجموع: ${baseTotal} (الأساسي) + ${customAvailableTotal} (المخصصة)`)
+                      : (isEn ? 'Base daily total' : 'إجمالي نقاط اليوم المتاحة')}
+                  </span>
+                  <span
+                    className="app-3d-badge border-0 text-xs font-black px-3 py-1 rounded-full"
+                    style={{
+                      backgroundColor: s3d.primaryColor,
+                      color: s3d.btnTextColor,
+                    }}
+                  >
+                    {scoreBreakdown.totalAvailable} {isEn ? 'pts' : 'نقطة'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       {/* Toast Notification */}
-      <AnimatePresence>
-        {trackerToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-[calc(var(--app-bottom-clearance,5.25rem)+1rem)] left-1/2 -translate-x-1/2 bg-gray-900/90 text-white text-xs font-semibold py-2 px-4 rounded-full shadow-lg z-50 pointer-events-none border-0"
+      {trackerToast && (
+        <div
+          className="app-3d-toast fixed bottom-[calc(var(--app-bottom-clearance,5.25rem)+1rem)] left-1/2 -translate-x-1/2 max-w-[85vw] w-max text-xs sm:text-sm font-bold py-2.5 px-4 rounded-2xl z-50 pointer-events-none border-0 flex items-center justify-center gap-2.5 text-center leading-normal break-words"
+          style={toast3D.style}
+        >
+          <span
+            className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+            style={toast3D.iconStyle}
           >
-            {trackerToast}
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <Check className="w-3 h-3 stroke-[3]" />
+          </span>
+          <span>{trackerToast}</span>
+        </div>
+      )}
 
       <CommunitySpotlightGuide
         guideKey="worship_mentor_page_spotlight"

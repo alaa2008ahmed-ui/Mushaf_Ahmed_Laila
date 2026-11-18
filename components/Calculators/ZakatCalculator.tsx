@@ -162,7 +162,7 @@ const ZakatCalculator: React.FC = () => {
                 placeholder={placeholder} 
                 value={value} 
                 onChange={e => setter(e.target.value)} 
-                className={`border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold tabular-nums ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
+                className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold tabular-nums ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
             />
         </div>
     );
@@ -172,13 +172,13 @@ const ZakatCalculator: React.FC = () => {
             {/* Header Actions */}
             <div id="zakat-header-actions" className="flex justify-between items-center mb-2 gap-2 overflow-visible">
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2.5 flex-wrap" style={{ color: s3d.textColor }}>
-                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-coins" style={{ color: s3d.primaryColor }}></i>
                     </span>
                     <span>{isEn ? 'Zakat Calculation Details' : 'تفاصيل الزكاة'}</span>
                     {totalZakatValue > 0 && (
                         <span 
-                            className="text-sm sm:text-base font-black px-3.5 py-1 rounded-full tabular-nums"
+                            className="app-3d-badge text-sm sm:text-base font-black px-3.5 py-1 rounded-full tabular-nums"
                             style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
                         >
                             {formatNumber(totalZakatValue)}
@@ -201,7 +201,7 @@ const ZakatCalculator: React.FC = () => {
                 className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
             >
                 <h3 className="font-bold mb-3.5 flex items-center gap-2.5">
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-wallet text-sm" style={{ color: s3d.primaryColor }}></i>
                     </span>
                     <span>{isEn ? 'Cash & Savings Zakat' : 'زكاة النقود والمدخرات'}</span>
@@ -222,7 +222,7 @@ const ZakatCalculator: React.FC = () => {
                 className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
             >
                 <h3 className="font-bold mb-3.5 flex items-center gap-2.5">
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-ring text-sm text-amber-500"></i>
                     </span>
                     <span>{isEn ? 'Gold & Silver Zakat' : 'زكاة الذهب والفضة'}</span>
@@ -285,7 +285,7 @@ const ZakatCalculator: React.FC = () => {
                 className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
             >
                 <h3 className="font-bold mb-3.5 flex items-center gap-2.5">
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-shop text-sm text-blue-500"></i>
                     </span>
                     <span>{isEn ? 'Trade Merchandise & Real Estate' : 'عروض التجارة والعقارات'}</span>
@@ -312,7 +312,7 @@ const ZakatCalculator: React.FC = () => {
                 className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
             >
                 <h3 className="font-bold mb-3.5 flex items-center gap-2.5">
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-wheat-awn text-sm text-emerald-500"></i>
                     </span>
                     <span>{isEn ? 'Crops & Agricultural Produce' : 'زكاة الزروع والثمار'}</span>
@@ -336,7 +336,7 @@ const ZakatCalculator: React.FC = () => {
                         <select 
                             value={irrigationMethod} 
                             onChange={e => setIrrigationMethod(e.target.value as any)} 
-                            className={`border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
+                            className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
                         >
                             <option value="no_effort">
                                 {isEn ? 'Naturally Irrigated (Rain / Springs) - 10%' : 'بدون تكلفة (أمطار/عيون) - 10%'}
@@ -354,7 +354,7 @@ const ZakatCalculator: React.FC = () => {
                     )}
                 </div>
                 {cropsZakatKg > 0 && (
-                    <div className="border-0 mt-4 p-3.5 rounded-2xl text-sm font-bold bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    <div className="app-inner-3d-box border-0 mt-4 p-3.5 rounded-2xl text-sm font-bold bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 tabular-nums">
                         {isEn 
                             ? `Required Amount to pay: ${cropsZakatKg.toFixed(2)} kg` 
                             : `المقدار الواجب إخراجه: ${cropsZakatKg.toFixed(2)} كجم`}
@@ -368,7 +368,7 @@ const ZakatCalculator: React.FC = () => {
                 className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
             >
                 <h3 className="font-bold mb-3.5 flex items-center gap-2.5">
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-cow text-sm text-orange-500"></i>
                     </span>
                     <span>{isEn ? 'Livestock & Rikaz (Treasure)' : 'الأنعام والركاز'}</span>
@@ -379,7 +379,7 @@ const ZakatCalculator: React.FC = () => {
                     {renderInput(isEn ? 'Sheep & Goats' : 'الغنم', sheepCount, setSheepCount, isEn ? 'Nisab from 40' : 'النصاب من 40')}
                 </div>
                 {livestockZakatText.length > 0 && (
-                    <div className="border-0 mb-4 p-3.5 bg-orange-500/12 rounded-2xl text-sm font-bold text-orange-600 dark:text-orange-400">
+                    <div className="app-inner-3d-box border-0 mb-4 p-3.5 bg-orange-500/12 rounded-2xl text-sm font-bold text-orange-600 dark:text-orange-400">
                         {isEn ? 'Livestock Zakat: ' : 'زكاة الأنعام: '}
                         {livestockZakatText.join(isEn ? ', ' : ' ، ')}
                     </div>
@@ -411,7 +411,7 @@ const ZakatCalculator: React.FC = () => {
 
                 {totalZakatValue > 0 && (
                     <div 
-                        className="border-0 p-4 rounded-2xl text-sm space-y-2 max-w-sm mx-auto"
+                        className="app-inner-3d-box border-0 p-4 rounded-2xl text-sm space-y-2 max-w-sm mx-auto"
                         style={{ backgroundColor: s3d.softResultBg, textAlign: isEn ? 'left' : 'right' }}
                     >
                         {monetaryZakat > 0 && (
@@ -436,7 +436,7 @@ const ZakatCalculator: React.FC = () => {
                 )}
                 
                 {totalMonetaryWealth > 0 && activeNisab > 0 && totalMonetaryWealth < activeNisab && (
-                    <p className="border-0 inline-block px-4 py-2.5 rounded-2xl text-xs sm:text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 mt-3 font-bold tabular-nums">
+                    <p className="app-inner-3d-box border-0 inline-block px-4 py-2.5 rounded-2xl text-xs sm:text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 mt-3 font-bold tabular-nums">
                         {isEn 
                             ? `Wealth has not reached Nisab threshold (Current Nisab: ${formatNumber(activeNisab)})` 
                             : `لم يبلغ المال النصاب (النصاب الحالي: ${formatNumber(activeNisab)})`}

@@ -1,14 +1,15 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, Share2, Download, Copy, Check, Award, Calendar, Sparkles, BookOpen, Clock, Heart, Star } from 'lucide-react';
+import { X, Share2, Check, Award, BookOpen, Clock, Heart, Star } from 'lucide-react';
 import moment from 'moment-hijri';
 import { DailyRecord, CustomHabit } from '../hooks/useHabitTracker';
-import { safeHtml2Canvas } from '../utils/canvasHelper';
+import { renderAchievementCardToDataUrl } from '../utils/achievementCardCanvas';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { useTheme } from '../context/ThemeContext';
 import { getCalculator3DStyles } from '../utils/calculator3DStyles';
+import { getToast3DStyles } from '../utils/toast3DStyles';
+import { gregorianMonths, hijriMonths } from '../data/calendarData';
 
 interface WeeklyAchievementModalProps {
   records: Record<string, DailyRecord>;
@@ -20,53 +21,340 @@ interface WeeklyAchievementModalProps {
   onClose: () => void;
 }
 
+type AchievementTab = 'today' | 'weekly' | 'monthly';
+
 const ARABIC_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+const parseHexRgb = (color?: string): [number, number, number] => {
+  if (!color || typeof color !== 'string') return [5, 150, 105];
+  const trimmed = color.trim();
+  if (trimmed.startsWith('#')) {
+    let clean = trimmed.slice(1);
+    if (clean.length === 3) {
+      clean = clean.split('').map((c) => c + c).join('');
+    }
+    const num = parseInt(clean.slice(0, 6), 16);
+    if (!Number.isNaN(num)) {
+      return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+    }
+  }
+  const rgbMatch = trimmed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (rgbMatch) {
+    return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
+  }
+  return [5, 150, 105];
+};
+
+const rgbToHex = (r: number, g: number, b: number): string => {
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  return (
+    '#' +
+    [clamp(r), clamp(g), clamp(b)]
+      .map((v) => v.toString(16).padStart(2, '0'))
+      .join('')
+  );
+};
+
+const mixHex = (hexA: string, hexB: string, weightB: number): string => {
+  const [r1, g1, b1] = parseHexRgb(hexA);
+  const [r2, g2, b2] = parseHexRgb(hexB);
+  const w = Math.max(0, Math.min(1, weightB));
+  return rgbToHex(r1 + (r2 - r1) * w, g1 + (g2 - g1) * w, b1 + (b2 - b1) * w);
+};
+
+const darkenHex = (hex: string, amount: number): string => mixHex(hex, '#06080d', amount);
+const lightenHex = (hex: string, amount: number): string => mixHex(hex, '#ffffff', amount);
+
+const hexAlpha = (hex: string, alpha: number): string => {
+  const [r, g, b] = parseHexRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const buildIslamicCardPalette = (
+  themeObj: any,
+  primaryColor: string,
+  isBlackTheme: boolean,
+  themeKey?: string
+) => {
+  const isGoldBlack =
+    themeKey === 'black_gold' ||
+    themeObj?.name === 'الأسود والذهبي' ||
+    (isBlackTheme && themeObj?.accent === '#F59E0B');
+
+  const accentBase =
+    isBlackTheme && !isGoldBlack
+      ? '#CBD5E1'
+      : isGoldBlack
+        ? '#F59E0B'
+        : primaryColor === '#FFFFFF'
+          ? '#059669'
+          : primaryColor || '#059669';
+
+  const secondaryBase =
+    isBlackTheme
+      ? isGoldBlack
+        ? '#D97706'
+        : '#64748B'
+      : themeObj?.palette?.[1] && themeObj.palette[1] !== '#000000'
+        ? themeObj.palette[1]
+        : accentBase;
+
+  const isGoldenTheme =
+    !isBlackTheme &&
+    !themeObj?.isDark &&
+    (themeKey === 'shiny_gold' ||
+      themeObj?.name === 'الذهبي اللامع' ||
+      primaryColor?.toUpperCase() === '#D97706' ||
+      primaryColor?.toUpperCase() === '#EAB308');
+
+  if (isGoldenTheme) {
+    return {
+      bgGradient: 'linear-gradient(140deg, #FFFDF7 0%, #FEF8E7 18%, #FCE8AB 50%, #F5D374 80%, #E8BE48 100%)',
+      sanctuaryBg: 'linear-gradient(180deg, rgba(255, 255, 255, 0.36) 0%, rgba(254, 243, 199, 0.16) 100%)',
+      archBg: 'linear-gradient(180deg, rgba(255, 254, 249, 0.94) 0%, rgba(254, 243, 199, 0.82) 100%)',
+      goldAccent: '#B45309',
+      activeChipText: '#92400E',
+      primaryText: '#451A03',
+      bodyText: '#5B2605',
+      softTintText: '#78350F',
+      mutedText: 'rgba(120, 53, 15, 0.58)',
+      sunnahActiveText: '#047857',
+      sunnahInactiveText: 'rgba(120, 53, 15, 0.48)',
+      progressStroke: '#D97706',
+      ringTrackStroke: 'rgba(180, 83, 9, 0.18)',
+      patternColor: '#B45309',
+      patternOpacity: 0.14,
+      frameBorder: 'rgba(217, 119, 6, 0.55)',
+      innerFrameBorder: 'rgba(180, 83, 9, 0.28)',
+      panelBg: 'linear-gradient(180deg, rgba(255, 254, 249, 0.94) 0%, rgba(254, 248, 235, 0.88) 60%, rgba(253, 242, 219, 0.90) 100%)',
+      tileBg: 'linear-gradient(180deg, rgba(255, 254, 249, 0.95) 0%, rgba(254, 249, 237, 0.90) 65%, rgba(253, 244, 223, 0.92) 100%)',
+      activeTileBg: 'linear-gradient(165deg, #FEF9C3 0%, #FDE68A 58%, #FCD34D 100%)',
+      emptyTileBg: 'rgba(217, 119, 6, 0.08)',
+      emptyTileBorder: 'rgba(217, 119, 6, 0.22)',
+      medallionBg: 'linear-gradient(145deg, #FEF08A 0%, #F59E0B 55%, #D97706 100%)',
+      medallionText: '#451A03',
+      medallionShadow: '0 4px 0 #92400E, 0 8px 16px rgba(180, 83, 9, 0.28), inset 0 2px 2px rgba(255, 255, 255, 0.85)',
+      ringWellBg: 'linear-gradient(145deg, #FFFDF7 0%, #FEF3C7 55%, #FDE68A 100%)',
+      ringWellShadow: '0 4px 0 rgba(180, 83, 9, 0.35), 0 8px 16px rgba(180, 115, 20, 0.22), inset 0 2px 2px rgba(255, 255, 255, 0.95)',
+      outerShadow: '0 10px 0 #B45309, 0 22px 38px rgba(180, 115, 20, 0.34), inset 0 2px 3px rgba(255, 255, 255, 0.95), inset 0 -4px 8px rgba(146, 64, 14, 0.22)',
+      panelShadow: '0 5px 0 rgba(217, 119, 6, 0.24), 0 10px 20px rgba(180, 115, 20, 0.16), inset 0 2px 1.5px rgba(255, 255, 255, 0.95)',
+      tileShadow: '0 4px 0 rgba(217, 119, 6, 0.20), 0 8px 14px rgba(180, 115, 20, 0.14), inset 0 1.5px 1px rgba(255, 255, 255, 0.95)',
+    };
+  }
+
+  if (isBlackTheme) {
+    const goldColor = isGoldBlack ? '#FBBF24' : '#FDE68A';
+    const bgGradient = isGoldBlack
+      ? 'linear-gradient(155deg, #17120a 0%, #0d0b08 52%, #1a1409 100%)'
+      : 'linear-gradient(155deg, #141417 0%, #09090b 52%, #18181b 100%)';
+
+    return {
+      bgGradient,
+      sanctuaryBg: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.14) 100%)',
+      archBg: isGoldBlack
+        ? 'linear-gradient(180deg, rgba(245, 158, 11, 0.24) 0%, rgba(245, 158, 11, 0.04) 100%)'
+        : 'linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.02) 100%)',
+      goldAccent: goldColor,
+      activeChipText: goldColor,
+      primaryText: '#ffffff',
+      bodyText: 'rgba(255, 255, 255, 0.92)',
+      softTintText: isGoldBlack ? '#FEF3C7' : '#E4E4E7',
+      mutedText: 'rgba(255, 255, 255, 0.55)',
+      sunnahActiveText: '#6ee7b7',
+      sunnahInactiveText: 'rgba(255, 255, 255, 0.45)',
+      progressStroke: isGoldBlack ? '#FBBF24' : '#FFFFFF',
+      ringTrackStroke: 'rgba(255, 255, 255, 0.16)',
+      patternColor: isGoldBlack ? '#F59E0B' : '#FFFFFF',
+      patternOpacity: 0.22,
+      frameBorder: isGoldBlack ? 'rgba(251, 191, 36, 0.48)' : 'rgba(255, 255, 255, 0.28)',
+      innerFrameBorder: isGoldBlack ? 'rgba(251, 191, 36, 0.32)' : 'rgba(255, 255, 255, 0.18)',
+      panelBg: 'linear-gradient(165deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 55%, rgba(0, 0, 0, 0.35) 100%)',
+      tileBg: 'linear-gradient(165deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(0, 0, 0, 0.32) 100%)',
+      activeTileBg: isGoldBlack
+        ? 'linear-gradient(165deg, rgba(245, 158, 11, 0.34) 0%, rgba(180, 83, 9, 0.24) 100%)'
+        : 'linear-gradient(165deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.10) 100%)',
+      emptyTileBg: 'rgba(0, 0, 0, 0.24)',
+      emptyTileBorder: 'rgba(255, 255, 255, 0.14)',
+      medallionBg: isGoldBlack
+        ? 'linear-gradient(145deg, #fbbf24 0%, #b45309 100%)'
+        : 'linear-gradient(145deg, #f4f4f5 0%, #a1a1aa 100%)',
+      medallionText: '#09090b',
+      medallionShadow: '0 4px 0 rgba(0,0,0,0.32), 0 8px 16px rgba(0,0,0,0.28), inset 0 1.5px 2px rgba(255,255,255,0.75)',
+      ringWellBg: 'linear-gradient(145deg, #1f1f23 0%, #09090b 100%)',
+      ringWellShadow: '0 4px 0 rgba(0,0,0,0.4), 0 8px 14px rgba(0,0,0,0.35), inset 0 1.5px 2px rgba(255,255,255,0.25)',
+      outerShadow: isGoldBlack
+        ? '0 10px 0 #451a03, 0 22px 40px rgba(0, 0, 0, 0.75), inset 0 2px 3px rgba(253, 230, 138, 0.35), inset 0 -4px 8px rgba(0, 0, 0, 0.55)'
+        : '0 10px 0 #000000, 0 22px 40px rgba(0, 0, 0, 0.78), inset 0 2px 3px rgba(255, 255, 255, 0.26), inset 0 -4px 8px rgba(0, 0, 0, 0.6)',
+      panelShadow: '0 5px 0 rgba(0, 0, 0, 0.55), 0 10px 18px rgba(0, 0, 0, 0.45), inset 0 1.5px 1px rgba(255, 255, 255, 0.18)',
+      tileShadow: '0 4px 0 rgba(0, 0, 0, 0.52), 0 8px 14px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.15)',
+    };
+  }
+
+  const isDarkThemeBg = Boolean(themeObj?.isDark);
+  const darkAnchor = isDarkThemeBg && themeObj?.bgColor ? themeObj.bgColor : darkenHex(accentBase, 0.56);
+  const topStop = mixHex(darkAnchor, darkenHex(accentBase, 0.38), 0.55);
+  const midStop = darkenHex(accentBase, 0.28);
+  const botStop = darkenHex(mixHex(accentBase, secondaryBase, 0.38), 0.48);
+
+  const goldAccent = '#FDE68A';
+  const brightThemeTint = lightenHex(accentBase, 0.62);
+
+  return {
+    bgGradient: `linear-gradient(155deg, ${topStop} 0%, ${midStop} 50%, ${botStop} 100%)`,
+    sanctuaryBg: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.14) 100%)',
+    archBg: `linear-gradient(180deg, ${hexAlpha(brightThemeTint, 0.24)} 0%, ${hexAlpha(accentBase, 0.04)} 100%)`,
+    goldAccent,
+    activeChipText: goldAccent,
+    primaryText: '#ffffff',
+    bodyText: 'rgba(255, 255, 255, 0.92)',
+    softTintText: lightenHex(accentBase, 0.76),
+    mutedText: 'rgba(255, 255, 255, 0.55)',
+    sunnahActiveText: '#6ee7b7',
+    sunnahInactiveText: 'rgba(255, 255, 255, 0.45)',
+    progressStroke: '#FDE047',
+    ringTrackStroke: 'rgba(255, 255, 255, 0.16)',
+    patternColor: brightThemeTint,
+    patternOpacity: 0.22,
+    frameBorder: hexAlpha(goldAccent, 0.45),
+    innerFrameBorder: hexAlpha(goldAccent, 0.3),
+    panelBg: `linear-gradient(165deg, rgba(255, 255, 255, 0.16) 0%, ${hexAlpha(accentBase, 0.22)} 55%, rgba(0, 0, 0, 0.2) 100%)`,
+    tileBg: `linear-gradient(165deg, rgba(255, 255, 255, 0.15) 0%, ${hexAlpha(accentBase, 0.18)} 60%, rgba(0, 0, 0, 0.18) 100%)`,
+    activeTileBg: `linear-gradient(165deg, ${hexAlpha(lightenHex(accentBase, 0.32), 0.45)} 0%, ${hexAlpha(accentBase, 0.38)} 100%)`,
+    emptyTileBg: 'rgba(0, 0, 0, 0.22)',
+    emptyTileBorder: 'rgba(255, 255, 255, 0.14)',
+    medallionBg: `linear-gradient(145deg, #fef08a 0%, #f59e0b 100%)`,
+    medallionText: darkenHex(accentBase, 0.68),
+    medallionShadow: '0 4px 0 rgba(0,0,0,0.32), 0 8px 16px rgba(0,0,0,0.28), inset 0 1.5px 2px rgba(255,255,255,0.75)',
+    ringWellBg: `linear-gradient(145deg, ${darkenHex(accentBase, 0.22)} 0%, ${darkenHex(accentBase, 0.55)} 100%)`,
+    ringWellShadow: '0 4px 0 rgba(0,0,0,0.4), 0 8px 14px rgba(0,0,0,0.35), inset 0 1.5px 2px rgba(255,255,255,0.25)',
+    outerShadow: `0 10px 0 ${darkenHex(accentBase, 0.65)}, 0 22px 38px rgba(0, 0, 0, 0.42), inset 0 2px 3px rgba(255, 255, 255, 0.34), inset 0 -4px 8px rgba(0, 0, 0, 0.32)`,
+    panelShadow: `0 5px 0 ${hexAlpha(darkenHex(accentBase, 0.72), 0.6)}, 0 10px 18px rgba(0, 0, 0, 0.24), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.28)`,
+    tileShadow: `0 4px 0 ${hexAlpha(darkenHex(accentBase, 0.74), 0.55)}, 0 8px 14px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.24)`,
+  };
+};
+
+const getHijriDateLabel = (m: moment.Moment): string => {
+  try {
+    const localNoon = new Date(m.year(), m.month(), m.date(), 12, 0, 0);
+    const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    }).formatToParts(localNoon);
+    const hDay = parseInt(parts.find((p) => p.type === 'day')?.value || '0', 10);
+    const hMonth = parseInt(parts.find((p) => p.type === 'month')?.value || '0', 10);
+    const hYear = parseInt(parts.find((p) => p.type === 'year')?.value || '0', 10);
+    if (hDay > 0 && hMonth > 0 && hYear > 0) {
+      const mName = hijriMonths[hMonth - 1]?.name || '';
+      return `${hDay} ${mName} ${hYear} هـ`;
+    }
+  } catch {}
+  const fallbackMonth = hijriMonths[m.iMonth()]?.name || '';
+  return `${m.iDate()} ${fallbackMonth} ${m.iYear()} هـ`;
+};
+
+const getArabicGregDateLabel = (m: moment.Moment): string => {
+  const mName = gregorianMonths[m.month()]?.name || '';
+  return `${m.date()} ${mName}`;
+};
 
 export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
   records,
   getDailyProgress,
-  customHabits,
   theme,
   hexColor,
   isBlackTheme,
-  onClose
+  onClose,
 }) => {
   const { theme: ctxTheme, themeKey, isNightMode, homeThemeVariant } = useTheme();
-  const s3d = getCalculator3DStyles(ctxTheme || theme, themeKey, isNightMode, homeThemeVariant);
+  const activeTheme = ctxTheme || theme;
+  const s3d = getCalculator3DStyles(activeTheme, themeKey, isNightMode, homeThemeVariant);
+  const toast3D = getToast3DStyles(activeTheme, themeKey, isNightMode, homeThemeVariant);
 
   const [toastMsg, setToastMsg] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [viewRange, setViewRange] = useState<'last7' | 'thisWeek'>('last7');
+  const [viewRange, setViewRange] = useState<AchievementTab>('today');
 
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Compute the 7 days based on viewRange
-  const days = useMemo(() => {
-    const list = [];
-    const today = moment();
+  const palette = useMemo(
+    () => buildIslamicCardPalette(activeTheme, s3d.primaryColor || hexColor, s3d.isBlackTheme || isBlackTheme, themeKey),
+    [activeTheme, s3d.primaryColor, s3d.isBlackTheme, hexColor, isBlackTheme, themeKey]
+  );
 
-    if (viewRange === 'thisWeek') {
-      // Arab week starts on Saturday (day 6 of previous week or current week)
-      // Find the most recent Saturday
-      const dayOfWeek = today.day(); // 0=Sun, 1=Mon, ..., 6=Sat
-      const daysSinceSaturday = (dayOfWeek + 1) % 7;
-      const startOfWeek = today.clone().subtract(daysSinceSaturday, 'days');
-      
-      for (let i = 0; i < 7; i++) {
-        const d = startOfWeek.clone().add(i, 'days');
-        list.push(d);
-      }
-    } else {
-      // Last 7 days ending today
-      for (let i = 6; i >= 0; i--) {
-        list.push(today.clone().subtract(i, 'days'));
-      }
+  // Build geometric 8-point Islamic star SVG pattern data URI
+  const islamicPatternUri = useMemo(() => {
+    const strokeCol = palette.patternColor;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+      <g fill="none" stroke="${strokeCol}" stroke-width="1">
+        <polygon points="40,6 49,21 66,14 59,31 74,40 59,49 66,66 49,59 40,74 31,59 14,66 21,49 6,40 21,31 14,14 31,21" stroke-opacity="0.45"/>
+        <circle cx="40" cy="40" r="10" stroke-opacity="0.35"/>
+        <path d="M0 0 L14 14 M80 0 L66 14 M0 80 L14 66 M80 80 L66 66" stroke-opacity="0.28"/>
+      </g>
+    </svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  }, [palette.patternColor]);
+
+  // Compute days according to active tab:
+  // 1) today -> Today only
+  // 2) weekly -> Last completed Sat..Fri week
+  // 3) monthly -> Last completed calendar month
+  const periodMeta = useMemo(() => {
+    const today = moment().startOf('day');
+
+    if (viewRange === 'today') {
+      const dayName = ARABIC_DAYS[today.day()];
+      const hijriStr = getHijriDateLabel(today);
+      const gregStr = `${getArabicGregDateLabel(today)} ${today.year()} م`;
+      return {
+        days: [today],
+        cardSubtitle: 'حصاد اليوم الإيماني',
+        dateRangeStr: `${dayName} • ${hijriStr}`,
+        secondaryDateStr: gregStr,
+        ringSubtitle: 'إنجاز اليوم',
+        trackerTitle: 'تفاصيل الصلوات والأوراد اليومية:',
+      };
     }
-    return list;
+
+    if (viewRange === 'weekly') {
+      const daysSinceSaturday = (today.day() + 1) % 7;
+      const currentWeekStart = today.clone().subtract(daysSinceSaturday, 'days');
+      const lastWeekStart = currentWeekStart.clone().subtract(7, 'days');
+      const weekDays: moment.Moment[] = [];
+      for (let i = 0; i < 7; i++) {
+        weekDays.push(lastWeekStart.clone().add(i, 'days'));
+      }
+      const startDate = weekDays[0];
+      const endDate = weekDays[weekDays.length - 1];
+      return {
+        days: weekDays,
+        cardSubtitle: 'حصاد آخر أسبوع مكتمل',
+        dateRangeStr: `من ${ARABIC_DAYS[startDate.day()]} (${getArabicGregDateLabel(startDate)}) إلى ${ARABIC_DAYS[endDate.day()]} (${getArabicGregDateLabel(endDate)})`,
+        secondaryDateStr: `${startDate.year()} م`,
+        ringSubtitle: 'معدل الأسبوع',
+        trackerTitle: 'تقويم الأسبوع المكتمل (السبت - الجمعة):',
+      };
+    }
+
+    // monthly -> Last completed month
+    const lastMonth = today.clone().subtract(1, 'month');
+    const startOfMonth = lastMonth.clone().startOf('month');
+    const totalMonthDays = startOfMonth.daysInMonth();
+    const monthDays: moment.Moment[] = [];
+    for (let i = 0; i < totalMonthDays; i++) {
+      monthDays.push(startOfMonth.clone().add(i, 'days'));
+    }
+    const monthName = gregorianMonths[startOfMonth.month()]?.name || '';
+    return {
+      days: monthDays,
+      cardSubtitle: `حصاد شهر ${monthName} المكتمل`,
+      dateRangeStr: `شهر ${monthName} ${startOfMonth.year()} م (${totalMonthDays} يوماً)`,
+      secondaryDateStr: getHijriDateLabel(startOfMonth),
+      ringSubtitle: 'معدل الشهر',
+      trackerTitle: `سجل أيام شهر ${monthName}:`,
+    };
   }, [viewRange]);
 
-  // Aggregate stats over the 7 days
   const stats = useMemo(() => {
     let totalProgressSum = 0;
     let prayersCount = 0;
@@ -77,7 +365,7 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
     let daysWith100 = 0;
     let activeDaysCount = 0;
 
-    const daysStats = days.map((d) => {
+    const daysStats = periodMeta.days.map((d) => {
       const dateStr = d.format('YYYY-MM-DD');
       const rec = records[dateStr];
       const prog = getDailyProgress(dateStr);
@@ -93,19 +381,27 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
 
       if (rec) {
         if (rec.prayers) {
-          Object.values(rec.prayers).forEach((v) => { if (v) dPrayers++; });
+          Object.values(rec.prayers).forEach((v) => {
+            if (v) dPrayers++;
+          });
         }
         if (rec.quran) {
           dQuran = rec.quran.pages || 0;
         }
         if (rec.adhkar) {
-          Object.values(rec.adhkar).forEach((v) => { if (v) dAdhkar++; });
+          Object.values(rec.adhkar).forEach((v) => {
+            if (v) dAdhkar++;
+          });
         }
         if (rec.ethics) {
-          Object.values(rec.ethics).forEach((v) => { if (v) dEthics++; });
+          Object.values(rec.ethics).forEach((v) => {
+            if (v) dEthics++;
+          });
         }
         if (rec.custom) {
-          Object.values(rec.custom).forEach((v) => { if (v) dCustom++; });
+          Object.values(rec.custom).forEach((v) => {
+            if (v) dCustom++;
+          });
         }
       }
 
@@ -115,54 +411,75 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
       ethicsCount += dEthics;
       customCount += dCustom;
 
-      const dayIndex = d.day();
       return {
         dateStr,
-        dayName: ARABIC_DAYS[dayIndex],
-        shortDate: d.locale('ar').format('D MMM'),
+        dayNum: d.date(),
+        dayName: ARABIC_DAYS[d.day()],
+        shortDate: getArabicGregDateLabel(d),
         progress: prog,
         prayers: dPrayers,
         quran: dQuran,
         isToday: dateStr === moment().format('YYYY-MM-DD'),
-        isFuture: d.isAfter(moment(), 'day')
       };
     });
 
-    const averageProgress = Math.round(totalProgressSum / 7);
+    const totalDays = Math.max(1, periodMeta.days.length);
+    const averageProgress = Math.round(totalProgressSum / totalDays);
 
-    // Medal and encouraging description
+    // Daily detailed breakdown (used in 'today' view)
+    const todayRecord = records[periodMeta.days[0]?.format('YYYY-MM-DD')];
+    const dailyPrayersList = [
+      { id: 'fajr', label: 'الفجر', fard: Boolean(todayRecord?.prayers?.fajr), sunnah: Boolean(todayRecord?.prayers?.fajrSunnah) },
+      { id: 'dhuhr', label: 'الظهر', fard: Boolean(todayRecord?.prayers?.dhuhr), sunnah: Boolean(todayRecord?.prayers?.dhuhrSunnah) },
+      { id: 'asr', label: 'العصر', fard: Boolean(todayRecord?.prayers?.asr), sunnah: Boolean(todayRecord?.prayers?.asrSunnah) },
+      { id: 'maghrib', label: 'المغرب', fard: Boolean(todayRecord?.prayers?.maghrib), sunnah: Boolean(todayRecord?.prayers?.maghribSunnah) },
+      { id: 'isha', label: 'العشاء', fard: Boolean(todayRecord?.prayers?.isha), sunnah: Boolean(todayRecord?.prayers?.ishaSunnah) },
+    ];
+    const fardDone = dailyPrayersList.filter((p) => p.fard).length;
+    const sunnahDone = dailyPrayersList.filter((p) => p.sunnah).length;
+    const dailyAdhkarChips = [
+      { label: 'أذكار الصباح', done: Boolean(todayRecord?.adhkar?.sabah) },
+      { label: 'أذكار المساء', done: Boolean(todayRecord?.adhkar?.masaa) },
+      { label: 'أذكار الصلاة', done: Boolean(todayRecord?.adhkar?.salah) },
+      { label: 'الاستغفار', done: Boolean(todayRecord?.adhkar?.istighfar) },
+      { label: 'الأدعية', done: Boolean(todayRecord?.adhkar?.adia) },
+    ];
+
     let medal = {
-      title: 'وسام السابقون بالخيرات 🥇',
-      desc: 'إنجاز إيماني استثنائي وثبات عظيم على الطاعات ما شاء الله',
-      color: '#f59e0b'
+      title: 'وسام السابقون بالخيرات',
+      badge: '🥇',
+      desc:
+        viewRange === 'today'
+          ? 'يوم إيماني عامر بالذكر والصلاة والطاعات ما شاء الله'
+          : 'إنجاز إيماني استثنائي وثبات عظيم على الطاعات ما شاء الله',
     };
 
     if (averageProgress < 50) {
       medal = {
-        title: 'وسام الساعي في الخير 🌸',
-        desc: 'خطوات مباركة، وبداية طيبة نحو الاستمرار وعلو الهمة',
-        color: '#10b981'
+        title: 'وسام الساعي في الخير',
+        badge: '🌸',
+        desc:
+          viewRange === 'today'
+            ? 'بداية طيبة وخطوات مباركة في يومك نحو علو الهمة'
+            : 'خطوات مباركة، وبداية طيبة نحو الاستمرار وعلو الهمة',
       };
     } else if (averageProgress < 75) {
       medal = {
-        title: 'وسام المجاهد لنفسه 🥉',
+        title: 'وسام المجاهد لنفسه',
+        badge: '🥉',
         desc: 'جهاد النفس في الطاعة من أعظم القربات، استمر في العطاء',
-        color: '#d97706'
       };
     } else if (averageProgress < 90) {
       medal = {
-        title: 'وسام المداوم على الطاعات 🥈',
+        title: 'وسام المداوم على الطاعات',
+        badge: '🥈',
         desc: 'ثبات وهمة عالية، أحب الأعمال إلى الله أدومها وإن قل',
-        color: '#3b82f6'
       };
     }
 
-    const startDate = days[0];
-    const endDate = days[days.length - 1];
-    const dateRangeStr = `من ${ARABIC_DAYS[startDate.day()]} (${startDate.locale('ar').format('D MMM')}) إلى ${ARABIC_DAYS[endDate.day()]} (${endDate.locale('ar').format('D MMM')})`;
-
     return {
       daysStats,
+      totalDays,
       averageProgress,
       prayersCount,
       quranPages,
@@ -173,303 +490,73 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
       daysWith100,
       activeDaysCount,
       medal,
-      dateRangeStr
+      fardDone,
+      sunnahDone,
+      quranCompleted: Boolean(todayRecord?.quran?.completed),
+      dailyPrayersList,
+      dailyAdhkarChips,
     };
-  }, [days, records, getDailyProgress]);
+  }, [periodMeta.days, records, getDailyProgress, viewRange]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  // Generate image and return data URL
+  // Generate high-DPI image matching the live preview card 100% identically
   const generateCardImage = async (): Promise<string> => {
-    // We create a dedicated high-res rendering node to guarantee identical, crisp layout on all screens
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '-9999px';
-    container.style.width = '1080px';
-    container.style.height = '1920px';
-    container.style.boxSizing = 'border-box';
-    container.style.direction = 'rtl';
-    container.style.fontFamily = '"Cairo", "Amiri", sans-serif';
-
-    const bgGradient = isBlackTheme
-      ? 'linear-gradient(145deg, #09090b 0%, #18181b 100%)'
-      : 'linear-gradient(145deg, #064e3b 0%, #065f46 50%, #047857 100%)';
-
-    container.innerHTML = `
-      <div style="
-        background: ${bgGradient};
-        width: 1080px;
-        height: 1920px;
-        padding: 64px 56px;
-        color: #ffffff;
-        border-radius: 40px;
-        border: 4px solid rgba(255, 255, 255, 0.25);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        position: relative;
-        overflow: hidden;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-      ">
-        <!-- Subtle Pattern Overlay -->
-        <div style="
-          position: absolute;
-          inset: 0;
-          opacity: 0.08;
-          background-image: radial-gradient(circle, #ffffff 1px, transparent 1px);
-          background-size: 24px 24px;
-          pointer-events: none;
-        "></div>
-
-        <!-- Decorative Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.22); padding-bottom: 24px; position: relative; z-index: 1;">
-          <div style="text-align: right;">
-            <div style="font-size: 32px; font-weight: 800; display: flex; align-items: center; gap: 12px;">
-              <span>مربّي العبادات</span>
-              <span style="font-size: 28px;">🌙</span>
-            </div>
-            <div style="font-size: 20px; opacity: 0.9; margin-top: 6px;">
-              حصاد الأسبوع الإيماني
-            </div>
-          </div>
-          <div style="text-align: left;">
-            <div style="font-size: 26px; font-weight: 700; color: #fef08a;">
-              مصحف أحمد و ليلى
-            </div>
-            <div style="font-size: 18px; opacity: 0.85; margin-top: 6px;">
-              ${stats.dateRangeStr}
-            </div>
-          </div>
-        </div>
-
-        <!-- Hero Percentage & Medal -->
-        <div style="
-          background: rgba(255, 255, 255, 0.12);
-          border: 2px solid rgba(255, 255, 255, 0.25);
-          border-radius: 28px;
-          padding: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          position: relative;
-          z-index: 1;
-        ">
-          <div>
-            <div style="font-size: 28px; font-weight: 800; color: #fef08a; margin-bottom: 8px;">
-              ${stats.medal.title}
-            </div>
-            <div style="font-size: 20px; opacity: 0.92; max-width: 620px; line-height: 1.6;">
-              ${stats.medal.desc}
-            </div>
-            <div style="margin-top: 14px; font-size: 18px; opacity: 0.85;">
-              حافظت على الطاعات في <b style="color: #ffffff; font-size: 20px;">${stats.activeDaysCount} من 7 أيام</b> هذا الأسبوع
-            </div>
-          </div>
-          <div style="
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            border: 6px solid rgba(255,255,255,0.3);
-            border-top-color: #fef08a;
-            border-right-color: #fef08a;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.3);
-            flex-shrink: 0;
-          ">
-            <span style="font-size: 40px; font-weight: 900; line-height: 1; font-family: sans-serif;">
-              ${stats.averageProgress}%
-            </span>
-            <span style="font-size: 15px; opacity: 0.85; margin-top: 6px;">إنجاز الأسبوع</span>
-          </div>
-        </div>
-
-        <!-- 4 Stats Cards Grid -->
-        <div style="
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 20px;
-          position: relative;
-          z-index: 1;
-        ">
-          <!-- Prayers -->
-          <div style="
-            background: rgba(255, 255, 255, 0.09);
-            border: 1.5px solid rgba(255, 255, 255, 0.18);
-            border-radius: 24px;
-            padding: 24px;
-            text-align: right;
-          ">
-            <div style="font-size: 19px; opacity: 0.9; margin-bottom: 8px;">🕌 الصلوات والسنن</div>
-            <div style="font-size: 36px; font-weight: 800; color: #ffffff;">
-              ${stats.prayersCount} <span style="font-size: 20px; font-weight: 500; opacity: 0.85;">صلاة وسنة</span>
-            </div>
-          </div>
-
-          <!-- Quran -->
-          <div style="
-            background: rgba(255, 255, 255, 0.09);
-            border: 1.5px solid rgba(255, 255, 255, 0.18);
-            border-radius: 24px;
-            padding: 24px;
-            text-align: right;
-          ">
-            <div style="font-size: 19px; opacity: 0.9; margin-bottom: 8px;">📖 الورد القرآني</div>
-            <div style="font-size: 36px; font-weight: 800; color: #ffffff;">
-              ${stats.quranPages} <span style="font-size: 20px; font-weight: 500; opacity: 0.85;">صفحة مقروءة</span>
-            </div>
-          </div>
-
-          <!-- Adhkar -->
-          <div style="
-            background: rgba(255, 255, 255, 0.09);
-            border: 1.5px solid rgba(255, 255, 255, 0.18);
-            border-radius: 24px;
-            padding: 24px;
-            text-align: right;
-          ">
-            <div style="font-size: 19px; opacity: 0.9; margin-bottom: 8px;">📿 الأذكار والاستغفار</div>
-            <div style="font-size: 36px; font-weight: 800; color: #ffffff;">
-              ${stats.adhkarCount} <span style="font-size: 20px; font-weight: 500; opacity: 0.85;">أوراد منجزة</span>
-            </div>
-          </div>
-
-          <!-- Ethics & Custom Habits -->
-          <div style="
-            background: rgba(255, 255, 255, 0.09);
-            border: 1.5px solid rgba(255, 255, 255, 0.18);
-            border-radius: 24px;
-            padding: 24px;
-            text-align: right;
-          ">
-            <div style="font-size: 19px; opacity: 0.9; margin-bottom: 8px;">🤍 البر والعادات المخصصة</div>
-            <div style="font-size: 36px; font-weight: 800; color: #ffffff;">
-              ${stats.goodDeedsTotal} <span style="font-size: 20px; font-weight: 500; opacity: 0.85;">طاعة وعمل صالح</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 7 Days Checklist -->
-        <div style="
-          background: rgba(255, 255, 255, 0.09);
-          border: 1.5px solid rgba(255, 255, 255, 0.18);
-          border-radius: 26px;
-          padding: 24px;
-          position: relative;
-          z-index: 1;
-        ">
-          <div style="font-size: 19px; font-weight: 700; margin-bottom: 16px; opacity: 0.95; text-align: right;">
-            تقويم الأيام السبعة:
-          </div>
-          <div style="display: flex; justify-content: space-between; gap: 10px;">
-            ${stats.daysStats.map((d) => `
-              <div style="
-                flex: 1;
-                background: ${d.progress >= 80 ? 'rgba(16, 185, 129, 0.28)' : d.progress > 0 ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.2)'};
-                border: 2px solid ${d.isToday ? '#fef08a' : d.progress >= 80 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(255, 255, 255, 0.18)'};
-                border-radius: 16px;
-                padding: 14px 6px;
-                text-align: center;
-              ">
-                <div style="font-size: 15px; opacity: 0.9; margin-bottom: 6px; font-weight: 600;">${d.dayName}</div>
-                <div style="font-size: 18px; font-weight: 800; font-family: sans-serif; color: ${d.progress >= 80 ? '#6ee7b7' : '#ffffff'};">
-                  ${d.isFuture ? '—' : `${d.progress}%`}
-                </div>
-                <div style="font-size: 14px; margin-top: 6px; opacity: 0.8;">
-                  ${d.progress === 100 ? '⭐' : d.progress >= 50 ? '✓' : '•'}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- Hadith & Dedication Footer -->
-        <div style="text-align: center; border-top: 2px solid rgba(255,255,255,0.22); padding-top: 24px; position: relative; z-index: 1;">
-          <div style="font-size: 24px; font-weight: 700; color: #fef08a; font-family: 'Amiri', serif; margin-bottom: 10px;">
-            «أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ»
-          </div>
-          <div style="font-size: 17px; opacity: 0.9; font-family: 'Amiri', serif;">
-            جعله الله في ميزان حسناتكم وصدقة جارية عن أرواح أحمد وليلى 🤍
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(container);
-
-    try {
-      // Allow fonts to render
-      await new Promise((r) => setTimeout(r, 400));
-
-      const canvas = await safeHtml2Canvas(container, {
-        scale: 1,
-        backgroundColor: null,
-        useCORS: true,
-        logging: false
-      });
-
-      // Guarantee exact 1080x1920
-      let finalCanvas = canvas;
-      if (canvas.width !== 1080 || canvas.height !== 1920) {
-        const resized = document.createElement('canvas');
-        resized.width = 1080;
-        resized.height = 1920;
-        const rCtx = resized.getContext('2d')!;
-        rCtx.imageSmoothingEnabled = true;
-        rCtx.imageSmoothingQuality = 'high';
-        rCtx.drawImage(canvas, 0, 0, 1080, 1920);
-        finalCanvas = resized;
-      }
-
-      const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.95);
-      return dataUrl;
-    } finally {
-      if (document.body.contains(container)) {
-        document.body.removeChild(container);
-      }
-    }
+    const isDarkSurface = Boolean(s3d.isDark || s3d.isBlackTheme || isBlackTheme || activeTheme?.isDark);
+    const previewWidth = cardRef.current?.offsetWidth;
+    return renderAchievementCardToDataUrl(
+      {
+        viewRange,
+        palette,
+        isDarkSurface,
+        periodMeta: {
+          cardSubtitle: periodMeta.cardSubtitle,
+          dateRangeStr: periodMeta.dateRangeStr,
+          ringSubtitle: periodMeta.ringSubtitle,
+          trackerTitle: periodMeta.trackerTitle,
+        },
+        stats,
+      },
+      previewWidth
+    );
   };
 
-  // Share as image
   const handleShareImage = async () => {
     setIsGenerating(true);
-    showToast('جاري تجهيز بطاقة الإنجاز الأسبوعية...');
+    showToast('جاري تجهيز بطاقة الإنجاز...');
 
     try {
       const dataUrl = await generateCardImage();
+      const filePrefix = viewRange === 'today' ? 'daily' : viewRange === 'weekly' ? 'weekly' : 'monthly';
 
       if (Capacitor.isNativePlatform()) {
-        const fileName = `weekly_achievement_${Date.now()}.jpg`;
+        const fileName = `${filePrefix}_achievement_${Date.now()}.jpg`;
         const base64Data = dataUrl.split(',')[1];
 
         const savedFile = await Filesystem.writeFile({
           path: fileName,
           data: base64Data,
-          directory: Directory.Cache
+          directory: Directory.Cache,
         });
 
         await Share.share({
           title: 'مشاركة',
           url: savedFile.uri,
-          dialogTitle: 'مشاركة عبر'
+          dialogTitle: 'مشاركة عبر',
         });
       } else if (navigator.share) {
         try {
           const response = await fetch(dataUrl);
           const blob = await response.blob();
-          const file = new File([blob], 'weekly_achievement.jpg', { type: 'image/jpeg' });
+          const file = new File([blob], `${filePrefix}_achievement.jpg`, { type: 'image/jpeg' });
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
               files: [file],
-              title: 'مشاركة'
+              title: 'مشاركة',
             });
           } else {
             downloadImage(dataUrl);
@@ -483,31 +570,17 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         downloadImage(dataUrl);
       }
     } catch (err) {
-      console.error('Error sharing weekly card:', err);
+      console.error('Error sharing achievement card:', err);
       showToast('تعذر تصدير الصورة، جاري المحاولة بطريقة بديلة');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Direct Download
-  const handleDownloadImage = async () => {
-    setIsGenerating(true);
-    showToast('جاري تنزيل البطاقة...');
-    try {
-      const dataUrl = await generateCardImage();
-      downloadImage(dataUrl);
-    } catch (err) {
-      console.error('Download error:', err);
-      showToast('تعذر تنزيل الصورة');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const downloadImage = (dataUrl: string) => {
+    const filePrefix = viewRange === 'today' ? 'daily' : viewRange === 'weekly' ? 'weekly' : 'monthly';
     const link = document.createElement('a');
-    link.download = `weekly_achievement_${moment().format('YYYY-MM-DD')}.jpg`;
+    link.download = `${filePrefix}_achievement_${moment().format('YYYY-MM-DD')}.jpg`;
     link.href = dataUrl;
     document.body.appendChild(link);
     link.click();
@@ -515,281 +588,464 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
     showToast('تم حفظ صورة الإنجاز بنجاح 🌟');
   };
 
-  // Copy text summary
-  const handleCopySummary = async () => {
-    const text = `🌟 *بطاقة حصاد الأسبوع الإيماني* 🌟
-📅 *الفترة:* ${stats.dateRangeStr}
-🏆 *الوسام:* ${stats.medal.title}
-📊 *معدل الإنجاز الإجمالي:* ${stats.averageProgress}%
-
-🕌 *الصلوات والسنن المؤداة:* ${stats.prayersCount} صلاة وسنة
-📖 *صفحات القرآن المقروءة:* ${stats.quranPages} صفحة
-📿 *الأذكار والاستغفار:* ${stats.adhkarCount} ورد
-🤍 *أعمال البر والعادات المخصصة:* ${stats.goodDeedsTotal} طاعة
-
-«أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ»
-🌱 تطبيق مصحف أحمد و ليلى • مربّي العبادات`;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      showToast('تم نسخ ملخص الأسبوع للمشاركة بنجاح 📋');
-      setTimeout(() => setCopied(false), 2500);
-    } catch (e) {
-      showToast('تعذر نسخ الملخص');
-    }
-  };
+  const previewRadius = 26;
+  const previewStroke = 5.5;
+  const previewCirc = 2 * Math.PI * previewRadius;
+  const previewOffset = previewCirc - (stats.averageProgress / 100) * previewCirc;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-<<<<<<< HEAD
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65" dir="rtl" onClick={onClose}>
+      <div
         className={`app-page-card border-0 w-full max-w-lg rounded-3xl overflow-hidden flex flex-col max-h-[92dvh] ${s3d.surfaceCardClass}`}
-        style={{ fontFamily: ctxTheme?.font }}
+        style={{ fontFamily: activeTheme?.font }}
         onClick={(e) => e.stopPropagation()}
-=======
-        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[92dvh]"
-        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       >
         {/* Modal Top Bar */}
-        <div className={`flex items-center justify-between px-5 py-4 border-b ${s3d.dividerClass} shrink-0 overflow-visible`}>
+        <div className={`flex items-center justify-between px-5 py-3.5 border-b ${s3d.dividerClass} shrink-0 overflow-visible`}>
           <div className="flex items-center gap-2.5">
-            <span className={`border-0 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+            <span className={`app-3d-badge border-0 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
               <Award className="w-5 h-5" style={{ color: s3d.primaryColor }} />
             </span>
             <div>
               <h2 className="font-extrabold text-base sm:text-lg" style={{ color: s3d.textColor }}>
-                بطاقة الإنجاز الأسبوعية
+                بطاقة الإنجاز
               </h2>
-              <p className="text-xs font-medium" style={{ color: s3d.subtextColor }}>
-                شارك إنجازك وثباتك على الطاعات للتشجيع
-              </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className={`app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all ${s3d.surfaceCardClass}`}
-          >
-            <X className="w-5 h-5" style={{ color: s3d.textColor }} />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              disabled={isGenerating}
+              onClick={handleShareImage}
+              className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+              style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
+              title="مشاركة كصورة"
+              aria-label="مشاركة كصورة"
+            >
+              <Share2 className="w-5 h-5" strokeWidth={2.25} />
+            </button>
+            <button
+              onClick={onClose}
+              className={`app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all ${s3d.surfaceCardClass}`}
+              aria-label="إغلاق"
+            >
+              <X className="w-5 h-5" style={{ color: s3d.textColor }} />
+            </button>
+          </div>
         </div>
 
-        {/* Range Selector */}
-        <div className="px-5 pt-3.5 pb-2.5 flex gap-2.5 shrink-0 overflow-visible">
-          <button
-            onClick={() => setViewRange('last7')}
-            className={`app-page-card border-0 flex-1 py-2 px-3 rounded-2xl text-xs transition-all cursor-pointer ${
-              viewRange === 'last7'
-                ? 'font-black'
-                : `font-bold ${s3d.surfaceCardClass}`
-            }`}
-            style={viewRange === 'last7' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
-          >
-            آخر 7 أيام
-          </button>
-          <button
-            onClick={() => setViewRange('thisWeek')}
-            className={`app-page-card border-0 flex-1 py-2 px-3 rounded-2xl text-xs transition-all cursor-pointer ${
-              viewRange === 'thisWeek'
-                ? 'font-black'
-                : `font-bold ${s3d.surfaceCardClass}`
-            }`}
-            style={viewRange === 'thisWeek' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
-          >
-            الأسبوع الحالي (السبت - الجمعة)
-          </button>
+        {/* 3-Tab Range Selector */}
+        <div className="px-4 sm:px-5 pt-3 pb-2 flex gap-2 shrink-0 overflow-visible">
+          {(
+            [
+              { id: 'today', label: 'إنجاز اليوم' },
+              { id: 'weekly', label: 'الأسبوعي' },
+              { id: 'monthly', label: 'الشهري' },
+            ] as { id: AchievementTab; label: string }[]
+          ).map((tab) => {
+            const isActive = viewRange === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setViewRange(tab.id)}
+                className={`app-page-card border-0 flex-1 py-2 px-2.5 rounded-2xl text-xs transition-all cursor-pointer whitespace-nowrap ${
+                  isActive ? 'font-black' : `font-bold ${s3d.surfaceCardClass}`
+                }`}
+                style={isActive ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Scrollable Preview Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 overscroll-contain">
-          {/* Visual Card */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 pt-2.5 pb-5 overscroll-contain">
+          {/* Stunning 3D Islamic Theme-Synced Visual Card */}
           <div
             ref={cardRef}
-            className="rounded-2xl p-5 shadow-lg border relative overflow-hidden text-white"
+            className="rounded-3xl p-3 sm:p-3.5 relative overflow-hidden"
             style={{
-              background: isBlackTheme
-                ? 'linear-gradient(145deg, #121214 0%, #1c1c20 100%)'
-                : 'linear-gradient(145deg, #064e3b 0%, #065f46 50%, #047857 100%)',
-              borderColor: isBlackTheme ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.2)'
+              background: palette.bgGradient,
+              color: palette.primaryText,
+              border: `2px solid ${palette.frameBorder}`,
+              boxShadow: palette.outerShadow,
             }}
           >
-            {/* Card Header */}
-            <div className="flex justify-between items-center pb-3 mb-4 border-b border-white/20">
-              <div>
-                <div className="font-extrabold text-lg flex items-center gap-1.5">
-                  <span>مربّي العبادات</span>
-                  <span>🌙</span>
-                </div>
-                <div className="text-xs text-white/80 mt-0.5">
-                  حصاد الأسبوع الإيماني
-                </div>
-              </div>
-              <div className="text-left">
-                <div className="text-sm font-bold text-yellow-300">
-                  مصحف أحمد و ليلى
-                </div>
-                <div className="text-[11px] text-white/75 mt-0.5">
-                  {stats.dateRangeStr}
-                </div>
-              </div>
-            </div>
+            {/* Repeating Islamic 8-Point Star Lattice */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: islamicPatternUri,
+                backgroundSize: '64px 64px',
+                opacity: palette.patternOpacity,
+              }}
+            />
 
-            {/* Medal & Progress Ring */}
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center justify-between mb-4">
-              <div className="flex-1 pr-1">
-                <div className="text-base font-extrabold text-yellow-300 flex items-center gap-1.5 mb-1">
-                  <span>{stats.medal.title}</span>
+            {/* Inner Sanctuary Frame */}
+            <div
+              className="relative z-10 rounded-2xl p-3.5 sm:p-4 space-y-3"
+              style={{
+                border: `1.5px solid ${palette.innerFrameBorder}`,
+                background: palette.sanctuaryBg,
+              }}
+            >
+              {/* Ornate Islamic Arch Crest Header */}
+              <div
+                className="px-3 py-3 text-center"
+                style={{
+                  background: palette.archBg,
+                  border: `1.5px solid ${palette.innerFrameBorder}`,
+                  borderRadius: '72px 72px 18px 18px',
+                  boxShadow: palette.panelShadow,
+                }}
+              >
+                {/* 3D Crescent & Star Medallion */}
+                <div
+                  className="w-10 h-10 rounded-full mx-auto mb-1.5 flex items-center justify-center"
+                  style={{
+                    background: palette.medallionBg,
+                    color: palette.medallionText,
+                    boxShadow: palette.medallionShadow,
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l2.2 4.8L19 7l-3.4 3.6L16.5 16 12 13.4 7.5 16l.9-5.4L5 7l4.8-.2L12 2z" opacity="0.28" />
+                    <path d="M14.5 3.5A8.5 8.5 0 1 0 20.5 15.8 7 7 0 0 1 14.5 3.5z" />
+                  </svg>
                 </div>
-                <p className="text-xs text-white/90 leading-relaxed font-sans mb-1.5">
-                  {stats.medal.desc}
-                </p>
-                <div className="text-[11px] text-white/75">
-                  أيام الطاعة النشطة: <b className="text-white">{stats.activeDaysCount} من 7 أيام</b>
-                </div>
-              </div>
-              <div className="w-16 h-16 rounded-full border-4 border-white/30 border-t-yellow-300 border-r-yellow-300 flex flex-col items-center justify-center bg-black/20 shrink-0">
-                <span className="text-xl font-black font-sans leading-none">{stats.averageProgress}%</span>
-                <span className="text-[9px] text-white/80 mt-0.5">إنجاز</span>
-              </div>
-            </div>
 
-            {/* Stats 2x2 Grid */}
-            <div className="grid grid-cols-2 gap-2.5 mb-4">
-              <div className="bg-white/10 rounded-xl p-3 border border-white/15">
-                <div className="text-[11px] text-white/80 flex items-center gap-1 mb-1">
-                  <Clock className="w-3.5 h-3.5 text-yellow-300" />
-                  <span>الصلوات والسنن</span>
+                <div className="font-extrabold text-base sm:text-lg leading-tight" style={{ color: palette.primaryText }}>
+                  مربّي العبادات
                 </div>
-                <div className="text-lg font-bold">
-                  {stats.prayersCount} <span className="text-xs font-normal text-white/70">صلاة وسنة</span>
+                <div className="text-[11px] font-bold mt-0.5" style={{ color: palette.goldAccent }}>
+                  {periodMeta.cardSubtitle} • مصحف أحمد و ليلى
                 </div>
-              </div>
 
-              <div className="bg-white/10 rounded-xl p-3 border border-white/15">
-                <div className="text-[11px] text-white/80 flex items-center gap-1 mb-1">
-                  <BookOpen className="w-3.5 h-3.5 text-yellow-300" />
-                  <span>الورد القرآني</span>
+                {/* Ornamental Islamic Divider */}
+                <div className="flex items-center justify-center gap-2 my-1.5">
+                  <span className="h-[1px] w-12" style={{ backgroundColor: palette.innerFrameBorder }} />
+                  <span className="text-xs leading-none" style={{ color: palette.goldAccent }}>۞</span>
+                  <span className="h-[1px] w-12" style={{ backgroundColor: palette.innerFrameBorder }} />
                 </div>
-                <div className="text-lg font-bold">
-                  {stats.quranPages} <span className="text-xs font-normal text-white/70">صفحة مقروءة</span>
-                </div>
-              </div>
 
-              <div className="bg-white/10 rounded-xl p-3 border border-white/15">
-                <div className="text-[11px] text-white/80 flex items-center gap-1 mb-1">
-                  <Heart className="w-3.5 h-3.5 text-yellow-300" />
-                  <span>الأذكار والأوراد</span>
-                </div>
-                <div className="text-lg font-bold">
-                  {stats.adhkarCount} <span className="text-xs font-normal text-white/70">ورد منجز</span>
+                <div className="text-[11px] font-medium" style={{ color: palette.softTintText }}>
+                  {periodMeta.dateRangeStr}
                 </div>
               </div>
 
-              <div className="bg-white/10 rounded-xl p-3 border border-white/15">
-                <div className="text-[11px] text-white/80 flex items-center gap-1 mb-1">
-                  <Star className="w-3.5 h-3.5 text-yellow-300" />
-                  <span>البر والعبادات الخاصة</span>
-                </div>
-                <div className="text-lg font-bold">
-                  {stats.goodDeedsTotal} <span className="text-xs font-normal text-white/70">طاعة</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 7 Days Overview */}
-            <div className="bg-white/10 rounded-xl p-3 border border-white/15 mb-3">
-              <div className="text-[11px] font-bold text-white/90 mb-2">
-                مستوى الاستمرارية على مدار الأسبوع:
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {stats.daysStats.map((d, i) => (
+              {/* Hero Medal & 3D Circular Gauge */}
+              <div
+                className="rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-2.5 sm:gap-3"
+                style={{
+                  background: palette.panelBg,
+                  border: `1.5px solid ${palette.frameBorder}`,
+                  boxShadow: palette.panelShadow,
+                }}
+              >
+                <div className="flex-1 min-w-0">
                   <div
-                    key={i}
-                    className={`rounded-lg py-2 px-1 text-center border ${
-                      d.progress >= 80
-                        ? 'bg-emerald-500/30 border-emerald-400/50'
-                        : d.progress > 0
-                        ? 'bg-white/15 border-white/20'
-                        : 'bg-black/20 border-white/10'
-                    } ${d.isToday ? 'ring-2 ring-yellow-300' : ''}`}
+                    className="text-[13px] sm:text-[15px] font-black flex flex-wrap items-center gap-1 mb-1 leading-snug"
+                    style={{ color: palette.goldAccent }}
                   >
-                    <div className="text-[10px] text-white/80 leading-tight">{d.dayName}</div>
-                    <div className="text-xs font-bold font-sans mt-0.5 text-yellow-200">
-                      {d.isFuture ? '—' : `${d.progress}%`}
+                    <span>{stats.medal.title}</span>
+                    <span>{stats.medal.badge}</span>
+                  </div>
+                  <p className="text-[10.5px] sm:text-[11px] leading-relaxed mb-1.5" style={{ color: palette.bodyText }}>
+                    {stats.medal.desc}
+                  </p>
+                  <div
+                    className="text-[10.5px] sm:text-[11px] font-bold flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-relaxed"
+                    style={{ color: palette.softTintText }}
+                  >
+                    {viewRange === 'today' ? (
+                      <>
+                        <span className="whitespace-nowrap">
+                          الفرائض: <b style={{ color: palette.primaryText }}>{stats.fardDone} من 5</b>
+                        </span>
+                        <span>•</span>
+                        <span className="whitespace-nowrap">
+                          السنن: <b style={{ color: palette.primaryText }}>{stats.sunnahDone} من 5</b>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="whitespace-nowrap">
+                          أيام النشاط: <b style={{ color: palette.primaryText }}>{stats.activeDaysCount} من {stats.totalDays}</b>
+                        </span>
+                        <span>•</span>
+                        <span className="whitespace-nowrap">
+                          الإتمام الكامل: <b style={{ color: palette.primaryText }}>{stats.daysWith100}</b>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3D Circular Progress Medallion */}
+                <div
+                  className="w-[70px] h-[70px] sm:w-[74px] sm:h-[74px] rounded-full flex items-center justify-center relative shrink-0"
+                  style={{
+                    background: palette.ringWellBg,
+                    border: `2px solid ${palette.frameBorder}`,
+                    boxShadow: palette.ringWellShadow,
+                  }}
+                >
+                  <svg width="62" height="62" viewBox="0 0 64 64" className="-rotate-90">
+                    <circle cx="32" cy="32" r={previewRadius} stroke={palette.ringTrackStroke} strokeWidth={previewStroke} fill="none" />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r={previewRadius}
+                      stroke={palette.progressStroke}
+                      strokeWidth={previewStroke}
+                      fill="none"
+                      strokeDasharray={previewCirc}
+                      strokeDashoffset={previewOffset}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-[15px] sm:text-base font-black font-sans leading-none" style={{ color: palette.primaryText }}>{stats.averageProgress}%</span>
+                    <span className="text-[8px] sm:text-[8.5px] font-bold mt-0.5" style={{ color: palette.goldAccent }}>{periodMeta.ringSubtitle}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 3D Sculpted Stats Grid */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div
+                  className="rounded-xl p-2.5 sm:p-3"
+                  style={{
+                    background: palette.tileBg,
+                    border: `1px solid ${palette.innerFrameBorder}`,
+                    boxShadow: palette.tileShadow,
+                  }}
+                >
+                  <div className="text-[11px] font-bold flex items-center gap-1 mb-1" style={{ color: palette.goldAccent }}>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>الصلوات والسنن</span>
+                  </div>
+                  <div className="text-base sm:text-lg font-black" style={{ color: palette.primaryText }}>
+                    {stats.prayersCount} <span className="text-[11px] font-medium" style={{ color: palette.softTintText }}>صلاة وسنة</span>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-xl p-2.5 sm:p-3"
+                  style={{
+                    background: palette.tileBg,
+                    border: `1px solid ${palette.innerFrameBorder}`,
+                    boxShadow: palette.tileShadow,
+                  }}
+                >
+                  <div className="text-[11px] font-bold flex items-center gap-1 mb-1" style={{ color: palette.goldAccent }}>
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>الورد القرآني</span>
+                  </div>
+                  <div className="text-base sm:text-lg font-black" style={{ color: palette.primaryText }}>
+                    {stats.quranPages} <span className="text-[11px] font-medium" style={{ color: palette.softTintText }}>صفحة مقروءة</span>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-xl p-2.5 sm:p-3"
+                  style={{
+                    background: palette.tileBg,
+                    border: `1px solid ${palette.innerFrameBorder}`,
+                    boxShadow: palette.tileShadow,
+                  }}
+                >
+                  <div className="text-[11px] font-bold flex items-center gap-1 mb-1" style={{ color: palette.goldAccent }}>
+                    <Heart className="w-3.5 h-3.5" />
+                    <span>الأذكار والأوراد</span>
+                  </div>
+                  <div className="text-base sm:text-lg font-black" style={{ color: palette.primaryText }}>
+                    {stats.adhkarCount}{' '}
+                    <span className="text-[11px] font-medium" style={{ color: palette.softTintText }}>
+                      {viewRange === 'today' ? 'من 5 أوراد' : 'ورد منجز'}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-xl p-2.5 sm:p-3"
+                  style={{
+                    background: palette.tileBg,
+                    border: `1px solid ${palette.innerFrameBorder}`,
+                    boxShadow: palette.tileShadow,
+                  }}
+                >
+                  <div className="text-[11px] font-bold flex items-center gap-1 mb-1" style={{ color: palette.goldAccent }}>
+                    <Star className="w-3.5 h-3.5" />
+                    <span>البر والعادات</span>
+                  </div>
+                  <div className="text-base sm:text-lg font-black" style={{ color: palette.primaryText }}>
+                    {stats.goodDeedsTotal} <span className="text-[11px] font-medium" style={{ color: palette.softTintText }}>طاعة</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tab-Specific Detailed Breakdown */}
+              <div
+                className="rounded-2xl p-3"
+                style={{
+                  background: palette.panelBg,
+                  border: `1px solid ${palette.innerFrameBorder}`,
+                  boxShadow: palette.panelShadow,
+                }}
+              >
+                <div className="text-[11px] font-extrabold mb-2 flex items-center gap-1.5" style={{ color: palette.goldAccent }}>
+                  <span>۞</span>
+                  <span>{periodMeta.trackerTitle}</span>
+                </div>
+
+                {viewRange === 'today' && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-5 gap-1 sm:gap-1.5">
+                      {stats.dailyPrayersList.map((p) => (
+                        <div
+                          key={p.id}
+                          className="min-w-0 overflow-hidden rounded-xl py-2 px-0.5 sm:px-1 text-center"
+                          style={{
+                            background: p.fard ? palette.activeTileBg : palette.tileBg,
+                            border: `1px solid ${p.fard ? palette.goldAccent : palette.innerFrameBorder}`,
+                            boxShadow: palette.tileShadow,
+                          }}
+                        >
+                          <div className="text-[10px] sm:text-[11px] font-extrabold truncate" style={{ color: palette.primaryText }}>{p.label}</div>
+                          <div
+                            className="text-[8.5px] sm:text-[9.5px] font-bold mt-1 whitespace-nowrap"
+                            style={{ color: p.fard ? palette.goldAccent : palette.mutedText }}
+                          >
+                            {p.fard ? 'فرض ✓' : 'فرض —'}
+                          </div>
+                          <div
+                            className="text-[8.5px] sm:text-[9px] font-bold mt-0.5 whitespace-nowrap"
+                            style={{ color: p.sunnah ? palette.sunnahActiveText : palette.sunnahInactiveText }}
+                          >
+                            {p.sunnah ? 'سنة ★' : 'سنة —'}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-[10px] mt-0.5">
-                      {d.progress === 100 ? '⭐' : d.progress >= 50 ? '✓' : '•'}
+
+                    <div className="flex flex-wrap justify-center gap-1.5 pt-0.5">
+                      {stats.dailyAdhkarChips.map((chip) => (
+                        <span
+                          key={chip.label}
+                          className="px-2 py-0.5 rounded-full text-[9.5px] font-bold"
+                          style={{
+                            background: chip.done ? palette.activeTileBg : palette.emptyTileBg,
+                            border: `1px solid ${chip.done ? palette.goldAccent : palette.emptyTileBorder}`,
+                            color: chip.done ? palette.activeChipText : palette.mutedText,
+                            boxShadow: palette.tileShadow,
+                          }}
+                        >
+                          {chip.done ? '✓ ' : ''}
+                          {chip.label}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {viewRange === 'weekly' && (
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                    {stats.daysStats.map((d, i) => (
+                      <div
+                        key={i}
+                        className="min-w-0 overflow-hidden rounded-xl py-2 px-1 text-center"
+                        style={{
+                          background: d.progress >= 80 ? palette.activeTileBg : palette.tileBg,
+                          border: `1px solid ${d.progress === 100 ? palette.goldAccent : d.progress >= 50 ? palette.frameBorder : palette.innerFrameBorder}`,
+                          boxShadow: palette.tileShadow,
+                        }}
+                      >
+                        <div className="text-[10px] sm:text-[9.5px] font-bold leading-tight whitespace-nowrap" style={{ color: palette.primaryText }}>{d.dayName}</div>
+                        <div className="text-[8.5px] mt-0.5" style={{ color: palette.softTintText, opacity: 0.85 }}>
+                          {d.dayNum}
+                        </div>
+                        <div
+                          className="text-[11px] font-black font-sans mt-1"
+                          style={{ color: d.progress >= 80 ? palette.goldAccent : palette.primaryText }}
+                        >
+                          {d.progress}%
+                        </div>
+                        <div className="text-[9.5px] mt-0.5">
+                          {d.progress === 100 ? '⭐' : d.progress >= 50 ? '✓' : '•'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {viewRange === 'monthly' && (
+                  <div className="grid grid-cols-7 sm:grid-cols-10 gap-1">
+                    {stats.daysStats.map((d, i) => (
+                      <div
+                        key={i}
+                        className="min-w-0 overflow-hidden rounded-lg py-1 px-0.5 text-center"
+                        style={{
+                          background:
+                            d.progress >= 80
+                              ? palette.activeTileBg
+                              : d.progress > 0
+                                ? palette.tileBg
+                                : palette.emptyTileBg,
+                          border: `1px solid ${
+                            d.progress === 100
+                              ? palette.goldAccent
+                              : d.progress > 0
+                                ? palette.frameBorder
+                                : palette.emptyTileBorder
+                          }`,
+                          boxShadow: palette.tileShadow,
+                        }}
+                      >
+                        <div className="text-[9px] font-bold font-sans leading-none" style={{ color: palette.mutedText }}>{d.dayNum}</div>
+                        <div
+                          className="text-[8.5px] font-black font-sans mt-0.5 leading-none"
+                          style={{ color: d.progress >= 80 ? palette.goldAccent : palette.primaryText }}
+                        >
+                          {d.progress}%
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Hadith & Dedication Footer */}
+              <div className="text-center pt-2" style={{ borderTop: `1px solid ${palette.innerFrameBorder}` }}>
+                <p className="text-xs font-amiri font-bold" style={{ color: palette.goldAccent }}>
+                  «أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ»
+                </p>
+                <p className="text-[10px] font-amiri mt-0.5" style={{ color: palette.softTintText }}>
+                  صدقة جارية عن أرواح أحمد وليلى 🤍
+                </p>
               </div>
             </div>
-
-            {/* Hadith Note */}
-            <div className="text-center pt-2 border-t border-white/15">
-              <p className="text-xs font-amiri font-bold text-yellow-300">
-                «أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ»
-              </p>
-              <p className="text-[10px] text-white/70 font-amiri mt-0.5">
-                صدقة جارية عن أرواح أحمد وليلى 🤍
-              </p>
-            </div>
           </div>
-        </div>
-
-        {/* Modal Action Footer */}
-        <div className={`p-4 pb-5 border-t ${s3d.dividerClass} flex flex-col gap-2.5 shrink-0 overflow-visible ${s3d.surfaceCardClass}`}>
-          <div className="flex gap-2.5 overflow-visible pb-1">
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              disabled={isGenerating}
-              onClick={handleShareImage}
-              className="app-page-card border-0 flex-1 py-3 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
-              style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
-            >
-              <Share2 className="w-4 h-4" />
-              <span>مشاركة كصورة جميلة 📲</span>
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              disabled={isGenerating}
-              onClick={handleDownloadImage}
-              className={`app-page-card border-0 py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer ${s3d.surfaceCardClass}`}
-              title="تنزيل الصورة"
-            >
-              <Download className="w-4 h-4" />
-            </motion.button>
-          </div>
-
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={handleCopySummary}
-            className={`app-page-card border-0 w-full py-2.5 px-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${s3d.surfaceCardClass}`}
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" style={{ color: s3d.primaryColor }} />}
-            <span>نسخ ملخص الأسبوع كنص للأهل والأصدقاء</span>
-          </motion.button>
         </div>
 
         {/* Toast */}
-        <AnimatePresence>
           {toastMsg && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-gray-900/95 text-white text-xs font-semibold py-2 px-4 rounded-full shadow-lg z-50 pointer-events-none"
+            <div
+              className="app-3d-toast absolute bottom-5 left-1/2 -translate-x-1/2 max-w-[85vw] w-max text-xs sm:text-sm font-bold py-2.5 px-4 rounded-2xl z-50 pointer-events-none flex items-center justify-center gap-2.5 text-center leading-normal break-words"
+              style={toast3D.style}
             >
-              {toastMsg}
-            </motion.div>
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                style={toast3D.iconStyle}
+              >
+                <Check className="w-3 h-3 stroke-[3]" />
+              </span>
+              <span>{toastMsg}</span>
+            </div>
           )}
-        </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
   );
 };

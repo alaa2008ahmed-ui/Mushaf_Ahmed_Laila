@@ -1,6 +1,5 @@
 import React from 'react';
-import { Menu, Bookmark, ChevronDown, Pause, Home, Share2 } from 'lucide-react';
-import FloatingMenu from './FloatingMenu';
+import { Bookmark, ChevronDown, Pause, Home, Share2 } from 'lucide-react';
 
 interface QuranFooterProps {
     currentTheme: any;

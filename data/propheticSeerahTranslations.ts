@@ -1,10 +1,8 @@
-import { 
-    SeerahMilestone, 
-    PropheticStance, 
-    PropheticLineage, 
-    PROPHETIC_LINEAGE_DATA, 
-    PROPHETIC_STANCES_DATA, 
-    PROPHETIC_SEERAH_DATA 
+import {
+  SeerahMilestone,
+  PropheticStance,
+  PropheticLineage,
+  PROPHETIC_LINEAGE_DATA
 } from './propheticSeerahData';
 
 export const SEERAH_UI_TEXTS = {

@@ -9,11 +9,12 @@ import TasbeehControls from '../components/Tasbeeh/TasbeehControls';
 import TasbeehCounter from '../components/Tasbeeh/TasbeehCounter';
 import ThreeDButton from '../components/Tasbeeh/ThreeDButton';
 import TasbeehModals from '../components/Tasbeeh/TasbeehModals';
-import { motion, AnimatePresence } from 'motion/react';
-import { tTasbeeh, getPhraseDisplay } from '../utils/tasbeehTranslations';
+import { Check } from 'lucide-react';
+import { tTasbeeh } from '../utils/tasbeehTranslations';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { TASBEEH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 const PHRASES_STORAGE_KEY = 'mushaf_user_tasbeeh_phrases';
 const SETTINGS_STORAGE_KEY = 'mushaf_tasbeeh_settings';
@@ -56,7 +57,7 @@ interface TasbeehProps {
 }
 
 export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, dir } = useLanguage();
     
     // Counter Colors and Themes
@@ -391,15 +392,11 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
     };
 
     return (
-<<<<<<< HEAD
         <div
             className="h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors"
             dir={dir}
             style={{ backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) }}
         >
-=======
-        <div className="h-[100dvh] max-h-[100dvh] flex flex-col bg-transparent overflow-hidden" dir={dir}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <TasbeehHeader 
                 title={tTasbeeh('title', language)} 
                 subtitle={tTasbeeh('subtitle', language)} 
@@ -413,11 +410,7 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
             <main 
                 className="px-4 flex-1 min-h-0 relative overflow-y-auto overscroll-contain fade-in pt-1 app-scroll-safe"
             >
-<<<<<<< HEAD
                  <div className="w-full flex flex-col items-center pb-5">
-=======
-                 <div className="w-full flex flex-col items-center">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                  <TasbeehControls 
                     isBlackAndWhite={isBlackAndWhite}
                     theme={theme}
@@ -461,32 +454,18 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                     </div>
 
                     {/* Quick Chart Trigger Card */}
-<<<<<<< HEAD
                     <button
                         id="tasbeeh-chart-bottom-btn"
                         type="button"
                         onClick={() => setModals((p: any) => ({ ...p, stats: true }))}
                         className="app-page-card border-0 w-full mt-3.5 py-3.5 px-4 rounded-2xl bg-white dark:bg-[#1E293B] flex items-center justify-center text-xs transition-all group cursor-pointer"
-=======
-                    <motion.button
-                        id="tasbeeh-chart-bottom-btn"
-                        type="button"
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setModals((p: any) => ({ ...p, stats: true }))}
-                        className="w-full mt-3 py-3.5 px-4 rounded-2xl bg-white dark:bg-[#1E293B] shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] border-0 flex items-center justify-center text-xs transition-all hover:shadow-md active:scale-98 group cursor-pointer"
-                        style={{ border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         title={tTasbeeh('chartTitle', language)}
                         aria-label={tTasbeeh('chartTitle', language)}
                     >
                         <span className="font-bold text-sm text-slate-800 dark:text-white">
                             {tTasbeeh('chartTitle', language)}
                         </span>
-<<<<<<< HEAD
                     </button>
-=======
-                    </motion.button>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 </div>
                  </div>
             </main>
@@ -517,28 +496,29 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                 onNavigate={onNavigate}
             />
 
-            <AnimatePresence>
-                {message.visible && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: 10, x: '-50%' }}
-                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 px-4 py-2 rounded-full shadow-2xl z-[200] font-bold text-xs sm:text-sm font-cairo flex items-center justify-center gap-1.5 border backdrop-blur-md select-none"
-                        style={{
-                            backgroundColor: isBlackTheme 
-                                ? '#18181b' 
-                                : (message.type === 'red' ? '#ef4444' : (theme.bgColor === '#FFFFFF' || !theme.palette?.[0] ? '#1e293b' : theme.palette[0])),
-                            color: '#ffffff',
-                            borderColor: isBlackTheme 
-                                ? 'rgba(255, 255, 255, 0.25)' 
-                                : 'rgba(255, 255, 255, 0.4)',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
-                        }}
+            {message.visible && (() => {
+                const toast3D = getToast3DStyles(
+                    theme,
+                    themeKey,
+                    isNightMode,
+                    homeThemeVariant,
+                    message.type === 'red' ? 'danger' : 'theme'
+                );
+                return (
+                    <div 
+                        className="app-3d-toast fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 -translate-x-1/2 max-w-[85vw] w-max px-4 py-2.5 rounded-2xl z-[200] font-bold text-xs sm:text-sm font-cairo flex items-center justify-center gap-2.5 text-center leading-normal break-words select-none pointer-events-none"
+                        style={toast3D.style}
                     >
-                        {message.text}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <span
+                            className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                            style={toast3D.iconStyle}
+                        >
+                            <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                        <span>{message.text}</span>
+                    </div>
+                );
+            })()}
 
             {/* Spotlight Guide */}
             <CommunitySpotlightGuide 

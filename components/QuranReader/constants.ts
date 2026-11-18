@@ -9,49 +9,14 @@ export const THEMES = {
     black: { id: "black", name: "افتراضي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#000000", barBorder: "#000000", btnBg: "#ffffff", btnText: "#000000", accent: "#10b981", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#000000", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#000000", sajdah: "#d97706", highlightText: "#10b981", verseBracket: "#d97706" },
     night_sky: { id: "night_sky", name: "أزرق", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#3b82f6", barBorder: "#3b82f6", btnBg: "#ffffff", btnText: "#3b82f6", accent: "#3b82f6", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#3b82f6", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#3b82f6", sajdah: "#d97706", highlightText: "#3b82f6", verseBracket: "#16a34a" },
     green: { id: "green", name: "أخضر", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#16a34a", barBorder: "#16a34a", btnBg: "#ffffff", btnText: "#16a34a", accent: "#16a34a", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#16a34a", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#16a34a", sajdah: "#d97706", highlightText: "#16a34a", verseBracket: "#d97706" },
-    red: { id: "red", name: "أحمر", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#dc2626", barBorder: "#dc2626", btnBg: "#ffffff", btnText: "#dc2626", accent: "#dc2626", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#dc2626", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#dc2626", sajdah: "#d97706", highlightText: "#dc2626", verseBracket: "#2563eb" },
     maroon: { id: "maroon", name: "نبيتي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#831843", barBorder: "#831843", btnBg: "#ffffff", btnText: "#831843", accent: "#831843", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#831843", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#831843", sajdah: "#d97706", highlightText: "#831843", verseBracket: "#16a34a" },
-    olive: { id: "olive", name: "زيتوني", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#65a30d", barBorder: "#65a30d", btnBg: "#ffffff", btnText: "#65a30d", accent: "#65a30d", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#65a30d", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#65a30d", sajdah: "#d97706", highlightText: "#65a30d", verseBracket: "#831843" },
-    blue: { id: "blue", name: "نيلي فاتح", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#4f46e5", barBorder: "#4f46e5", btnBg: "#ffffff", btnText: "#4f46e5", accent: "#4f46e5", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#4f46e5", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#4f46e5", sajdah: "#d97706", highlightText: "#4f46e5", verseBracket: "#ea580c" },
-    purple: { id: "purple", name: "بنفسجي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#9333ea", barBorder: "#9333ea", btnBg: "#ffffff", btnText: "#9333ea", accent: "#9333ea", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#9333ea", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#9333ea", sajdah: "#d97706", highlightText: "#9333ea", verseBracket: "#16a34a" },
-    orange: { id: "orange", name: "برتقالي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#ea580c", barBorder: "#ea580c", btnBg: "#ffffff", btnText: "#ea580c", accent: "#ea580c", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#ea580c", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#ea580c", sajdah: "#2563eb", highlightText: "#ea580c", verseBracket: "#2563eb" },
     gold: { id: "gold", name: "ذهبي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#b45309", barBorder: "#d4af37", btnBg: "#ffffff", btnText: "#b45309", btnBorder: "#d4af37", accent: "#d4af37", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#b45309", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#d4af37", sajdah: "#d97706", highlightText: "#d4af37", verseBracket: "#d4af37", verseNumber: "#b91c1c" },
-    amber_light: { id: "amber_light", name: "كهرماني", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#f59e0b", barBorder: "#f59e0b", btnBg: "#ffffff", btnText: "#f59e0b", accent: "#f59e0b", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#f59e0b", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#f59e0b", sajdah: "#d97706", highlightText: "#f59e0b", verseBracket: "#3b82f6", verseNumber: "#f59e0b" },
-    mint: { id: "mint", name: "نعناعي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#4ade80", barBorder: "#4ade80", btnBg: "#ffffff", btnText: "#4ade80", accent: "#4ade80", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#4ade80", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#4ade80", sajdah: "#d97706", highlightText: "#4ade80", verseBracket: "#dc2626", verseNumber: "#16a34a" },
-    pink: { id: "pink", name: "وردي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#db2777", barBorder: "#db2777", btnBg: "#ffffff", btnText: "#db2777", accent: "#db2777", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#db2777", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#db2777", sajdah: "#d97706", highlightText: "#db2777", verseBracket: "#16a34a", verseNumber: "#db2777" },
-    cyan: { id: "cyan", name: "سماوي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#0891b2", barBorder: "#0891b2", btnBg: "#ffffff", btnText: "#0891b2", accent: "#0891b2", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#0891b2", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#0891b2", sajdah: "#d97706", highlightText: "#0891b2", verseBracket: "#d97706", verseNumber: "#0891b2" },
-    lime: { id: "lime", name: "ليموني", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#84cc16", barBorder: "#84cc16", btnBg: "#ffffff", btnText: "#84cc16", accent: "#84cc16", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#84cc16", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#84cc16", sajdah: "#d97706", highlightText: "#84cc16", verseBracket: "#831843", verseNumber: "#65a30d" },
-    
-    // --- المجموعة الثانية (الثيمات الداكنة) ---
-    deep_black: { id: "deep_black", name: "اسود غامق", bg: "#000000", text: "#ffffff", font: "var(--font-amiri)", barBg: "#000000", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#141414", btnText: "#ffffff", btnBorder: "#333333", accent: "#27272a", accentText: "#ffffff", modalBg: "#0A0A0A", modalText: "#ffffff", headerBg: "#000000", headerText: "#ffffff", cardBg: "#141414", cardText: "#ffffff", cardBorder: "#333333", sajdah: "#fbbf24", highlightText: "#f59e0b", verseBracket: "#fbbf24", verseNumber: "#38bdf8" },
-    i_emerald: { id: "i_emerald", name: "زمرد", bg: "#022c22", text: "#ffffff", font: "var(--font-amiri)", barBg: "#022c22", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#064e3b", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#10b981", accentText: "#ffffff", modalBg: "#022c22", modalText: "#ffffff", headerBg: "#022c22", headerText: "#10b981", cardBg: "#064e3b", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#10b981", verseBracket: "#f87171", verseNumber: "#10b981" },
-    i_ruby: { id: "i_ruby", name: "ياقوت", bg: "#450a0a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#450a0a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#7f1d1d", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#ef4444", accentText: "#ffffff", modalBg: "#450a0a", modalText: "#ffffff", headerBg: "#450a0a", headerText: "#ef4444", cardBg: "#7f1d1d", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#ef4444", verseBracket: "#60a5fa", verseNumber: "#ef4444" },
-    i_lapis: { id: "i_lapis", name: "لازورد", bg: "#1e3a8a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#1e3a8a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#3b82f6", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#60a5fa", accentText: "#ffffff", modalBg: "#1e3a8a", modalText: "#ffffff", headerBg: "#1e3a8a", headerText: "#60a5fa", cardBg: "#3b82f6", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#60a5fa", verseBracket: "#fbbf24", verseNumber: "#60a5fa" },
-    i_gold: { id: "i_gold", name: "ذهبي", bg: "#422006", text: "#ffffff", font: "var(--font-amiri)", barBg: "#422006", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#78350f", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#fbbf24", accentText: "#ffffff", modalBg: "#422006", modalText: "#ffffff", headerBg: "#422006", headerText: "#fbbf24", cardBg: "#78350f", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#fbbf24", verseBracket: "#34d399", verseNumber: "#fbbf24" },
-    i_amber: { id: "i_amber", name: "عنبر", bg: "#78350f", text: "#ffffff", font: "var(--font-amiri)", barBg: "#78350f", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#92400e", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#f59e0b", accentText: "#ffffff", modalBg: "#78350f", modalText: "#ffffff", headerBg: "#78350f", headerText: "#f59e0b", cardBg: "#92400e", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#f59e0b", verseBracket: "#60a5fa", verseNumber: "#f59e0b" },
-    i_amethyst: { id: "i_amethyst", name: "أرجوان", bg: "#4c1d95", text: "#ffffff", font: "var(--font-amiri)", barBg: "#4c1d95", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#5b21b6", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#a78bfa", accentText: "#ffffff", modalBg: "#4c1d95", modalText: "#ffffff", headerBg: "#4c1d95", headerText: "#a78bfa", cardBg: "#5b21b6", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#a78bfa", verseBracket: "#34d399", verseNumber: "#a78bfa" },
-    i_sunset_royal: { id: "i_sunset_royal", name: "ملك الغروب", bg: "#280a1e", text: "#ffffff", font: "var(--font-amiri)", barBg: "#280a1e", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#3b102c", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#fbbf24", accentText: "#000000", modalBg: "#280a1e", modalText: "#ffffff", headerBg: "#280a1e", headerText: "#fbbf24", cardBg: "#3b102c", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#fbbf24", verseBracket: "#fbbf24", verseNumber: "#ec4899" },
-    i_deep_ocean: { id: "i_deep_ocean", name: "ملك الأعماق", bg: "#041e3a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#041e3a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#062c54", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#22d3ee", accentText: "#000000", modalBg: "#041e3a", modalText: "#ffffff", headerBg: "#041e3a", headerText: "#22d3ee", cardBg: "#062c54", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#22d3ee", verseBracket: "#fbbf24", verseNumber: "#22d3ee" },
-    i_brocade: { id: "i_brocade", name: "إستبرق", bg: "#1e1b4b", text: "#ffffff", font: "var(--font-amiri)", barBg: "#1e1b4b", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#312e81", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#eab308", accentText: "#ffffff", modalBg: "#1e1b4b", modalText: "#ffffff", headerBg: "#1e1b4b", headerText: "#eab308", cardBg: "#312e81", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#eab308", verseBracket: "#60a5fa", verseNumber: "#eab308" },
-    i_midnight: { id: "i_midnight", name: "ليل", bg: "#0f172a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#0f172a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#1e293b", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#38bdf8", accentText: "#ffffff", modalBg: "#0f172a", modalText: "#ffffff", headerBg: "#0f172a", headerText: "#38bdf8", cardBg: "#1e293b", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#38bdf8", verseBracket: "#fbbf24", verseNumber: "#38bdf8" },
-    i_royal_gold: { id: "i_royal_gold", name: "ذهبي ملكي", bg: "#18150c", text: "#ffffff", font: "var(--font-amiri)", barBg: "#18150c", barText: "#fbbf24", barBorder: "#d4af37", btnBg: "#292213", btnText: "#fbbf24", btnBorder: "#d4af37", accent: "#d4af37", accentText: "#18150c", modalBg: "#18150c", modalText: "#ffffff", headerBg: "#18150c", headerText: "#fbbf24", cardBg: "#292213", cardText: "#ffffff", cardBorder: "#d4af37", sajdah: "#f59e0b", highlightText: "#fbbf24", verseBracket: "#fbbf24", verseNumber: "#38bdf8" },
-    i_forest: { id: "i_forest", name: "غابة", bg: "#064e3b", text: "#ffffff", font: "var(--font-amiri)", barBg: "#064e3b", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#059669", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#10b981", accentText: "#ffffff", modalBg: "#064e3b", modalText: "#ffffff", headerBg: "#064e3b", headerText: "#10b981", cardBg: "#059669", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#10b981", verseBracket: "#fbbf24", verseNumber: "#10b981" },
-    i_turquoise: { id: "i_turquoise", name: "فيروزي داكن", bg: "#134e4a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#134e4a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#14b8a6", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#2dd4bf", accentText: "#ffffff", modalBg: "#134e4a", modalText: "#ffffff", headerBg: "#134e4a", headerText: "#2dd4bf", cardBg: "#14b8a6", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#2dd4bf", verseBracket: "#fbbf24", verseNumber: "#2dd4bf" },
-    i_slate: { id: "i_slate", name: "حجري", bg: "#334155", text: "#ffffff", font: "var(--font-amiri)", barBg: "#334155", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#475569", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#94a3b8", accentText: "#ffffff", modalBg: "#334155", modalText: "#ffffff", headerBg: "#334155", headerText: "#94a3b8", cardBg: "#475569", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#94a3b8", verseBracket: "#fbbf24", verseNumber: "#94a3b8" }
+    deep_black: { id: "deep_black", name: "اسود غامق", bg: "#000000", text: "#ffffff", font: "var(--font-amiri)", barBg: "#000000", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#141414", btnText: "#ffffff", btnBorder: "#333333", accent: "#27272a", accentText: "#ffffff", modalBg: "#0A0A0A", modalText: "#ffffff", headerBg: "#000000", headerText: "#ffffff", cardBg: "#141414", cardText: "#ffffff", cardBorder: "#333333", sajdah: "#fbbf24", highlightText: "#f59e0b", verseBracket: "#fbbf24", verseNumber: "#38bdf8" }
 };
 
-export const LIGHT_THEME_IDS = [
-    'black', 'night_sky', 'green', 'red', 'maroon', 'olive', 
-    'blue', 'purple', 'orange', 'gold', 'amber_light', 'mint', 
-    'pink', 'cyan', 'lime'
-];
+export const LIGHT_THEME_IDS = ['black', 'night_sky', 'green', 'maroon', 'gold'];
 
-export const DARK_THEME_IDS = [
-    'deep_black', 'i_emerald', 'i_ruby', 'i_lapis', 'i_gold', 
-    'i_amber', 'i_amethyst', 'i_sunset_royal', 'i_deep_ocean', 
-    'i_brocade', 'i_midnight', 'i_royal_gold', 'i_forest', 
-    'i_turquoise', 'i_slate'
-];
+export const DARK_THEME_IDS = ['deep_black'];
 
 export const isDarkQuranTheme = (theme?: any): boolean => {
     if (!theme) return false;
@@ -67,35 +32,9 @@ export const THEME_NAMES_EN: Record<string, string> = {
     black: "Default",
     night_sky: "Blue",
     green: "Green",
-    red: "Red",
     maroon: "Maroon",
-    olive: "Olive",
-    blue: "Light Indigo",
-    purple: "Purple",
-    orange: "Orange",
     gold: "Gold",
-    sky: "Light Sky",
-    amber_light: "Amber",
-    mint: "Mint",
-    pink: "Pink",
-    cyan: "Cyan",
-    lime: "Lime",
-    deep_black: "Deep Black",
-    i_emerald: "Emerald",
-    i_ruby: "Ruby",
-    i_lapis: "Lapis Lazuli",
-    i_gold: "Gold",
-    i_amber: "Amber",
-    i_amethyst: "Amethyst",
-    i_sunset_royal: "Royal Sunset",
-    i_deep_ocean: "Deep Ocean",
-    i_brocade: "Brocade",
-    i_midnight: "Midnight",
-    i_obsidian: "Obsidian",
-    i_royal_gold: "Royal Gold",
-    i_forest: "Forest",
-    i_turquoise: "Dark Turquoise",
-    i_slate: "Slate"
+    deep_black: "Deep Black"
 };
 
 export const FONT_NAMES_EN: Record<string, string> = {
@@ -567,22 +506,14 @@ export const DEFAULT_SETTINGS = {
     wordHighlightColor: 'auto'
 };
 
-export const getCurrentLayoutContext = (navParams?: any): 'classic' | 'modern' => {
-    if (navParams?.from === 'modern_home') return 'modern';
-    if (navParams?.from === 'home') return 'classic';
-    try {
-        const layout = typeof localStorage !== 'undefined' ? localStorage.getItem('home_layout_system') : null;
-        if (layout === 'classic' || layout === 'modern') return layout;
-    } catch {}
+export const getCurrentLayoutContext = (_navParams?: any): 'modern' => {
     return 'modern';
 };
 
-export const isNightModeForLayout = (layout: 'classic' | 'modern'): boolean => {
+export const isNightModeForLayout = (_layout: 'modern' = 'modern'): boolean => {
     try {
-        const key = `night_mode_active_${layout}`;
-        const saved = localStorage.getItem(key);
+        const saved = localStorage.getItem('night_mode_active_modern');
         if (saved !== null) return saved === 'true';
-        if (layout === 'classic') return false;
         return localStorage.getItem('night_mode_active') === 'true';
     } catch {
         return false;
@@ -669,11 +600,10 @@ export const applyQuranThemeForHomeVariant = (variant: 'gold' | 'sky' | 'emerald
 };
 
 export const getQuranThemeForLayout = (
-    layout: 'classic' | 'modern', 
+    layout: 'modern' = 'modern', 
     modeSuffix: string = '', 
     readingMode: string = 'mushaf'
 ): string => {
-    const isClassic = layout === 'classic';
     const isNight = isNightModeForLayout(layout);
     const mKey = readingMode || 'mushaf';
 
@@ -691,18 +621,16 @@ export const getQuranThemeForLayout = (
         return 'deep_black';
     }
 
-    if (!isClassic) {
-        try {
-            const synced = localStorage.getItem('quran_synced_home_theme_variant');
-            const currentHomeVariant = localStorage.getItem('modern_home_theme_variant') || 'gold';
-            if (synced !== currentHomeVariant) {
-                applyQuranThemeForHomeVariant(currentHomeVariant);
-                return getLinkedQuranThemeForHomeVariant(currentHomeVariant);
-            }
-        } catch {}
-    }
+    try {
+        const synced = localStorage.getItem('quran_synced_home_theme_variant');
+        const currentHomeVariant = localStorage.getItem('modern_home_theme_variant') || 'gold';
+        if (synced !== currentHomeVariant) {
+            applyQuranThemeForHomeVariant(currentHomeVariant);
+            return getLinkedQuranThemeForHomeVariant(currentHomeVariant);
+        }
+    } catch {}
 
-    const defaultTheme = isClassic ? 'black' : getLinkedQuranThemeForHomeVariant();
+    const defaultTheme = getLinkedQuranThemeForHomeVariant();
 
     const scopedModeKey = `current_theme_id_${layout}_${mKey}`;
     const altKey = `quran_layout_${layout}_${mKey}_theme${modeSuffix}`;
@@ -723,11 +651,10 @@ export const getQuranThemeForLayout = (
 
 export const saveQuranThemeForLayout = (
     themeId: string, 
-    layout: 'classic' | 'modern', 
+    layout: 'modern' = 'modern', 
     modeSuffix: string = '', 
     readingMode: string = 'mushaf'
 ) => {
-    const isClassic = layout === 'classic';
     const isNight = isNightModeForLayout(layout);
     const mKey = readingMode || 'mushaf';
     

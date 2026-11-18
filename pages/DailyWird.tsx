@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { motion } from 'motion/react';
-import { CheckCircle, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home, Check, Languages } from 'lucide-react';
-import ThemePageLock from '../components/ThemePageLock';
+import { CheckCircle, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home, Check } from 'lucide-react';
 import ResetConfirmModal from '../components/DailyWird/ResetConfirmModal';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { DAILY_SETTINGS_STEPS, DAILY_PROGRESS_STEPS } from '../components/Community/communityTourSteps';
 import { useShowPageGuides } from '../utils/guideManager';
-import { syncDailyWirdNotifications, getWirdDayRange, JUZ_PAGE_BOUNDARIES } from '../utils/dailyWirdNotificationService';
+import { syncDailyWirdNotifications, getWirdDayRange } from '../utils/dailyWirdNotificationService';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { Preferences } from '@capacitor/preferences';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -163,6 +161,10 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
   const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود' || theme.name === 'black' || themeKey === 'deep_black';
   const isBlackAndWhite = themeKey === 'deep_black' || theme.name === 'أبيض وأسود';
+  const isDarkSurface = Boolean(theme.isDark) || isBlackTheme || themeKey === 'black_gold';
+  const recessedInputShadow = isDarkSurface
+    ? 'inset 0 3px 6px rgba(0, 0, 0, 0.8), inset 0 -1px 1.5px rgba(255, 255, 255, 0.12)'
+    : 'inset 0 3px 6px rgba(15, 23, 42, 0.14), inset 0 -1.5px 2px rgba(255, 255, 255, 0.9), 0 1px 0 rgba(255, 255, 255, 0.85)';
   
   const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#2E7D5E')));
   const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
@@ -584,25 +586,16 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   // 3D Sculpted Settings Screen (Matching Tasbeeh & Memorization)
   const renderSettings = () => (
     <div 
-<<<<<<< HEAD
       className={`app-page-card border-0 p-5 rounded-3xl ${surfaceCardClass} ${isEn ? 'text-left' : 'text-right'}`}
-=======
-      className={`app-page-card p-5 rounded-3xl bg-white dark:bg-zinc-900 border-0 ${isEn ? 'text-left' : 'text-right'}`} 
-      style={{ color: 'var(--text-color)', border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     >
-      <h2 className="text-xl font-black mb-4 text-center font-kufi" style={{ color: primaryColor }}>
+      <h2 className="text-xl font-black mb-4 text-center font-cairo" style={{ color: primaryColor, fontFamily: "'Cairo', sans-serif" }}>
         {settings ? (isEn ? 'Edit Khatma Plan' : 'تعديل خطة الختمة') : (isEn ? 'New Khatma Setup' : 'إعداد ختمة جديدة')}
       </h2>
       
       <div className="space-y-4">
         {/* Profile Name */}
         <div id="wird-name-container" className="space-y-1.5">
-<<<<<<< HEAD
           <label className="block text-xs font-bold opacity-80 px-1">
-=======
-          <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 px-1">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {isEn ? 'Khatma / User Name:' : 'اسم الختمة / المستخدم:'} <span className="text-red-500 font-bold">*</span>
           </label>
           <input 
@@ -611,21 +604,13 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             onChange={(e) => {
               setTempName(e.target.value);
               if (e.target.value.trim()) setNameError(false);
-<<<<<<< HEAD
-=======
-            }}
-            className={`w-full bg-slate-100 dark:bg-zinc-800/80 rounded-2xl p-3.5 ${isEn ? 'text-left' : 'text-right'} font-semibold text-sm border-0 focus:outline-none focus:ring-2 transition-all ${
-              nameError ? 'ring-2 ring-red-500 bg-red-50/50 dark:bg-red-950/20' : ''
-            }`}
-            style={{ 
-              color: 'var(--text-color)'
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             }}
             className={`border-0 w-full rounded-2xl p-3.5 ${isEn ? 'text-left' : 'text-right'} font-bold text-sm focus:outline-none focus:ring-2 transition-all ${
               nameError
                 ? 'ring-2 ring-red-500 bg-red-50/60 dark:bg-red-950/30'
-                : (isBlackTheme ? 'bg-[#27272a] text-white' : 'bg-slate-50 dark:bg-[#0F172A] text-slate-800 dark:text-white')
+                : (isBlackTheme ? 'bg-[#27272a] text-white placeholder:text-zinc-500' : 'bg-slate-100/90 dark:bg-[#0F172A] text-slate-800 dark:text-white placeholder:text-slate-400')
             }`}
+            style={{ boxShadow: recessedInputShadow }}
             placeholder={isEn ? 'e.g. Ahmed, Ramadan Khatma...' : 'مثال: أحمد، ختمة رمضان...'}
           />
           {nameError && (
@@ -689,9 +674,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               }
             }}
             className={`border-0 w-full rounded-2xl p-3.5 text-center text-2xl font-black focus:outline-none focus:ring-2 transition-all ${
-              isBlackTheme ? 'bg-[#27272a]' : 'bg-slate-50 dark:bg-[#0F172A]'
+              isBlackTheme ? 'bg-[#27272a]' : 'bg-slate-100/90 dark:bg-[#0F172A]'
             }`}
-            style={{ color: primaryColor }}
+            style={{ color: primaryColor, boxShadow: recessedInputShadow }}
             placeholder={formatNum(tempMode === 'days' ? '30' : '20')}
           />
         </div>
@@ -717,11 +702,15 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                   {isEn ? 'New plan for remaining (Input is future days)' : 'خطة جديدة للمتبقي (العدد المدخل هو للمستقبل)'}
                 </span>
                 <div 
-                  className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" 
+                  className={`${calcMethod === 'remaining' ? 'app-3d-badge' : 'app-3d-recessed-field'} border-0 w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all`} 
                   style={{ 
                     backgroundColor: calcMethod === 'remaining'
-                      ? (isBlackTheme ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.25)')
-                      : (isBlackTheme ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.08)')
+                      ? (isBlackTheme ? '#18181b' : '#FFFFFF')
+                      : (isDarkSurface ? '#0f172a' : '#e2e8f0'),
+                    color: calcMethod === 'remaining' ? (isBlackTheme ? '#FFFFFF' : primaryColor) : 'transparent',
+                    boxShadow: calcMethod === 'remaining'
+                      ? '0 2.5px 0 rgba(0, 0, 0, 0.22), 0 4px 8px rgba(0, 0, 0, 0.18), inset 0 1.5px 1px rgba(255, 255, 255, 0.92)'
+                      : undefined
                   }}
                 >
                   {calcMethod === 'remaining' && <Check size={12} strokeWidth={3} />}
@@ -742,11 +731,15 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                   {isEn ? 'Modify current plan (Input is total)' : 'تعديل الخطة الحالية (العدد المدخل هو الإجمالي)'}
                 </span>
                 <div 
-                  className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" 
+                  className={`${calcMethod === 'total' ? 'app-3d-badge' : 'app-3d-recessed-field'} border-0 w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all`} 
                   style={{ 
                     backgroundColor: calcMethod === 'total'
-                      ? (isBlackTheme ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.25)')
-                      : (isBlackTheme ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.08)')
+                      ? (isBlackTheme ? '#18181b' : '#FFFFFF')
+                      : (isDarkSurface ? '#0f172a' : '#e2e8f0'),
+                    color: calcMethod === 'total' ? (isBlackTheme ? '#FFFFFF' : primaryColor) : 'transparent',
+                    boxShadow: calcMethod === 'total'
+                      ? '0 2.5px 0 rgba(0, 0, 0, 0.22), 0 4px 8px rgba(0, 0, 0, 0.18), inset 0 1.5px 1px rgba(255, 255, 255, 0.92)'
+                      : undefined
                   }}
                 >
                   {calcMethod === 'total' && <Check size={12} strokeWidth={3} />}
@@ -823,47 +816,32 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         {/* Progress Card */}
         <div 
           id="wird-progress-container" 
-<<<<<<< HEAD
           className={`app-page-card border-0 rounded-3xl p-5 space-y-3 ${surfaceCardClass}`}
-=======
-          className="app-page-card rounded-3xl p-5 bg-white dark:bg-zinc-900 border-0 space-y-3"
-          style={{ color: 'var(--text-color)', border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         >
           <div className="flex justify-between items-center">
             <span className="font-black text-sm">
               {isEn ? 'Completion Rate' : 'نسبة الإنجاز'}
             </span>
-<<<<<<< HEAD
             <span 
-              className="border-0 px-3 py-1 rounded-full font-black text-sm tabular-nums"
+              className="app-3d-badge border-0 px-3 py-1 rounded-full font-black text-sm tabular-nums"
               style={{
                 backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.1),
                 color: primaryColor
               }}
             >
-=======
-            <span className="font-black text-base" style={{ color: primaryColor }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
               {formatNum(progress.toFixed(1))}%
             </span>
           </div>
 
-          {/* Thick Rounded Progress Bar */}
-          <div className={`w-full h-3.5 rounded-full overflow-hidden p-0.5 shadow-inner ${isBlackTheme ? 'bg-[#09090b]' : 'bg-slate-100 dark:bg-[#0F172A]'}`}>
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              className="h-full rounded-full transition-all"
-              style={{ backgroundColor: primaryColor }}
+          {/* Thick Rounded 3D Progress Bar */}
+          <div className={`app-3d-progress-track border-0 w-full h-4 rounded-full overflow-hidden p-0.5 ${isBlackTheme ? 'bg-[#09090b]' : 'bg-slate-100 dark:bg-[#0F172A]'}`}>
+            <div 
+              className="app-3d-progress-fill h-full rounded-full"
+              style={{ backgroundColor: primaryColor, width: `${progress}%` }}
             />
           </div>
 
-<<<<<<< HEAD
           <div className="flex justify-between items-center text-xs opacity-75 font-bold pt-0.5">
-=======
-          <div className="flex justify-between items-center text-xs opacity-70 font-semibold pt-0.5">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <span>{isEn ? `Day ${settings.currentDay} of ${totalDays}` : `اليوم ${toArabic(settings.currentDay)} من ${toArabic(totalDays)}`}</span>
             <span>{isEn ? `${settings.completedDays.length} days done` : `${toArabic(settings.completedDays.length)} يوم مكتمل`}</span>
           </div>
@@ -872,20 +850,11 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         {/* Current Day's Reading Card */}
         <div 
           id="wird-today-card" 
-<<<<<<< HEAD
           className={`app-page-card border-0 rounded-3xl p-4 sm:p-5 text-center space-y-3.5 ${surfaceCardClass}`}
         >
           <div id="wird-today-container" className={`p-3.5 rounded-2xl border-0 ${recessedWellClass}`}>
             <div className="flex items-center justify-center mb-2.5">
               <h3 className="text-sm font-black" style={{ color: primaryColor }}>
-=======
-          className="app-page-card rounded-3xl p-4 sm:p-5 bg-white dark:bg-zinc-900 border-0 text-center space-y-3"
-          style={{ color: 'var(--text-color)', border: 'none' }}
-        >
-          <div id="wird-today-container" className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border-0">
-            <div className="flex items-center justify-center mb-2.5">
-              <h3 className="text-sm font-bold" style={{ color: primaryColor }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 {isEn
                   ? `Today's Wird ${getEnglishOrdinal(settings.currentDay)} - ${settings.currentDay}`
                   : `ورد اليوم ${getArabicDayOrdinal(settings.currentDay)} - ${toArabic(settings.currentDay)}`}
@@ -893,11 +862,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             </div>
             
             {hasPages ? (
-<<<<<<< HEAD
               <div className="grid grid-cols-2 gap-2.5 w-full overflow-visible pb-1">
-=======
-              <div className="grid grid-cols-2 gap-2.5 w-full">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <button
                   type="button"
                   onClick={() => {
@@ -907,118 +872,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                       { s: startDetails.surahNumber, a: startDetails.ayahNumber },
                       isEn ? 'translation' : 'mushaf'
                     );
-<<<<<<< HEAD
-=======
-                  }}
-                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center gap-1.5 text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0 cursor-pointer"
-                >
-                  <span className="text-xs font-bold opacity-80">{isEn ? 'From Page' : 'من صفحة'}</span>
-                  <span className="text-sm font-black" style={{ color: primaryColor }}>{formatNum(startPage)}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const endDetails = getAyahDetails(endPage);
-                    handleOpenQuran(
-                      endPage,
-                      { s: endDetails.surahNumber, a: endDetails.ayahNumber },
-                      isEn ? 'translation' : 'mushaf'
-                    );
-                  }}
-                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center gap-1.5 text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0 cursor-pointer"
-                >
-                  <span className="text-xs font-bold opacity-80">{isEn ? 'To Page' : 'إلى صفحة'}</span>
-                  <span className="text-sm font-black" style={{ color: primaryColor }}>{formatNum(endPage)}</span>
-                </button>
-              </div>
-            ) : (
-              <div className="p-3 rounded-2xl bg-white dark:bg-zinc-900 border-0">
-                <p className="text-sm font-bold" style={{ color: primaryColor }}>
-                  {isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات بارك الله فيك!'}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Current Reading Position Card (4 Details Grid) */}
-          {hasPages && (
-            <div 
-              onClick={() => {
-                handleOpenQuran(
-                  ayahDetails.pageNumber, 
-                  { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
-                  isEn ? 'translation' : 'mushaf'
-                );
-              }}
-              className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border-0 cursor-pointer transition-all hover:opacity-95"
-            >
-              <div className="text-xs font-bold opacity-60 mb-2 text-center">
-                {isEn ? 'Current Reading Position' : 'موضع القراءة الحالي'}
-              </div>
-              <div className="grid grid-cols-2 gap-2.5 w-full">
-                {/* اسم السورة */}
-                <div 
-                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
-                >
-                  <span className="font-extrabold text-sm truncate max-w-full">
-                    {isEn ? ayahDetails.surahNameEn : `سورة ${ayahDetails.surahNameAr}`}
-                  </span>
-                </div>
-
-                {/* رقم الآية */}
-                <div 
-                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
-                >
-                  <span className="font-extrabold text-sm">
-                    {isEn ? `Ayah ${ayahDetails.ayahNumber}` : `الآية ${toArabic(ayahDetails.ayahNumber)}`}
-                  </span>
-                </div>
-
-                {/* رقم الجزء */}
-                <div 
-                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
-                >
-                  <span className="font-extrabold text-sm">
-                    {isEn ? `Juz ${ayahDetails.juzNumber}` : `الجزء ${toArabic(ayahDetails.juzNumber)}`}
-                  </span>
-                </div>
-
-                {/* رقم الصفحة */}
-                <div 
-                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
-                >
-                  <span className="font-extrabold text-sm">
-                    {isEn ? `Page ${ayahDetails.pageNumber}` : `الصفحة ${toArabic(ayahDetails.pageNumber)}`}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Compact Action Button replacing full width button */}
-          <div className="flex flex-col gap-2.5 pt-1 items-center justify-center" id="wird-actions-container">
-            {hasPages ? (
-              !isCompleted ? (
-                <button 
-                  id="btn-wird-start-now"
-                  type="button"
-                  onClick={() => {
-                    handleOpenQuran(
-                      ayahDetails.pageNumber, 
-                      { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
-                      isEn ? 'translation' : 'mushaf'
-                    );
-                  }}
-                  className="px-8 py-3.5 rounded-2xl font-bold flex items-center justify-center transition-all active:scale-[0.98] shadow-md border-0 cursor-pointer mx-auto"
-                  style={{ 
-                    backgroundColor: primaryColor, 
-                    color: btnTextColor,
-                    boxShadow: `0 8px 20px -4px ${hexToRgba(primaryColor, 0.35)}`
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   }}
                   className={`app-page-card border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center gap-1.5 text-center cursor-pointer ${surfaceCardClass}`}
                 >
-<<<<<<< HEAD
                   <span className="text-xs font-bold opacity-80">{isEn ? 'From Page' : 'من صفحة'}</span>
                   <span className="text-sm font-black" style={{ color: primaryColor }}>{formatNum(startPage)}</span>
                 </button>
@@ -1039,58 +895,12 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                 </button>
               </div>
             ) : (
-              <div className={`border-0 p-3 rounded-2xl ${innerButtonClass}`}>
+              <div className={`app-inner-3d-box border-0 p-3 rounded-2xl ${innerButtonClass}`}>
                 <p className="text-sm font-bold" style={{ color: primaryColor }}>
                   {isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات بارك الله فيك!'}
                 </p>
               </div>
             )}
-=======
-                  <span className="text-base font-black tracking-wide font-kufi">
-                    {canContinue 
-                      ? (isEn ? 'Continue Reading' : 'متابعة القراءة') 
-                      : (isEn ? 'Start Now' : 'ابدأ الآن')}
-                  </span>
-                </button>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <div 
-                    className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm border-0"
-                    style={{ 
-                      backgroundColor: hexToRgba(primaryColor, 0.14), 
-                      color: primaryColor
-                    }}
-                  >
-                    <CheckCircle size={18} />
-                    <span>{isEn ? 'Completed Today\'s Wird' : 'أنجزت الورد كاملاً لهذا اليوم'}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button 
-                      type="button"
-                      onClick={handleStartNewWird}
-                      className="flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs shadow-md border-0 cursor-pointer"
-                      style={{ 
-                        backgroundColor: primaryColor, 
-                        color: btnTextColor 
-                      }}
-                    >
-                      <Plus size={16} />
-                      <span>{isEn ? 'Start New Wird' : 'بداية ورد جديد'}</span>
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => onNavigate('home')}
-                      className="flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 border-0 cursor-pointer"
-                      style={{ color: 'var(--text-color)' }}
-                    >
-                      <Home size={16} />
-                      <span>{isEn ? 'Home' : 'الرئيسية'}</span>
-                    </button>
-                  </div>
-                </div>
-              )
-            ) : null}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           </div>
 
           {/* Current Reading Position Card (4 Details Grid) */}
@@ -1108,10 +918,10 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               <div className="text-xs font-bold opacity-65 mb-2 text-center">
                 {isEn ? 'Current Reading Position' : 'موضع القراءة الحالي'}
               </div>
-              <div className="grid grid-cols-2 gap-2.5 w-full">
+              <div className="grid grid-cols-2 gap-2.5 w-full overflow-visible pb-0.5">
                 {/* اسم السورة */}
                 <div 
-                  className={`border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center text-center ${innerButtonClass}`}
+                  className={`wird-inner-raised border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center text-center ${innerButtonClass}`}
                 >
                   <span className="font-extrabold text-sm truncate max-w-full">
                     {isEn ? ayahDetails.surahNameEn : `سورة ${ayahDetails.surahNameAr}`}
@@ -1120,7 +930,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
                 {/* رقم الآية */}
                 <div 
-                  className={`border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center text-center ${innerButtonClass}`}
+                  className={`wird-inner-raised border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center text-center ${innerButtonClass}`}
                 >
                   <span className="font-extrabold text-sm">
                     {isEn ? `Ayah ${ayahDetails.ayahNumber}` : `الآية ${toArabic(ayahDetails.ayahNumber)}`}
@@ -1129,7 +939,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
                 {/* رقم الجزء */}
                 <div 
-                  className={`border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center text-center ${innerButtonClass}`}
+                  className={`wird-inner-raised border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center text-center ${innerButtonClass}`}
                 >
                   <span className="font-extrabold text-sm">
                     {isEn ? `Juz ${ayahDetails.juzNumber}` : `الجزء ${toArabic(ayahDetails.juzNumber)}`}
@@ -1138,7 +948,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
                 {/* رقم الصفحة */}
                 <div 
-                  className={`border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center text-center ${innerButtonClass}`}
+                  className={`wird-inner-raised border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center text-center ${innerButtonClass}`}
                 >
                   <span className="font-extrabold text-sm">
                     {isEn ? `Page ${ayahDetails.pageNumber}` : `الصفحة ${toArabic(ayahDetails.pageNumber)}`}
@@ -1165,7 +975,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                   className="app-page-card border-0 px-8 py-3.5 rounded-2xl font-black flex items-center justify-center transition-all cursor-pointer mx-auto"
                   style={{ backgroundColor: primaryColor, color: btnTextColor }}
                 >
-                  <span className="text-base font-black tracking-wide font-kufi">
+                  <span className="text-base font-black tracking-wide font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }}>
                     {canContinue 
                       ? (isEn ? 'Continue Reading' : 'متابعة القراءة') 
                       : (isEn ? 'Start Now' : 'ابدأ الآن')}
@@ -1174,7 +984,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               ) : (
                 <div className="flex flex-col gap-2.5 w-full overflow-visible pb-1">
                   <div 
-                    className={`border-0 w-full py-3.5 rounded-2xl font-black flex items-center justify-center gap-2 text-sm ${innerButtonClass}`}
+                    className={`app-inner-3d-box border-0 w-full py-3.5 rounded-2xl font-black flex items-center justify-center gap-2 text-sm ${innerButtonClass}`}
                     style={{ color: primaryColor }}
                   >
                     <CheckCircle size={18} />
@@ -1245,7 +1055,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         >
           <div className="flex items-center gap-3">
             <div 
-              className={`border-0 w-10 h-10 rounded-2xl flex items-center justify-center ${
+              className={`app-3d-badge border-0 w-10 h-10 rounded-2xl flex items-center justify-center ${
                 isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'
               }`}
               style={{ color: primaryColor }}
@@ -1258,7 +1068,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             </div>
           </div>
           <div 
-            className={`border-0 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+            className={`app-3d-badge border-0 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
               isBlackTheme ? 'bg-white/10 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-300'
             }`}
           >
@@ -1348,13 +1158,11 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     const isWirdIncomplete = !profileToDelete.completedDays.includes(profileToDelete.currentDay);
 
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={isEn ? 'ltr' : 'rtl'}>
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65" dir={isEn ? 'ltr' : 'rtl'}>
+        <div 
           className={`app-page-card border-0 w-full max-w-sm p-6 rounded-3xl ${isEn ? 'text-left' : 'text-center'} ${surfaceCardClass}`}
         >
-          <div className="border-0 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 text-red-500">
+          <div className="app-3d-badge border-0 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/15 text-red-500">
             <Trash2 size={32} />
           </div>
           <h3 className="text-xl font-black mb-2">
@@ -1367,7 +1175,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
           </p>
           
           {isWirdIncomplete && (
-            <div className="border-0 p-3 mb-5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-2">
+            <div className="app-inner-3d-box border-0 p-3 mb-5 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-2">
               <span className="text-base">⚠️</span>
               <span>{isEn ? "Warning: Today's wird has not been completed for this user yet." : "تنبيه: لم يتم إكمال ورد اليوم لهذا المستخدم بعد."}</span>
             </div>
@@ -1393,7 +1201,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               {isEn ? 'Cancel' : 'إلغاء'}
             </button>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   };
@@ -1464,7 +1272,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
             {/* Title in center */}
             <div className="text-center px-12 min-w-0">
-              <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate" style={{ color: 'var(--qr-bar-text)' }}>
+              <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate" style={{ color: 'var(--qr-bar-text)' }}>
                 {isEn ? 'Daily Wird' : 'الورد اليومي'}
               </h1>
             </div>
@@ -1483,7 +1291,6 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                   <i className="fa-solid fa-circle-question text-lg"></i>
                 </button>
               )}
-              <ThemePageLock />
               <button
                 onClick={() => onNavigate('home')}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"

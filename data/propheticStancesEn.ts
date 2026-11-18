@@ -1,4 +1,4 @@
-import { PropheticStance, PROPHETIC_STANCES_DATA } from './propheticSeerahData';
+import { PropheticStance } from './propheticSeerahData';
 
 export const STANCES_TRANSLATIONS_EN: Record<string, Partial<PropheticStance>> = {
     "stance-conquest-clemency": {

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { toArabic, getAyahCountText, SURAH_INFO, SURAH_NAMES_EN, SURAH_NAMES_AR } from './constants';
+import { getAyahCountText, SURAH_INFO, SURAH_NAMES_EN, SURAH_NAMES_AR } from './constants';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface SurahHeaderProps {
@@ -235,17 +235,17 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                             backgroundSize: '30px 30px'
                         }}></div>
                         
-                        <div className="z-10 bg-black/10 backdrop-blur-sm px-4 py-1.5 rounded-full border text-xs sm:text-sm font-bold" style={{ color: headerText, borderColor: `${headerText}40` }}>
+                        <div className="z-10 bg-black/20 px-4 py-1.5 rounded-full border text-xs sm:text-sm font-bold" style={{ color: headerText, borderColor: `${headerText}40` }}>
                             {displayAyahCount}
                         </div>
                         
                         <div className="z-10 flex flex-col items-center">
-                            <h2 className="text-xl sm:text-3xl font-bold mb-0 drop-shadow-lg" style={{ color: headerText, fontFamily: quranFont }}>
+                            <h2 className="text-xl sm:text-3xl font-bold mb-0" style={{ color: headerText, fontFamily: quranFont }}>
                                 {fullSurahName}
                             </h2>
                         </div>
                         
-                        <div className="z-10 bg-black/10 backdrop-blur-sm px-4 py-1.5 rounded-full border text-xs sm:text-sm font-bold" style={{ color: headerText, borderColor: `${headerText}40` }}>
+                        <div className="z-10 bg-black/20 px-4 py-1.5 rounded-full border text-xs sm:text-sm font-bold" style={{ color: headerText, borderColor: `${headerText}40` }}>
                             {displaySurahType}
                         </div>
                     </div>
@@ -365,7 +365,7 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                             <div className="w-16 h-16 rotate-45 border-2" style={{ borderColor: headerBorder }}></div>
                             <div className="w-16 h-16 rotate-45 border-2" style={{ borderColor: headerBorder }}></div>
                         </div>
-                        <div className="z-10 flex flex-col items-center bg-white/10 backdrop-blur-sm px-12 py-2 rounded-full border" style={{ borderColor: headerBorder }}>
+                        <div className="z-10 flex flex-col items-center bg-white/15 px-12 py-2 rounded-full border" style={{ borderColor: headerBorder }}>
                             <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: headerText, fontFamily: hafsFont }}>
                                 {fullSurahName}
                             </h2>

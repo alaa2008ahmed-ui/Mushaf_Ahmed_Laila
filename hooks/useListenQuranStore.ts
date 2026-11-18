@@ -993,7 +993,16 @@ export const useListenQuranStore = create<ListenQuranStoreState>((set, get) => (
     const prevPage = get().currentPage;
     if (prevPage !== page) {
       set({ currentPage: page });
-      if (prevPage === 'listen' && page !== 'listen' && !isFloatingListenButtonEnabled()) {
+      const isEnteringQuranReading =
+        page === 'quran' ||
+        page === 'quran-landscape' ||
+        page === 'quran-search' ||
+        page.startsWith('quran_');
+      const shouldStopOnRoute =
+        isEnteringQuranReading ||
+        (prevPage === 'listen' && page !== 'listen' && !isFloatingListenButtonEnabled());
+
+      if (shouldStopOnRoute) {
         const st = get();
         if (
           st.isPlaying ||
@@ -1130,7 +1139,7 @@ export const useListenQuranStore = create<ListenQuranStoreState>((set, get) => (
         })
       );
     } catch (e) {
-      console.error('Failed to fetch surahs mapping', e);
+      console.warn('Failed to fetch surahs mapping', e);
     }
   },
 

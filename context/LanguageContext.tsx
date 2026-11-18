@@ -475,62 +475,6 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'الرئيسية',
     en: 'Home'
   },
-  'bottombar.themes': {
-    ar: 'الثيمات',
-    en: 'Themes'
-  },
-
-  // Themes Sidebar
-  'themes.title': {
-    ar: 'ثيمات التطبيق',
-    en: 'App Themes'
-  },
-  'themes.wallpaper': {
-    ar: 'خلفية',
-    en: 'Wallpaper'
-  },
-  'themes.reset': {
-    ar: 'استعادة',
-    en: 'Reset'
-  },
-  'themes.default': {
-    ar: 'الافتراضي',
-    en: 'Default'
-  },
-  'theme.black': { ar: 'افتراضي', en: 'Default' },
-  'theme.night_sky': { ar: 'أزرق', en: 'Blue' },
-  'theme.green': { ar: 'أخضر', en: 'Green' },
-  'theme.red': { ar: 'أحمر', en: 'Red' },
-  'theme.maroon': { ar: 'نبيتي', en: 'Maroon' },
-  'theme.olive': { ar: 'زيتوني', en: 'Olive' },
-  'theme.blue': { ar: 'نيلي فاتح', en: 'Light Indigo' },
-  'theme.brown': { ar: 'بني', en: 'Brown' },
-  'theme.purple': { ar: 'بنفسجي', en: 'Purple' },
-  'theme.orange': { ar: 'برتقالي', en: 'Orange' },
-  'theme.sky': { ar: 'سماوي فاتح', en: 'Light Sky' },
-  'theme.gold': { ar: 'ذهبي', en: 'Gold' },
-  'theme.amber_light': { ar: 'كهرماني', en: 'Amber' },
-  'theme.mint': { ar: 'نعناعي', en: 'Mint' },
-  'theme.pink': { ar: 'وردي', en: 'Pink' },
-  'theme.cyan': { ar: 'سماوي', en: 'Cyan' },
-  'theme.lime': { ar: 'ليموني', en: 'Lime' },
-  'theme.i_emerald': { ar: 'زمرد', en: 'Emerald' },
-  'theme.i_ruby': { ar: 'ياقوت', en: 'Ruby' },
-  'theme.i_lapis': { ar: 'لازورد', en: 'Lapis Lazuli' },
-  'theme.i_gold': { ar: 'ذهبي', en: 'Gold' },
-  'theme.i_royal_gold': { ar: 'ذهبي ملكي', en: 'Royal Gold' },
-  'theme.i_amber': { ar: 'عنبر', en: 'Amber' },
-  'theme.i_amethyst': { ar: 'أرجوان', en: 'Amethyst' },
-  'theme.i_sunset_royal': { ar: 'ملك الغروب', en: 'Royal Sunset' },
-  'theme.i_deep_ocean': { ar: 'ملك الأعماق', en: 'Deep Ocean' },
-  'theme.i_brocade': { ar: 'إستبرق', en: 'Brocade' },
-  'theme.i_musk': { ar: 'مسك', en: 'Musk' },
-  'theme.i_midnight': { ar: 'ليل', en: 'Midnight' },
-  'theme.i_obsidian': { ar: 'بركان', en: 'Obsidian' },
-  'theme.i_forest': { ar: 'غابة', en: 'Forest' },
-  'theme.i_turquoise': { ar: 'فيروزي داكن', en: 'Dark Turquoise' },
-  'theme.i_slate': { ar: 'حجري', en: 'Slate' },
-
 
   // Common UI Actions & Labels
   'common.save': {
@@ -932,35 +876,6 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     en: 'Print A5'
   },
 
-  // Theme Names Localization
-  'theme.default': { ar: 'الافتراضي', en: 'Default Emerald' },
-  'theme.deep_black': { ar: 'اسود غامق', en: 'Deep Black' },
-  'theme.fajr_light': { ar: 'نور الفجر', en: 'Fajr Dawn' },
-  'theme.golden_sand': { ar: 'رمال ذهبية', en: 'Golden Sand' },
-  'theme.olive_grove': { ar: 'بستان الزيتون', en: 'Olive Grove' },
-  'theme.kaaba_kiswa': { ar: 'كسوة الكعبة', en: 'Kaaba Kiswah' },
-  'theme.evening_tranquility': { ar: 'سكينة المساء', en: 'Evening Serenity' },
-  'theme.morning_dew': { ar: 'ندى الصباح', en: 'Morning Dew' },
-  'theme.madinah_rose': { ar: 'ورد المدينة', en: 'Madinah Rose' },
-  'theme.andalusian_garden': { ar: 'حديقة أندلسية', en: 'Andalusian Garden' },
-  'theme.blue_mosque': { ar: 'المسجد الأزرق', en: 'Blue Mosque' },
-  'theme.clay_earth': { ar: 'تراب وأصالة', en: 'Earthy Clay' },
-  'theme.slate_stone': { ar: 'حجر رمادي', en: 'Slate Stone' },
-  'theme.sunset_glow': { ar: 'وهج الغروب', en: 'Sunset Glow' },
-  'theme.electric_violet': { ar: 'بنفسج ساطع', en: 'Royal Violet' },
-  'theme.sakura_breeze': { ar: 'نسيم الكرز', en: 'Sakura Breeze' },
-  'theme.midnight_neon': { ar: 'نيون منتصف الليل', en: 'Midnight Cyan' },
-  'theme.royal_purple': { ar: 'أرجواني ملكي', en: 'Royal Purple' },
-  'theme.desert_night': { ar: 'ليل الصحراء', en: 'Desert Night' },
-  'theme.ocean_peace': { ar: 'سلام المحيط', en: 'Ocean Peace' },
-  'theme.vintage_paper': { ar: 'ورق قديم', en: 'Vintage Parchment' },
-  'theme.turquoise_gem': { ar: 'حجر الفيروز', en: 'Turquoise Gem' },
-  'theme.deep_forest': { ar: 'غابة عميقة', en: 'Deep Forest' },
-  'theme.lavender_mist': { ar: 'ضباب اللافندر', en: 'Lavender Mist' },
-  'theme.crystal_glass': { ar: 'زجاج كريستالي', en: 'Crystal Glass' },
-  'theme.frosted_emerald': { ar: 'زمرد زجاجي', en: 'Frosted Emerald' },
-  'theme.midnight_glass': { ar: 'زجاج ليلي', en: 'Midnight Glass' },
-
   // Language Button
   'lang.toggle_tooltip': {
     ar: 'التحويل إلى اللغة الإنجليزية',
@@ -1253,7 +1168,6 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       'ten-promised': 'The Ten Promised Paradise',
       'divine-miracles': 'Divine Miracles',
       'tajweed-education': 'Tajweed Rules',
-      'quran-download-parent': 'Download Qur\'an',
       'tafseer-download': 'Download Tafseer',
       'interface-customization': 'Customize Interface',
       'audio': 'Reciters',

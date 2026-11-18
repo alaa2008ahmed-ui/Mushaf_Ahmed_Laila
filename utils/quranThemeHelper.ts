@@ -1,24 +1,15 @@
 import { THEMES, getLinkedQuranThemeForHomeVariant } from '../components/QuranReader/constants';
 
-export type QuranLayoutMode = 'classic' | 'modern';
+export type QuranLayoutMode = 'modern';
 
-export function getQuranLayoutMode(navParams?: any): QuranLayoutMode {
-  if (navParams?.from === 'modern_home') return 'modern';
-  if (navParams?.from === 'classic_home') return 'classic';
-  try {
-    const saved = localStorage.getItem('home_layout_system');
-    return saved === 'classic' ? 'classic' : 'modern';
-  } catch {
-    return 'modern';
-  }
+export function getQuranLayoutMode(_navParams?: any): QuranLayoutMode {
+  return 'modern';
 }
 
-export function isNightModeForLayout(layout: 'classic' | 'modern'): boolean {
+export function isNightModeForLayout(_layout: QuranLayoutMode = 'modern'): boolean {
   try {
-    const key = `night_mode_active_${layout}`;
-    const saved = localStorage.getItem(key);
+    const saved = localStorage.getItem('night_mode_active_modern');
     if (saved !== null) return saved === 'true';
-    if (layout === 'classic') return false;
     return localStorage.getItem('night_mode_active') === 'true';
   } catch {
     return false;
@@ -63,7 +54,7 @@ export function getQuranThemeIdForLayout(modeSuffix: string = '_v', navParams?: 
   if (saved && THEMES[saved as keyof typeof THEMES]) {
     return saved;
   }
-  return layout === 'classic' ? 'black' : getLinkedQuranThemeForHomeVariant();
+  return getLinkedQuranThemeForHomeVariant();
 }
 
 export function setQuranThemeIdForLayout(themeId: string, modeSuffix: string = '_v', navParams?: any, readingMode: string = 'mushaf'): void {

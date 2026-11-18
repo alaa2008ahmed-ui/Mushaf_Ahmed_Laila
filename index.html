@@ -78,8 +78,10 @@
             if (!navigator.app) {
                 navigator.app = { exitApp: function() { if (window.close) window.close(); } };
             }
-            // Prevent React DevTools instrumentation error in restricted environments
-            window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+            // Prevent React DevTools instrumentation error only if no hook is already present (preserves Vite Fast Refresh)
+            if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === 'undefined') {
+                window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+            }
             window.addEventListener('error', function(e) {
                 if (e && e.message && (
                     e.message.indexOf('ResizeObserver') !== -1 ||
@@ -353,6 +355,7 @@
           min-height: 52px;
       }
       .app-top-bar__title { 
+          font-family: 'Cairo', sans-serif;
           font-weight: 800; 
           letter-spacing: 0.02em; 
           font-size: 1.15rem; 

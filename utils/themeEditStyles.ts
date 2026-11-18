@@ -34,10 +34,11 @@ export function getThemeEditModeStyles(
         boxShadow: '0 4px 14px rgba(0, 0, 0, 0.7)',
       },
       toast: {
-        background: 'rgba(18, 18, 21, 0.96)',
+        background: 'linear-gradient(180deg, #27272A 0%, #18181B 55%, #111114 100%)',
         color: '#FFFFFF',
-        border: '1px solid rgba(245, 158, 11, 0.45)',
-        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.85), 0 0 15px rgba(245, 158, 11, 0.25)',
+        ['--toast-3d-lip' as any]: '#050507',
+        ['--toast-3d-ring' as any]: 'rgba(245, 158, 11, 0.42)',
+        ['--toast-3d-highlight' as any]: 'rgba(255, 255, 255, 0.28)',
       }
     };
   }
@@ -64,10 +65,11 @@ export function getThemeEditModeStyles(
         boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
       },
       toast: {
-        background: 'rgba(7, 42, 64, 0.96)',
+        background: 'linear-gradient(180deg, #38BDF8 0%, #0284C7 52%, #0369A1 100%)',
         color: '#FFFFFF',
-        border: '1px solid rgba(2, 132, 199, 0.45)',
-        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(2, 132, 199, 0.25)',
+        ['--toast-3d-lip' as any]: '#075985',
+        ['--toast-3d-ring' as any]: 'rgba(125, 211, 252, 0.45)',
+        ['--toast-3d-highlight' as any]: 'rgba(255, 255, 255, 0.58)',
       }
     };
   }
@@ -94,10 +96,11 @@ export function getThemeEditModeStyles(
         boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
       },
       toast: {
-        background: 'rgba(3, 43, 32, 0.96)',
+        background: 'linear-gradient(180deg, #34D399 0%, #059669 52%, #047857 100%)',
         color: '#FFFFFF',
-        border: '1px solid rgba(5, 150, 105, 0.45)',
-        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(5, 150, 105, 0.25)',
+        ['--toast-3d-lip' as any]: '#064E3B',
+        ['--toast-3d-ring' as any]: 'rgba(110, 231, 183, 0.45)',
+        ['--toast-3d-highlight' as any]: 'rgba(255, 255, 255, 0.58)',
       }
     };
   }
@@ -124,10 +127,11 @@ export function getThemeEditModeStyles(
         boxShadow: '0 4px 14px rgba(190, 18, 60, 0.3)',
       },
       toast: {
-        background: 'rgba(52, 4, 18, 0.96)',
+        background: 'linear-gradient(180deg, #E11D48 0%, #9F1239 52%, #881337 100%)',
         color: '#FFFFFF',
-        border: '1px solid rgba(190, 18, 60, 0.45)',
-        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(190, 18, 60, 0.25)',
+        ['--toast-3d-lip' as any]: '#4C0519',
+        ['--toast-3d-ring' as any]: 'rgba(253, 164, 175, 0.42)',
+        ['--toast-3d-highlight' as any]: 'rgba(255, 255, 255, 0.52)',
       }
     };
   }
@@ -153,10 +157,11 @@ export function getThemeEditModeStyles(
       boxShadow: '0 4px 14px rgba(217, 119, 6, 0.3)',
     },
     toast: {
-      background: 'rgba(45, 22, 6, 0.96)',
-      color: '#FFFFFF',
-      border: '1px solid rgba(217, 119, 6, 0.45)',
-      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(180, 83, 9, 0.25)',
+      background: 'linear-gradient(180deg, #FEF08A 0%, #FACC15 45%, #EAB308 100%)',
+      color: '#000000',
+      ['--toast-3d-lip' as any]: '#A16207',
+      ['--toast-3d-ring' as any]: 'rgba(180, 83, 9, 0.36)',
+      ['--toast-3d-highlight' as any]: 'rgba(255, 255, 255, 0.88)',
     }
   };
 }

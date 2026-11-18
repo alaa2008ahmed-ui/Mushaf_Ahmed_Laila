@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import ThemePageLock from '../components/ThemePageLock';
 import { ALL_DUAA, DUAA_CATEGORIES, DuaaItem } from '../data/adiaData';
 import { getRepetitionText } from '../data/adiaTranslationsEn';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { motion, AnimatePresence } from 'framer-motion';
 import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
-import { HelpCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import ZoomModal from '../components/Adia/ZoomModal';
 import { scrollToNextCard } from '../utils/cardScrollHelper';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ADIA_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 const ADIA_STATUS_KEY = 'adia_status_v1';
 const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
@@ -40,7 +39,8 @@ interface AdiaProps {
 }
 
 function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const { language } = useLanguage();
     const isEn = language === 'en';
     
@@ -318,7 +318,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
 
                         {/* Title in center */}
                         <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate">
                                 {pageTitle}
                             </h1>
                         </div>
@@ -335,7 +335,6 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                             >
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
-                            <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -350,28 +349,30 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
             </header>
 
             <main ref={mainRef} className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
-<<<<<<< HEAD
                 {/* Modern 3D Search bar */}
-=======
-                {/* Modern Borderless Search bar and View Mode Switch */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-                    <div className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible"
+                    <div className={`app-page-card border-0 relative flex-1 rounded-2xl ${isBlackTheme ? 'bg-[#18181b]' : 'bg-white dark:bg-[#1E293B]'} transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible`}
                          style={{ 
                              '--tw-ring-color': primaryColor,
                          } as any}
                     >
-                        <i 
-                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-45 pointer-events-none text-sm`} 
-                            style={{ color: 'var(--text-color)' }}
-                        ></i>
+                        <span
+                            className={`app-3d-badge border-0 absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none`}
+                            style={{
+                                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : hexToRgba(primaryColor, 0.12),
+                                color: isBlackTheme ? '#FFFFFF' : primaryColor,
+                            }}
+                            aria-hidden="true"
+                        >
+                            <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
                         <input 
                             type="text" 
                             placeholder={isEn ? "Search supplications..." : "ابحث في الأدعية..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${
-                                isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'
+                                isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'
                             } placeholder-gray-400 dark:placeholder-gray-500`}
                             style={{ color: 'var(--text-color)' }}
                         />
@@ -379,7 +380,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                             <button
                                 type="button"
                                 onClick={() => setSearchQuery('')}
-                                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                className={`app-page-card unified-3d-btn border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
                                 aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
@@ -409,11 +410,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     id={`adia-card-${duaa.id}`}
                                     key={duaa.id} 
                                     data-card-item="true"
-<<<<<<< HEAD
                                     className={`app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative transition-all duration-300 overflow-visible group flex flex-col justify-between ${
-=======
-                                    className={`app-page-card border-0 p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group flex flex-col justify-between ${
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
                                     }`} 
                                     onClick={(e) => {
@@ -424,20 +421,14 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                         }
                                     }}
                                     style={{ 
-                                        fontFamily: isEn ? 'sans-serif' : theme.font,
-<<<<<<< HEAD
+                                        fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif",
                                         color: 'var(--text-color)',
-=======
-                                        backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                                        color: 'var(--text-color)',
-                                        border: 'none'
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     }}
                                 >
                                     {/* Top Bar with repetition badge and count badge */}
                                     <div className="flex justify-between items-center mb-3">
                                         <span 
-                                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold select-none transition-colors" 
+                                            className="app-3d-badge inline-flex items-center px-3 py-1 rounded-full text-xs font-bold select-none transition-colors" 
                                             style={{ 
                                                 backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.1), 
                                                 color: isBlackTheme ? '#FFFFFF' : primaryColor 
@@ -479,7 +470,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                         </p>
                                     ) : (
                                         <p 
-                                            className="text-xl md:text-2xl leading-[2.3] text-center font-amiri mb-4 select-none text-balance" 
+                                            className="text-lg leading-loose font-medium font-cairo text-center mb-4 select-none text-balance" 
                                             style={{ color: 'var(--text-color)' }}
                                         >
                                             {displayText}
@@ -490,7 +481,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     {(categoryTitle || displaySource) && (
                                         <div className="flex justify-center mb-3">
                                             <span 
-                                                className="text-xs sm:text-sm text-center opacity-70 font-bold bg-slate-100 dark:bg-zinc-800/60 px-3.5 py-1 rounded-full" 
+                                                className="app-3d-badge text-xs sm:text-sm text-center opacity-85 font-bold bg-slate-100 dark:bg-zinc-800/70 px-3.5 py-1 rounded-full" 
                                                 dir={isEn ? 'ltr' : 'rtl'}
                                                 style={{ color: 'var(--text-color)' }}
                                             >
@@ -576,20 +567,23 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
             </main>
 
             {/* Toast Notification */}
-            <AnimatePresence>
-                {toastMessage && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 border border-white/10"
-                        style={{ bottom: 'calc(var(--app-safe-bottom) + 1.25rem)' }}
+            {toastMessage && (
+                <div 
+                    className="app-3d-toast fixed left-1/2 -translate-x-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none flex items-center justify-center gap-2.5"
+                    style={{
+                        bottom: 'calc(var(--app-safe-bottom) + 1.25rem)',
+                        ...toast3D.style,
+                    }}
+                >
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
                     >
-                        <i className="fa-solid fa-check text-green-400"></i>
-                        {toastMessage}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                    <span>{toastMessage}</span>
+                </div>
+            )}
 
             {/* Backdrop to close floating menu when clicking anywhere */}
             {isMenuOpen && (
@@ -607,17 +601,12 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                 ref={fabContainerRef} 
                 className={`fixed app-fab-bottom ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
             >
-                <AnimatePresence>
-                    {isMenuOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
-                            transition={{ duration: 0.2 }}
-                            className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-56 z-0`}
-                            style={{ color: 'var(--text-color)' }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
+                {isMenuOpen && (
+                    <div
+                        className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-56 z-0`}
+                        style={{ color: 'var(--text-color)' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                             <button 
                                 type="button"
                                 onClick={() => { setActiveCategory('all'); setIsMenuOpen(false); }}
@@ -641,7 +630,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
                                 <i className="fa-solid fa-heart text-xs opacity-75"></i>
                             </button>
-                            <div className="h-px bg-slate-100 dark:bg-white/10 my-0.5" />
+                            <div className="app-3d-divider my-0.5 mx-1" />
                             {DUAA_CATEGORIES.map(category => (
                                 <button 
                                     type="button"
@@ -657,18 +646,17 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     <i className={`fa-solid ${category.icon} text-xs opacity-75`}></i>
                                 </button>
                             ))}
-                            <div className="h-px bg-slate-100 dark:bg-white/10 my-0.5" />
+                            <div className="app-3d-divider my-0.5 mx-1" />
                             <button 
                                 type="button"
                                 onClick={handleResetAll}
                                 className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                             >
                                 <span>{isEn ? 'Reset All Counters' : 'إعادة ضبط العدادات'}</span>
-                                <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
+                        </button>
+                    </div>
+                )}
 
                 {/* FAB: 3D embossed circle filled with primaryColor */}
                 <button 

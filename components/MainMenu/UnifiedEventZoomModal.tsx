@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { shareAsImage } from '../../utils/shareAsImage';
@@ -119,13 +118,13 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
         actionBarBorderClass: 'border-amber-500/25',
         actionBarBg: 'linear-gradient(180deg, rgba(26, 24, 32, 0.98) 0%, rgba(16, 14, 20, 0.99) 100%)',
         btnBg: 'linear-gradient(145deg, #322f3d 0%, #201e28 55%, #16151d 100%)',
-        btnBorder: '1px solid rgba(245, 158, 11, 0.4)',
-        btnShadow: '0 4px 10px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.6)',
+        btnBorder: 'none',
+        btnShadow: '0 5px 0 #09090b, 0 10px 20px rgba(0, 0, 0, 0.72), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.22), inset 0 -2px 4px rgba(0, 0, 0, 0.65)',
         btnColor: '#F59E0B',
         iconColorClass: 'text-amber-400',
         activeBtnBg: 'linear-gradient(145deg, #10B981 0%, #059669 100%)',
         activeBtnColor: '#FFFFFF',
-        activeBtnBorder: '1px solid rgba(16, 185, 129, 0.6)',
+        activeBtnBorder: 'none',
       };
     }
 
@@ -147,14 +146,14 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
         subtitleColor: '#0369a1',
         actionBarBorderClass: 'border-sky-300/70',
         actionBarBg: 'linear-gradient(180deg, rgba(224, 242, 254, 0.55) 0%, rgba(186, 230, 253, 0.85) 100%)',
-        btnBg: 'linear-gradient(180deg, #FFFFFF 0%, #E0F2FE 60%, #BAE6FD 100%)',
-        btnBorder: '1px solid rgba(2, 132, 199, 0.45)',
-        btnShadow: '0 3px 6px rgba(2, 132, 199, 0.2), inset 0 1px 1px #FFFFFF',
+        btnBg: 'linear-gradient(180deg, #FFFFFF 0%, #E0F2FE 65%, #BAE6FD 100%)',
+        btnBorder: 'none',
+        btnShadow: '0 5px 0 rgba(2, 132, 199, 0.34), 0 10px 18px -2px rgba(2, 132, 199, 0.24), inset 0 2px 1.5px rgba(255, 255, 255, 0.96), inset 0 -2px 3px rgba(2, 132, 199, 0.12)',
         btnColor: '#0369a1',
         iconColorClass: 'text-sky-700',
         activeBtnBg: 'linear-gradient(145deg, #0284c7 0%, #0369a1 100%)',
         activeBtnColor: '#FFFFFF',
-        activeBtnBorder: '1px solid rgba(3, 105, 161, 0.6)',
+        activeBtnBorder: 'none',
       };
     }
 
@@ -176,14 +175,14 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
         subtitleColor: '#047857',
         actionBarBorderClass: 'border-emerald-300/70',
         actionBarBg: 'linear-gradient(180deg, rgba(220, 252, 231, 0.55) 0%, rgba(187, 247, 208, 0.85) 100%)',
-        btnBg: 'linear-gradient(180deg, #FFFFFF 0%, #DCFCE7 60%, #BBF7D0 100%)',
-        btnBorder: '1px solid rgba(5, 150, 105, 0.45)',
-        btnShadow: '0 3px 6px rgba(5, 150, 105, 0.2), inset 0 1px 1px #FFFFFF',
+        btnBg: 'linear-gradient(180deg, #FFFFFF 0%, #DCFCE7 65%, #BBF7D0 100%)',
+        btnBorder: 'none',
+        btnShadow: '0 5px 0 rgba(5, 150, 105, 0.34), 0 10px 18px -2px rgba(5, 150, 105, 0.24), inset 0 2px 1.5px rgba(255, 255, 255, 0.96), inset 0 -2px 3px rgba(5, 150, 105, 0.12)',
         btnColor: '#047857',
         iconColorClass: 'text-emerald-700',
         activeBtnBg: 'linear-gradient(145deg, #059669 0%, #047857 100%)',
         activeBtnColor: '#FFFFFF',
-        activeBtnBorder: '1px solid rgba(4, 120, 87, 0.6)',
+        activeBtnBorder: 'none',
       };
     }
 
@@ -205,14 +204,14 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
         subtitleColor: '#881337',
         actionBarBorderClass: 'border-rose-300/70',
         actionBarBg: 'linear-gradient(180deg, rgba(255, 228, 230, 0.55) 0%, rgba(254, 205, 211, 0.85) 100%)',
-        btnBg: 'linear-gradient(180deg, #FFFFFF 0%, #FFE4E6 60%, #FECDD3 100%)',
-        btnBorder: '1px solid rgba(225, 29, 72, 0.45)',
-        btnShadow: '0 3px 6px rgba(159, 18, 57, 0.2), inset 0 1px 1px #FFFFFF',
+        btnBg: 'linear-gradient(180deg, #FFFFFF 0%, #FFE4E6 65%, #FECDD3 100%)',
+        btnBorder: 'none',
+        btnShadow: '0 5px 0 rgba(159, 18, 57, 0.36), 0 10px 18px -2px rgba(159, 18, 57, 0.24), inset 0 2px 1.5px rgba(255, 255, 255, 0.96), inset 0 -2px 3px rgba(159, 18, 57, 0.12)',
         btnColor: '#881337',
         iconColorClass: 'text-rose-800',
         activeBtnBg: 'linear-gradient(145deg, #9f1239 0%, #881337 100%)',
         activeBtnColor: '#FFFFFF',
-        activeBtnBorder: '1px solid rgba(136, 19, 55, 0.6)',
+        activeBtnBorder: 'none',
       };
     }
 
@@ -234,14 +233,14 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
       subtitleColor: '#451A03',
       actionBarBorderClass: 'border-amber-300/70',
       actionBarBg: 'linear-gradient(180deg, rgba(254, 243, 199, 0.5) 0%, rgba(252, 231, 153, 0.8) 100%)',
-      btnBg: 'linear-gradient(180deg, #FFFFFF 0%, #FEF9C3 60%, #FEF08A 100%)',
-      btnBorder: '1px solid rgba(217, 119, 6, 0.45)',
-      btnShadow: '0 3px 6px rgba(180, 115, 20, 0.2), inset 0 1px 1px #FFFFFF',
+      btnBg: 'linear-gradient(180deg, #FFFFFF 0%, #FEF9C3 65%, #FEF08A 100%)',
+      btnBorder: 'none',
+      btnShadow: '0 5px 0 rgba(180, 115, 20, 0.34), 0 10px 18px -2px rgba(180, 115, 20, 0.24), inset 0 2px 1.5px rgba(255, 255, 255, 0.96), inset 0 -2px 3px rgba(180, 115, 20, 0.12)',
       btnColor: '#451A03',
       iconColorClass: 'text-amber-950',
       activeBtnBg: 'linear-gradient(145deg, #10B981 0%, #059669 100%)',
       activeBtnColor: '#FFFFFF',
-      activeBtnBorder: '1px solid rgba(16, 185, 129, 0.6)',
+      activeBtnBorder: 'none',
     };
   }, [isNight, isSkyTheme, isEmeraldTheme, isBurgundyTheme]);
 
@@ -337,7 +336,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
         return {
           background: themeStyles.activeBtnBg,
           border: themeStyles.activeBtnBorder,
-          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
+          boxShadow: '0 5px 0 rgba(0, 0, 0, 0.24), 0 10px 18px -2px rgba(0, 0, 0, 0.22), inset 0 1.5px 1px rgba(255, 255, 255, 0.35)',
           color: themeStyles.activeBtnColor,
         };
       }
@@ -351,8 +350,11 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
     return {
       backgroundColor: isActionActive
         ? '#10B981'
-        : (tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+        : (tokens.isDark ? '#27272a' : '#FFFFFF'),
       color: isActionActive ? '#FFFFFF' : tokens.textColor,
+      boxShadow: tokens.isDark
+        ? '0 5px 0 #09090b, 0 10px 18px rgba(0, 0, 0, 0.65), inset 0 1.5px 1px rgba(255, 255, 255, 0.18)'
+        : '0 5px 0 rgba(0, 0, 0, 0.14), 0 10px 18px -2px rgba(0, 0, 0, 0.12), inset 0 2px 1.5px rgba(255, 255, 255, 0.95)',
     };
   };
 
@@ -366,15 +368,11 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
   return createPortal(
     <div
       id="unified-event-zoom-modal-backdrop"
-      className="fixed inset-0 bg-black/65 z-[10000] flex flex-col justify-end backdrop-blur-xs select-none"
+      className="fixed inset-0 bg-black/70 z-[10000] flex flex-col justify-end select-none"
       onClick={onClose}
       dir={dir}
     >
-        <motion.div
-          initial={{ y: '100%', opacity: 0.6 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: '100%', opacity: 0 }}
-          transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+        <div
           className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl ${
             isModernMode ? themeStyles.modalBorderClass : ''
           }`}
@@ -389,7 +387,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
           {/* Top Drag Handle & Category Badge */}
           <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
             <div
-              className={`w-12 h-1.5 rounded-full mb-2.5 ${
+              className={`app-3d-drag-handle w-12 h-1.5 rounded-full mb-2.5 ${
                 isModernMode ? themeStyles.dragHandleClass : 'bg-slate-300 dark:bg-zinc-700'
               }`}
             />
@@ -495,7 +493,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="zoom-action-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              className="zoom-action-btn unified-3d-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0"
               style={getActionButtonStyle()}
               title={isEn ? 'Hide list' : 'إخفاء القائمة'}
             >
@@ -506,7 +504,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
             <button
               type="button"
               onClick={handleToggleZoom}
-              className="zoom-action-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              className="zoom-action-btn unified-3d-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0"
               style={getActionButtonStyle()}
               title={isEn ? 'Enlarge font size' : 'تكبير حجم الخط'}
             >
@@ -517,7 +515,9 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
             <button
               type="button"
               onClick={handleCopy}
-              className="zoom-action-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              className={`zoom-action-btn unified-3d-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0 ${
+                copied ? 'zoom-action-btn-active' : ''
+              }`}
               style={getActionButtonStyle(copied)}
               title={isEn ? 'Copy text' : 'نسخ النص'}
             >
@@ -532,7 +532,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
             <button
               type="button"
               onClick={handleShare}
-              className="zoom-action-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              className="zoom-action-btn unified-3d-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0"
               style={getActionButtonStyle()}
               title={isEn ? 'Share Image' : 'مشاركة كصورة'}
             >
@@ -543,15 +543,15 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
             <button
               type="button"
               onClick={handlePlayAudio}
-              className={`zoom-action-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 ${
-                isPlaying ? 'ring-2 ring-red-400/80 animate-pulse' : ''
+              className={`zoom-action-btn unified-3d-btn w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0 ${
+                isPlaying ? 'zoom-action-btn-playing ring-2 ring-red-400/80 animate-pulse' : ''
               }`}
               style={
                 isPlaying
                   ? {
                       background: 'linear-gradient(145deg, #EF4444 0%, #DC2626 100%)',
-                      border: '1px solid rgba(239, 68, 68, 0.6)',
-                      boxShadow: '0 0 16px rgba(239, 68, 68, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
+                      border: 'none',
+                      boxShadow: '0 5px 0 #991B1B, 0 0 16px rgba(239, 68, 68, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.35)',
                       color: '#FFFFFF',
                     }
                   : getActionButtonStyle()
@@ -565,7 +565,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
               )}
             </button>
           </div>
-        </motion.div>
+        </div>
       </div>,
     document.body
   );

@@ -1,39 +1,32 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-<<<<<<< HEAD
-  ArrowRight, Play, Pause, RotateCcw, Volume2, Eye, EyeOff, 
-  HelpCircle, BookOpen, Brain, ChevronRight, ChevronLeft, 
-  FastForward, Settings2, Sparkles, BookMarked, Trophy, X, Gauge, Zap, Infinity
+import {
+  ArrowRight,
+  Play,
+  Pause,
+  RotateCcw,
+  Volume2,
+  Eye,
+  EyeOff,
+  Brain,
+  ChevronRight,
+  ChevronLeft,
+  BookMarked,
+  Trophy,
+  X,
+  Infinity
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getAyahsInRange, AyahPointer } from '../utils/quranMemorizationUtils';
-=======
-  ArrowRight, Play, Pause, RotateCcw, Volume2, Mic, MicOff, Eye, EyeOff, 
-  HelpCircle, BookOpen, Brain, CheckCircle2, ChevronRight, ChevronLeft, 
-  FastForward, Settings2, Sparkles, BookMarked, Trophy, X, AlertCircle, RefreshCw, Gauge, Zap, Infinity
-} from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
-import { getAyahsInRange, AyahPointer, normalizeForSpeechMatch, calculateAyahMatchScore } from '../utils/quranMemorizationUtils';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-import { SURAH_NAMES_AR, MEMORIZATION_READERS } from '../components/QuranReader/constants';
+import { getAyahsInRange } from '../utils/quranMemorizationUtils';
+import { SURAH_NAMES_AR } from '../components/QuranReader/constants';
 import { SURAH_NAMES_EN } from './Memorization';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import MemorizationQuizModal from '../components/Memorization/MemorizationQuizModal';
 import MemorizationPreviewModal from '../components/Memorization/MemorizationPreviewModal';
-import { memorizationService, MasteryLevel } from '../services/memorizationService';
-<<<<<<< HEAD
 import { Haptics, NotificationType } from '@capacitor/haptics';
 import { acquireListenInterruption, releaseListenInterruption } from '../utils/listenAudioCoordinator';
 import { getCalculator3DStyles } from '../utils/calculator3DStyles';
 import { hexToRgba } from '../utils/flatDesignTokens';
-=======
-import { Capacitor } from '@capacitor/core';
-import { VoiceRecorder } from 'capacitor-voice-recorder';
-import { Haptics, NotificationType } from '@capacitor/haptics';
-import { acquireListenInterruption, releaseListenInterruption } from '../utils/listenAudioCoordinator';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
 interface MemorizationSessionProps {
   onBack: () => void;
@@ -49,7 +42,6 @@ const stripTajweed = (text: string) => {
 };
 
 const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNavigate, params }) => {
-<<<<<<< HEAD
   const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -61,26 +53,40 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   const btnTextColor = s3d.btnTextColor;
   const pageBg = s3d.pageBgColor;
   const pageTextColor = s3d.textColor;
-=======
-  const { theme, themeKey } = useTheme();
-  const { language } = useLanguage();
-  const isEn = language === 'en';
 
-  // Determine if active theme is a dark variant
-  const isDark = Boolean(theme.isDark || (theme.bgColor && [
-    '#000000', '#090D16', '#0B0F19', '#111827', '#0F172A', '#1C1917', '#1E1B4B', '#191D3A', '#0C0A09'
-  ].includes(theme.bgColor.toUpperCase())));
+  const isSkyTheme = !isBlackTheme && (homeThemeVariant === 'sky' || themeKey === 'sky_mode');
+  const isEmeraldTheme = !isBlackTheme && (homeThemeVariant === 'emerald' || themeKey === 'emerald_mode');
+  const isBurgundyTheme = !isBlackTheme && (homeThemeVariant === 'burgundy' || themeKey === 'burgundy_mode');
 
-  const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
-  const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || '#10B981');
-  const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
+  const unifiedBarStyle: React.CSSProperties = isBlackTheme
+    ? { backgroundColor: '#18181b', color: '#FFFFFF' }
+    : isSkyTheme
+      ? { background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#FFFFFF' }
+      : isEmeraldTheme
+        ? { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#FFFFFF' }
+        : isBurgundyTheme
+          ? { background: 'linear-gradient(135deg, #9f1239 0%, #881337 100%)', color: '#FFFFFF' }
+          : { backgroundColor: theme.topBarBg || '#FDE047', color: theme.topBarText || '#000000' };
 
-  // Dynamic colors derived from active theme with pure white page background
-  const pageBg = '#FFFFFF';
-  const pageTextColor = '#0F172A';
-  const headerBg = theme.topBarBg || theme.barBg || (isBlackTheme ? '#F8FAFC' : (theme.accent ? `${theme.accent}25` : '#FEF3C7'));
-  const footerBg = theme.barBg || (isBlackTheme ? '#F8FAFC' : (theme.accent ? `${theme.accent}30` : '#FDE047'));
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+  const barPrimaryBtnStyle: React.CSSProperties = isBlackTheme
+    ? { backgroundColor: '#D97706', color: '#FFFFFF' }
+    : isSkyTheme
+      ? { backgroundColor: '#075985', color: '#FFFFFF' }
+      : isEmeraldTheme
+        ? { backgroundColor: '#064E3B', color: '#FFFFFF' }
+        : isBurgundyTheme
+          ? { backgroundColor: '#4C0519', color: '#FFFFFF' }
+          : { backgroundColor: primaryColor, color: btnTextColor };
+
+  const barSecondaryBtnStyle: React.CSSProperties = isBlackTheme
+    ? { backgroundColor: '#27272a', color: '#FFFFFF' }
+    : isSkyTheme
+      ? { backgroundColor: '#FFFFFF', color: '#0369A1' }
+      : isEmeraldTheme
+        ? { backgroundColor: '#FFFFFF', color: '#047857' }
+        : isBurgundyTheme
+          ? { backgroundColor: '#FFFFFF', color: '#881337' }
+          : { backgroundColor: '#FFFFFF', color: '#0F172A' };
 
   // Session settings from params or default
   const settings = params?.memorizationSettings || params || {};
@@ -106,62 +112,24 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [currentAyahRepeat, setCurrentAyahRepeat] = useState(1);
-<<<<<<< HEAD
-=======
-  const [currentRangeRepeat, setCurrentRangeRepeat] = useState(1);
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   const [isPauseActive, setIsPauseActive] = useState(false);
   const [pauseCountdown, setPauseCountdown] = useState(0);
 
   // Masking level: 0=visible, 1=hide endings, 2=hide half, 3=hide all
   const [maskLevel, setMaskLevel] = useState<MaskLevel>(0);
-<<<<<<< HEAD
   const [showMaskMenu, setShowMaskMenu] = useState(false);
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   const [peekedWordIndex, setPeekedWordIndex] = useState<{ ayahIdx: number; wordIdx: number } | null>(null);
 
   // Available playback speeds: numbers only [0.5x, 0.75x, 1.0x, 1.25x, 1.5x, 1.75x, 2.0x]
   const SPEED_OPTIONS = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-<<<<<<< HEAD
   const maskBtnRef = useRef<HTMLButtonElement | null>(null);
   const [maskMenuTop, setMaskMenuTop] = useState<number>(64);
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
   // Word-by-word tracking during recitation
   const [isWordTrackingEnabled, setIsWordTrackingEnabled] = useState(true);
   const [audioProgress, setAudioProgress] = useState<{ currentTime: number; duration: number } | null>(null);
 
-<<<<<<< HEAD
-=======
-  // Self Voice Recording & Speech Verification Engine
-  const [isRecordingSelf, setIsRecordingSelf] = useState(false);
-  const [selfAudioUrl, setSelfAudioUrl] = useState<string | null>(null);
-  const [isPlayingSelf, setIsPlayingSelf] = useState(false);
-  const [isPlayingReciterComparison, setIsPlayingReciterComparison] = useState(false);
-  const comparisonAudioRef = useRef<HTMLAudioElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
-  // Speech Recognition & Evaluation Engine state
-  const [speechVerificationResult, setSpeechVerificationResult] = useState<{
-    score: number;
-    passed: boolean;
-    spokenText: string;
-    ayahText: string;
-    matchedWords: boolean[];
-    ayahWords: string[];
-    ayahNumber: number;
-    surahNumber: number;
-  } | null>(null);
-  const [isEvaluatingSpeech, setIsEvaluatingSpeech] = useState(false);
-  const [showSpeechResultModal, setShowSpeechResultModal] = useState(false);
-  const recognitionInstanceRef = useRef<any>(null);
-  const recognizedSpokenTextRef = useRef<string>('');
-
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   // Modals
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showTafseerModal, setShowTafseerModal] = useState(false);
@@ -217,31 +185,10 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       audioRef.current.pause();
       audioRef.current.src = '';
     }
-<<<<<<< HEAD
     if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
     if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
 
     releaseListenInterruption('mem-session-audio');
-=======
-    if (comparisonAudioRef.current) {
-      comparisonAudioRef.current.pause();
-      comparisonAudioRef.current.src = '';
-    }
-    if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
-    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
-
-    // Stop active speech recognition if active
-    if (recognitionInstanceRef.current) {
-      try {
-        recognitionInstanceRef.current.stop();
-      } catch (e) {}
-    }
-
-    releaseListenInterruption('mem-session-audio');
-    releaseListenInterruption('mem-session-compare');
-    releaseListenInterruption('mem-session-self');
-    releaseListenInterruption('mem-session-mic');
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     releaseListenInterruption('mem-session-chime');
 
     // Save last session position
@@ -259,24 +206,14 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   // Back button interceptor
   useEffect(() => {
     const interceptor = () => {
-<<<<<<< HEAD
       if (showMaskMenu) {
         setShowMaskMenu(false);
         return true;
       }
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       if (showSpeedMenu) {
         setShowSpeedMenu(false);
         return true;
       }
-<<<<<<< HEAD
-=======
-      if (showSpeechResultModal) {
-        setShowSpeechResultModal(false);
-        return true;
-      }
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       if (showCompletionModal) {
         setShowCompletionModal(false);
         handleExit();
@@ -288,11 +225,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       return true;
     };
     return registerBackInterceptor(interceptor);
-<<<<<<< HEAD
   }, [showMaskMenu, showSpeedMenu, showQuizModal, showTafseerModal, showCompletionModal, handleExit]);
-=======
-  }, [showSpeedMenu, showSpeechResultModal, showQuizModal, showTafseerModal, showCompletionModal, handleExit]);
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
   // Cleanup on unmount
   useEffect(() => {
@@ -301,28 +234,9 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         audioRef.current.pause();
         audioRef.current.src = '';
       }
-<<<<<<< HEAD
       if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
       if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
       releaseListenInterruption('mem-session-audio');
-=======
-      if (comparisonAudioRef.current) {
-        comparisonAudioRef.current.pause();
-        comparisonAudioRef.current.src = '';
-      }
-      if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
-      if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
-      if (recognitionInstanceRef.current) {
-        try { recognitionInstanceRef.current.stop?.(); } catch (e) {}
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        try { mediaRecorderRef.current.stop(); } catch (e) {}
-      }
-      releaseListenInterruption('mem-session-audio');
-      releaseListenInterruption('mem-session-compare');
-      releaseListenInterruption('mem-session-self');
-      releaseListenInterruption('mem-session-mic');
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       releaseListenInterruption('mem-session-chime');
     };
   }, []);
@@ -503,11 +417,8 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   // Current step index in the playback sequence
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const currentStepIndexRef = useRef(0);
-  const playbackStepsRef = useRef<PlaybackStep[]>([]);
-
-  useEffect(() => {
-    playbackStepsRef.current = playbackSteps;
-  }, [playbackSteps]);
+  const playbackStepsRef = useRef<PlaybackStep[]>(playbackSteps);
+  playbackStepsRef.current = playbackSteps;
 
   useEffect(() => {
     currentStepIndexRef.current = currentStepIndex;
@@ -544,10 +455,6 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     if (cRangeRepeat < rangeRepeatTarget) {
       const nextRangeRepeat = cRangeRepeat + 1;
       currentRangeRepeatRef.current = nextRangeRepeat;
-<<<<<<< HEAD
-=======
-      setCurrentRangeRepeat(nextRangeRepeat);
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
       currentStepIndexRef.current = 0;
       setCurrentStepIndex(0);
@@ -594,6 +501,12 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   // Core Playback Logic: plays the ayah at a specific index
   const playAyahAtIndex = useCallback((index: number) => {
     if (index < 0 || index >= ayahs.length) return;
+    if (pauseTimerRef.current) {
+      clearInterval(pauseTimerRef.current);
+      pauseTimerRef.current = null;
+    }
+    setIsPauseActive(false);
+
     currentIndexRef.current = index;
     setCurrentIndex(index);
     const ayah = ayahs[index];
@@ -633,6 +546,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
           setPauseCountdown(remaining);
           if (remaining <= 0) {
             clearInterval(pauseTimerRef.current);
+            pauseTimerRef.current = null;
             setIsPauseActive(false);
             if (handleAdvanceAfterAudioRef.current) {
               handleAdvanceAfterAudioRef.current();
@@ -657,15 +571,23 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     audio.play()
       .then(() => setIsPlaying(true))
       .catch((err) => {
+        if (err?.name === 'AbortError') return;
         console.warn('Autoplay prevented or failed', err);
         setIsPlaying(false);
         releaseListenInterruption('mem-session-audio');
       });
   }, [ayahs, getAyahAudioUrl, playbackSpeed, pauseSeconds]);
 
-  // Legacy wrapper for direct ayah tap
-  const playAyah = useCallback((index: number) => {
-    // When user manually taps an ayah, find the first step for this ayah or jump to it
+  // Manual ayah selection (works seamlessly whether currently playing or paused)
+  const handleSelectAyah = useCallback((index: number, forcePlay = false) => {
+    if (index < 0 || index >= ayahs.length) return;
+    if (pauseTimerRef.current) {
+      clearInterval(pauseTimerRef.current);
+      pauseTimerRef.current = null;
+    }
+    setIsPauseActive(false);
+    setAudioProgress(null);
+
     const steps = playbackStepsRef.current;
     const targetStepIdx = steps.findIndex(s => s.ayahIndex === index);
     if (targetStepIdx !== -1) {
@@ -675,88 +597,69 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       currentAyahRepeatRef.current = step.stepRepeatIndex;
       setCurrentAyahRepeat(step.stepRepeatIndex);
     } else {
+      currentStepIndexRef.current = 0;
+      setCurrentStepIndex(0);
       currentAyahRepeatRef.current = 1;
       setCurrentAyahRepeat(1);
     }
-    playAyahAtIndex(index);
-  }, [playAyahAtIndex]);
+
+    currentIndexRef.current = index;
+    setCurrentIndex(index);
+
+    if (isPlaying || forcePlay) {
+      playAyahAtIndex(index);
+    } else if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [ayahs.length, isPlaying, playAyahAtIndex]);
 
   const togglePlayPause = () => {
     if (isPlaying) {
       if (audioRef.current) audioRef.current.pause();
-      if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
+      if (pauseTimerRef.current) {
+        clearInterval(pauseTimerRef.current);
+        pauseTimerRef.current = null;
+      }
       setIsPlaying(false);
       setIsPauseActive(false);
       setAudioProgress(null);
       releaseListenInterruption('mem-session-audio');
     } else {
+      if (pauseTimerRef.current) {
+        clearInterval(pauseTimerRef.current);
+        pauseTimerRef.current = null;
+      }
+      setIsPauseActive(false);
+
       const steps = playbackStepsRef.current;
+      const targetAyahIdx = currentIndexRef.current;
       const cStep = steps[currentStepIndexRef.current];
-      const targetAyahIdx = cStep ? cStep.ayahIndex : currentIndexRef.current;
+      if (!cStep || cStep.ayahIndex !== targetAyahIdx) {
+        const syncedStepIdx = steps.findIndex(s => s.ayahIndex === targetAyahIdx);
+        if (syncedStepIdx !== -1) {
+          currentStepIndexRef.current = syncedStepIdx;
+          setCurrentStepIndex(syncedStepIdx);
+          const syncedStep = steps[syncedStepIdx];
+          currentAyahRepeatRef.current = syncedStep.stepRepeatIndex;
+          setCurrentAyahRepeat(syncedStep.stepRepeatIndex);
+        }
+      }
       playAyahAtIndex(targetAyahIdx);
     }
   };
 
   const handleNextAyah = () => {
-    const steps = playbackStepsRef.current;
-    // Find next step with a different ayah index, or advance step
     const currentA = currentIndexRef.current;
-    const nextStepIdx = steps.findIndex((s, idx) => idx > currentStepIndexRef.current && s.ayahIndex !== currentA);
-    if (nextStepIdx !== -1) {
-      currentStepIndexRef.current = nextStepIdx;
-      setCurrentStepIndex(nextStepIdx);
-      const step = steps[nextStepIdx];
-      currentAyahRepeatRef.current = step.stepRepeatIndex;
-      setCurrentAyahRepeat(step.stepRepeatIndex);
-      if (isPlaying) playAyahAtIndex(step.ayahIndex);
-      else {
-        currentIndexRef.current = step.ayahIndex;
-        setCurrentIndex(step.ayahIndex);
-      }
-    } else if (currentA < ayahs.length - 1) {
-      const nextA = currentA + 1;
-      currentIndexRef.current = nextA;
-      setCurrentIndex(nextA);
-      currentAyahRepeatRef.current = 1;
-      setCurrentAyahRepeat(1);
-      if (isPlaying) playAyahAtIndex(nextA);
+    if (currentA < ayahs.length - 1) {
+      handleSelectAyah(currentA + 1, isPlaying);
     }
   };
 
   const handlePrevAyah = () => {
-    const steps = playbackStepsRef.current;
     const currentA = currentIndexRef.current;
-    // Find previous step with a different ayah index
-    let prevStepIdx = -1;
-    for (let i = currentStepIndexRef.current - 1; i >= 0; i--) {
-      if (steps[i].ayahIndex !== currentA) {
-        prevStepIdx = i;
-        break;
-      }
-    }
-    if (prevStepIdx !== -1) {
-      // Find the first occurrence of this previous ayah
-      const targetAyah = steps[prevStepIdx].ayahIndex;
-      const firstOccur = steps.findIndex(s => s.ayahIndex === targetAyah);
-      const chosenStep = firstOccur !== -1 ? firstOccur : prevStepIdx;
-
-      currentStepIndexRef.current = chosenStep;
-      setCurrentStepIndex(chosenStep);
-      const step = steps[chosenStep];
-      currentAyahRepeatRef.current = step.stepRepeatIndex;
-      setCurrentAyahRepeat(step.stepRepeatIndex);
-      if (isPlaying) playAyahAtIndex(step.ayahIndex);
-      else {
-        currentIndexRef.current = step.ayahIndex;
-        setCurrentIndex(step.ayahIndex);
-      }
-    } else if (currentA > 0) {
-      const prevA = currentA - 1;
-      currentIndexRef.current = prevA;
-      setCurrentIndex(prevA);
-      currentAyahRepeatRef.current = 1;
-      setCurrentAyahRepeat(1);
-      if (isPlaying) playAyahAtIndex(prevA);
+    if (currentA > 0) {
+      handleSelectAyah(currentA - 1, isPlaying);
     }
   };
 
@@ -771,10 +674,6 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     currentAyahRepeatRef.current = firstStep?.stepRepeatIndex || 1;
     setCurrentAyahRepeat(firstStep?.stepRepeatIndex || 1);
     currentRangeRepeatRef.current = 1;
-<<<<<<< HEAD
-=======
-    setCurrentRangeRepeat(1);
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     setIsPauseActive(false);
     setTimeout(() => {
       playAyahAtIndex(0);
@@ -798,260 +697,6 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     handleSelectSpeed(nextSpeed);
   };
 
-<<<<<<< HEAD
-=======
-  // Safe sound feedback helper
-  const playSoundFeedback = (type: 'correct' | 'wrong') => {
-    try {
-      if (type === 'correct') {
-        acquireListenInterruption('mem-session-chime');
-        const audio = new Audio('/assets/audio/chime.mp3');
-        audio.volume = 0.5;
-        audio.onended = () => releaseListenInterruption('mem-session-chime');
-        audio.onerror = () => releaseListenInterruption('mem-session-chime');
-        audio.play().catch(() => releaseListenInterruption('mem-session-chime'));
-        Haptics.notification({ type: NotificationType.Success }).catch(() => {});
-      } else {
-        Haptics.notification({ type: NotificationType.Warning }).catch(() => {});
-      }
-    } catch (e) {
-      releaseListenInterruption('mem-session-chime');
-    }
-  };
-
-  // Play reciter audio for comparison inside verification modal
-  const playReciterComparison = (surahNum: number, ayahNum: number) => {
-    if (comparisonAudioRef.current) {
-      comparisonAudioRef.current.pause();
-    }
-    acquireListenInterruption('mem-session-compare');
-    const url = getAyahAudioUrl(surahNum, ayahNum);
-    const aud = new Audio(url);
-    comparisonAudioRef.current = aud;
-    aud.playbackRate = playbackSpeed;
-    aud.defaultPlaybackRate = playbackSpeed;
-    setIsPlayingReciterComparison(true);
-    aud.onended = () => {
-      setIsPlayingReciterComparison(false);
-      releaseListenInterruption('mem-session-compare');
-    };
-    aud.onerror = () => {
-      setIsPlayingReciterComparison(false);
-      releaseListenInterruption('mem-session-compare');
-    };
-    aud.play().catch(() => {
-      setIsPlayingReciterComparison(false);
-      releaseListenInterruption('mem-session-compare');
-    });
-  };
-
-  // Retry recording from modal
-  const handleRetryRecording = () => {
-    setShowSpeechResultModal(false);
-    if (comparisonAudioRef.current) {
-      comparisonAudioRef.current.pause();
-      setIsPlayingReciterComparison(false);
-    }
-    setTimeout(() => {
-      toggleSelfRecording();
-    }, 250);
-  };
-
-  // Evaluate transcribed text against the active verse
-  const evaluateRecordedRecitation = (transcript: string) => {
-    const activeA = ayahs[currentIndexRef.current];
-    if (!activeA) return;
-
-    setIsEvaluatingSpeech(true);
-    const cleanAyahText = stripTajweed(activeA.text);
-    const match = calculateAyahMatchScore(cleanAyahText, transcript);
-
-    const passed = match.score >= 65; // Threshold for spoken Quran match
-    const resultObj = {
-      score: match.score,
-      passed,
-      spokenText: transcript || (isEn ? '(No clear speech detected)' : '(لم يتم التقاط صوت واضح، يُرجى التحدث بصوت أوضح قرب المايكروفون)'),
-      ayahText: cleanAyahText,
-      matchedWords: match.matchedWords,
-      ayahWords: match.ayahWords,
-      ayahNumber: activeA.ayahNumber,
-      surahNumber: activeA.surahNumber
-    };
-
-    setSpeechVerificationResult(resultObj);
-    setIsEvaluatingSpeech(false);
-    setShowSpeechResultModal(true);
-
-    if (passed) {
-      playSoundFeedback('correct');
-    } else {
-      playSoundFeedback('wrong');
-    }
-  };
-
-  // Self Voice Recording & Speech Recognition Engine
-  const toggleSelfRecording = async () => {
-    if (isRecordingSelf) {
-      // 1. Stop Recording & Trigger Speech Verification
-      setIsRecordingSelf(false);
-
-      // Stop native or web audio recorder
-      try {
-        if (Capacitor.isNativePlatform()) {
-          const res = await VoiceRecorder.stopRecording().catch(() => null);
-          if (res?.value?.recordDataBase64) {
-            setSelfAudioUrl(`data:audio/aac;base64,${res.value.recordDataBase64}`);
-          }
-        } else if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
-        }
-      } catch (e) {
-        console.warn('Audio recorder stop error', e);
-      }
-
-      // Stop speech recognition and evaluate transcript
-      if (recognitionInstanceRef.current) {
-        try {
-          if (Capacitor.isNativePlatform()) {
-            const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
-            await SpeechRecognition.stop().catch(() => {});
-            await SpeechRecognition.removeAllListeners().catch(() => {});
-          } else {
-            recognitionInstanceRef.current.stop();
-          }
-        } catch (e) {}
-      }
-
-      // Small delay to ensure final transcript chunk arrived
-      releaseListenInterruption('mem-session-mic');
-      setTimeout(() => {
-        const transcript = recognizedSpokenTextRef.current.trim();
-        evaluateRecordedRecitation(transcript);
-      }, 350);
-
-    } else {
-      // 2. Start Recording & Listening
-      // Pause playback if reciting so mic hears the user clearly
-      if (isPlaying) {
-        if (audioRef.current) audioRef.current.pause();
-        if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
-        setIsPlaying(false);
-        setIsPauseActive(false);
-        releaseListenInterruption('mem-session-audio');
-      }
-      acquireListenInterruption('mem-session-mic');
-
-      setSelfAudioUrl(null);
-      setSpeechVerificationResult(null);
-      recognizedSpokenTextRef.current = '';
-
-      try {
-        // A) Start Speech Recognition Engine
-        if (Capacitor.isNativePlatform()) {
-          const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
-          const perm = await SpeechRecognition.checkPermissions();
-          if (perm.speechRecognition !== 'granted') {
-            const req = await SpeechRecognition.requestPermissions();
-            if (req.speechRecognition !== 'granted') {
-              releaseListenInterruption('mem-session-mic');
-              alert(isEn ? 'Speech recognition permission needed' : 'يلزم إذن التعرف على الصوت لمقارنة القراءة');
-              return;
-            }
-          }
-
-          SpeechRecognition.addListener('partialResults', (data: any) => {
-            if (data?.matches && data.matches.length > 0) {
-              recognizedSpokenTextRef.current = data.matches[0];
-            }
-          });
-
-          await SpeechRecognition.start({
-            language: 'ar-SA',
-            maxResults: 5,
-            prompt: isEn ? 'Recite the verse now' : 'اقرأ الآية بصوتك الآن للمقارنة والتحقق',
-            partialResults: true,
-            popup: false
-          });
-          recognitionInstanceRef.current = SpeechRecognition;
-        } else {
-          // Web Speech Recognition
-          const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-          if (SpeechRec) {
-            const recognition = new SpeechRec();
-            recognition.lang = 'ar-SA';
-            recognition.continuous = true;
-            recognition.interimResults = true;
-
-            recognition.onresult = (event: any) => {
-              let currentTranscript = '';
-              for (let i = 0; i < event.results.length; i++) {
-                currentTranscript += event.results[i][0].transcript + ' ';
-              }
-              recognizedSpokenTextRef.current = currentTranscript.trim();
-            };
-
-            recognition.onerror = (err: any) => {
-              console.warn('Speech recognition error:', err);
-            };
-
-            recognition.start();
-            recognitionInstanceRef.current = recognition;
-          }
-        }
-
-        // B) Start Audio Recording for Playback
-        if (Capacitor.isNativePlatform()) {
-          const perm = await VoiceRecorder.hasAudioRecordingPermission();
-          if (!perm.value) {
-            await VoiceRecorder.requestAudioRecordingPermission();
-          }
-          await VoiceRecorder.startRecording();
-        } else {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          const mr = new MediaRecorder(stream);
-          audioChunksRef.current = [];
-          mr.ondataavailable = (e) => {
-            if (e.data.size > 0) audioChunksRef.current.push(e.data);
-          };
-          mr.onstop = () => {
-            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-            setSelfAudioUrl(URL.createObjectURL(blob));
-            stream.getTracks().forEach(t => t.stop());
-          };
-          mr.start();
-          mediaRecorderRef.current = mr;
-        }
-
-        setIsRecordingSelf(true);
-      } catch (e) {
-        console.warn('Start recording/speech error', e);
-        setIsRecordingSelf(false);
-        releaseListenInterruption('mem-session-mic');
-        alert(isEn ? 'Microphone permission needed to verify recitation' : 'يلزم إذن المايكروفون للتحقق من قراءتك ومقارنتها');
-      }
-    }
-  };
-
-  const playSelfAudio = () => {
-    if (!selfAudioUrl) return;
-    acquireListenInterruption('mem-session-self');
-    const aud = new Audio(selfAudioUrl);
-    setIsPlayingSelf(true);
-    aud.onended = () => {
-      setIsPlayingSelf(false);
-      releaseListenInterruption('mem-session-self');
-    };
-    aud.onerror = () => {
-      setIsPlayingSelf(false);
-      releaseListenInterruption('mem-session-self');
-    };
-    aud.play().catch(() => {
-      setIsPlayingSelf(false);
-      releaseListenInterruption('mem-session-self');
-    });
-  };
-
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   // Word tap to peek when masked
   const handleWordPeek = (ayahIdx: number, wordIdx: number) => {
     if (maskLevel === 0) return;
@@ -1075,37 +720,66 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         fontFamily: theme.font || "'Cairo', sans-serif"
       }}
     >
-<<<<<<< HEAD
-      {/* Studio Top Bar matching unified app-top-bar */}
-      <header className="app-top-bar shrink-0 z-20" dir={isEn ? 'ltr' : 'rtl'}>
-        <div className="app-top-bar__inner">
-          <div className="flex items-center justify-between w-full min-h-[44px] gap-2">
-            <div className="flex items-center gap-2 min-w-0">
+      {/* Floating 3D Top Bar matching Bottom Bar & active theme top-bar colors */}
+      <header
+        className="share-studio-header shrink-0 px-3 pb-1.5 sm:px-4 sm:pb-1.5 z-20 overflow-visible"
+        dir={isEn ? 'ltr' : 'rtl'}
+        style={{
+          backgroundColor: pageBg,
+          paddingTop: 'calc(var(--app-safe-top, 0px) + 8px)'
+        }}
+      >
+        <div
+          className="app-page-card border-0 max-w-xl mx-auto rounded-[22px] px-3 py-2 overflow-visible"
+          style={unifiedBarStyle}
+        >
+          <div className="flex items-center justify-between w-full min-h-[42px] gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
               <button
                 onClick={handleExit}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border-0 shrink-0"
+                className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0"
+                style={barSecondaryBtnStyle}
                 title={isEn ? 'Exit Studio' : 'الخروج والعودة للتحفيظ'}
                 aria-label={isEn ? 'Exit Studio' : 'الخروج والعودة للتحفيظ'}
               >
-                <ArrowRight size={20} className={isEn ? 'rotate-180' : ''} />
+                <ArrowRight size={18} className={isEn ? 'rotate-180' : ''} />
               </button>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="font-bold text-sm sm:text-base tracking-wide truncate font-kufi">
-                    {activeSurahName}
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/10 dark:bg-white/15 shrink-0">
+              <div className="min-w-0 flex-1 flex flex-col items-center justify-center gap-1 py-0.5 overflow-hidden text-center">
+                <span
+                  className="font-bold text-sm sm:text-base tracking-wide truncate font-cairo max-w-full text-center leading-tight"
+                  style={{ fontFamily: "'Cairo', sans-serif", color: unifiedBarStyle.color }}
+                >
+                  {activeSurahName
+                    ? (isEn
+                        ? (activeSurahName.startsWith('Surah ') ? activeSurahName : `Surah ${activeSurahName}`)
+                        : (activeSurahName.startsWith('سورة ') ? activeSurahName : `سورة ${activeSurahName}`))
+                    : ''}
+                </span>
+                <div className="flex items-center justify-center flex-wrap gap-1 min-w-0 max-w-full pb-0.5">
+                  <span
+                    className="app-3d-badge border-0 text-[9.5px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0"
+                    style={barPrimaryBtnStyle}
+                  >
                     {isEn ? `Ayah ${activeAyah?.ayahNumber}` : `الآية ${activeAyah?.ayahNumber}`}
                   </span>
-                </div>
-                <div className="text-[10px] opacity-75 font-medium truncate">
-                  {isEn ? `Page ${activeAyah?.page} • Juz ${activeAyah?.juz}` : `صفحة ${activeAyah?.page} • الجزء ${activeAyah?.juz}`}
+                  <span
+                    className="app-3d-badge border-0 text-[9.5px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0"
+                    style={barPrimaryBtnStyle}
+                  >
+                    {isEn ? `Page ${activeAyah?.page}` : `صفحة ${activeAyah?.page}`}
+                  </span>
+                  <span
+                    className="app-3d-badge border-0 text-[9.5px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0"
+                    style={barPrimaryBtnStyle}
+                  >
+                    {isEn ? `Juz ${activeAyah?.juz}` : `الجزء ${activeAyah?.juz}`}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Right Tools: Mask Mode, Tafseer, Quiz */}
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 ref={maskBtnRef}
                 type="button"
@@ -1116,30 +790,23 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                   }
                   setShowMaskMenu(prev => !prev);
                 }}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border-0"
+                className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0"
+                style={maskLevel > 0 ? barPrimaryBtnStyle : barSecondaryBtnStyle}
                 title={isEn ? 'Display / Mask Mode' : 'وضع الإظهار والإخفاء'}
                 aria-label={isEn ? 'Display / Mask Mode' : 'وضع الإظهار والإخفاء'}
                 aria-expanded={showMaskMenu}
               >
-                {maskLevel === 0 ? <Eye size={19} /> : <EyeOff size={19} />}
+                {maskLevel === 0 ? <Eye size={17} /> : <EyeOff size={17} />}
               </button>
 
               <button
                 onClick={() => setShowTafseerModal(true)}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border-0"
+                className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0"
+                style={barSecondaryBtnStyle}
                 title={isEn ? 'Quick Tafseer' : 'التفسير الميسر للآيات'}
                 aria-label={isEn ? 'Quick Tafseer' : 'التفسير الميسر للآيات'}
               >
-                <BookMarked size={18} />
-              </button>
-
-              <button
-                onClick={() => setShowQuizModal(true)}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border-0"
-                title={isEn ? 'Test Now' : 'اختبار وتثبيت الحفظ'}
-                aria-label={isEn ? 'Test Now' : 'اختبار وتثبيت الحفظ'}
-              >
-                <Brain size={19} />
+                <BookMarked size={16} />
               </button>
             </div>
           </div>
@@ -1153,184 +820,8 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
           style={{ color: s3d.noticeAccent }}
         >
           <div 
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+            className="app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
-=======
-      {/* Studio Top Bar - Theme matched, no dark overlay */}
-      <header 
-        className="shrink-0 px-4 pb-2.5 z-20 flex items-center justify-between transition-colors"
-        style={{ 
-          backgroundColor: headerBg,
-          borderBottom: theme.barBorder || (isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.07)'),
-          paddingTop: 'calc(var(--app-safe-top) + 0.75rem)'
-        }}
-      >
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleExit}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer border-0 active:scale-90"
-            style={{ 
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-              color: pageTextColor
-            }}
-            title={isEn ? 'Exit Studio' : 'الخروج والعودة للتحفيظ'}
-          >
-            <ArrowRight size={20} className={isEn ? 'rotate-180' : ''} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm tracking-wide" style={{ color: pageTextColor }}>
-                {activeSurahName}
-              </span>
-              <span 
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: `${primaryColor}25`, color: primaryColor }}
-              >
-                {isEn ? `Ayah ${activeAyah?.ayahNumber}` : `الآية ${activeAyah?.ayahNumber}`}
-              </span>
-            </div>
-            <div className="text-[10px] opacity-65 font-medium" style={{ color: pageTextColor }}>
-              {isEn ? `Page ${activeAyah?.page} • Juz ${activeAyah?.juz}` : `صفحة ${activeAyah?.page} • الجزء ${activeAyah?.juz}`}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Tools: Word-by-Word Toggle, Tafseer, Quiz */}
-        <div className="flex items-center gap-1.5">
-          {/* Word-by-Word Recitation Tracking Toggle */}
-          <button
-            onClick={() => setIsWordTrackingEnabled(!isWordTrackingEnabled)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 text-xs font-black"
-            style={{ 
-              backgroundColor: isWordTrackingEnabled 
-                ? (isBlackTheme ? '#FFFFFF' : `${primaryColor}22`) 
-                : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'),
-              borderColor: isWordTrackingEnabled 
-                ? (isBlackTheme ? '#FFFFFF' : `${primaryColor}60`) 
-                : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)'),
-              color: isWordTrackingEnabled ? (isBlackTheme ? '#000000' : primaryColor) : pageTextColor
-            }}
-            title={isEn 
-              ? (isWordTrackingEnabled ? 'Word-by-word tracking: Enabled (1)' : 'Word-by-word tracking: Disabled (∞)') 
-              : (isWordTrackingEnabled ? 'تحديد كلمة بكلمة: مفعل (1)' : 'تحديد كلمة بكلمة: معطل (∞)')}
-          >
-            {isWordTrackingEnabled ? (
-              <span className="text-sm font-black leading-none">1</span>
-            ) : (
-              <Infinity size={18} />
-            )}
-          </button>
-
-          <button
-            onClick={() => setShowTafseerModal(true)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer border-0 active:scale-95"
-            style={{ 
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-              color: pageTextColor
-            }}
-            title={isEn ? 'Quick Tafseer' : 'التفسير الميسر للآيات'}
-          >
-            <BookMarked size={17} />
-          </button>
-
-          <button
-            onClick={() => setShowQuizModal(true)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer border-0 active:scale-95"
-            style={{ 
-              backgroundColor: `${primaryColor}20`, 
-              color: primaryColor 
-            }}
-            title={isEn ? 'Test Now' : 'اختبار وتثبيت الحفظ'}
-          >
-            <Brain size={18} />
-          </button>
-        </div>
-      </header>
-
-      {/* Mask Level Toggle Ribbon - Clean light style on white background */}
-      <div 
-        className="shrink-0 px-4 py-2 flex items-center justify-between text-xs transition-colors"
-        style={{ 
-          backgroundColor: '#FFFDF5',
-          borderBottom: '1px solid rgba(0,0,0,0.06)'
-        }}
-      >
-        <div className="flex items-center gap-1.5 font-bold text-[11px]" style={{ color: pageTextColor }}>
-          <Eye size={14} style={{ color: primaryColor }} />
-          <span>{isEn ? 'Visual Masking:' : 'نمط الإخفاء البصري:'}</span>
-        </div>
-        <div 
-          className="flex p-0.5 rounded-xl gap-1 text-[10px] font-bold transition-colors"
-          style={{ 
-            backgroundColor: 'rgba(0,0,0,0.05)'
-          }}
-        >
-          <button
-            onClick={() => setMaskLevel(0)}
-            className="px-2.5 py-1 rounded-lg transition-all border-0 cursor-pointer"
-            style={{
-              backgroundColor: maskLevel === 0 ? primaryColor : 'transparent',
-              color: maskLevel === 0 ? btnTextColor : pageTextColor,
-              opacity: maskLevel === 0 ? 1 : 0.65,
-              fontWeight: maskLevel === 0 ? 'bold' : 'normal'
-            }}
-          >
-            {isEn ? 'Visible' : 'ظاهر'}
-          </button>
-          <button
-            onClick={() => setMaskLevel(1)}
-            className="px-2.5 py-1 rounded-lg transition-all border-0 cursor-pointer"
-            style={{
-              backgroundColor: maskLevel === 1 ? primaryColor : 'transparent',
-              color: maskLevel === 1 ? btnTextColor : pageTextColor,
-              opacity: maskLevel === 1 ? 1 : 0.65,
-              fontWeight: maskLevel === 1 ? 'bold' : 'normal'
-            }}
-          >
-            {isEn ? 'Endings' : 'الأواخر'}
-          </button>
-          <button
-            onClick={() => setMaskLevel(2)}
-            className="px-2.5 py-1 rounded-lg transition-all border-0 cursor-pointer"
-            style={{
-              backgroundColor: maskLevel === 2 ? primaryColor : 'transparent',
-              color: maskLevel === 2 ? btnTextColor : pageTextColor,
-              opacity: maskLevel === 2 ? 1 : 0.65,
-              fontWeight: maskLevel === 2 ? 'bold' : 'normal'
-            }}
-          >
-            {isEn ? '50% Mask' : 'نصف'}
-          </button>
-          <button
-            onClick={() => setMaskLevel(3)}
-            className="px-2.5 py-1 rounded-lg transition-all border-0 cursor-pointer"
-            style={{
-              backgroundColor: maskLevel === 3 ? primaryColor : 'transparent',
-              color: maskLevel === 3 ? btnTextColor : pageTextColor,
-              opacity: maskLevel === 3 ? 1 : 0.65,
-              fontWeight: maskLevel === 3 ? 'bold' : 'normal'
-            }}
-          >
-            {isEn ? 'Hidden' : 'مخفي'}
-          </button>
-        </div>
-      </div>
-
-      {/* Recitation Pause Indicator - Floating Floating Banner / Card Overlay */}
-      {isPauseActive && !isRecordingSelf && (
-        <div 
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none w-[90%] max-w-sm px-4 py-2.5 rounded-2xl shadow-xl backdrop-blur-md flex items-center justify-center gap-2.5 animate-bounce border"
-          style={{ 
-            backgroundColor: isDark ? 'rgba(24, 24, 27, 0.92)' : 'rgba(255, 255, 255, 0.95)',
-            borderColor: `${primaryColor}40`,
-            color: primaryColor,
-            boxShadow: `0 10px 25px -5px ${primaryColor}35`
-          }}
-        >
-          <div 
-            className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           >
             <Volume2 size={16} />
           </div>
@@ -1340,105 +831,8 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         </div>
       )}
 
-<<<<<<< HEAD
       {/* Main Quran Verse Canvas */}
       <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-4 space-y-4 max-w-xl mx-auto w-full hide-scrollbar">
-=======
-      {/* Live Recording Indicator - Prominent floating feedback */}
-      {isRecordingSelf && (
-        <div 
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 border animate-pulse"
-          style={{ 
-            backgroundColor: isDark ? 'rgba(24, 24, 27, 0.96)' : 'rgba(255, 255, 255, 0.98)',
-            borderColor: '#EF4444',
-            boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.4)'
-          }}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-red-500 text-white flex items-center justify-center shrink-0">
-              <Mic size={18} className="animate-bounce" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-red-600 dark:text-red-400">
-                {isEn ? 'Listening to your recitation...' : '🎙️ جارٍ الاستماع لتلاوتك...'}
-              </div>
-              <div className="text-[10px] opacity-75 font-medium" style={{ color: pageTextColor }}>
-                {isEn ? 'Recite clearly, tap mic to evaluate' : 'اقرأ الآية بوضوح ثم اضغط المايك للمقارنة والتقييم'}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={toggleSelfRecording}
-            className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold cursor-pointer border-0 active:scale-95 shrink-0 shadow"
-          >
-            {isEn ? 'Evaluate' : 'إنهاء وتقييم'}
-          </button>
-        </div>
-      )}
-
-      {/* Evaluating Audio Spinner Toast */}
-      {isEvaluatingSpeech && (
-        <div 
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm px-4 py-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center justify-center gap-2.5 border"
-          style={{ 
-            backgroundColor: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.98)',
-            borderColor: `${primaryColor}40`,
-            color: primaryColor
-          }}
-        >
-          <RefreshCw size={18} className="animate-spin" />
-          <span className="text-xs font-bold">
-            {isEn ? 'Comparing your recitation to Quranic text...' : 'جارٍ مقارنة تلاوتك بالنص وتدقيق الكلمات...'}
-          </span>
-        </div>
-      )}
-
-      {/* Verified Recitation Floating Toast (when modal is closed or for quick glance) */}
-      {speechVerificationResult && !showSpeechResultModal && (
-        <div 
-          onClick={() => setShowSpeechResultModal(true)}
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-40 max-w-sm w-[92%] px-3.5 py-2.5 rounded-2xl shadow-xl backdrop-blur-md flex items-center justify-between gap-3 border cursor-pointer animate-fadeIn"
-          style={{
-            backgroundColor: speechVerificationResult.passed 
-              ? (isDark ? 'rgba(6, 78, 59, 0.95)' : 'rgba(236, 253, 245, 0.98)')
-              : (isDark ? 'rgba(127, 29, 29, 0.95)' : 'rgba(254, 242, 242, 0.98)'),
-            borderColor: speechVerificationResult.passed ? '#10B981' : '#EF4444',
-            color: speechVerificationResult.passed ? (isDark ? '#A7F3D0' : '#065F46') : (isDark ? '#FECACA' : '#991B1B')
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <div 
-              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-black text-xs text-white shadow-sm"
-              style={{ backgroundColor: speechVerificationResult.passed ? '#10B981' : '#EF4444' }}
-            >
-              {speechVerificationResult.score}%
-            </div>
-            <div>
-              <div className="font-bold text-xs">
-                {speechVerificationResult.passed 
-                  ? (isEn ? 'Recitation Verified: Excellent!' : 'تقييم التلاوة: قراءة صحيحة ومتقنة! ✨') 
-                  : (isEn ? 'Recitation needs practice' : 'تقييم التلاوة: بحاجة لمزيد من الترديد ⚠️')}
-              </div>
-              <div className="text-[10px] opacity-80">
-                {isEn ? 'Tap to view word comparison & listen' : 'انقر لعرض مقارنة الكلمات والاستماع لتسجيلك'}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSpeechVerificationResult(null);
-            }}
-            className="p-1 rounded-lg opacity-60 hover:opacity-100 border-0 bg-transparent cursor-pointer"
-          >
-            <X size={15} />
-          </button>
-        </div>
-      )}
-
-      {/* Main Quran Verse Canvas */}
-      <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 pb-4 space-y-4 max-w-xl mx-auto w-full hide-scrollbar">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         {ayahs.map((ayah, aIdx) => {
           const isActive = aIdx === currentIndex;
           const cleanText = stripTajweed(ayah.text);
@@ -1448,16 +842,8 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
             <div
               key={`${ayah.surahNumber}:${ayah.ayahNumber}`}
               id={`session-ayah-${aIdx}`}
-<<<<<<< HEAD
               data-card-item="true"
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-              onClick={() => {
-                setCurrentIndex(aIdx);
-                setCurrentAyahRepeat(1);
-                if (isPlaying) playAyah(aIdx);
-              }}
-<<<<<<< HEAD
+              onClick={() => handleSelectAyah(aIdx)}
               className={`app-page-card tasbeeh-pressable border-0 p-5 rounded-3xl relative cursor-pointer ${s3d.surfaceCardClass} ${
                 isActive ? 'ring-2 scale-[1.01]' : 'opacity-90 hover:opacity-100'
               }`}
@@ -1471,34 +857,12 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
               <div className="flex items-center justify-between mb-3 text-xs">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-bold opacity-75">
-=======
-              className={`p-5 rounded-3xl transition-all duration-300 relative border cursor-pointer ${
-                isActive ? 'shadow-md scale-[1.01]' : 'shadow-none opacity-90 hover:opacity-100'
-              }`}
-              style={{
-                backgroundColor: isActive 
-                  ? (theme.cardBg || '#FEF08A')
-                  : '#FFFDF5',
-                borderColor: isActive ? primaryColor : (theme.cardBorder || `${primaryColor}60` || 'rgba(0,0,0,0.12)'),
-                borderWidth: isActive ? '2px' : '1px',
-                color: pageTextColor
-              }}
-            >
-              {/* Header inside verse card */}
-              <div className="flex items-center justify-between mb-3 text-xs opacity-70">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-bold">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     {isEn ? SURAH_NAMES_EN[ayah.surahNumber - 1] : SURAH_NAMES_AR[ayah.surahNumber - 1]} - {isEn ? `Ayah ${ayah.ayahNumber}` : `الآية ${ayah.ayahNumber}`}
                   </span>
                   {isActive && currentStep?.modeBadge && (
                     <span 
-<<<<<<< HEAD
-                      className="text-[10px] font-bold px-2.5 py-0.5 rounded-lg"
+                      className="app-3d-badge border-0 text-[10px] font-bold px-2.5 py-0.5 rounded-lg"
                       style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
-=======
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300"
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     >
                       {currentStep.modeBadge}
                     </span>
@@ -1506,15 +870,11 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                 </div>
                 {isActive && (
                   <span 
-                    className="font-bold text-[11px] px-2.5 py-0.5 rounded-full"
-<<<<<<< HEAD
+                    className="app-3d-badge border-0 font-bold text-[11px] px-2.5 py-0.5 rounded-full"
                     style={{
                       backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.12),
                       color: primaryColor
                     }}
-=======
-                    style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   >
                     {isEn 
                       ? (currentStep ? currentStep.descriptionEn : `Repeat ${currentAyahRepeat}/${ayahRepeatTarget}`)
@@ -1523,10 +883,10 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                 )}
               </div>
 
-              {/* Words with Masking Logic */}
+              {/* Words with Masking Logic — Naskh Script */}
               <div 
-                className="text-xl sm:text-2xl leading-[2.5] text-right font-serif select-none font-bold" 
-                style={{ fontFamily: "'Amiri', 'Amiri Quran', serif", fontWeight: 700 }}
+                className="memorization-quran-text text-[22px] sm:text-[26px] leading-[2.5] text-right font-serif select-none font-bold" 
+                style={{ fontFamily: "'Amiri', 'Noto Naskh Arabic', serif", fontWeight: 700 }}
                 dir="rtl"
               >
                 {words.map((word, wIdx) => {
@@ -1563,18 +923,6 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                     );
                   }
 
-<<<<<<< HEAD
-=======
-                  // Speech verification highlight if this ayah was evaluated
-                  const isThisAyahEvaluated = speechVerificationResult && 
-                    speechVerificationResult.ayahNumber === ayah.ayahNumber && 
-                    speechVerificationResult.surahNumber === ayah.surahNumber;
-
-                  const isWordMatched = isThisAyahEvaluated && 
-                    speechVerificationResult.matchedWords && 
-                    Boolean(speechVerificationResult.matchedWords[wIdx]);
-
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   // Real-time word-by-word tracking during reciter playback
                   const isWordTrackingActive = isWordTrackingEnabled && isPlaying && isActive && !isPauseActive && Boolean(audioProgress && audioProgress.duration > 0);
                   let isCurrentRecitedWord = false;
@@ -1593,29 +941,12 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                     <span 
                       key={wIdx} 
                       className={`inline transition-colors duration-100 select-none font-bold ${
-<<<<<<< HEAD
                         isPeeked ? 'text-amber-500 font-bold underline decoration-amber-500' : ''
                       }`}
                       style={{
                         fontWeight: 700,
                         color: isCurrentRecitedWord ? wordHighlightColor : (isPeeked ? '#F59E0B' : pageTextColor),
                         backgroundColor: 'transparent'
-=======
-                        isThisAyahEvaluated
-                          ? isWordMatched
-                            ? 'text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-500/15 px-1 py-0.5 rounded-lg border border-emerald-500/30 inline-block mx-0.5'
-                            : 'text-rose-700 dark:text-rose-300 font-bold bg-rose-500/15 px-1 py-0.5 rounded-lg border border-rose-500/30 underline decoration-rose-500 decoration-wavy inline-block mx-0.5'
-                          : isPeeked 
-                            ? 'text-amber-500 font-bold underline decoration-amber-500' 
-                            : ''
-                      }`}
-                      style={{
-                        fontWeight: 700,
-                        color: isThisAyahEvaluated 
-                          ? undefined 
-                          : (isCurrentRecitedWord ? wordHighlightColor : (isPeeked ? '#F59E0B' : pageTextColor)),
-                        backgroundColor: isThisAyahEvaluated ? undefined : 'transparent'
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                       }}
                     >
                       {word}{' '}
@@ -1625,21 +956,12 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
 
                 {/* Ayah End Symbol */}
                 <span 
-<<<<<<< HEAD
-                  className="inline-flex items-center justify-center w-7 h-7 mx-1.5 rounded-full text-xs font-bold align-middle"
+                  className="ayah-end-badge app-3d-badge border-0 inline-flex items-center justify-center w-7 h-7 mx-1.5 rounded-full text-xs font-bold align-middle"
                   style={
                     isActive
                       ? { backgroundColor: primaryColor, color: btnTextColor, fontFamily: "'Cairo', sans-serif" }
                       : { backgroundColor: s3d.softResultBg, color: s3d.noticeAccent, fontFamily: "'Cairo', sans-serif" }
                   }
-=======
-                  className="inline-flex items-center justify-center w-7 h-7 mx-1.5 rounded-full text-xs font-bold align-middle shadow-inner"
-                  style={{ 
-                    backgroundColor: isActive ? primaryColor : `${primaryColor}25`, 
-                    color: isActive ? btnTextColor : primaryColor,
-                    fontFamily: "'Cairo', sans-serif"
-                  }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                   {ayah.ayahNumber}
                 </span>
@@ -1649,23 +971,23 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         })}
       </main>
 
-<<<<<<< HEAD
-      {/* Floating 3D Bottom Control Dock (Compact -25% vertical height & scaled icons) */}
+      {/* Floating 3D Bottom Control Dock matching Top Bar & active theme top-bar colors */}
       <footer 
         className="shrink-0 px-3 pt-1.5 sm:px-4 sm:pt-1.5 modal-sheet-safe-bottom z-20 overflow-visible"
-        style={{ backgroundColor: s3d.pageBgColor }}
+        style={{ backgroundColor: pageBg }}
       >
-        <div className={`app-page-card border-0 max-w-md mx-auto rounded-[22px] px-3.5 py-2.5 overflow-visible ${s3d.surfaceCardClass}`}>
+        <div
+          className="app-page-card border-0 max-w-xl mx-auto rounded-[22px] px-3.5 py-2.5 overflow-visible"
+          style={unifiedBarStyle}
+        >
           {/* Main Controls Row */}
           <div className="flex items-center justify-between gap-2.5 overflow-visible">
             {/* Word-by-Word Recitation Tracking Toggle */}
             <button
               type="button"
               onClick={() => setIsWordTrackingEnabled(!isWordTrackingEnabled)}
-              className={`app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer text-[11px] font-black ${
-                isWordTrackingEnabled ? '' : s3d.surfaceCardClass
-              }`}
-              style={isWordTrackingEnabled ? { backgroundColor: primaryColor, color: btnTextColor } : { color: s3d.textColor }}
+              className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer text-[11px] font-black"
+              style={isWordTrackingEnabled ? barPrimaryBtnStyle : barSecondaryBtnStyle}
               title={isEn 
                 ? (isWordTrackingEnabled ? 'Word-by-word tracking: Enabled (1)' : 'Word-by-word tracking: Disabled (∞)') 
                 : (isWordTrackingEnabled ? 'تحديد كلمة بكلمة: مفعل (1)' : 'تحديد كلمة بكلمة: معطل (∞)')}
@@ -1675,66 +997,14 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
               ) : (
                 <Infinity size={15} />
               )}
-=======
-      {/* Floating Bottom Control Dock - Theme matched, no dark overlay */}
-      <footer 
-        className="shrink-0 px-3 pt-3 sm:px-4 sm:pt-4 modal-sheet-safe-bottom z-20 transition-colors"
-        style={{ 
-          backgroundColor: footerBg,
-          borderTop: theme.barBorder || (isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.07)')
-        }}
-      >
-        <div className="max-w-md mx-auto space-y-3">
-          {/* Progress Counters & Self Audio Player */}
-          <div className="flex items-center justify-between text-xs px-2 font-bold opacity-80" style={{ color: pageTextColor }}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span>
-                {isEn ? `Range Repeat: ${currentRangeRepeat}/${rangeRepeatTarget}` : `تكرار النطاق: ${currentRangeRepeat} من ${rangeRepeatTarget}`}
-              </span>
-              {currentStep && playbackSteps.length > 0 && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 font-bold">
-                  {isEn ? `Step ${currentStepIndex + 1}/${playbackSteps.length}` : `الخطوة ${currentStepIndex + 1} من ${playbackSteps.length}`}
-                </span>
-              )}
-            </div>
-
-            {selfAudioUrl && (
-              <button
-                onClick={playSelfAudio}
-                className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-300 hover:bg-amber-500/30 text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer border-0"
-              >
-                <Volume2 size={13} />
-                <span>{isPlayingSelf ? (isEn ? 'Playing...' : 'جارٍ السماع...') : (isEn ? 'Listen to You' : 'اسمع صوتك')}</span>
-              </button>
-            )}
-          </div>
-
-          {/* Main Controls Row */}
-          <div className="flex items-center justify-between gap-3">
-            {/* Self Recording Button - Clean Icon Only */}
-            <button
-              onClick={toggleSelfRecording}
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-95 cursor-pointer border ${
-                isRecordingSelf ? 'bg-red-500 text-white animate-pulse ring-4 ring-red-400 border-red-500' : ''
-              }`}
-              style={{
-                backgroundColor: isRecordingSelf ? '#EF4444' : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
-                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                color: isRecordingSelf ? '#FFFFFF' : pageTextColor
-              }}
-              title={isEn ? 'Record & Check Your Recitation' : 'سجل صوتك وقارنه بالقارئ والنص القرآني'}
-            >
-              {isRecordingSelf ? <MicOff size={22} /> : <Mic size={22} />}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             </button>
 
             {/* Prev Ayah */}
             <button
               onClick={handlePrevAyah}
               disabled={currentIndex <= 0}
-<<<<<<< HEAD
-              className={`app-page-card border-0 w-[34px] h-[34px] rounded-xl flex items-center justify-center disabled:opacity-30 transition-all cursor-pointer ${s3d.surfaceCardClass}`}
-              style={{ color: s3d.textColor }}
+              className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-35 transition-all cursor-pointer"
+              style={barSecondaryBtnStyle}
               title={isEn ? 'Previous Ayah' : 'الآية السابقة'}
             >
               <ChevronRight size={17} className={isEn ? 'rotate-180' : ''} />
@@ -1744,44 +1014,18 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
             <button
               onClick={togglePlayPause}
               className="app-page-card border-0 w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer"
-              style={{ backgroundColor: primaryColor, color: btnTextColor }}
+              style={barPrimaryBtnStyle}
               title={isPlaying ? (isEn ? 'Pause' : 'إيقاف مؤقت') : (isEn ? 'Play' : 'تشغيل')}
             >
               {isPlaying ? <Pause size={21} fill="currentColor" /> : <Play size={21} fill="currentColor" className="ml-0.5" />}
-=======
-              className="w-11 h-11 rounded-2xl flex items-center justify-center disabled:opacity-30 active:scale-95 transition-all cursor-pointer border"
-              style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                color: pageTextColor
-              }}
-              title={isEn ? 'Previous Ayah' : 'الآية السابقة'}
-            >
-              <ChevronRight size={22} className={isEn ? 'rotate-180' : ''} />
-            </button>
-
-            {/* Play / Pause Primary Button */}
-            <button
-              onClick={togglePlayPause}
-              className="w-16 h-16 rounded-full flex items-center justify-center shadow-xl active:scale-95 transition-all cursor-pointer border-0"
-              style={{ 
-                backgroundColor: primaryColor, 
-                color: btnTextColor,
-                boxShadow: `0 8px 24px ${primaryColor}40`
-              }}
-              title={isPlaying ? (isEn ? 'Pause' : 'إيقاف مؤقت') : (isEn ? 'Play' : 'تشغيل')}
-            >
-              {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-0.5" />}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             </button>
 
             {/* Next Ayah */}
             <button
               onClick={handleNextAyah}
               disabled={currentIndex >= ayahs.length - 1}
-<<<<<<< HEAD
-              className={`app-page-card border-0 w-[34px] h-[34px] rounded-xl flex items-center justify-center disabled:opacity-30 transition-all cursor-pointer ${s3d.surfaceCardClass}`}
-              style={{ color: s3d.textColor }}
+              className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-35 transition-all cursor-pointer"
+              style={barSecondaryBtnStyle}
               title={isEn ? 'Next Ayah' : 'الآية التالية'}
             >
               <ChevronLeft size={17} className={isEn ? 'rotate-180' : ''} />
@@ -1792,102 +1036,44 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
               <button
                 onClick={() => setShowSpeedMenu(!showSpeedMenu)}
                 className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer text-[10px] font-black"
-                style={{ backgroundColor: primaryColor, color: btnTextColor }}
-=======
-              className="w-11 h-11 rounded-2xl flex items-center justify-center disabled:opacity-30 active:scale-95 transition-all cursor-pointer border"
-              style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                color: pageTextColor
-              }}
-              title={isEn ? 'Next Ayah' : 'الآية التالية'}
-            >
-              <ChevronLeft size={22} className={isEn ? 'rotate-180' : ''} />
-            </button>
-
-            {/* Speed Button with Popover - Numbers Only */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-                className="w-12 h-12 rounded-2xl flex items-center justify-center active:scale-95 transition-all cursor-pointer border text-xs font-black"
-                style={{
-                  backgroundColor: showSpeedMenu 
-                    ? primaryColor 
-                    : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
-                  borderColor: showSpeedMenu 
-                    ? primaryColor 
-                    : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'),
-                  color: showSpeedMenu ? btnTextColor : pageTextColor
-                }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                style={barPrimaryBtnStyle}
                 title={isEn ? 'Playback Speed' : 'سرعة الصوت'}
               >
                 <span>{playbackSpeed}x</span>
               </button>
 
-<<<<<<< HEAD
               {/* Speed Selection Popover Menu */}
-=======
-              {/* Speed Selection Popover Menu - Clean Numbers Only */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
               {showSpeedMenu && (
                 <>
                   <div 
-                    className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]" 
+                    className="fixed inset-0 z-40 bg-black/35" 
                     onClick={() => setShowSpeedMenu(false)}
                   />
                   <div 
-<<<<<<< HEAD
-                    className={`app-page-card border-0 absolute bottom-11 left-0 sm:left-auto sm:right-0 z-50 w-36 rounded-2xl p-2.5 animate-fadeIn space-y-1.5 ${s3d.surfaceCardClass}`}
+                    className={`app-page-card border-0 absolute bottom-11 left-0 sm:left-auto sm:right-0 z-50 w-36 rounded-2xl p-2.5 space-y-1.5 ${s3d.surfaceCardClass}`}
                     dir={isEn ? 'ltr' : 'rtl'}
                   >
                     <div className={`px-2 py-1 text-xs font-black opacity-75 flex items-center justify-between border-b pb-1 ${s3d.dividerClass}`}>
-=======
-                    className="absolute bottom-14 left-0 sm:left-auto sm:right-0 z-50 w-36 rounded-2xl p-2.5 shadow-2xl border animate-fadeIn space-y-1.5"
-                    style={{
-                      backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-                      borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
-                      color: pageTextColor
-                    }}
-                    dir={isEn ? 'ltr' : 'rtl'}
-                  >
-                    <div 
-                      className="px-2 py-1 text-xs font-black opacity-70 flex items-center justify-between border-b pb-1"
-                      style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}
-                    >
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                       <span>{playbackSpeed}x</span>
                       <button 
                         onClick={() => setShowSpeedMenu(false)}
-                        className="p-0.5 border-0 bg-transparent opacity-60 hover:opacity-100 cursor-pointer"
+                        className={`app-inner-3d-box unified-3d-btn border-0 w-6 h-6 rounded-full flex items-center justify-center shrink-0 cursor-pointer ${s3d.isBlackTheme ? 'bg-zinc-800' : 'bg-slate-100 dark:bg-white/10'}`}
                       >
-                        <X size={13} />
+                        <X size={12} />
                       </button>
                     </div>
 
-<<<<<<< HEAD
                     <div className="space-y-1.5 pt-0.5 pb-1 px-0.5 max-h-56 overflow-y-auto hide-scrollbar">
-=======
-                    <div className="space-y-1 pt-0.5 max-h-56 overflow-y-auto hide-scrollbar">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                       {SPEED_OPTIONS.map(speedVal => {
                         const isSelected = playbackSpeed === speedVal;
                         return (
                           <button
                             key={speedVal}
                             onClick={() => handleSelectSpeed(speedVal)}
-<<<<<<< HEAD
                             className={`app-page-card border-0 w-full py-1.5 px-3 rounded-xl font-bold text-xs text-center transition-all cursor-pointer ${
                               isSelected ? '' : s3d.surfaceCardClass
                             }`}
                             style={isSelected ? { backgroundColor: primaryColor, color: btnTextColor } : undefined}
-=======
-                            className="w-full py-1.5 px-3 rounded-xl font-bold text-xs text-center transition-all cursor-pointer border-0 active:scale-95"
-                            style={{
-                              backgroundColor: isSelected ? primaryColor : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
-                              color: isSelected ? btnTextColor : pageTextColor
-                            }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                           >
                             {speedVal}x
                           </button>
@@ -1902,7 +1088,6 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         </div>
       </footer>
 
-<<<<<<< HEAD
       {/* Mask Mode Selection Dropdown Menu (Outside <header> for clean theme styling) */}
       {showMaskMenu && (
         <>
@@ -1911,10 +1096,10 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
             onClick={() => setShowMaskMenu(false)}
           />
           <div
-            className="fixed inset-x-0 z-50 pointer-events-none px-3"
+            className="fixed inset-x-0 z-50 pointer-events-none px-3 sm:px-4"
             style={{ top: `${maskMenuTop}px` }}
           >
-            <div className="max-w-[900px] mx-auto relative">
+            <div className="max-w-xl mx-auto relative">
               <div
                 className={`app-page-card border-0 pointer-events-auto absolute top-0 ${isEn ? 'right-0' : 'left-0'} w-44 rounded-2xl p-2.5 space-y-1.5 ${s3d.surfaceCardClass}`}
                 dir={isEn ? 'ltr' : 'rtl'}
@@ -1927,10 +1112,10 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                   <button
                     type="button"
                     onClick={() => setShowMaskMenu(false)}
-                    className="p-0.5 border-0 bg-transparent opacity-60 hover:opacity-100 cursor-pointer"
+                    className={`app-inner-3d-box unified-3d-btn border-0 w-6 h-6 rounded-full flex items-center justify-center shrink-0 cursor-pointer ${s3d.isBlackTheme ? 'bg-zinc-800' : 'bg-slate-100 dark:bg-white/10'}`}
                     aria-label={isEn ? 'Close' : 'إغلاق'}
                   >
-                    <X size={13} />
+                    <X size={12} />
                   </button>
                 </div>
 
@@ -1967,37 +1152,20 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       )}
 
       {/* Completion Modal */}
-=======
-      {/* Completion Modal: Sound stops completely, options to Replay or Return to Memorization */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       {showCompletionModal && (
         <div 
-          className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn"
+          className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-black/65"
           dir={isEn ? 'ltr' : 'rtl'}
           onClick={() => {}}
         >
           <div 
-<<<<<<< HEAD
             className={`app-page-card border-0 w-full max-w-sm rounded-[2rem] p-6 text-center space-y-4 ${s3d.surfaceCardClass}`}
-=======
-            className="w-full max-w-sm rounded-[2rem] p-6 shadow-2xl text-center space-y-4 border"
-            style={{
-              backgroundColor: theme.modalBg || (isDark ? '#18181B' : '#FFFFFF'),
-              color: pageTextColor,
-              borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
-            }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             onClick={e => e.stopPropagation()}
           >
             {/* Celebration Icon */}
             <div 
-<<<<<<< HEAD
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+              className="app-3d-badge border-0 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
               style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
-=======
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto shadow-md"
-              style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             >
               <Trophy size={36} />
             </div>
@@ -2013,62 +1181,32 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
               </p>
             </div>
 
-<<<<<<< HEAD
             {/* The Two Main Action Buttons */}
             <div className="space-y-2.5 pt-2 pb-1 overflow-visible">
               <button
                 onClick={handleReplaySession}
                 className="app-page-card border-0 w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-=======
-            {/* The Two Main Action Buttons as requested */}
-            <div className="space-y-2.5 pt-2">
-              {/* Option 1: Replay verses from start */}
-              <button
-                onClick={handleReplaySession}
-                className="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border-0"
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 style={{ backgroundColor: primaryColor, color: btnTextColor }}
               >
                 <RotateCcw size={17} />
                 <span>{isEn ? 'Replay Verses (Start Over)' : 'إعادة القراءة (من البداية)'}</span>
               </button>
 
-<<<<<<< HEAD
               <button
                 onClick={handleExit}
                 className={`app-page-card border-0 w-full py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${s3d.surfaceCardClass}`}
-=======
-              {/* Option 2: Return to memorization page */}
-              <button
-                onClick={handleExit}
-                className="w-full py-3 px-4 rounded-xl font-bold text-xs border transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                  borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
-                  color: pageTextColor
-                }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
               >
                 <ArrowRight size={16} className={isEn ? 'rotate-180' : ''} />
                 <span>{isEn ? 'Back to Memorization' : 'العودة لصفحة التحفيظ'}</span>
               </button>
 
-<<<<<<< HEAD
-=======
-              {/* Optional Quick Test Button */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
               <button
                 onClick={() => {
                   setShowCompletionModal(false);
                   setShowQuizModal(true);
                 }}
-<<<<<<< HEAD
-                className="w-full py-2 px-4 rounded-xl font-bold text-[11px] border-0 bg-transparent opacity-80 hover:opacity-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ color: s3d.noticeAccent }}
-=======
-                className="w-full py-2 px-4 rounded-xl font-bold text-[11px] border-0 bg-transparent opacity-75 hover:opacity-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ color: primaryColor }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                className="app-inner-3d-box unified-3d-btn border-0 w-full py-2.5 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
               >
                 <Brain size={14} />
                 <span>{isEn ? 'Test Your Memorization Now' : 'اختبار وتثبيت الحفظ الآن'}</span>
@@ -2078,200 +1216,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         </div>
       )}
 
-<<<<<<< HEAD
 
-=======
-      {/* Speech Verification & Evaluation Modal */}
-      {showSpeechResultModal && speechVerificationResult && (
-        <div 
-          className="fixed inset-0 z-[1600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn"
-          dir={isEn ? 'ltr' : 'rtl'}
-          onClick={() => setShowSpeechResultModal(false)}
-        >
-          <div 
-            className="w-full max-w-md max-h-[88dvh] overflow-y-auto rounded-[2rem] p-5 sm:p-6 shadow-2xl space-y-4 border text-right hide-scrollbar"
-            style={{
-              backgroundColor: theme.modalBg || (isDark ? '#18181B' : '#FFFFFF'),
-              color: pageTextColor,
-              borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}>
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
-                  style={{
-                    backgroundColor: speechVerificationResult.passed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                    color: speechVerificationResult.passed ? '#10B981' : '#EF4444'
-                  }}
-                >
-                  {speechVerificationResult.passed ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm sm:text-base">
-                    {isEn ? 'Recitation Evaluation' : 'نتيجة تقييم ومطابقة القراءة'}
-                  </h3>
-                  <div className="text-[11px] opacity-70">
-                    {activeSurahName} - {isEn ? `Ayah ${speechVerificationResult.ayahNumber}` : `الآية ${speechVerificationResult.ayahNumber}`}
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowSpeechResultModal(false)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center opacity-70 hover:opacity-100 border-0 bg-black/5 dark:bg-white/10 cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Score Ring / Status Banner */}
-            <div 
-              className="p-4 rounded-2xl flex items-center gap-3.5 border shadow-sm"
-              style={{
-                backgroundColor: speechVerificationResult.passed 
-                  ? (isDark ? 'rgba(6, 78, 59, 0.25)' : 'rgba(236, 253, 245, 0.85)')
-                  : (isDark ? 'rgba(127, 29, 29, 0.25)' : 'rgba(254, 242, 242, 0.85)'),
-                borderColor: speechVerificationResult.passed ? '#10B981' : '#EF4444'
-              }}
-            >
-              <div 
-                className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 font-black shadow text-white"
-                style={{ backgroundColor: speechVerificationResult.passed ? '#10B981' : '#EF4444' }}
-              >
-                <span className="text-lg leading-none font-black">{speechVerificationResult.score}%</span>
-                <span className="text-[9px] opacity-90 mt-0.5">{isEn ? 'Match' : 'تطابق'}</span>
-              </div>
-              <div className="space-y-1">
-                <div 
-                  className="font-black text-sm"
-                  style={{ color: speechVerificationResult.passed ? '#10B981' : '#EF4444' }}
-                >
-                  {speechVerificationResult.passed 
-                    ? (isEn ? 'Excellent! Accurate Recitation 🎉' : 'ما شاء الله! قراءة صحيحة ومتقنة 🎉') 
-                    : (isEn ? 'Needs Practice! Check words ⚠️' : 'بحاجة لتكرار وتدريب! ينقص بعض الألفاظ ⚠️')}
-                </div>
-                <div className="text-xs opacity-75 font-medium leading-relaxed">
-                  {speechVerificationResult.passed 
-                    ? (isEn ? 'Your pronunciation matched the Quranic verse text.' : 'تلاوتك مطابقة لألفاظ الآية الكريمة، استمر في ترسيخ الحفظ.')
-                    : (isEn ? 'Review the highlighted words below and listen to the reciter.' : 'راجع الكلمات المحددة باللون الأحمر أدناه ثم اسمع الشيخ وأعد الترديد.')}
-                </div>
-              </div>
-            </div>
-
-            {/* Word-by-Word Analysis */}
-            <div className="space-y-1.5">
-              <div className="text-xs font-bold opacity-75 flex items-center justify-between">
-                <span>{isEn ? 'Target Verse (Words match):' : 'نص الآية الكريمة (فحص الكلمات):'}</span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                  {isEn ? 'Green = Correct • Red = Missed' : 'الأخضر = صحيح • الأحمر = يحتاج تثبيت'}
-                </span>
-              </div>
-              <div 
-                className="p-3.5 rounded-2xl border text-lg sm:text-xl font-serif leading-loose"
-                style={{ 
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFFDF5',
-                  borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                  fontFamily: "'Amiri', 'Amiri Quran', serif"
-                }}
-              >
-                {speechVerificationResult.ayahWords.map((word, wIdx) => {
-                  const isMatched = speechVerificationResult.matchedWords[wIdx];
-                  return (
-                    <span 
-                      key={wIdx}
-                      className={`inline-block mx-1 px-2 py-0.5 rounded-lg border text-sm sm:text-base font-bold ${
-                        isMatched 
-                          ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30' 
-                          : 'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30 underline decoration-rose-500'
-                      }`}
-                    >
-                      {word}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Spoken Text Transcribed */}
-            <div className="space-y-1">
-              <div className="text-xs font-bold opacity-75">
-                {isEn ? 'What was captured from your voice:' : 'ما التقطه المايكروفون من قراءتك:'}
-              </div>
-              <div 
-                className="p-3 rounded-xl border text-xs sm:text-sm font-medium leading-relaxed"
-                style={{ 
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                  borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)'
-                }}
-              >
-                «{speechVerificationResult.spokenText}»
-              </div>
-            </div>
-
-            {/* Dual Audio Listeners */}
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {/* Listen to User Recording */}
-              <button
-                onClick={playSelfAudio}
-                disabled={!selfAudioUrl}
-                className="p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 disabled:opacity-40"
-                style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-                  borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
-                  color: pageTextColor
-                }}
-              >
-                <Volume2 size={15} />
-                <span>{isPlayingSelf ? (isEn ? 'Playing...' : 'جارٍ السماع...') : (isEn ? 'Your Voice' : 'اسمع صوتك')}</span>
-              </button>
-
-              {/* Listen to Reciter */}
-              <button
-                onClick={() => playReciterComparison(speechVerificationResult.surahNumber, speechVerificationResult.ayahNumber)}
-                className="p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
-                style={{
-                  backgroundColor: `${primaryColor}15`,
-                  borderColor: `${primaryColor}30`,
-                  color: primaryColor
-                }}
-              >
-                <Volume2 size={15} />
-                <span>{isPlayingReciterComparison ? (isEn ? 'Playing...' : 'جارٍ السماع...') : (isEn ? 'Reciter' : 'اسمع الشيخ')}</span>
-              </button>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="space-y-2 pt-2 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}>
-              {/* Retry Recording Button */}
-              <button
-                onClick={handleRetryRecording}
-                className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border-0"
-                style={{ backgroundColor: primaryColor, color: btnTextColor }}
-              >
-                <Mic size={16} />
-                <span>{isEn ? 'Recite & Test Again' : 'أعد الترديد والتسجيل الصوتي 🎤'}</span>
-              </button>
-
-              {/* Continue Session Button */}
-              <button
-                onClick={() => setShowSpeechResultModal(false)}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs border transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                  borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                  color: pageTextColor
-                }}
-              >
-                <Play size={14} fill="currentColor" />
-                <span>{isEn ? 'Continue Memorization' : 'متابعة جلسة الحفظ'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
       {/* Quiz Modal */}
       {showQuizModal && (

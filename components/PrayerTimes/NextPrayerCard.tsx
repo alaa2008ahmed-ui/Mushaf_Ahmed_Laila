@@ -96,20 +96,23 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                 <div className={`w-[1.5px] h-8 sm:h-9 ${dividerClass} shrink-0 self-center`}></div>
 
                 {/* 2. أوقات أثلاث الليل: قابلة للضغط للتفعيل والتعطيل مع خط عرضي عند التعطيل بدون أيقونات جرس */}
-                <div id="night-times-container" className="flex items-center justify-evenly flex-1 min-w-0">
+                <div id="night-times-container" className="flex items-center justify-evenly flex-1 min-w-0 gap-1 sm:gap-1.5 overflow-visible py-0.5">
                     {/* أول الليل */}
                     <button
                         type="button"
                         onClick={() => onToggleNightNotification?.('firstThird')}
-                        className="flex flex-col items-center justify-between text-center shrink-0 min-w-0 px-2 sm:px-3 py-0.5 rounded-xl transition-all active:scale-95 cursor-pointer select-none group"
+                        className={`app-inner-3d-box unified-3d-btn border-0 flex flex-col items-center justify-between text-center flex-1 min-w-0 px-1.5 sm:px-2.5 py-1.5 rounded-xl cursor-pointer select-none group ${
+                            isFirstThirdEnabled ? '' : 'opacity-65'
+                        }`}
+                        style={{ backgroundColor: isBlackTheme ? '#27272a' : '#f8fafc' }}
                         title={isFirstThirdEnabled 
                             ? (isAr ? 'تنبيه أول الليل مفعّل (انقر للتعطيل)' : 'First Third alert active (tap to mute)') 
                             : (isAr ? 'تنبيه أول الليل معطّل (انقر للتفعيل)' : 'First Third alert muted (tap to enable)')}
                         aria-label={tPrayer('firstThird', language)}
                     >
-                        <div className="h-5 flex items-center justify-center text-center w-full">
+                        <div className="h-4 flex items-center justify-center text-center w-full">
                             <span 
-                                className={`text-[10px] sm:text-[11.5px] font-extrabold whitespace-nowrap leading-none text-center transition-all ${
+                                className={`text-[9.5px] sm:text-[11px] font-extrabold whitespace-nowrap leading-none text-center transition-all ${
                                     isFirstThirdEnabled 
                                         ? '' 
                                         : 'line-through decoration-red-500 decoration-1.5 sm:decoration-2'
@@ -121,7 +124,7 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                         </div>
                         <div className="flex items-center justify-center text-center w-full mt-1">
                             <span 
-                                className={`text-[10px] sm:text-[11.5px] font-bold font-mono whitespace-nowrap leading-none tabular-nums text-center transition-all ${
+                                className={`text-[9.5px] sm:text-[11px] font-bold font-mono whitespace-nowrap leading-none tabular-nums text-center transition-all ${
                                     isFirstThirdEnabled 
                                         ? '' 
                                         : 'line-through decoration-red-500 decoration-1.5 sm:decoration-2'
@@ -134,21 +137,22 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                         </div>
                     </button>
 
-                    <div className={`w-[1.5px] h-8 sm:h-9 ${dividerClass} shrink-0 self-center`}></div>
-
                     {/* منتصف الليل */}
                     <button
                         type="button"
                         onClick={() => onToggleNightNotification?.('midnight')}
-                        className="flex flex-col items-center justify-between text-center shrink-0 min-w-0 px-2 sm:px-3 py-0.5 rounded-xl transition-all active:scale-95 cursor-pointer select-none group"
+                        className={`app-inner-3d-box unified-3d-btn border-0 flex flex-col items-center justify-between text-center flex-1 min-w-0 px-1.5 sm:px-2.5 py-1.5 rounded-xl cursor-pointer select-none group ${
+                            isMidnightEnabled ? '' : 'opacity-65'
+                        }`}
+                        style={{ backgroundColor: isBlackTheme ? '#27272a' : '#f8fafc' }}
                         title={isMidnightEnabled 
                             ? (isAr ? 'تنبيه منتصف الليل مفعّل (انقر للتعطيل)' : 'Midnight alert active (tap to mute)') 
                             : (isAr ? 'تنبيه منتصف الليل معطّل (انقر للتفعيل)' : 'Midnight alert muted (tap to enable)')}
                         aria-label={tPrayer('midnight', language)}
                     >
-                        <div className="h-5 flex items-center justify-center text-center w-full">
+                        <div className="h-4 flex items-center justify-center text-center w-full">
                             <span 
-                                className={`text-[10px] sm:text-[11.5px] font-extrabold whitespace-nowrap leading-none text-center transition-all ${
+                                className={`text-[9.5px] sm:text-[11px] font-extrabold whitespace-nowrap leading-none text-center transition-all ${
                                     isMidnightEnabled 
                                         ? '' 
                                         : 'line-through decoration-red-500 decoration-1.5 sm:decoration-2'
@@ -160,7 +164,7 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                         </div>
                         <div className="flex items-center justify-center text-center w-full mt-1">
                             <span 
-                                className={`text-[10px] sm:text-[11.5px] font-bold font-mono whitespace-nowrap leading-none tabular-nums text-center transition-all ${
+                                className={`text-[9.5px] sm:text-[11px] font-bold font-mono whitespace-nowrap leading-none tabular-nums text-center transition-all ${
                                     isMidnightEnabled 
                                         ? '' 
                                         : 'line-through decoration-red-500 decoration-1.5 sm:decoration-2'
@@ -173,21 +177,22 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                         </div>
                     </button>
 
-                    <div className={`w-[1.5px] h-8 sm:h-9 ${dividerClass} shrink-0 self-center`}></div>
-
                     {/* الثلث الأخير */}
                     <button
                         type="button"
                         onClick={() => onToggleNightNotification?.('lastThird')}
-                        className="flex flex-col items-center justify-between text-center shrink-0 min-w-0 px-2 sm:px-3 py-0.5 rounded-xl transition-all active:scale-95 cursor-pointer select-none group"
+                        className={`app-inner-3d-box unified-3d-btn border-0 flex flex-col items-center justify-between text-center flex-1 min-w-0 px-1.5 sm:px-2.5 py-1.5 rounded-xl cursor-pointer select-none group ${
+                            isLastThirdEnabled ? '' : 'opacity-65'
+                        }`}
+                        style={{ backgroundColor: isBlackTheme ? '#27272a' : '#f8fafc' }}
                         title={isLastThirdEnabled 
                             ? (isAr ? 'تنبيه الثلث الأخير مفعّل (انقر للتعطيل)' : 'Last Third alert active (tap to mute)') 
                             : (isAr ? 'تنبيه الثلث الأخير معطّل (انقر للتفعيل)' : 'Last Third alert muted (tap to enable)')}
                         aria-label={tPrayer('lastThird', language)}
                     >
-                        <div className="h-5 flex items-center justify-center text-center w-full">
+                        <div className="h-4 flex items-center justify-center text-center w-full">
                             <span 
-                                className={`text-[10px] sm:text-[11.5px] font-extrabold whitespace-nowrap leading-none text-center transition-all ${
+                                className={`text-[9.5px] sm:text-[11px] font-extrabold whitespace-nowrap leading-none text-center transition-all ${
                                     isLastThirdEnabled 
                                         ? '' 
                                         : 'line-through decoration-red-500 decoration-1.5 sm:decoration-2'
@@ -199,7 +204,7 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                         </div>
                         <div className="flex items-center justify-center text-center w-full mt-1">
                             <span 
-                                className={`text-[10px] sm:text-[11.5px] font-bold font-mono whitespace-nowrap leading-none tabular-nums text-center transition-all ${
+                                className={`text-[9.5px] sm:text-[11px] font-bold font-mono whitespace-nowrap leading-none tabular-nums text-center transition-all ${
                                     isLastThirdEnabled 
                                         ? '' 
                                         : 'line-through decoration-red-500 decoration-1.5 sm:decoration-2'

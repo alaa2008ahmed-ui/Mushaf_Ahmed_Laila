@@ -154,7 +154,7 @@ export function resolveContextualReminder(
   schedule: PrayerScheduleSnapshot,
   isEn: boolean,
   formatNumber: (n: number | string) => string,
-  fromSource: 'modern_home' | 'classic_home' = 'modern_home'
+  fromSource: 'modern_home' = 'modern_home'
 ): ContextualReminder | null {
   const {
     fajrToday,

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle,
   MessageSquareWarning,
@@ -227,12 +226,8 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
   };
 
   return (
-    <motion.div
+    <div
       id="approved-sources-modal"
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 18 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
       className="fixed inset-0 z-[9999999] flex flex-col font-cairo select-none overflow-hidden"
       style={{ backgroundColor: pageBgColor }}
       dir={isEn ? 'ltr' : 'rtl'}
@@ -251,7 +246,7 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                 type="button"
                 id="btn-approved-sources-back"
                 onClick={handleHeaderBack}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
                 title={
                   selectedPage
                     ? t('approved_sources.back_to_pages')
@@ -274,7 +269,7 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
             {/* Centered Title */}
             <div className="text-center px-11 min-w-0 w-full">
               <h1
-                className="app-top-bar__title font-kufi whitespace-nowrap leading-tight"
+                className="app-top-bar__title font-cairo whitespace-nowrap leading-tight"
                 style={{
                   fontSize: selectedPage
                     ? 'clamp(0.84rem, 3.6vw, 1.15rem)'
@@ -294,7 +289,7 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
               <button
                 type="button"
                 onClick={handleHeaderHome}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
                 title={isEn ? 'Home' : 'الصفحة الرئيسية'}
                 aria-label={isEn ? 'Home' : 'الصفحة الرئيسية'}
               >
@@ -313,12 +308,17 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
         {!selectedPage ? (
           /* ================= LEVEL 1: APPLICATION PAGES DIRECTORY ================= */
           <div className="space-y-4">
-            {/* 1. Search Input (kept outside white-3d-container-card for clean Night Mode contrast) */}
+            {/* 1. Search Input (3D tactile container with crisp Night Mode contrast) */}
             <div
-                className="relative flex items-center rounded-2xl px-3.5 min-h-[46px]"
+                className="relative flex items-center rounded-2xl px-3.5 min-h-[48px]"
                 style={{
-                  backgroundColor: surfaceBgColor,
+                  background: isBlackTheme
+                    ? 'linear-gradient(180deg, #21212b 0%, #16161d 100%)'
+                    : `linear-gradient(180deg, #ffffff 0%, ${surfaceBgColor} 100%)`,
                   border: `1.5px solid ${subtleBorderColor}`,
+                  boxShadow: isBlackTheme
+                    ? '0 4px 0 #07070b, inset 0 2px 4px rgba(0, 0, 0, 0.45)'
+                    : '0 4px 0 rgba(15, 23, 42, 0.1), inset 0 1.5px 2px rgba(255, 255, 255, 0.95)',
                 }}
               >
                 <Search
@@ -339,8 +339,12 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                     type="button"
                     onClick={() => setSearchQuery('')}
                     aria-label={isEn ? 'Clear search' : 'مسح البحث'}
-                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
-                    style={{ color: mutedTextColor }}
+                    className="unified-3d-btn w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer"
+                    style={{
+                      background: isBlackTheme ? '#2b2b36' : '#f1f5f9',
+                      color: mutedTextColor,
+                      boxShadow: isBlackTheme ? '0 2px 0 #07070b' : '0 2px 0 rgba(15,23,42,0.12)'
+                    }}
                   >
                     <X size={15} />
                   </button>
@@ -352,9 +356,14 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
               <div
                 className="p-6 rounded-3xl text-center font-bold text-sm"
                 style={{
-                  backgroundColor: surfaceBgColor,
+                  background: isBlackTheme
+                    ? 'linear-gradient(180deg, #22222c 0%, #17171f 100%)'
+                    : `linear-gradient(180deg, #ffffff 0%, ${surfaceBgColor} 100%)`,
                   color: mutedTextColor,
                   border: `1px solid ${subtleBorderColor}`,
+                  boxShadow: isBlackTheme
+                    ? '0 5px 0 #07070b, 0 10px 20px rgba(0,0,0,0.55), inset 0 1.5px 1px rgba(255,255,255,0.14)'
+                    : '0 5px 0 rgba(15,23,42,0.1), 0 10px 20px rgba(15,23,42,0.06), inset 0 2px 1.5px rgba(255,255,255,0.95)',
                 }}
               >
                 {t('approved_sources.no_results')}
@@ -381,19 +390,25 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
             <div
               className="p-4 sm:p-5 rounded-3xl space-y-3.5"
               style={{
-                backgroundColor: surfaceBgColor,
-                border: `1.5px solid ${subtleBorderColor}`,
+                background: isBlackTheme
+                  ? 'linear-gradient(168deg, #22222c 0%, #16161d 100%)'
+                  : `linear-gradient(180deg, #ffffff 0%, ${surfaceBgColor} 100%)`,
+                border: `1px solid ${subtleBorderColor}`,
                 boxShadow: isBlackTheme
-                  ? '0 8px 24px rgba(0, 0, 0, 0.65)'
-                  : '0 6px 18px rgba(15, 23, 42, 0.06)',
+                  ? '0 5px 0 #07070b, 0 12px 24px rgba(0, 0, 0, 0.65), inset 0 1.5px 1px rgba(255, 255, 255, 0.14)'
+                  : '0 5px 0 rgba(15, 23, 42, 0.12), 0 12px 24px rgba(15, 23, 42, 0.08), inset 0 2px 1.5px rgba(255, 255, 255, 0.96)',
               }}
             >
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{
-                    backgroundColor: `${themeAccentColor}1F`,
+                    background: `linear-gradient(180deg, ${themeAccentColor}28 0%, ${themeAccentColor}16 100%)`,
                     color: themeAccentColor,
+                    border: `1px solid ${themeAccentColor}35`,
+                    boxShadow: isBlackTheme
+                      ? '0 3px 0 #07070b, inset 0 1px 1px rgba(255,255,255,0.16)'
+                      : `0 3px 0 ${themeAccentColor}26, inset 0 1px 1px rgba(255,255,255,0.85)`,
                   }}
                 >
                   <AlertTriangle size={20} />
@@ -417,10 +432,14 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                 type="button"
                 id="btn-report-source-correction"
                 onClick={() => openReportFor('general')}
-                className="w-full min-h-[48px] px-4 py-3 rounded-2xl font-black text-sm sm:text-[15px] flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] cursor-pointer"
+                className="unified-3d-btn w-full min-h-[48px] px-4 py-3 rounded-2xl font-black text-sm sm:text-[15px] flex items-center justify-center gap-2.5 cursor-pointer"
                 style={{
-                  backgroundColor: themeAccentColor,
+                  background: `linear-gradient(180deg, ${themeAccentColor} 0%, ${themeAccentDeep} 100%)`,
                   color: isBlackTheme ? '#000000' : '#FFFFFF',
+                  border: '1px solid rgba(255,255,255,0.28)',
+                  boxShadow: isBlackTheme
+                    ? '0 4.5px 0 #78350f, 0 8px 18px rgba(245, 158, 11, 0.25), inset 0 1.5px 1px rgba(255,255,255,0.45)'
+                    : '0 4.5px 0 rgba(0, 0, 0, 0.25), 0 8px 18px rgba(0, 0, 0, 0.16), inset 0 1.5px 1px rgba(255,255,255,0.4)',
                 }}
               >
                 <MessageSquareWarning size={19} className="shrink-0" />
@@ -483,19 +502,25 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
               <div
                 className="p-4 sm:p-5 rounded-3xl space-y-3.5"
                 style={{
-                  backgroundColor: surfaceBgColor,
-                  border: `1.5px solid ${subtleBorderColor}`,
+                  background: isBlackTheme
+                    ? 'linear-gradient(168deg, #22222c 0%, #16161d 100%)'
+                    : `linear-gradient(180deg, #ffffff 0%, ${surfaceBgColor} 100%)`,
+                  border: `1px solid ${subtleBorderColor}`,
                   boxShadow: isBlackTheme
-                    ? '0 8px 24px rgba(0, 0, 0, 0.65)'
-                    : '0 6px 18px rgba(15, 23, 42, 0.06)',
+                    ? '0 5px 0 #07070b, 0 12px 24px rgba(0, 0, 0, 0.65), inset 0 1.5px 1px rgba(255, 255, 255, 0.14)'
+                    : '0 5px 0 rgba(15, 23, 42, 0.12), 0 12px 24px rgba(15, 23, 42, 0.08), inset 0 2px 1.5px rgba(255, 255, 255, 0.96)',
                 }}
               >
                 <div className="flex items-center gap-2.5">
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                     style={{
-                      backgroundColor: `${themeAccentColor}1F`,
+                      background: `linear-gradient(180deg, ${themeAccentColor}28 0%, ${themeAccentColor}16 100%)`,
                       color: themeAccentColor,
+                      border: `1px solid ${themeAccentColor}35`,
+                      boxShadow: isBlackTheme
+                        ? '0 3px 0 #07070b, inset 0 1px 1px rgba(255,255,255,0.16)'
+                        : `0 3px 0 ${themeAccentColor}26, inset 0 1px 1px rgba(255,255,255,0.85)`,
                     }}
                   >
                     <AlertTriangle size={20} />
@@ -521,26 +546,23 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
       </div>
 
       {/* Report Note or Linguistic Correction Sheet */}
-      <AnimatePresence>
         {isReportOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[99999999] bg-black/65 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+          <div
+            className="fixed inset-0 z-[99999999] bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={() => setIsReportOpen(false)}
           >
-            <motion.div
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              transition={{ duration: 0.18 }}
+            <div
               dir={isEn ? 'ltr' : 'rtl'}
-              className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl"
+              className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4"
               style={{
-                backgroundColor: isBlackTheme ? '#18181f' : '#FFFFFF',
+                background: isBlackTheme
+                  ? 'linear-gradient(168deg, #242430 0%, #16161d 100%)'
+                  : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
                 color: isBlackTheme ? '#FFFFFF' : '#0f172a',
-                border: `1.5px solid ${subtleBorderColor}`,
+                border: `1px solid ${subtleBorderColor}`,
+                boxShadow: isBlackTheme
+                  ? '0 8px 0 #050508, 0 24px 48px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.14)'
+                  : '0 8px 0 rgba(15, 23, 42, 0.15), 0 24px 48px rgba(15, 23, 42, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.98)',
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -560,9 +582,19 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                   type="button"
                   onClick={() => setIsReportOpen(false)}
                   aria-label={isEn ? 'Close' : 'إغلاق'}
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all hover:bg-black/10 dark:hover:bg-white/10"
+                  className="unified-3d-btn w-9 h-9 rounded-full flex items-center justify-center shrink-0 cursor-pointer"
+                  style={{
+                    background: isBlackTheme
+                      ? 'linear-gradient(180deg, #323240 0%, #22222c 100%)'
+                      : 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
+                    color: isBlackTheme ? '#ffffff' : '#334155',
+                    border: isBlackTheme ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(148,163,184,0.35)',
+                    boxShadow: isBlackTheme
+                      ? '0 3px 0 #07070b, inset 0 1px 1px rgba(255,255,255,0.16)'
+                      : '0 3px 0 rgba(100,116,139,0.22), inset 0 1.5px 1px rgba(255,255,255,0.95)'
+                  }}
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
 
@@ -577,11 +609,14 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                   id="report-section-select"
                   value={reportSection}
                   onChange={(e) => setReportSection(e.target.value)}
-                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-sm font-bold outline-none"
+                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-2xl text-sm font-bold outline-none"
                   style={{
-                    backgroundColor: isBlackTheme ? '#272732' : '#f8fafc',
+                    backgroundColor: isBlackTheme ? '#1b1b24' : '#f1f5f9',
                     color: isBlackTheme ? '#FFFFFF' : '#0f172a',
-                    border: `1px solid ${subtleBorderColor}`,
+                    border: `1.5px solid ${subtleBorderColor}`,
+                    boxShadow: isBlackTheme
+                      ? 'inset 0 2px 5px rgba(0, 0, 0, 0.5)'
+                      : 'inset 0 2px 4px rgba(15, 23, 42, 0.06), 0 1px 0 rgba(255,255,255,0.9)',
                   }}
                 >
                   <option value="general">
@@ -608,24 +643,32 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                   value={reportText}
                   onChange={(e) => setReportText(e.target.value)}
                   placeholder={t('approved_sources.report_placeholder')}
-                  className="w-full p-3.5 rounded-xl text-sm font-semibold outline-none resize-none"
+                  className="w-full p-3.5 rounded-2xl text-sm font-semibold outline-none resize-none"
                   style={{
-                    backgroundColor: isBlackTheme ? '#272732' : '#f8fafc',
+                    backgroundColor: isBlackTheme ? '#1b1b24' : '#f1f5f9',
                     color: isBlackTheme ? '#FFFFFF' : '#0f172a',
-                    border: `1px solid ${subtleBorderColor}`,
+                    border: `1.5px solid ${subtleBorderColor}`,
+                    boxShadow: isBlackTheme
+                      ? 'inset 0 2px 5px rgba(0, 0, 0, 0.5)'
+                      : 'inset 0 2px 4px rgba(15, 23, 42, 0.06), 0 1px 0 rgba(255,255,255,0.9)',
                   }}
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <button
                   type="button"
                   onClick={handleCopyReport}
-                  className="min-h-[48px] px-4 rounded-2xl text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                  className="unified-3d-btn min-h-[48px] px-4 rounded-2xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer"
                   style={{
-                    backgroundColor: isBlackTheme ? '#272732' : '#f1f5f9',
+                    background: isBlackTheme
+                      ? 'linear-gradient(180deg, #2b2b37 0%, #1e1e27 100%)'
+                      : 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
                     color: isBlackTheme ? '#FFFFFF' : '#0f172a',
                     border: `1px solid ${subtleBorderColor}`,
+                    boxShadow: isBlackTheme
+                      ? '0 4px 0 #07070b, inset 0 1.5px 1px rgba(255,255,255,0.14)'
+                      : '0 4px 0 rgba(100,116,139,0.22), inset 0 1.5px 1px rgba(255,255,255,0.95)',
                   }}
                 >
                   {copiedFeedback ? <CheckCircle2 size={18} /> : <Copy size={18} />}
@@ -638,10 +681,14 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsReportOpen(false)}
-                    className="min-h-[48px] px-4 rounded-2xl text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-95 no-underline"
+                    className="unified-3d-btn min-h-[48px] px-4 rounded-2xl text-sm font-black flex items-center justify-center gap-2 no-underline"
                     style={{
-                      backgroundColor: themeAccentColor,
+                      background: `linear-gradient(180deg, ${themeAccentColor} 0%, ${themeAccentDeep} 100%)`,
                       color: isBlackTheme ? '#000000' : '#FFFFFF',
+                      border: '1px solid rgba(255,255,255,0.28)',
+                      boxShadow: isBlackTheme
+                        ? '0 4.5px 0 #78350f, inset 0 1.5px 1px rgba(255,255,255,0.45)'
+                        : '0 4.5px 0 rgba(0,0,0,0.25), inset 0 1.5px 1px rgba(255,255,255,0.4)',
                     }}
                   >
                     <Send size={17} />
@@ -653,10 +700,14 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                     onClick={() =>
                       showGlobalAppToast(t('approved_sources.report_empty_error'))
                     }
-                    className="min-h-[48px] px-4 rounded-2xl text-sm font-black flex items-center justify-center gap-2 opacity-60 cursor-pointer"
+                    className="unified-3d-btn min-h-[48px] px-4 rounded-2xl text-sm font-black flex items-center justify-center gap-2 opacity-75 cursor-pointer"
                     style={{
-                      backgroundColor: themeAccentColor,
+                      background: `linear-gradient(180deg, ${themeAccentColor} 0%, ${themeAccentDeep} 100%)`,
                       color: isBlackTheme ? '#000000' : '#FFFFFF',
+                      border: '1px solid rgba(255,255,255,0.28)',
+                      boxShadow: isBlackTheme
+                        ? '0 4.5px 0 #78350f, inset 0 1.5px 1px rgba(255,255,255,0.45)'
+                        : '0 4.5px 0 rgba(0,0,0,0.25), inset 0 1.5px 1px rgba(255,255,255,0.4)',
                     }}
                   >
                     <Send size={17} />
@@ -664,11 +715,10 @@ export const ApprovedSourcesModal: React.FC<ApprovedSourcesModalProps> = ({
                   </button>
                 )}
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
-    </motion.div>
+    </div>
   );
 };
 

@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import SurahHeader from './SurahHeader';
 import { useLanguage } from '../../context/LanguageContext';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface SurahDesignPickerModalProps {
     isOpen: boolean;
@@ -58,54 +59,61 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
 
     if (!isOpen) return null;
 
+    const p = resolveQuranModalPalette(currentTheme);
+
     return (
         <div 
-            className="fixed inset-0 z-[1300] bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn"
+            className={`fixed inset-0 z-[1300] bg-black/60 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-3 sm:p-4'}`}
             onClick={onClose}
         >
             <div 
                 dir={dir}
-                className={`modal-skinned w-[86%] max-w-[320px] ${isLandscape ? 'max-h-[72dvh]' : 'max-h-[58dvh]'} rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`}
+                className={`modal-skinned ${isLandscape ? 'w-[54%] max-w-[340px] max-h-[84%]' : 'w-[88%] max-w-[330px] max-h-[68dvh]'} rounded-3xl flex flex-col overflow-hidden border-0 ${p.isDark ? 'quran-3d-dark' : ''}`}
                 style={{ 
-                    backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff',
-                    color: currentTheme?.modalText || currentTheme?.text || '#1f2937',
+                    fontFamily: p.fontFamily,
+                    backgroundColor: p.modalBg,
+                    color: p.modalText,
                     border: 'none',
                     outline: 'none'
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Modal Header */}
-                <div 
-                    className="p-2.5 px-3.5 flex items-center justify-between shrink-0 border-b border-black/5 dark:border-white/5"
-                >
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-xs sm:text-sm font-bold" style={{ color: currentTheme?.text || '#1f2937' }}>
-                            {isEn ? "Surah Header Design" : "تصميم رأس السورة"}
-                        </span>
-                        <span 
-                            className="text-[10px] px-2 py-0.5 rounded-full font-bold quran-raised-btn"
-                            style={{ 
-                                color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981')
-                            }}
-                        >
-                            {isEn ? `${designs.length} designs` : `${designs.length} تصميماً`}
-                        </span>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center transition-all quran-raised-btn"
-                        style={{ color: currentTheme?.text || '#1f2937' }}
-                        title={isEn ? "Close" : "إغلاق"}
+                {/* Canonical Raised Header */}
+                <div className={isLandscape ? "p-2.5 pb-1.5 shrink-0" : "p-3.5 pb-2 shrink-0"}>
+                    <div 
+                        className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between quran-raised-card border-0`}
+                        style={{ backgroundColor: p.headerBg }}
                     >
-                        <X size={15} className="quran-3d-icon" />
-                    </button>
+                        <div className="flex items-center gap-2">
+                            <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide`} style={{ color: p.headerAccent }}>
+                                {isEn ? "Surah Header Design" : "تصميم رأس السورة"}
+                            </span>
+                            <span 
+                                className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                                style={{ 
+                                    backgroundColor: p.isDark ? 'rgba(255,255,255,0.14)' : `${p.headerAccent}22`,
+                                    color: p.headerAccent
+                                }}
+                            >
+                                {isEn ? `${designs.length}` : `${designs.length}`}
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} rounded-full flex items-center justify-center quran-raised-btn border-0 cursor-pointer`}
+                            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+                            aria-label={isEn ? "Close" : "إغلاق"}
+                        >
+                            <X size={isLandscape ? 14 : 16} />
+                        </button>
+                    </div>
                 </div>
 
-                {/* Modal Body: Scrollable list of designs (without any name or model text) */}
+                {/* Modal Body: Scrollable list of designs */}
                 <div 
                     ref={scrollContainerRef}
-                    className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2.5 scroll-smooth scrollbar-hide"
+                    className={`flex-1 min-h-0 overflow-y-auto ${isLandscape ? 'p-2.5 pt-1.5 pb-3 space-y-2' : 'p-3.5 pt-2 pb-4 space-y-3'} scroll-smooth scrollbar-hide`}
                 >
                     {designs.map((d) => {
                         const isSelected = currentDesign === d;
@@ -118,20 +126,18 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                                     onSelectDesign(d);
                                     onClose();
                                 }}
-                                className={`relative w-full rounded-2xl transition-all duration-200 p-1.5 text-right block overflow-hidden cursor-pointer ${
+                                className={`relative w-full ${isLandscape ? 'rounded-xl p-1.5' : 'rounded-2xl p-2'} text-right block overflow-hidden cursor-pointer border-0 ${
                                     isSelected 
-                                        ? 'quran-raised-btn-selected shadow-lg scale-[1.01]' 
-                                        : 'quran-raised-card hover:scale-[1.01]'
+                                        ? 'quran-raised-card-selected scale-[1.01]' 
+                                        : 'quran-raised-btn'
                                 }`}
                                 style={{
-                                    border: isSelected ? '2px solid var(--qr-accent, #10b981)' : '2px solid transparent',
+                                    border: 'none',
                                     outline: 'none',
-                                    backgroundColor: isSelected 
-                                        ? 'color-mix(in srgb, var(--qr-accent, #10b981) 18%, transparent)' 
-                                        : (currentTheme?.cardBg || 'rgba(255,255,255,0.03)')
+                                    backgroundColor: isSelected ? p.headerBg : p.cardBg
                                 }}
                             >
-                                {/* Clean header preview with NO model name / number text */}
+                                {/* Clean header preview */}
                                 <div className="pointer-events-none w-full">
                                     <SurahHeader
                                         surahNumber={1}

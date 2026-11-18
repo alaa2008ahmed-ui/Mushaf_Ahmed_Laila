@@ -4,11 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { usePrayerTimes, getCalculationParams } from '../context/PrayerTimesContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { showGlobalAppToast } from '../utils/appNotificationSettings';
-import ThemePageLock from '../components/ThemePageLock';
-<<<<<<< HEAD
 import { getCalculator3DStyles } from '../utils/calculator3DStyles';
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { 
     CALCULATION_METHOD_OPTIONS, 
     ASR_MADHAB_OPTIONS, 
@@ -58,10 +54,7 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
     const headerTextColor = isGoldenTheme ? '#000000' : '#FFFFFF';
 
     const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'أبيض وأسود';
-<<<<<<< HEAD
     const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     const themeStyles = (() => {
         if (isBlackTheme) {
@@ -169,11 +162,7 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
         <div 
             dir={dir}
             className="h-[100dvh] w-full flex flex-col themed-bg overflow-hidden"
-<<<<<<< HEAD
             style={{ backgroundColor: s3d.pageBgColor }}
-=======
-            style={{ backgroundColor: themeStyles.pageBg }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         >
             {/* Top Bar matching Prayer Times and App Top Bar */}
             <header className="app-top-bar app-top-bar--prayer z-20 shrink-0" dir={dir}>
@@ -192,23 +181,18 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                             </button>
                         </div>
 
-<<<<<<< HEAD
                         {/* Center: Title only */}
-=======
-                        {/* Center: Title only (subtitle removed, title shortened to fit fully) */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         <div className="text-center px-2 min-w-0 flex-1 flex items-center justify-center">
                             <h1 
-                                className={`app-top-bar__title ${isEn ? 'font-sans font-bold' : 'font-kufi font-bold'} text-base sm:text-lg whitespace-nowrap overflow-hidden text-ellipsis max-w-full leading-tight`}
+                                className={`app-top-bar__title ${isEn ? 'font-sans font-bold' : 'font-cairo font-bold'} text-base sm:text-lg whitespace-nowrap overflow-hidden text-ellipsis max-w-full leading-tight`}
                                 style={{ color: headerTextColor }}
                             >
                                 {isEn ? 'Calculation & Fiqh' : 'إعدادات الحساب والمذاهب'}
                             </h1>
                         </div>
 
-                        {/* Trailing: ThemeLock & Home Button */}
+                        {/* Trailing: Home Button */}
                         <div className="flex items-center gap-1 shrink-0 z-10" style={{ color: headerTextColor }}>
-                            <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
                                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -225,7 +209,6 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
 
             {/* Fixed 3 Segmented Navigation Tabs Bar (Pinned outside scrollable main) */}
             <div 
-<<<<<<< HEAD
                 className="w-full px-3 sm:px-4 pt-3 pb-2.5 shrink-0 z-10 flex justify-center overflow-visible"
                 style={{ backgroundColor: s3d.pageBgColor }}
             >
@@ -233,34 +216,10 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                     <button
                         type="button"
                         onClick={() => setActiveTab('method')}
-                        className={`app-page-card border-0 flex-1 py-2 px-1.5 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
+                        className={`app-page-card unified-3d-btn border-0 flex-1 py-2 px-1.5 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
                             activeTab === 'method' ? '' : s3d.surfaceCardClass
                         }`}
                         style={activeTab === 'method' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
-=======
-                className="w-full px-3 sm:px-4 pt-3 pb-2 shrink-0 z-10 flex justify-center border-b"
-                style={{ 
-                    backgroundColor: themeStyles.pageBg,
-                    borderColor: themeStyles.cardBorder 
-                }}
-            >
-                <div 
-                    className="max-w-md w-full flex p-1.5 rounded-2xl gap-1" 
-                    style={{ backgroundColor: themeStyles.tabBg }}
-                >
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('method')}
-                        className={`flex-1 py-2 px-1 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
-                            activeTab === 'method' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'
-                        }`}
-                        style={activeTab === 'method' ? {
-                            backgroundColor: themeStyles.btnBg,
-                            color: themeStyles.btnText
-                        } : {
-                            color: isBlackTheme ? '#FFFFFF' : '#1f2937'
-                        }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     >
                         <span className="truncate">{isEn ? 'Method' : 'الهيئة الفلكية'}</span>
                     </button>
@@ -268,22 +227,10 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                     <button
                         type="button"
                         onClick={() => setActiveTab('madhab')}
-<<<<<<< HEAD
-                        className={`app-page-card border-0 flex-1 py-2 px-1.5 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
+                        className={`app-page-card unified-3d-btn border-0 flex-1 py-2 px-1.5 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
                             activeTab === 'madhab' ? '' : s3d.surfaceCardClass
                         }`}
                         style={activeTab === 'madhab' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
-=======
-                        className={`flex-1 py-2 px-1 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
-                            activeTab === 'madhab' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'
-                        }`}
-                        style={activeTab === 'madhab' ? {
-                            backgroundColor: themeStyles.btnBg,
-                            color: themeStyles.btnText
-                        } : {
-                            color: isBlackTheme ? '#FFFFFF' : '#1f2937'
-                        }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     >
                         <span className="truncate">{isEn ? 'Asr Madhab' : 'مذهب العصر'}</span>
                     </button>
@@ -291,22 +238,10 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                     <button
                         type="button"
                         onClick={() => setActiveTab('highlat')}
-<<<<<<< HEAD
-                        className={`app-page-card border-0 flex-1 py-2 px-1.5 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
+                        className={`app-page-card unified-3d-btn border-0 flex-1 py-2 px-1.5 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
                             activeTab === 'highlat' ? '' : s3d.surfaceCardClass
                         }`}
                         style={activeTab === 'highlat' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
-=======
-                        className={`flex-1 py-2 px-1 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
-                            activeTab === 'highlat' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'
-                        }`}
-                        style={activeTab === 'highlat' ? {
-                            backgroundColor: themeStyles.btnBg,
-                            color: themeStyles.btnText
-                        } : {
-                            color: isBlackTheme ? '#FFFFFF' : '#1f2937'
-                        }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     >
                         <span className="truncate">{isEn ? 'High Latitudes' : 'المناطق الشمالية'}</span>
                     </button>
@@ -314,26 +249,15 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
             </div>
 
             {/* Main Scrollable Content */}
-<<<<<<< HEAD
             <main id="calc-scroll-container" className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-3 sm:px-4 pt-2 pb-4">
-=======
-            <main id="calc-scroll-container" className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-3 sm:px-4 pt-3 pb-4">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className="max-w-md w-full mx-auto flex flex-col space-y-3">
 
                     {/* TAB 1: Calculation Method */}
                     {activeTab === 'method' && (
-<<<<<<< HEAD
                         <div className="space-y-3">
                             <div 
                                 className={`app-page-card border-0 p-3.5 rounded-2xl text-xs font-medium leading-relaxed ${s3d.surfaceCardClass}`}
                                 style={{ color: s3d.subtextColor }}
-=======
-                        <div className="space-y-2.5">
-                            <div 
-                                className="p-3 rounded-2xl text-xs font-medium leading-relaxed" 
-                                style={{ backgroundColor: themeStyles.infoBoxBg, color: themeStyles.subtext }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <span>
                                     {isEn 
@@ -342,18 +266,13 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                                 </span>
                             </div>
 
-<<<<<<< HEAD
                             <div className="space-y-2.5">
-=======
-                            <div className="space-y-2">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 {CALCULATION_METHOD_OPTIONS.map((opt) => {
                                     const isSelected = selectedMethod === opt.id;
                                     const isAuto = opt.id === 'auto';
                                     return (
                                         <div
                                             key={opt.id}
-<<<<<<< HEAD
                                             data-card-item="true"
                                             onClick={() => setSelectedMethod(opt.id)}
                                             className={`app-page-card tasbeeh-pressable border-0 p-3.5 sm:p-4 rounded-2xl cursor-pointer flex items-center justify-between gap-3 ${s3d.surfaceCardClass} ${
@@ -367,47 +286,18 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h4 className="font-bold text-xs sm:text-sm leading-tight" style={{ color: s3d.textColor }}>
-=======
-                                            onClick={() => setSelectedMethod(opt.id)}
-                                            className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                                                isSelected 
-                                                    ? 'shadow-sm' 
-                                                    : 'hover:opacity-90'
-                                            }`}
-                                            style={{
-                                                backgroundColor: isSelected ? themeStyles.cardActiveBg : themeStyles.cardBg,
-                                                borderColor: isSelected ? themeStyles.accent : themeStyles.cardBorder,
-                                                borderWidth: isSelected ? '2px' : '1px'
-                                            }}
-                                        >
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h4 className="font-bold text-xs sm:text-sm leading-tight" style={{ color: isSelected ? themeStyles.text : (isBlackTheme ? '#FFFFFF' : '#1f2937') }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {isEn ? opt.nameEn : opt.nameAr}
                                                     </h4>
                                                     {isAuto && (
                                                         <span 
-<<<<<<< HEAD
-                                                            className="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold shrink-0"
+                                                            className="app-3d-badge border-0 text-[10px] px-2.5 py-0.5 rounded-full font-extrabold shrink-0"
                                                             style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
-=======
-                                                            className="text-[10px] px-2 py-0.5 rounded-full font-extrabold shrink-0"
-                                                            style={{ 
-                                                                backgroundColor: `${themeStyles.accent}25`, 
-                                                                color: themeStyles.accent 
-                                                            }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         >
                                                             {isEn ? 'Recommended' : 'موصى به'}
                                                         </span>
                                                     )}
                                                 </div>
-<<<<<<< HEAD
                                                 <p className="text-[11.5px] mt-1 leading-snug" style={{ color: s3d.subtextColor }}>
-=======
-                                                <p className="text-[11.5px] mt-1 leading-snug" style={{ color: themeStyles.subtext }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {isAuto ? (
                                                         isEn 
                                                             ? `Current country standard: ${detectedMethodName}` 
@@ -423,34 +313,19 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                                                 )}
                                             </div>
 
-<<<<<<< HEAD
                                             {/* Selection radio indicator */}
                                             <div 
-                                                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ms-1"
+                                                className={`app-3d-checkbox ${isSelected ? 'app-3d-checkbox-checked' : ''} w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ms-1`}
                                                 style={
                                                     isSelected
                                                         ? { backgroundColor: s3d.primaryColor }
                                                         : { backgroundColor: s3d.isBlackTheme ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.08)' }
                                                 }
-=======
-                                            {/* Radio circle */}
-                                            <div 
-                                                className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 border transition-all ms-1"
-                                                style={{ 
-                                                    borderColor: isSelected ? themeStyles.accent : themeStyles.subtext,
-                                                    backgroundColor: isSelected ? `${themeStyles.accent}15` : 'transparent',
-                                                    borderWidth: isSelected ? '2px' : '1px'
-                                                }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             >
                                                 {isSelected && (
                                                     <div 
-                                                        className="w-2.5 h-2.5 rounded-full"
-<<<<<<< HEAD
+                                                        className="app-3d-badge border-0 w-2.5 h-2.5 rounded-full"
                                                         style={{ backgroundColor: s3d.btnTextColor }}
-=======
-                                                        style={{ backgroundColor: themeStyles.accent }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     />
                                                 )}
                                             </div>
@@ -463,17 +338,10 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
 
                     {/* TAB 2: Asr Madhab */}
                     {activeTab === 'madhab' && (
-<<<<<<< HEAD
                         <div className="space-y-3">
                             <div 
                                 className={`app-page-card border-0 p-3.5 rounded-2xl text-xs font-medium leading-relaxed ${s3d.surfaceCardClass}`}
                                 style={{ color: s3d.subtextColor }}
-=======
-                        <div className="space-y-2.5">
-                            <div 
-                                className="p-3 rounded-2xl text-xs font-medium leading-relaxed" 
-                                style={{ backgroundColor: themeStyles.infoBoxBg, color: themeStyles.subtext }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <span>
                                     {isEn 
@@ -482,17 +350,12 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                                 </span>
                             </div>
 
-<<<<<<< HEAD
                             <div className="space-y-2.5">
-=======
-                            <div className="space-y-2">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 {ASR_MADHAB_OPTIONS.map((opt) => {
                                     const isSelected = selectedMadhab === opt.id;
                                     return (
                                         <div
                                             key={opt.id}
-<<<<<<< HEAD
                                             data-card-item="true"
                                             onClick={() => setSelectedMadhab(opt.id)}
                                             className={`app-page-card tasbeeh-pressable border-0 p-3.5 sm:p-4 rounded-2xl cursor-pointer flex flex-col gap-2.5 ${s3d.surfaceCardClass} ${
@@ -506,7 +369,7 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                                             <div className="flex items-center justify-between gap-2">
                                                 <div className="flex items-center gap-2.5 min-w-0">
                                                     <div 
-                                                        className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shrink-0"
+                                                        className="app-3d-badge border-0 w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shrink-0"
                                                         style={
                                                             isSelected
                                                                 ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }
@@ -516,85 +379,34 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                                                         {opt.shadowRatio}x
                                                     </div>
                                                     <h4 className="font-extrabold text-xs sm:text-sm leading-tight" style={{ color: s3d.textColor }}>
-=======
-                                            onClick={() => setSelectedMadhab(opt.id)}
-                                            className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col gap-2 ${
-                                                isSelected 
-                                                    ? 'shadow-sm' 
-                                                    : 'hover:opacity-90'
-                                            }`}
-                                            style={{
-                                                backgroundColor: isSelected ? themeStyles.cardActiveBg : themeStyles.cardBg,
-                                                borderColor: isSelected ? themeStyles.accent : themeStyles.cardBorder,
-                                                borderWidth: isSelected ? '2px' : '1px'
-                                            }}
-                                        >
-                                            <div className="flex items-center justify-between gap-2">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <div 
-                                                        className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0"
-                                                        style={{ 
-                                                            backgroundColor: isSelected ? themeStyles.accent : `${themeStyles.accent}20`,
-                                                            color: isSelected ? themeStyles.btnText : themeStyles.accent
-                                                        }}
-                                                    >
-                                                        {opt.shadowRatio}x
-                                                    </div>
-                                                    <h4 className="font-extrabold text-xs sm:text-sm leading-tight" style={{ color: isSelected ? themeStyles.text : (isBlackTheme ? '#FFFFFF' : '#1f2937') }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {isEn ? opt.nameEn : opt.nameAr}
                                                     </h4>
                                                 </div>
 
                                                 <div 
-<<<<<<< HEAD
-                                                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ms-1"
+                                                    className={`app-3d-checkbox ${isSelected ? 'app-3d-checkbox-checked' : ''} w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ms-1`}
                                                     style={
                                                         isSelected
                                                             ? { backgroundColor: s3d.primaryColor }
                                                             : { backgroundColor: s3d.isBlackTheme ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.08)' }
                                                     }
-=======
-                                                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 border transition-all ms-1"
-                                                    style={{ 
-                                                        borderColor: isSelected ? themeStyles.accent : themeStyles.subtext,
-                                                        backgroundColor: isSelected ? `${themeStyles.accent}15` : 'transparent',
-                                                        borderWidth: isSelected ? '2px' : '1px'
-                                                    }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 >
                                                     {isSelected && (
                                                         <div 
-                                                            className="w-2.5 h-2.5 rounded-full"
-<<<<<<< HEAD
+                                                            className="app-3d-badge border-0 w-2.5 h-2.5 rounded-full"
                                                             style={{ backgroundColor: s3d.btnTextColor }}
-=======
-                                                            style={{ backgroundColor: themeStyles.accent }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         />
                                                     )}
                                                 </div>
                                             </div>
 
-<<<<<<< HEAD
                                             <p className="text-[11.5px] leading-relaxed" style={{ color: s3d.subtextColor }}>
-=======
-                                            <p className="text-[11.5px] leading-relaxed" style={{ color: themeStyles.subtext }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 {isEn ? opt.descEn : opt.descAr}
                                             </p>
 
                                             <div 
-<<<<<<< HEAD
-                                                className="text-[10.5px] font-bold px-3 py-1.5 rounded-xl self-start flex items-center gap-1.5"
+                                                className="app-inner-3d-box border-0 text-[10.5px] font-bold px-3.5 py-2 rounded-xl self-start flex items-center gap-2"
                                                 style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
-=======
-                                                className="text-[10.5px] font-bold px-2.5 py-1 rounded-xl self-start flex items-center gap-1.5"
-                                                style={{ 
-                                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                                                    color: themeStyles.accent
-                                                }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             >
                                                 <span>{isEn ? 'Current Asr in app:' : 'وقت العصر حالياً:'}</span>
                                                 <span className="font-mono font-black">{times?.Asr || '--:--'}</span>
@@ -608,17 +420,10 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
 
                     {/* TAB 3: High Latitude Rule */}
                     {activeTab === 'highlat' && (
-<<<<<<< HEAD
                         <div className="space-y-3">
                             <div 
                                 className={`app-page-card border-0 p-3.5 rounded-2xl text-xs font-medium leading-relaxed ${s3d.surfaceCardClass}`}
                                 style={{ color: s3d.subtextColor }}
-=======
-                        <div className="space-y-2.5">
-                            <div 
-                                className="p-3 rounded-2xl text-xs font-medium leading-relaxed" 
-                                style={{ backgroundColor: themeStyles.infoBoxBg, color: themeStyles.subtext }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <span>
                                     {isEn 
@@ -627,18 +432,13 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                                 </span>
                             </div>
 
-<<<<<<< HEAD
                             <div className="space-y-2.5">
-=======
-                            <div className="space-y-2">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 {HIGH_LATITUDE_RULE_OPTIONS.map((opt) => {
                                     const isSelected = selectedHighLat === opt.id;
                                     const isAuto = opt.id === 'auto';
                                     return (
                                         <div
                                             key={opt.id}
-<<<<<<< HEAD
                                             data-card-item="true"
                                             onClick={() => setSelectedHighLat(opt.id)}
                                             className={`app-page-card tasbeeh-pressable border-0 p-3.5 sm:p-4 rounded-2xl cursor-pointer flex items-center justify-between gap-3 ${s3d.surfaceCardClass} ${
@@ -652,76 +452,34 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h4 className="font-bold text-xs sm:text-sm leading-tight" style={{ color: s3d.textColor }}>
-=======
-                                            onClick={() => setSelectedHighLat(opt.id)}
-                                            className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                                                isSelected 
-                                                    ? 'shadow-sm' 
-                                                    : 'hover:opacity-90'
-                                            }`}
-                                            style={{
-                                                backgroundColor: isSelected ? themeStyles.cardActiveBg : themeStyles.cardBg,
-                                                borderColor: isSelected ? themeStyles.accent : themeStyles.cardBorder,
-                                                borderWidth: isSelected ? '2px' : '1px'
-                                            }}
-                                        >
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h4 className="font-bold text-xs sm:text-sm leading-tight" style={{ color: isSelected ? themeStyles.text : (isBlackTheme ? '#FFFFFF' : '#1f2937') }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {isEn ? opt.nameEn : opt.nameAr}
                                                     </h4>
                                                     {isAuto && (
                                                         <span 
-<<<<<<< HEAD
-                                                            className="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold shrink-0"
+                                                            className="app-3d-badge border-0 text-[10px] px-2.5 py-0.5 rounded-full font-extrabold shrink-0"
                                                             style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
-=======
-                                                            className="text-[10px] px-2 py-0.5 rounded-full font-extrabold shrink-0"
-                                                            style={{ 
-                                                                backgroundColor: `${themeStyles.accent}25`, 
-                                                                color: themeStyles.accent 
-                                                            }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         >
                                                             {isEn ? 'Smart' : 'ذكي'}
                                                         </span>
                                                     )}
                                                 </div>
-<<<<<<< HEAD
                                                 <p className="text-[11.5px] mt-1 leading-snug" style={{ color: s3d.subtextColor }}>
-=======
-                                                <p className="text-[11.5px] mt-1 leading-snug" style={{ color: themeStyles.subtext }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {isEn ? opt.descEn : opt.descAr}
                                                 </p>
                                             </div>
 
                                             <div 
-<<<<<<< HEAD
-                                                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ms-1"
+                                                className={`app-3d-checkbox ${isSelected ? 'app-3d-checkbox-checked' : ''} w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ms-1`}
                                                 style={
                                                     isSelected
                                                         ? { backgroundColor: s3d.primaryColor }
                                                         : { backgroundColor: s3d.isBlackTheme ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.08)' }
                                                 }
-=======
-                                                className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 border transition-all ms-1"
-                                                style={{ 
-                                                    borderColor: isSelected ? themeStyles.accent : themeStyles.subtext,
-                                                    backgroundColor: isSelected ? `${themeStyles.accent}15` : 'transparent',
-                                                    borderWidth: isSelected ? '2px' : '1px'
-                                                }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             >
                                                 {isSelected && (
                                                     <div 
-                                                        className="w-2.5 h-2.5 rounded-full"
-<<<<<<< HEAD
+                                                        className="app-3d-badge border-0 w-2.5 h-2.5 rounded-full"
                                                         style={{ backgroundColor: s3d.btnTextColor }}
-=======
-                                                        style={{ backgroundColor: themeStyles.accent }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     />
                                                 )}
                                             </div>
@@ -734,7 +492,6 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                 </div>
             </main>
 
-<<<<<<< HEAD
             {/* Bottom Bar: 3D Save Button */}
             <footer 
                 data-toast-bottom-bar="true"
@@ -745,25 +502,8 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
                     <button
                         type="button"
                         onClick={handleSave}
-                        className="app-page-card border-0 w-full py-3.5 px-6 rounded-2xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center"
-                        style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
-=======
-            {/* Bottom Bar: Save Button Only */}
-            <footer 
-                data-toast-bottom-bar="true"
-                className="p-3 sm:p-4 modal-sheet-safe-bottom border-t shrink-0 z-20"
-                style={{ 
-                    backgroundColor: themeStyles.footerBg, 
-                    borderColor: themeStyles.cardBorder 
-                }}
-            >
-                <div className="max-w-md mx-auto w-full">
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        className="w-full py-3.5 px-6 rounded-2xl font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center"
-                        style={{ backgroundColor: themeStyles.btnBg, color: themeStyles.btnText }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                        className="app-page-card unified-3d-btn border-0 w-full py-3.5 px-6 rounded-2xl font-extrabold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center"
+                        style={s3d.primary3DStyle}
                     >
                         <span>{isEn ? 'Save Settings' : 'حفظ الإعدادات'}</span>
                     </button>

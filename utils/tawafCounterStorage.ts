@@ -1,5 +1,6 @@
 export interface TawafCounterState {
   showOnHome: boolean;
+  showInDuaaZoom: boolean;
   activeTab: 'tawaf' | 'sai';
   tawafCount: number;
   saiCount: number;
@@ -10,6 +11,7 @@ const EVENT_NAME = 'tawaf_counter_state_changed';
 
 const DEFAULT_STATE: TawafCounterState = {
   showOnHome: false,
+  showInDuaaZoom: false,
   activeTab: 'tawaf',
   tawafCount: 0,
   saiCount: 0,
@@ -23,6 +25,7 @@ export const getTawafCounterState = (): TawafCounterState => {
     const parsed = JSON.parse(raw);
     return {
       showOnHome: Boolean(parsed.showOnHome),
+      showInDuaaZoom: Boolean(parsed.showInDuaaZoom),
       activeTab: parsed.activeTab === 'sai' ? 'sai' : 'tawaf',
       tawafCount: Math.min(7, Math.max(0, Number(parsed.tawafCount) || 0)),
       saiCount: Math.min(7, Math.max(0, Number(parsed.saiCount) || 0)),

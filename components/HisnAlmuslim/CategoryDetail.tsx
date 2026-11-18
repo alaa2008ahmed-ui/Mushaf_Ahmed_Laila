@@ -173,13 +173,13 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 color: 'var(--text-color)',
-                fontFamily: isEn ? 'sans-serif' : theme.font
+                fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif"
             }}
         >
             {/* Top Bar with repetition and counter badge */}
             <div className="flex justify-between items-start mb-3">
                 <span 
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold select-none" 
+                    className="app-3d-badge inline-flex items-center px-3 py-1 rounded-full text-xs font-bold select-none" 
                     style={{ 
                         backgroundColor: hexToRgba(tokens.primaryColor, 0.1), 
                         color: tokens.primaryColor 
@@ -212,17 +212,9 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                 </h3>
             )}
 
-            <p className={`leading-[2.2] select-none mb-3 ${isEn ? 'text-base sm:text-lg text-left font-sans font-medium' : 'text-xl md:text-2xl text-center font-amiri'}`}>
+            <p className={`select-none mb-3 ${isEn ? 'leading-[2.2] text-base sm:text-lg text-left font-sans font-medium' : 'text-lg leading-loose font-medium text-center font-cairo'}`}>
                 {displayText}
             </p>
-
-            {displaySource && (
-                <div className="flex justify-center mb-3">
-                    <span className={`text-xs opacity-70 font-bold bg-slate-100 dark:bg-zinc-800/60 px-3.5 py-1 rounded-full ${isEn ? 'text-left font-sans' : 'text-center font-cairo'}`}>
-                        {isEn ? `Source: ${displaySource}` : `المصدر: ${displaySource}`}
-                    </span>
-                </div>
-            )}
             
             {/* Actions Bar */}
             <div className="flex justify-between items-center mt-3 pt-3 pb-1 border-t border-slate-100 dark:border-white/5 overflow-visible">

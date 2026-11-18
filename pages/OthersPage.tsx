@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle } from 'lucide-react';
-import ThemePageLock from '../components/ThemePageLock';
+import { Check } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
@@ -13,6 +11,7 @@ import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/C
 import { RUQYAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import ZoomModal from '../components/Ruqyah/ZoomModal';
 import { scrollToNextCard } from '../utils/cardScrollHelper';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 function hexToRgba(hex?: string, alpha: number = 1): string {
     if (!hex) return `rgba(46, 125, 94, ${alpha})`;
@@ -31,12 +30,12 @@ function hexToRgba(hex?: string, alpha: number = 1): string {
 interface OthersPageProps {
   onBack: () => void;
   onNavigate: (pageId: string, params?: any) => void;
-  onOpenThemes?: () => void;
   navParams?: any;
 }
 
-const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenThemes, navParams }) => {
-  const { theme, themeKey } = useTheme();
+const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, navParams }) => {
+  const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+  const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
   const { language } = useLanguage();
   const isEn = language === 'en';
 
@@ -244,7 +243,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
     <div 
       className="h-[100dvh] w-full flex flex-col overflow-hidden relative transition-colors" 
       style={{ 
-        fontFamily: isEn ? 'inherit' : theme.font,
+        fontFamily: isEn ? 'inherit' : "'Cairo', sans-serif",
         backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) 
       }}
       dir={isEn ? 'ltr' : 'rtl'}
@@ -267,7 +266,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
 
             {/* Page Title */}
             <div className="text-center px-12 min-w-0">
-              <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+              <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate">
                 {isEn ? "Al-Ruqyah Al-Shar'iyyah" : "الرقية الشرعية"}
               </h1>
             </div>
@@ -284,7 +283,6 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               >
                 <i className="fa-solid fa-circle-question text-lg"></i>
               </button>
-              <ThemePageLock />
               <button
                 type="button"
                 onClick={() => onNavigate('home')}
@@ -303,29 +301,36 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
       <main className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
         {/* Modern Borderless Search and View Mode Control */}
         <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-          <div className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible"
+          <div className={`app-page-card border-0 relative flex-1 rounded-2xl ${isBlackTheme ? 'bg-[#18181b]' : 'bg-white dark:bg-[#1E293B]'} transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible`}
                style={{ 
                  '--tw-ring-color': primaryColor,
                } as any}
           >
-            <i 
-              className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-45 pointer-events-none text-sm`} 
-              style={{ color: 'var(--text-color)' }}
-            ></i>
+            <span
+              className={`app-3d-badge border-0 absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none`}
+              style={{
+                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : hexToRgba(primaryColor, 0.12),
+                color: isBlackTheme ? '#FFFFFF' : primaryColor,
+              }}
+              aria-hidden="true"
+            >
+              <i className="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
             <input 
               type="text" 
               placeholder={isEn ? "Search Ruqyah..." : "ابحث في الرقية الشرعية..."} 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${
-                isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'
+                isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'
               } placeholder-gray-400 dark:placeholder-gray-500`}
               style={{ color: 'var(--text-color)' }}
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
-                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                className={`app-page-card unified-3d-btn border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
               >
                 <i className="fa-solid fa-times text-xs"></i>
               </button>
@@ -337,7 +342,6 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
           className={`${activeTabMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'} max-w-3xl mx-auto gap-4 pt-1 ${isEn ? 'text-left' : 'text-right'}`}
           dir={isEn ? 'ltr' : 'rtl'}
         >
-          <AnimatePresence mode="wait">
             {/* TABS: QURANIC / SUNNAH / FAVORITES / ALL LISTS */}
             {activeTab !== 'guide' && (
               <React.Fragment>
@@ -351,30 +355,20 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                         id={`ruqyah-card-${item.id}`}
                         key={item.id} 
                         data-card-item="true"
-<<<<<<< HEAD
                         className="app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative transition-all duration-300 overflow-visible group flex flex-col justify-between cursor-pointer" 
-=======
-                        className="app-page-card border-0 p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group flex flex-col justify-between cursor-pointer" 
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         onClick={(e) => {
                           const cardEl = e.currentTarget as HTMLElement;
                           setTimeout(() => scrollToNextCard(cardEl), 60);
                         }}
                         style={{ 
-                          fontFamily: isEn ? 'inherit' : theme.font,
-<<<<<<< HEAD
+                          fontFamily: isEn ? 'inherit' : "'Cairo', sans-serif",
                           color: 'var(--text-color)',
-=======
-                          backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                          color: 'var(--text-color)',
-                          border: 'none'
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         }}
                       >
                         {/* Text: generous line-height to prevent tashkeel overlap */}
                         <p 
                           className={`text-center mb-4 select-none text-balance ${
-                            isEn ? 'text-base md:text-lg font-medium leading-relaxed' : 'text-xl md:text-2xl font-amiri leading-[2.3]'
+                            isEn ? 'text-base md:text-lg font-medium leading-relaxed' : 'text-lg font-medium font-cairo leading-loose'
                           }`} 
                           style={{ color: 'var(--text-color)' }}
                         >
@@ -384,7 +378,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                         {/* Metadata Pill */}
                         <div className="flex justify-center mb-3">
                           <span 
-                            className="text-xs sm:text-sm text-center opacity-70 font-bold bg-slate-100 dark:bg-zinc-800/60 px-3.5 py-1 rounded-full" 
+                            className="app-3d-badge text-xs sm:text-sm text-center opacity-85 font-bold bg-slate-100 dark:bg-zinc-800/70 px-3.5 py-1 rounded-full" 
                             style={{ color: 'var(--text-color)' }}
                           >
                             {item.type === 'quran' 
@@ -473,17 +467,9 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
             {activeTab === 'guide' && (
               <div className="space-y-4 col-span-full" dir={isEn ? 'ltr' : 'rtl'}>
                 <div 
-<<<<<<< HEAD
                   className="app-page-card border-0 p-6 rounded-2xl bg-white dark:bg-[#1E293B] space-y-4 overflow-visible"
                   style={{
                     color: 'var(--text-color)',
-=======
-                  className="app-page-card border-0 p-6 rounded-[18px] space-y-4"
-                  style={{
-                    backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                    color: 'var(--text-color)',
-                    border: 'none'
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   }}
                 >
                   <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
@@ -522,24 +508,27 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                 </div>
               </div>
             )}
-          </AnimatePresence>
         </div>
       </main>
 
       {/* Toast Notification */}
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50, x: '-50%' }}
-            animate={{ opacity: 1, y: 0, x: '-50%' }}
-            exit={{ opacity: 0, y: 50, x: '-50%' }}
-            className="fixed left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap border border-white/10"
-            style={{ bottom: 'calc(var(--app-safe-bottom) + 1.25rem)' }}
+      {toastMessage && (
+        <div 
+          className="app-3d-toast fixed left-1/2 -translate-x-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none flex items-center justify-center gap-2.5"
+          style={{
+            bottom: 'calc(var(--app-safe-bottom) + 1.25rem)',
+            ...toast3D.style,
+          }}
+        >
+          <span
+            className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+            style={toast3D.iconStyle}
           >
-            {toastMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <Check className="w-3 h-3 stroke-[3]" />
+          </span>
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Backdrop to close floating menu when clicking anywhere */}
       {isMenuOpen && (
@@ -557,18 +546,13 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
         ref={fabContainerRef} 
         className={`fixed app-fab-bottom ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
       >
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-              className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-48 z-0`}
-              style={{ color: 'var(--text-color)' }}
-              onClick={(e) => e.stopPropagation()}
-              dir={isEn ? 'ltr' : 'rtl'}
-            >
+        {isMenuOpen && (
+          <div
+            className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-48 z-0`}
+            style={{ color: 'var(--text-color)' }}
+            onClick={(e) => e.stopPropagation()}
+            dir={isEn ? 'ltr' : 'rtl'}
+          >
               <button 
                 onClick={() => switchTab('all')}
                 className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all cursor-pointer"
@@ -589,7 +573,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               >
                 {isEn ? "Favorites" : "المفضلة"}
               </button>
-              <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />
+              <div className="app-3d-divider my-1 mx-1" />
               
               <button 
                 onClick={() => switchTab('quran')}
@@ -623,9 +607,8 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               >
                 {isEn ? "Ruqyah Guide" : "دليل الرقية"}
               </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        )}
 
         {/* 3D FAB matching Tasbeeh */}
         <button 

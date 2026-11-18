@@ -5,7 +5,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-<<<<<<< HEAD
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,17 +12,10 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.database.ContentObserver;
-=======
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.ServiceInfo;
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-<<<<<<< HEAD
 import android.media.VolumeProvider;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -39,14 +31,6 @@ import android.view.KeyEvent;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.ServiceCompat;
 import androidx.core.content.ContextCompat;
-=======
-import android.net.Uri;
-import android.os.Build;
-import android.os.IBinder;
-import android.os.PowerManager;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.ServiceCompat;
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
 /**
  * Foreground service that plays the scheduled Adhan sound via MediaPlayer
@@ -76,7 +60,6 @@ public class AdhanPlaybackService extends Service {
     private static volatile boolean activeIsArabic = true;
     private static volatile AudioManager activeAudioManager = null;
     private static volatile AudioFocusRequest activeAudioFocusRequest = null;
-<<<<<<< HEAD
     private static volatile BroadcastReceiver activeButtonReceiver = null;
     private static volatile Context activeButtonReceiverContext = null;
     private static volatile ContentObserver activeVolumeObserver = null;
@@ -93,8 +76,6 @@ public class AdhanPlaybackService extends Service {
         }
         return runningInstance != null;
     }
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     /**
      * Perceptual volume curve (quadratic) mapping 0..100 -> 0.0..1.0 so that
@@ -405,13 +386,9 @@ public class AdhanPlaybackService extends Service {
                     finishPlayback(context, false);
                     return true;
                 });
-<<<<<<< HEAD
                 playbackStartElapsedMs = SystemClock.elapsedRealtime();
                 mp.start();
                 registerHardwareButtonInterceptors(context.getApplicationContext());
-=======
-                mp.start();
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 AutoSilentPlugin.notifyAdhanPlaybackStateChanged(true);
             } else {
                 finishPlayback(context, false);
@@ -492,7 +469,6 @@ public class AdhanPlaybackService extends Service {
         }
     }
 
-<<<<<<< HEAD
     private static synchronized void registerHardwareButtonInterceptors(final Context appCtx) {
         if (appCtx == null) return;
         unregisterHardwareButtonInterceptors();
@@ -669,9 +645,6 @@ public class AdhanPlaybackService extends Service {
         playbackStartElapsedMs = 0L;
         unregisterHardwareButtonInterceptors();
 
-=======
-    private static synchronized void releasePlayerAndWakeLock() {
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         if (activePlayer != null) {
             try {
                 if (activePlayer.isPlaying()) {

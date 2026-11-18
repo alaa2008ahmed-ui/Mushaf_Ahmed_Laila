@@ -1729,8 +1729,8 @@ export const SMART_HOME_HEADER_STEPS: SpotlightStep[] = [
   {
     id: 'smart_home_night_mode',
     targetSelector: '#night-mode-toggle-btn',
-    titleAr: 'زر الأوضاع والثيمات (الذهبي، الليلي، السماوي، الزمردي، العنابي)',
-    titleEn: 'Themes & Modes Menu (Gold, Night, Sky, Emerald, Burgundy)',
+    titleAr: 'زر الأوضاع والثيمات',
+    titleEn: 'Themes & Modes Menu',
     descAr: 'اضغط هنا للتبديل الفوري بين الوضع الذهبي، الوضع الليلي الفاخر (الأسود العميق)، الوضع السماوي المشرق، الوضع الزمردي الهادئ، والوضع العنابي الملكي.',
     descEn: 'Tap here to instantly switch between Gold Mode, Luxury Night Mode (Deep Black), Bright Sky Mode, Calm Emerald Mode, and Royal Burgundy Mode.',
     badgeAr: 'الأوضاع والثيمات',

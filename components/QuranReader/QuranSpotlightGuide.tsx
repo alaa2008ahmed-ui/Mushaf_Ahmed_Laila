@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Menu,
   BookOpen,
@@ -20,11 +20,11 @@ import {
   ChevronRight,
   ChevronLeft,
   X,
-  Layers,
   HelpCircle,
   Bell
 } from 'lucide-react';
 import { QuranGuideStep } from './quranGuideSteps';
+import { useTheme } from '../../context/ThemeContext';
 
 interface QuranSpotlightGuideProps {
   guideKey: string;
@@ -117,6 +117,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
   isEn = false,
   onStepChange,
 }) => {
+  const { isNightMode, homeThemeVariant, themeKey } = useTheme();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -472,6 +473,49 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
   }
 
   const currentAccent = step.accentColor || '#10b981';
+  const isDarkCard = isNightMode || themeKey === 'deep_black' || themeKey === 'black_gold';
+
+  const cardSurface = (() => {
+    if (isDarkCard) {
+      return {
+        bg: 'linear-gradient(168deg, #252530 0%, #15151e 100%)',
+        beakTopBg: '#24242f',
+        beakBottomBg: '#16161f',
+        lip: '#07070b',
+        outerShadow: '0 22px 48px rgba(0, 0, 0, 0.85)',
+        inset: 'rgba(255, 255, 255, 0.16)',
+        text: '#ffffff',
+        descText: '#e4e4e7',
+        divider: 'rgba(255, 255, 255, 0.12)',
+        dotInactive: 'rgba(255, 255, 255, 0.28)',
+        pillBg: 'linear-gradient(180deg, #32323e 0%, #24242e 100%)',
+        pillLip: '#09090d',
+        pillText: '#e4e4e7',
+        pillBorder: 'rgba(255, 255, 255, 0.16)',
+      };
+    }
+    const tintBottom =
+      homeThemeVariant === 'sky' ? '#eff8ff' :
+      homeThemeVariant === 'emerald' ? '#ecfdf5' :
+      homeThemeVariant === 'burgundy' ? '#fff1f2' :
+      '#fffbeb';
+    return {
+      bg: `linear-gradient(180deg, #ffffff 0%, ${tintBottom} 100%)`,
+      beakTopBg: '#ffffff',
+      beakBottomBg: tintBottom,
+      lip: `${currentAccent}55`,
+      outerShadow: '0 22px 44px rgba(15, 23, 42, 0.30)',
+      inset: 'rgba(255, 255, 255, 0.98)',
+      text: '#0f172a',
+      descText: '#334155',
+      divider: 'rgba(15, 23, 42, 0.10)',
+      dotInactive: 'rgba(15, 23, 42, 0.18)',
+      pillBg: 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
+      pillLip: 'rgba(15, 23, 42, 0.18)',
+      pillText: '#1e293b',
+      pillBorder: 'rgba(15, 23, 42, 0.14)',
+    };
+  })();
 
   return (
     <div
@@ -510,7 +554,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         </svg>
       ) : (
         <div
-          className="absolute inset-0 bg-black/45 backdrop-blur-[1px] pointer-events-auto transition-opacity"
+          className="absolute inset-0 bg-black/55 pointer-events-auto"
           onClick={handleSkip}
         />
       )}
@@ -553,7 +597,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         </motion.div>
       )}
 
-      {/* Floating Tooltip Card */}
+      {/* Floating Tooltip Card — Unified 3D Elevated Style */}
       <motion.div
         key={`card-${step.id}`}
         ref={cardRef}
@@ -562,11 +606,13 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93 }}
         transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="fixed z-[100002] pointer-events-auto rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col bg-slate-900/98 text-white border-2 backdrop-blur-xl overflow-hidden box-border max-w-[calc(100vw-28px)]"
+        className="fixed z-[100002] pointer-events-auto rounded-3xl p-4 sm:p-5 flex flex-col border-2 overflow-visible box-border max-w-[calc(100vw-28px)]"
         style={{
           ...cardPositionStyle,
+          background: cardSurface.bg,
+          color: cardSurface.text,
           borderColor: currentAccent,
-          boxShadow: `0 20px 50px -10px ${currentAccent}45, 0 0 0 1px ${currentAccent}60`
+          boxShadow: `0 7px 0 ${cardSurface.lip}, ${cardSurface.outerShadow}, inset 0 2px 2px ${cardSurface.inset}`
         }}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -577,35 +623,45 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         {/* Pointer Beak */}
         {pointerPlacement === 'top' && (
           <div
-            className="absolute -top-2.5 w-4 h-4 rotate-45 border-t-2 border-l-2 bg-slate-900"
-            style={{ borderColor: currentAccent, left: beakLeft }}
+            className="absolute -top-2.5 w-4 h-4 rotate-45 border-t-2 border-l-2"
+            style={{
+              backgroundColor: cardSurface.beakTopBg,
+              borderColor: currentAccent,
+              left: beakLeft
+            }}
           />
         )}
         {pointerPlacement === 'bottom' && (
           <div
-            className="absolute -bottom-2.5 w-4 h-4 rotate-45 border-b-2 border-r-2 bg-slate-900"
-            style={{ borderColor: currentAccent, left: beakLeft }}
+            className="absolute -bottom-2.5 w-4 h-4 rotate-45 border-b-2 border-r-2"
+            style={{
+              backgroundColor: cardSurface.beakBottomBg,
+              borderColor: currentAccent,
+              left: beakLeft
+            }}
           />
         )}
 
-        {/* Top Header Glow Bar */}
+        {/* Top Accent Bevel Bar */}
         <div
-          className="absolute -top-1.5 inset-x-6 h-1.5 rounded-full bg-gradient-to-r opacity-90 shadow-sm"
+          className="absolute top-0 inset-x-10 h-1 rounded-b-full opacity-90 pointer-events-none"
           style={{
             backgroundImage: `linear-gradient(to right, ${currentAccent}, #ffffff, ${currentAccent})`
           }}
         />
 
         {/* Scrollable Content Container */}
-        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar mb-2 pe-0.5">
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar mb-2.5 pe-0.5">
           {/* Header: Step Icon, Badge & Close Button */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2 min-w-0">
               <div
-                className="w-8 h-8 rounded-2xl flex items-center justify-center font-bold shadow-md shrink-0"
+                className="w-9 h-9 rounded-2xl flex items-center justify-center font-bold shrink-0"
                 style={{
                   backgroundColor: currentAccent,
-                  color: '#ffffff'
+                  backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(0,0,0,0.12) 100%)',
+                  color: '#ffffff',
+                  boxShadow: `0 3.5px 0 rgba(0,0,0,0.28), 0 6px 12px ${currentAccent}45, inset 0 1.5px 1px rgba(255,255,255,0.45)`
                 }}
               >
                 {renderStepIcon(step.iconType, currentAccent)}
@@ -614,9 +670,10 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
               <span
                 className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider truncate max-w-[180px]"
                 style={{
-                  backgroundColor: `${currentAccent}25`,
-                  color: currentAccent,
-                  border: `1px solid ${currentAccent}50`
+                  backgroundColor: isDarkCard ? `${currentAccent}28` : `${currentAccent}1a`,
+                  color: isDarkCard ? '#f8fafc' : '#0f172a',
+                  border: `1px solid ${currentAccent}55`,
+                  boxShadow: `0 2px 0 ${currentAccent}30, inset 0 1px 1px rgba(255,255,255,${isDarkCard ? '0.15' : '0.6'})`
                 }}
               >
                 {isEn
@@ -628,28 +685,37 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
             <button
               type="button"
               onClick={handleSkip}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer shrink-0"
+              className="unified-3d-btn w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 cursor-pointer shrink-0"
+              style={{
+                background: cardSurface.pillBg,
+                color: cardSurface.pillText,
+                border: `1px solid ${cardSurface.pillBorder}`,
+                boxShadow: `0 2.5px 0 ${cardSurface.pillLip}, 0 4px 8px rgba(0,0,0,0.14), inset 0 1px 1px ${cardSurface.inset}`
+              }}
               title={isEn ? "Skip Tour" : "تخطي الإرشاد"}
             >
-              <X size={16} />
+              <X size={15} strokeWidth={2.5} />
             </button>
           </div>
 
           {/* Step Title */}
-          <h3 className="text-base sm:text-lg font-black font-kufi mb-1.5 flex items-center gap-1.5 leading-snug">
-            <span style={{ color: currentAccent }}>
+          <h3 className="text-base sm:text-lg font-black font-cairo mb-1.5 flex items-center gap-1.5 leading-snug">
+            <span style={{ color: isDarkCard ? currentAccent : '#0f172a' }}>
               {isEn ? step.titleEn : step.titleAr}
             </span>
           </h3>
 
           {/* Detailed Explanation */}
-          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
+          <p className="text-xs sm:text-sm leading-relaxed font-medium" style={{ color: cardSurface.descText }}>
             {isEn ? step.descEn : step.descAr}
           </p>
         </div>
 
         {/* Bottom Actions: Progress Dots & Next/Prev */}
-        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-white/10 shrink-0 mt-auto w-full min-w-0 overflow-hidden">
+        <div
+          className="flex items-center justify-between gap-2 pt-2.5 shrink-0 mt-auto w-full min-w-0"
+          style={{ borderTop: `1px solid ${cardSurface.divider}` }}
+        >
           {/* Progress Dots or Compact Step Indicator */}
           {steps.length <= 6 ? (
             <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
@@ -659,16 +725,24 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
                   className="h-1.5 rounded-full transition-all duration-300 shrink-0"
                   style={{
                     width: idx === currentStepIndex ? '16px' : '5px',
-                    backgroundColor: idx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
+                    backgroundColor: idx === currentStepIndex ? currentAccent : cardSurface.dotInactive
                   }}
                 />
               ))}
             </div>
           ) : (
             <div className="flex items-center gap-1.5 shrink min-w-0 overflow-hidden">
-              <span className="text-[11px] font-black px-2 py-0.5 rounded-lg bg-white/10 text-slate-200 whitespace-nowrap shrink-0">
-                <span style={{ color: currentAccent }}>{currentStepIndex + 1}</span>
-                <span className="opacity-40 mx-0.5">/</span>
+              <span
+                className="text-[11px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap shrink-0"
+                style={{
+                  background: cardSurface.pillBg,
+                  color: cardSurface.pillText,
+                  border: `1px solid ${cardSurface.pillBorder}`,
+                  boxShadow: `0 2px 0 ${cardSurface.pillLip}, inset 0 1px 1px ${cardSurface.inset}`
+                }}
+              >
+                <span style={{ color: isDarkCard ? currentAccent : cardSurface.pillText }}>{currentStepIndex + 1}</span>
+                <span className="opacity-45 mx-0.5">/</span>
                 <span>{steps.length}</span>
               </span>
               <div className="flex items-center gap-1 shrink-0 overflow-hidden">
@@ -687,7 +761,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
                         className="h-1.5 rounded-full transition-all duration-300 shrink-0"
                         style={{
                           width: actualIdx === currentStepIndex ? '14px' : '4px',
-                          backgroundColor: actualIdx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
+                          backgroundColor: actualIdx === currentStepIndex ? currentAccent : cardSurface.dotInactive
                         }}
                       />
                     );
@@ -698,12 +772,18 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1.5 shrink-0 ms-auto">
+          <div className="flex items-center gap-2 shrink-0 ms-auto">
             {!isFirstStep && (
               <button
                 type="button"
                 onClick={handlePrev}
-                className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                className="unified-3d-btn px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                style={{
+                  background: cardSurface.pillBg,
+                  color: cardSurface.pillText,
+                  border: `1px solid ${cardSurface.pillBorder}`,
+                  boxShadow: `0 3px 0 ${cardSurface.pillLip}, 0 5px 10px rgba(0,0,0,0.14), inset 0 1.5px 1px ${cardSurface.inset}`
+                }}
               >
                 {isEn ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
                 <span>{isEn ? 'Back' : 'السابق'}</span>
@@ -713,11 +793,12 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0 relative z-10 whitespace-nowrap"
+              className="unified-3d-btn px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shrink-0 relative z-10 whitespace-nowrap"
               style={{
                 backgroundColor: currentAccent,
+                backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(0,0,0,0.08) 100%)',
                 color: '#ffffff',
-                boxShadow: `0 4px 14px ${currentAccent}60`
+                boxShadow: `0 4px 0 rgba(0,0,0,0.32), 0 8px 16px -2px ${currentAccent}55, inset 0 1.5px 1px rgba(255,255,255,0.45)`
               }}
             >
               <span>

@@ -1,4 +1,10 @@
 import { Preferences } from '@capacitor/preferences';
+import {
+  ExtraShareDesignId,
+  EXTRA_SHARE_CARD_DESIGNS,
+  isExtraShareDesignId,
+  getExtraDesignTypographyTheme,
+} from './shareCardDesignsExtra';
 
 export type ShareDesignId =
   | 'classic_gold'
@@ -10,7 +16,8 @@ export type ShareDesignId =
   | 'sky_azure'
   | 'emerald_sanctuary'
   | 'royal_amethyst'
-  | 'sunset_saffron';
+  | 'sunset_saffron'
+  | ExtraShareDesignId;
 
 export const SHARE_DESIGN_STORAGE_KEY = 'app_share_card_design';
 export const SHARE_DESIGN_CHANGE_EVENT = 'app-share-card-design-changed';
@@ -24,7 +31,7 @@ export interface ShareDesignMeta {
   previewColors: [string, string, string];
 }
 
-export const SHARE_CARD_DESIGNS: ShareDesignMeta[] = [
+const BASE_LIGHT_SHARE_CARD_DESIGNS: ShareDesignMeta[] = [
   {
     id: 'classic_gold',
     nameAr: 'المخطوطة الذهبية والزمردية',
@@ -32,46 +39,6 @@ export const SHARE_CARD_DESIGNS: ShareDesignMeta[] = [
     descAr: 'التصميم الكلاسيكي بالرقّ المذهب والقنديل والشمسة الزمردية',
     descEn: 'Classic illuminated parchment with emerald & 24k gold motifs',
     previewColors: ['#FAF4E4', '#C59B27', '#064E3B'],
-  },
-  {
-    id: 'sanaani_qamariya',
-    nameAr: 'قمرية صنعاء المضيئة',
-    nameEn: "Sana'ani Qamariya",
-    descAr: 'طراز صنعاء القديمة بالآجرّ والجص الأبيض والقمرية المضيئة',
-    descEn: "Old Sana'a brick, white gypsum fretwork & carved arch",
-    previewColors: ['#7C2D12', '#FFFDF9', '#D97706'],
-  },
-  {
-    id: 'lapis_turquoise',
-    nameAr: 'اللازورد الليلي والفيروزي',
-    nameEn: 'Lapis Night & Turquoise',
-    descAr: 'إطار مثمّن كحلي ملكي بالمشكاة المزدوجة والنجوم الفيروزية',
-    descEn: 'Midnight sapphire octagonal frame with twin lamps & turquoise stars',
-    previewColors: ['#0B1633', '#2DD4BF', '#FCD34D'],
-  },
-  {
-    id: 'rasulid_garnet',
-    nameAr: 'الطراز الرسولي القرمزي',
-    nameEn: 'Rasulid Garnet & Pearl',
-    descAr: 'عقد مفصّص وزخارف نباتية تعزية بلون القرمز واللؤلؤ والنحاس الوردي',
-    descEn: 'Taiz Rasulid polylobed arch, floral vines, garnet & rose-gold',
-    previewColors: ['#581024', '#FFF9F6', '#C87D55'],
-  },
-  {
-    id: 'hadrami_jade',
-    nameAr: 'قباب تريم والعقيق اليماني',
-    nameEn: 'Tarim Jade & Yemeni Agate',
-    descAr: 'قباب ومآذن تريم الهادئة بفصوص العقيق اليماني والمشربية الخضراء',
-    descEn: 'Hadrami oasis domes, mashrabiya lattice & carnelian Yemeni agate',
-    previewColors: ['#0F5257', '#F4FAF6', '#C2410C'],
-  },
-  {
-    id: 'obsidian_gold',
-    nameAr: 'الليل الملكي والذهبي',
-    nameEn: 'Obsidian Night & Gold',
-    descAr: 'خلفية ليلية داكنة فاخرة بزخارف ذهبية عيار ٢٤ وقنديل مضيء',
-    descEn: 'Luxurious obsidian night backdrop with 24k gold filigree & lantern',
-    previewColors: ['#07070A', '#F59E0B', '#FDE68A'],
   },
   {
     id: 'sky_azure',
@@ -90,6 +57,49 @@ export const SHARE_CARD_DESIGNS: ShareDesignMeta[] = [
     previewColors: ['#ECFDF5', '#059669', '#D97706'],
   },
   {
+    id: 'sunset_saffron',
+    nameAr: 'وهج الغروب والزعفران',
+    nameEn: 'Sunset Saffron & Copper',
+    descAr: 'شفق دافئ بلون الزعفران والنحاس المعتّق وزخارف الزليج المغربي',
+    descEn: 'Warm golden-hour saffron & antique copper with Moroccan zellige geometry',
+    previewColors: ['#FFF7ED', '#EA580C', '#9A3412'],
+  },
+  {
+    id: 'sanaani_qamariya',
+    nameAr: 'قمرية صنعاء المضيئة',
+    nameEn: "Sana'ani Qamariya",
+    descAr: 'طراز صنعاء القديمة بالآجرّ والجص الأبيض والقمرية المضيئة',
+    descEn: "Old Sana'a brick, white gypsum fretwork & carved arch",
+    previewColors: ['#7C2D12', '#FFFDF9', '#D97706'],
+  },
+  {
+    id: 'hadrami_jade',
+    nameAr: 'قباب تريم والعقيق اليماني',
+    nameEn: 'Tarim Jade & Yemeni Agate',
+    descAr: 'قباب ومآذن تريم الهادئة بفصوص العقيق اليماني والمشربية الخضراء',
+    descEn: 'Hadrami oasis domes, mashrabiya lattice & carnelian Yemeni agate',
+    previewColors: ['#0F5257', '#F4FAF6', '#C2410C'],
+  },
+  {
+    id: 'rasulid_garnet',
+    nameAr: 'الطراز الرسولي القرمزي',
+    nameEn: 'Rasulid Garnet & Pearl',
+    descAr: 'عقد مفصّص وزخارف نباتية تعزية بلون القرمز واللؤلؤ والنحاس الوردي',
+    descEn: 'Taiz Rasulid polylobed arch, floral vines, garnet & rose-gold',
+    previewColors: ['#581024', '#FFF9F6', '#C87D55'],
+  },
+];
+
+const BASE_DARK_SHARE_CARD_DESIGNS: ShareDesignMeta[] = [
+  {
+    id: 'lapis_turquoise',
+    nameAr: 'اللازورد الليلي والفيروزي',
+    nameEn: 'Lapis Night & Turquoise',
+    descAr: 'إطار مثمّن كحلي ملكي بالمشكاة المزدوجة والنجوم الفيروزية',
+    descEn: 'Midnight sapphire octagonal frame with twin lamps & turquoise stars',
+    previewColors: ['#0B1633', '#2DD4BF', '#FCD34D'],
+  },
+  {
     id: 'royal_amethyst',
     nameAr: 'الأرجواني الملكي والبنفسجي',
     nameEn: 'Royal Amethyst & Gold',
@@ -98,13 +108,29 @@ export const SHARE_CARD_DESIGNS: ShareDesignMeta[] = [
     previewColors: ['#1E0B4B', '#A855F7', '#FCD34D'],
   },
   {
-    id: 'sunset_saffron',
-    nameAr: 'وهج الغروب والزعفران',
-    nameEn: 'Sunset Saffron & Copper',
-    descAr: 'شفق دافئ بلون الزعفران والنحاس المعتّق وزخارف الزليج المغربي',
-    descEn: 'Warm golden-hour saffron & antique copper with Moroccan zellige geometry',
-    previewColors: ['#FFF7ED', '#EA580C', '#9A3412'],
+    id: 'obsidian_gold',
+    nameAr: 'الليل الملكي والذهبي',
+    nameEn: 'Obsidian Night & Gold',
+    descAr: 'خلفية ليلية داكنة فاخرة بزخارف ذهبية عيار ٢٤ وقنديل مضيء',
+    descEn: 'Luxurious obsidian night backdrop with 24k gold filigree & lantern',
+    previewColors: ['#07070A', '#F59E0B', '#FDE68A'],
   },
+];
+
+const EXTRA_LIGHT_SHARE_CARD_DESIGNS: ShareDesignMeta[] = EXTRA_SHARE_CARD_DESIGNS.filter(
+  (d) => !d.isDark
+).map(({ isDark: _isDark, ...meta }) => meta);
+
+const EXTRA_DARK_SHARE_CARD_DESIGNS: ShareDesignMeta[] = EXTRA_SHARE_CARD_DESIGNS.filter(
+  (d) => d.isDark
+).map(({ isDark: _isDark, ...meta }) => meta);
+
+export const SHARE_CARD_DESIGNS: ShareDesignMeta[] = [
+  // Light designs first, followed by dark designs
+  ...BASE_LIGHT_SHARE_CARD_DESIGNS,
+  ...EXTRA_LIGHT_SHARE_CARD_DESIGNS,
+  ...BASE_DARK_SHARE_CARD_DESIGNS,
+  ...EXTRA_DARK_SHARE_CARD_DESIGNS,
 ];
 
 const VALID_DESIGN_IDS = new Set<ShareDesignId>(SHARE_CARD_DESIGNS.map((d) => d.id));
@@ -301,6 +327,9 @@ export interface DesignTypographyTheme {
 }
 
 export function getDesignTypographyTheme(designId: ShareDesignId): DesignTypographyTheme {
+  if (isExtraShareDesignId(designId)) {
+    return getExtraDesignTypographyTheme(designId);
+  }
   switch (designId) {
     case 'sanaani_qamariya':
       return {
@@ -323,8 +352,8 @@ export function getDesignTypographyTheme(designId: ShareDesignId): DesignTypogra
         footerLineColor: '#B45309',
         footerStarFill: '#F59E0B',
         footerStarStroke: '#7C2D12',
-        brandColor: '#7C2D12',
-        brandShadow: 'rgba(217, 119, 6, 0.28)',
+        brandColor: '#5A2116',
+        brandShadow: 'rgba(217, 119, 6, 0.25)',
         subtitleColor: '#92400E',
       };
 
@@ -349,8 +378,8 @@ export function getDesignTypographyTheme(designId: ShareDesignId): DesignTypogra
         footerLineColor: '#2DD4BF',
         footerStarFill: '#FCD34D',
         footerStarStroke: '#14B8A6',
-        brandColor: '#FDE68A',
-        brandShadow: 'rgba(252, 211, 77, 0.25)',
+        brandColor: '#BAE6FD',
+        brandShadow: 'rgba(6, 18, 42, 0.75)',
         subtitleColor: '#99F6E4',
       };
 
@@ -401,9 +430,9 @@ export function getDesignTypographyTheme(designId: ShareDesignId): DesignTypogra
         footerLineColor: '#0F766E',
         footerStarFill: '#C2410C',
         footerStarStroke: '#0D4A4E',
-        brandColor: '#0D4A4E',
-        brandShadow: 'rgba(15, 118, 110, 0.2)',
-        subtitleColor: '#9A3412',
+        brandColor: '#9A3412',
+        brandShadow: 'rgba(194, 65, 12, 0.18)',
+        subtitleColor: '#0F766E',
       };
 
     case 'obsidian_gold':
@@ -427,8 +456,8 @@ export function getDesignTypographyTheme(designId: ShareDesignId): DesignTypogra
         footerLineColor: '#D97706',
         footerStarFill: '#F59E0B',
         footerStarStroke: '#FDE68A',
-        brandColor: '#FCD34D',
-        brandShadow: 'rgba(245, 158, 11, 0.35)',
+        brandColor: '#F8FAFC',
+        brandShadow: 'rgba(0, 0, 0, 0.8)',
         subtitleColor: '#D6B87A',
       };
 
@@ -479,8 +508,8 @@ export function getDesignTypographyTheme(designId: ShareDesignId): DesignTypogra
         footerLineColor: '#059669',
         footerStarFill: '#D97706',
         footerStarStroke: '#064E3B',
-        brandColor: '#064E3B',
-        brandShadow: 'rgba(16, 185, 129, 0.25)',
+        brandColor: '#92400E',
+        brandShadow: 'rgba(217, 119, 6, 0.22)',
         subtitleColor: '#047857',
       };
 
@@ -505,8 +534,8 @@ export function getDesignTypographyTheme(designId: ShareDesignId): DesignTypogra
         footerLineColor: '#A855F7',
         footerStarFill: '#FCD34D',
         footerStarStroke: '#C084FC',
-        brandColor: '#FDE68A',
-        brandShadow: 'rgba(168, 85, 247, 0.35)',
+        brandColor: '#FFFFFF',
+        brandShadow: 'rgba(23, 7, 46, 0.85)',
         subtitleColor: '#D8B4FE',
       };
 
@@ -2419,46 +2448,10 @@ export function getShareDesignForHomeVariant(
 
 const PRESET_THEME_SHARE_DESIGN_MAP: Record<string, ShareDesignId> = {
   black_gold: 'obsidian_gold',
-  deep_black: 'obsidian_gold',
-  kaaba_kiswa: 'obsidian_gold',
-
   sky_mode: 'sky_azure',
-  fajr_light: 'sky_azure',
-  crystal_glass: 'sky_azure',
-  ocean_peace: 'sky_azure',
-
   emerald_mode: 'emerald_sanctuary',
-  morning_dew: 'emerald_sanctuary',
-  andalusian_garden: 'emerald_sanctuary',
-  olive_grove: 'emerald_sanctuary',
-  frosted_emerald: 'emerald_sanctuary',
-  deep_forest: 'emerald_sanctuary',
-
   burgundy_mode: 'rasulid_garnet',
-  madinah_rose: 'rasulid_garnet',
-  sakura_breeze: 'rasulid_garnet',
-
-  royal_purple: 'royal_amethyst',
-  electric_violet: 'royal_amethyst',
-  lavender_mist: 'royal_amethyst',
-  desert_night: 'royal_amethyst',
-
-  sunset_glow: 'sunset_saffron',
-
-  evening_tranquility: 'lapis_turquoise',
-  midnight_glass: 'lapis_turquoise',
-  midnight_neon: 'lapis_turquoise',
-
-  turquoise_gem: 'hadrami_jade',
-  blue_mosque: 'hadrami_jade',
-  slate_stone: 'hadrami_jade',
-
-  clay_earth: 'sanaani_qamariya',
-
   shiny_gold: 'classic_gold',
-  golden_sand: 'classic_gold',
-  vintage_paper: 'classic_gold',
-  default: 'classic_gold',
 };
 
 export function getShareDesignForPresetTheme(

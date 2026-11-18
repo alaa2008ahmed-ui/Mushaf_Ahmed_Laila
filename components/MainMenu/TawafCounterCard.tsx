@@ -197,7 +197,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
 
             <button
               type="button"
-              onClick={() => onNavigate?.('hajj-umrah', { screen: 'duaa' })}
+              onClick={() => onNavigate?.('hajj-umrah', { screen: 'duaa', directFromTawafCard: true })}
               className="w-auto py-1.5 px-3 rounded-2xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer text-white shadow-none"
             >
               <span className="text-white font-extrabold font-cairo whitespace-nowrap">
@@ -382,7 +382,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
 
           <button
             type="button"
-            onClick={() => onNavigate?.('hajj-umrah', { screen: 'duaa' })}
+            onClick={() => onNavigate?.('hajj-umrah', { screen: 'duaa', directFromTawafCard: true })}
             className="w-auto py-1.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center transition-all active:scale-95 cursor-pointer text-center"
             style={{
               backgroundColor: isBlackTheme ? '#FFFFFF' : primaryAccent,

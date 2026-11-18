@@ -23,12 +23,9 @@ interface QuranHeaderProps {
     handlePlayButtonPointerLeave: () => void;
     renderPlayButtonIcon: () => React.ReactNode;
     reciterToast: { show: boolean; name: string };
-    readingMode: 'mushaf' | 'tafseer' | 'meanings' | 'translation' | 'bilingual';
-    setReadingMode: (mode: 'mushaf' | 'tafseer' | 'meanings' | 'translation' | 'bilingual') => void;
     isWirdMode?: boolean;
     isMemorizationMode?: boolean;
     memorizationSettings?: any;
-    handleMushafTypeSelect: (type: string) => void;
     setIsFloatingMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
     isFloatingMenuOpen: boolean;
     isAnyMenuOpen: boolean;
@@ -137,8 +134,6 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
     handlePlayButtonPointerLeave,
     renderPlayButtonIcon,
     reciterToast,
-    readingMode,
-    setReadingMode,
     isWirdMode = false,
     isMemorizationMode = false,
     memorizationSettings,
@@ -223,7 +218,13 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
                     {renderPlayButtonIcon()}
                 </button>
                 {reciterToast.show && (
-                    <div className={`absolute top-full ${isEn ? 'right-0' : 'left-0'} ltr:right-0 rtl:left-0 mt-2 px-3 py-1 text-xs rounded-lg shadow-lg whitespace-nowrap z-[100] animate-fadeIn font-bold pointer-events-none modal-skinned toast-element max-w-[calc(100vw-32px)] truncate`}>
+                    <div
+                        className={`app-3d-toast absolute top-full ${isEn ? 'right-0' : 'left-0'} ltr:right-0 rtl:left-0 mt-2 px-3.5 py-1.5 text-xs rounded-full whitespace-nowrap z-[100] animate-fadeIn font-bold pointer-events-none toast-element max-w-[calc(100vw-32px)] truncate`}
+                        style={{
+                            backgroundColor: currentTheme?.id === 'gold' ? '#EAB308' : currentTheme?.id === 'deep_black' ? '#111111' : (currentTheme?.accent || currentTheme?.modalBg || '#1e293b'),
+                            color: currentTheme?.id === 'gold' ? '#000000' : currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent ? (currentTheme?.accentText || '#ffffff') : (currentTheme?.modalText || '#ffffff'))
+                        }}
+                    >
                         {reciterToast.name}
                     </div>
                 )}

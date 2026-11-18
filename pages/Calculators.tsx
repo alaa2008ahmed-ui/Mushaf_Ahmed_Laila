@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import ThemePageLock from '../components/ThemePageLock';
 import ZakatCalculator from '../components/Calculators/ZakatCalculator';
 import MawarithCalculator from '../components/Calculators/MawarithCalculator';
 import KaffaratCalculator from '../components/Calculators/KaffaratCalculator';
 import FitrAndUdhiyahCalculator from '../components/Calculators/FitrAndUdhiyahCalculator';
 import { useLanguage } from '../context/LanguageContext';
-import { HelpCircle, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { 
     CALCULATOR_ZAKAT_STEPS, 
@@ -16,11 +15,7 @@ import {
     CALCULATOR_UDHIYAH_STEPS
 } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
-<<<<<<< HEAD
 import { getCalculator3DStyles } from '../utils/calculator3DStyles';
-=======
-import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { useShowPageGuides } from '../utils/guideManager';
 
 interface CalculatorsProps {
@@ -31,11 +26,7 @@ interface CalculatorsProps {
 const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
     const showPageGuides = useShowPageGuides();
     const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
-<<<<<<< HEAD
     const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
-=======
-    const tokens = getModernFlatTokens(theme, themeKey);
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     const { t, language } = useLanguage();
     const isEn = language === 'en';
 
@@ -155,22 +146,6 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
     const disclaimerLabel = colonIdx !== -1 ? disclaimerText.slice(0, colonIdx + 1) : '';
     const disclaimerBody = colonIdx !== -1 ? disclaimerText.slice(colonIdx + 1).trim() : disclaimerText;
 
-<<<<<<< HEAD
-=======
-    const isBlackTheme = tokens.isDeepBlack || isNightMode;
-    const noticeAccent = isBlackTheme
-        ? '#F59E0B'
-        : homeThemeVariant === 'sky'
-            ? '#0284c7'
-            : homeThemeVariant === 'emerald'
-                ? '#047857'
-                : homeThemeVariant === 'burgundy'
-                    ? '#881337'
-                    : (tokens.primaryColor === '#EAB308' || tokens.primaryColor === '#FACC15'
-                        ? '#B45309'
-                        : tokens.primaryColor);
-
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     return (
         <div 
             className="h-[100dvh] flex flex-col overflow-hidden"
@@ -214,7 +189,6 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                                     <i className="fa-solid fa-circle-question text-lg"></i>
                                 </button>
                             )}
-                            <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
@@ -274,7 +248,6 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                         />
                     )}
 
-<<<<<<< HEAD
                     {/* Dynamic Tab-Specific 3D Sculpted Sharia Disclaimer Card */}
                     <div
                         id="calc-sharia-disclaimer"
@@ -282,52 +255,19 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                         className={`app-page-card border-0 mt-5 mb-2 p-4 rounded-3xl flex items-start gap-3.5 transition-all ${s3d.surfaceCardClass}`}
                     >
                         <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}
+                            className={`app-3d-badge w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}
                             style={{ color: s3d.noticeAccent }}
                         >
                             <ShieldAlert size={18} strokeWidth={2.2} />
-=======
-                    {/* Dynamic Tab-Specific Sharia Disclaimer Card */}
-                    <div
-                        id="calc-sharia-disclaimer"
-                        role="note"
-                        className="mt-5 mb-2 p-3.5 sm:p-4 rounded-2xl flex items-start gap-3 transition-all"
-                        style={{
-                            backgroundColor: tokens.isDark
-                                ? (isBlackTheme ? '#141418' : tokens.cardBgColor)
-                                : '#FFFFFF',
-                            border: `1px solid ${hexToRgba(noticeAccent, tokens.isDark ? 0.28 : 0.22)}`,
-                            boxShadow: tokens.isDark
-                                ? '0 4px 14px rgba(0, 0, 0, 0.45)'
-                                : '0 2px 10px rgba(15, 23, 42, 0.05)',
-                        }}
-                    >
-                        <div
-                            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                            style={{
-                                backgroundColor: hexToRgba(noticeAccent, tokens.isDark ? 0.16 : 0.12),
-                                color: noticeAccent,
-                            }}
-                        >
-                            <ShieldAlert size={17} strokeWidth={2.2} />
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         </div>
                         <p
                             className="text-xs sm:text-[13px] leading-relaxed font-semibold m-0"
                             style={{
-<<<<<<< HEAD
                                 color: s3d.isDark ? 'rgba(255, 255, 255, 0.9)' : s3d.textColor,
                             }}
                         >
                             {disclaimerLabel && (
                                 <strong className="font-black" style={{ color: s3d.noticeAccent }}>
-=======
-                                color: tokens.isDark ? 'rgba(255, 255, 255, 0.88)' : tokens.textColor,
-                            }}
-                        >
-                            {disclaimerLabel && (
-                                <strong className="font-black" style={{ color: noticeAccent }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     {disclaimerLabel}{' '}
                                 </strong>
                             )}

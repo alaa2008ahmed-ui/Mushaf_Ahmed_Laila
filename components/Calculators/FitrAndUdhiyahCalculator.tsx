@@ -215,11 +215,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
 
     return (
         <div className="space-y-4 animate-fade-in" dir={isEn ? 'ltr' : 'rtl'}>
-<<<<<<< HEAD
             {/* 3D Sculpted Sub-Tabs Switcher */}
-=======
-            {/* Sub-Tabs Switcher (Zero Border Segmented Pill) */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <div 
                 id="fitr-udhiyah-subtabs" 
                 className={`app-page-card border-0 flex gap-2 p-2 pb-2.5 rounded-2xl transition-all overflow-visible ${s3d.surfaceCardClass}`}
@@ -257,14 +253,14 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2.5" style={{ color: s3d.textColor }}>
                     {subTab === 'fitr' ? (
                         <>
-                            <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <span className={`app-3d-badge w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                                 <i className="fa-solid fa-wheat-awn" style={{ color: s3d.primaryColor }}></i>
                             </span>
                             <span>{isEn ? 'Blessed Zakat al-Fitr Calculator' : 'حاسبة زكاة الفطر المبارك'}</span>
                         </>
                     ) : (
                         <>
-                            <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <span className={`app-3d-badge w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                                 <i className="fa-solid fa-shield-halved" style={{ color: s3d.primaryColor }}></i>
                             </span>
                             <span>{isEn ? 'Udhiyah, Aqiqah & Shares Calculator' : 'حاسبة الأضحية والعقيقة والأنصبة'}</span>
@@ -307,7 +303,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                         min="1"
                                         value={familyMembers}
                                         onChange={e => setFamilyMembers(e.target.value)}
-                                        className={`border-0 w-24 p-3 rounded-2xl text-center font-bold text-base tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
+                                        className={`app-3d-recessed-field border-0 w-24 p-3 rounded-2xl text-center font-bold text-base tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
                                         placeholder="1"
                                     />
                                     <div className="flex gap-2 flex-wrap overflow-visible">
@@ -341,7 +337,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                 style={includeUnbornBaby ? { backgroundColor: s3d.activeTintBg } : undefined}
                             >
                                 <div 
-                                    className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all"
+                                    className={`app-3d-checkbox ${includeUnbornBaby ? 'app-3d-checkbox-checked' : ''} w-5 h-5 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all`}
                                     style={{
                                         backgroundColor: includeUnbornBaby ? s3d.primaryColor : 'rgba(150, 150, 150, 0.22)',
                                         color: includeUnbornBaby ? s3d.btnTextColor : 'transparent'
@@ -382,7 +378,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                                         {isEn ? g.nameEn : g.name}
                                                     </span>
                                                     <span 
-                                                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg shrink-0 tabular-nums ${!isSelected ? (s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10') : ''}`}
+                                                        className={`app-3d-badge text-[11px] font-bold px-2.5 py-0.5 rounded-lg shrink-0 tabular-nums ${!isSelected ? (s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10') : ''}`}
                                                         style={isSelected ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
                                                     >
                                                         {g.weight} {isEn ? 'kg' : 'كجم'}
@@ -414,7 +410,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                         step="any"
                                         value={cashValuePerPerson}
                                         onChange={e => setCashValuePerPerson(e.target.value)}
-                                        className={`border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
+                                        className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
                                         placeholder={isEn ? 'e.g. 35' : 'مثال: 35'}
                                     />
                                     <span className="text-xs font-bold shrink-0 opacity-85">
@@ -431,7 +427,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                         className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
                     >
                         <div className={`flex items-center gap-2.5 mb-3.5 pb-2.5 border-b ${s3d.dividerClass}`}>
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                                 <Scale className="w-4 h-4" style={{ color: s3d.primaryColor }} />
                             </span>
                             <h3 className="font-bold text-sm sm:text-base">
@@ -441,7 +437,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div 
-                                className="border-0 p-4 rounded-2xl text-center"
+                                className="app-inner-3d-box border-0 p-4 rounded-2xl text-center"
                                 style={{ backgroundColor: s3d.softResultBg }}
                             >
                                 <span className="text-xs opacity-80 block mb-1">
@@ -458,7 +454,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                             </div>
 
                             <div 
-                                className="border-0 p-4 rounded-2xl text-center bg-emerald-500/10"
+                                className="app-inner-3d-box border-0 p-4 rounded-2xl text-center bg-emerald-500/10"
                             >
                                 <span className="text-xs opacity-80 block mb-1">
                                     {isEn ? 'Total Estimated Cash Amount' : 'المقدار النقدي الإجمالي (المقدّر)'}
@@ -474,7 +470,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
 
                         {/* Jurisprudence Summary */}
                         <div 
-                            className={`border-0 mt-4 p-4 rounded-2xl space-y-1.5 ${isEn ? 'text-left' : 'text-right'} text-xs leading-relaxed ${s3d.isBlackTheme ? 'bg-white/5' : 'bg-slate-50 dark:bg-white/5'}`} 
+                            className={`app-inner-3d-box border-0 mt-4 p-4 rounded-2xl space-y-1.5 ${isEn ? 'text-left' : 'text-right'} text-xs leading-relaxed ${s3d.isBlackTheme ? 'bg-white/5' : 'bg-slate-50 dark:bg-white/5'}`} 
                             dir={isEn ? 'ltr' : 'rtl'}
                         >
                             <div className="flex items-center gap-1.5 font-bold" style={{ color: s3d.primaryColor }}>
@@ -513,7 +509,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                         className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
                     >
                         <h3 className="font-bold text-sm mb-3 flex items-center gap-2.5">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                                 <i className="fa-solid fa-cow text-sm" style={{ color: s3d.primaryColor }}></i>
                             </span>
                             <span>{isEn ? '1. Livestock Type & Minimum Age Requirements' : '1. نوع بهيمة الأنعام والشروط السنية'}</span>
@@ -538,7 +534,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                                 {isEn ? a.nameEn : a.name}
                                             </span>
                                             <span 
-                                                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg shrink-0 ${!isSelected ? (s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10') : ''}`}
+                                                className={`app-3d-badge text-[10px] font-bold px-2.5 py-0.5 rounded-lg shrink-0 ${!isSelected ? (s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10') : ''}`}
                                                 style={isSelected ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
                                             >
                                                 {a.shares === 1 ? (isEn ? '1 Share' : 'سهم واحد') : (isEn ? `Up to ${a.shares} shares` : `حتى ${a.shares} أسهم`)}
@@ -566,7 +562,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                     min="0"
                                     value={animalTotalPrice}
                                     onChange={e => setAnimalTotalPrice(e.target.value)}
-                                    className={`border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
+                                    className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
                                     placeholder="2500"
                                 />
                             </div>
@@ -582,7 +578,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                         max={currentAnimal.shares}
                                         value={mySharesCount}
                                         onChange={e => setMySharesCount(e.target.value)}
-                                        className={`border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
+                                        className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
                                         placeholder="1"
                                     />
                                 </div>
@@ -596,7 +592,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                         min="0"
                                         value={approxMeatKg}
                                         onChange={e => setApproxMeatKg(e.target.value)}
-                                        className={`border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
+                                        className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-primary/40 focus:outline-hidden ${s3d.recessedInputClass}`}
                                         placeholder={isEn ? 'e.g. 24' : 'مثال: 24'}
                                     />
                                 </div>
@@ -606,7 +602,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                         {/* Shares calculation breakdown if shared animal */}
                         {currentAnimal.shares > 1 && (
                             <div 
-                                className="border-0 mt-3.5 p-3.5 rounded-2xl flex flex-wrap justify-between items-center text-xs gap-2"
+                                className="app-inner-3d-box border-0 mt-3.5 p-3.5 rounded-2xl flex flex-wrap justify-between items-center text-xs gap-2"
                                 style={{ backgroundColor: s3d.softResultBg }}
                             >
                                 <span>
@@ -627,7 +623,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                         className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
                     >
                         <h3 className="font-bold text-sm mb-2 flex items-center gap-2.5">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                                 <Scale className="w-4 h-4" style={{ color: s3d.primaryColor }} />
                             </span>
                             <span>
@@ -643,7 +639,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                         </p>
 
                         <div className="grid grid-cols-3 gap-2.5 text-center">
-                            <div className="border-0 p-3.5 rounded-2xl bg-emerald-500/12">
+                            <div className="app-inner-3d-box border-0 p-3.5 rounded-2xl bg-emerald-500/12">
                                 <span className="text-[10px] font-bold block opacity-80 mb-1">
                                     {isEn ? '1/3 Eating & Storing' : 'ثلث الأكل والإدخار'}
                                 </span>
@@ -654,7 +650,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                     {totalMeatWeight > 0 ? thirdPartWeight : '—'} <span className="text-[10px] font-normal">{isEn ? 'kg' : 'كجم'}</span>
                                 </div>
                             </div>
-                            <div className="border-0 p-3.5 rounded-2xl bg-blue-500/12">
+                            <div className="app-inner-3d-box border-0 p-3.5 rounded-2xl bg-blue-500/12">
                                 <span className="text-[10px] font-bold block opacity-80 mb-1">
                                     {isEn ? '1/3 Gifting' : 'ثلث الإهداء'}
                                 </span>
@@ -665,7 +661,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                     {totalMeatWeight > 0 ? thirdPartWeight : '—'} <span className="text-[10px] font-normal">{isEn ? 'kg' : 'كجم'}</span>
                                 </div>
                             </div>
-                            <div className="border-0 p-3.5 rounded-2xl bg-purple-500/12">
+                            <div className="app-inner-3d-box border-0 p-3.5 rounded-2xl bg-purple-500/12">
                                 <span className="text-[10px] font-bold block opacity-80 mb-1">
                                     {isEn ? '1/3 Charity' : 'ثلث التصدق'}
                                 </span>
@@ -686,17 +682,17 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                     >
                         <div className="flex justify-between items-center gap-2 mb-2.5">
                             <h3 className="font-bold text-sm flex items-center gap-2.5">
-                                <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                                <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
                                 </span>
                                 <span>{isEn ? '3. Health Checklist for 4 Invalidation Defects' : '3. قائمة فحص السلامة من العيوب الأربعة المانعة'}</span>
                             </h3>
                             {hasAnyDefect ? (
-                                <span className="border-0 text-[10px] font-bold px-3 py-1 rounded-full bg-red-500/15 text-red-600 dark:text-red-400 shrink-0">
+                                <span className="app-3d-badge border-0 text-[10px] font-bold px-3 py-1 rounded-full bg-red-500/15 text-red-600 dark:text-red-400 shrink-0">
                                     {isEn ? 'Invalid' : 'غير مجزئة'}
                                 </span>
                             ) : (
-                                <span className="border-0 text-[10px] font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                <span className="app-3d-badge border-0 text-[10px] font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
                                     {isEn ? 'Healthy' : 'سليمة ومجزئة'}
                                 </span>
                             )}
@@ -719,7 +715,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                         style={checked ? { backgroundColor: 'rgba(239, 68, 68, 0.14)' } : undefined}
                                     >
                                         <div 
-                                            className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all"
+                                            className={`app-3d-checkbox ${checked ? 'app-3d-checkbox-checked' : ''} w-5 h-5 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all`}
                                             style={{
                                                 backgroundColor: checked ? '#EF4444' : 'rgba(150, 150, 150, 0.22)',
                                                 color: checked ? '#FFFFFF' : 'transparent'
@@ -747,7 +743,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                         className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
                     >
                         <h3 className="font-bold text-sm mb-2 flex items-center gap-2.5">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                                 <HeartHandshake className="w-4 h-4 text-pink-500" />
                             </span>
                             <span>{isEn ? '4. Newborn Aqiqah Calculator' : '4. حاسبة العقيقة عن المواليد'}</span>
@@ -768,7 +764,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                     min="0"
                                     value={maleBabies}
                                     onChange={e => setMaleBabies(e.target.value)}
-                                    className={`border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-pink-500/40 focus:outline-hidden ${s3d.recessedInputClass}`}
+                                    className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-pink-500/40 focus:outline-hidden ${s3d.recessedInputClass}`}
                                     placeholder="0"
                                 />
                                 <span className="text-[10px] opacity-75 block mt-1.5 text-center" style={{ color: s3d.subtextColor }}>
@@ -785,7 +781,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                     min="0"
                                     value={femaleBabies}
                                     onChange={e => setFemaleBabies(e.target.value)}
-                                    className={`border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-pink-500/40 focus:outline-hidden ${s3d.recessedInputClass}`}
+                                    className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl text-sm font-bold text-center tabular-nums focus:ring-2 focus:ring-pink-500/40 focus:outline-hidden ${s3d.recessedInputClass}`}
                                     placeholder="0"
                                 />
                                 <span className="text-[10px] opacity-75 block mt-1.5 text-center" style={{ color: s3d.subtextColor }}>
@@ -795,7 +791,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                         </div>
 
                         {totalAqiqahSheep > 0 && (
-                            <div className="border-0 mt-4 p-4 rounded-2xl bg-pink-500/12 text-center">
+                            <div className="app-inner-3d-box border-0 mt-4 p-4 rounded-2xl bg-pink-500/12 text-center">
                                 <span className="text-xs font-bold opacity-85 block">
                                     {isEn ? 'Total Required Animals for Aqiqah:' : 'إجمالي الذبائح المطلوبة للعقيقة:'}
                                 </span>

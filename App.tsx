@@ -1,6 +1,5 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import ThemeSelector from './components/ThemesModal';
 import ExitConfirmModal from './components/ExitConfirmModal';
 import AppRouter from './router/AppRouter';
 import WelcomeSplash from './components/WelcomeSplash';
@@ -12,11 +11,7 @@ import { useBackButton } from './hooks/useBackButton';
 import { App as CapacitorApp } from '@capacitor/app';
 import { PrayerTimesProvider } from './context/PrayerTimesContext';
 import { VoiceControlProvider, useVoiceControl } from './context/VoiceControlContext';
-import { TutorialProvider } from './context/TutorialContext';
-import SideMenu from './components/SideMenu';
 import MawlidNotification from './components/MawlidNotification';
-import { Mic, MicOff } from 'lucide-react';
-import { motion } from 'motion/react';
 import { useTheme, restoreHomeThemeDOMInstantly } from './context/ThemeContext';
 import { normalizeArabic } from './utils/voiceParser';
 import { usePrayerTimes } from './context/PrayerTimesContext';
@@ -52,7 +47,7 @@ import { useListenQuranStore } from './hooks/useListenQuranStore';
 
 // --- Main App Component ---
 function App() {
-  const { theme, applyPresetTheme, setCurrentPage } = useTheme();
+  const { theme, setHomeThemeVariant, setNightModeActive, setCurrentPage } = useTheme();
   const { setLanguage } = useLanguage();
 
   // Helper to normalize shortcut targets to application page IDs
@@ -127,8 +122,7 @@ function App() {
   useEffect(() => {
     recordAppLaunch();
     try {
-      // التأكد من أن التصميم الافتراضي المعتمد هو التصميم الذكي الحديث
-      if (!localStorage.getItem('home_layout_system')) {
+      if (localStorage.getItem('home_layout_system') !== 'modern') {
         localStorage.setItem('home_layout_system', 'modern');
       }
       Preferences.get({ key: 'has_selected_initial_language' }).then(({ value }) => {
@@ -139,13 +133,7 @@ function App() {
           } catch (e) {}
         }
       }).catch(() => {});
-      Preferences.get({ key: 'home_layout_system' }).then(({ value }) => {
-        if (value === 'classic' || value === 'modern') {
-          try {
-            localStorage.setItem('home_layout_system', value);
-          } catch (e) {}
-        }
-      }).catch(() => {});
+      Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
     } catch (e) {}
   }, []);
 
@@ -163,9 +151,7 @@ function App() {
   });
   const [navParams, setNavParams] = useState<any>(null);
   const [lastMenuPage, setLastMenuPage] = useState('home');
-  const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   
   // --- Update Notification Logic ---
   const [updateInfo, setUpdateInfo] = useState<{ show: boolean; newVersion: string }>({ show: false, newVersion: '' });
@@ -248,7 +234,7 @@ function App() {
 
     // --- Orientation Management (سلاسة وسرعة لحظية بدون تكرار أو تعليق) ---
     if (Capacitor.isNativePlatform()) {
-      const targetOrientation = currentPage === 'quran-landscape' ? 'landscape' : 'portrait';
+      const targetOrientation = (currentPage === 'quran-landscape' || activePageId === 'quran_search_landscape') ? 'landscape' : 'portrait';
       if (currentOrientationRef.current !== targetOrientation) {
         currentOrientationRef.current = targetOrientation;
         ScreenOrientation.lock({ orientation: targetOrientation }).catch((e) => {
@@ -256,11 +242,9 @@ function App() {
         });
       }
     }
-  }, [history]);
+  }, [history, activePageId]);
 
   const handleNavigate = useCallback((pageId: string, params?: any) => {
-    setIsSideMenuOpen(false);
-
     const rawPageId = pageId;
     // Normalize any legacy/alternative aliases to canonical page IDs
     const pageAliasMap: Record<string, string> = {
@@ -286,7 +270,7 @@ function App() {
     }
 
     const validPages = [
-      'home', 'quran', 'quran-landscape', 'quran-download', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
+      'home', 'quran', 'quran-landscape', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
       'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'prayer-calculation-settings', 'prayer-calculation', 'calculation-settings', 'qibla', 
       'sabah-masaa', 'adia', 'nawawi', 'calculators', 'voice-control', 'daily-wird', 'memorization',
       'memorization-session', 'memorization-studio',
@@ -531,9 +515,7 @@ function App() {
 
       const cleanTarget = normalizeShortcutTarget(target);
       console.log('[Shortcut] Navigating directly to target:', cleanTarget, 'seq:', seq);
-      setIsThemeSelectorOpen(false);
       setShowExitConfirm(false);
-      setIsSideMenuOpen(false);
       purgeBootSplashMemory();
       setSplashStage('app');
       handleNavigate(cleanTarget);
@@ -643,11 +625,26 @@ function App() {
     
     // 1. Handle Theme Change
     if (action === 'set_theme' && params?.theme) {
-      if (page === 'quran') {
+      if (page === 'quran' || page === 'quran-landscape') {
         window.dispatchEvent(new CustomEvent('voice-command', { detail: { action, text, params } }));
         return;
       } else {
-        applyPresetTheme(params.theme);
+        const t = params.theme;
+        if (t === 'deep_black' || t === 'black_gold') {
+          setNightModeActive(true);
+        } else if (t === 'night_sky' || t === 'sky_mode') {
+          setNightModeActive(false);
+          setHomeThemeVariant('sky');
+        } else if (t === 'green' || t === 'emerald_mode') {
+          setNightModeActive(false);
+          setHomeThemeVariant('emerald');
+        } else if (t === 'maroon' || t === 'burgundy_mode') {
+          setNightModeActive(false);
+          setHomeThemeVariant('burgundy');
+        } else {
+          setNightModeActive(false);
+          setHomeThemeVariant('gold');
+        }
         return;
       }
     }
@@ -688,13 +685,6 @@ function App() {
       const currentActive = history[history.length - 1];
       handleNavigate('search', (currentActive === 'quran' || currentActive === 'quran-landscape') ? { from: currentActive } : undefined);
     }
-    else if (action === 'open_themes' || (action === 'ui_click' && params?.label?.includes('ثيم'))) {
-      if (page === 'quran') {
-        window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_themes' } }));
-      } else {
-        setIsThemeSelectorOpen(true);
-      }
-    }
     else if (action === 'open_settings' || (action === 'ui_click' && params?.label?.includes('اعدادات'))) window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_settings' } }));
     else if (action === 'exit_app') setShowExitConfirm(true);
     else if (action === 'go_back') navigateBack();
@@ -713,7 +703,7 @@ function App() {
         }
       });
     }
-  }, [handleNavigate, applyPresetTheme, performUiClick, navigateBack, history]);
+  }, [handleNavigate, setHomeThemeVariant, setNightModeActive, performUiClick, navigateBack, history]);
 
   const page = history[history.length - 1];
 
@@ -731,7 +721,6 @@ function App() {
   }, [hasChosenInitialLanguage]);
 
   return (
-    <TutorialProvider>
       <PrayerTimesProvider>
         <VoiceControlProvider onAction={handleVoiceAction}>
           {/* 1. محتوى التطبيق الرئيسي (التصميم الذكي الحديث): جاهز في الخلفية لانتقال فوري */}
@@ -740,13 +729,9 @@ function App() {
               page={page} 
               history={history}
               navParams={navParams}
-              isThemeSelectorOpen={isThemeSelectorOpen}
               showExitConfirm={showExitConfirm}
-              isSideMenuOpen={isSideMenuOpen}
-              setIsSideMenuOpen={setIsSideMenuOpen}
               handleNavigate={handleNavigate}
               navigateBack={navigateBack}
-              setIsThemeSelectorOpen={setIsThemeSelectorOpen}
               setShowExitConfirm={setShowExitConfirm}
               updateInfo={updateInfo}
               setUpdateInfo={setUpdateInfo}
@@ -777,7 +762,6 @@ function App() {
           )}
         </VoiceControlProvider>
       </PrayerTimesProvider>
-    </TutorialProvider>
   );
 }
 
@@ -786,20 +770,16 @@ function AppContent({
   page, 
   history, 
   navParams,
-  isThemeSelectorOpen, 
   showExitConfirm, 
-  isSideMenuOpen,
-  setIsSideMenuOpen,
   handleNavigate, 
   navigateBack, 
-  setIsThemeSelectorOpen, 
   setShowExitConfirm,
   updateInfo,
   setUpdateInfo,
   isSplashActive = false
 }: any) {
   const { setCurrentPage: setVoicePage } = useVoiceControl();
-  const { theme, themeKey, applyPresetTheme } = useTheme();
+  const { theme } = useTheme();
   const { activeIqamaAlert, dismissIqamaAlert, activeAdhanAlert, dismissAdhanAlert } = usePrayerTimes();
   const [activeWirdAlert, setActiveWirdAlert] = useState<WirdAlertData | null>(null);
 
@@ -887,13 +867,9 @@ function AppContent({
 
   useBackButton({
     history,
-    isThemeSelectorOpen,
     showExitConfirm,
-    isSideMenuOpen,
     navigateBack,
-    setIsThemeSelectorOpen,
     setShowExitConfirm,
-    setIsSideMenuOpen
   });
 
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
@@ -911,16 +887,6 @@ function AppContent({
     useListenQuranStore.getState().endSessionOnAppClose();
     CapacitorApp.exitApp();
   };
-  
-  const handleOpenThemes = useCallback(() => {
-    if (page === 'quran' || page === 'quran-landscape') {
-      window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_themes' } }));
-    } else {
-      setIsThemeSelectorOpen(prev => !prev);
-    }
-  }, [page]);
-
-  const closeThemeSelector = () => setIsThemeSelectorOpen(false);
 
   return (
     <div className="relative min-h-[100dvh]">
@@ -928,11 +894,6 @@ function AppContent({
         page={page} 
         onBack={navigateBack} 
         onNavigate={handleNavigate} 
-        onOpenThemes={handleOpenThemes}
-        onOpenSideMenu={() => {
-          setIsSideMenuOpen(true);
-          window.dispatchEvent(new CustomEvent('quran-stop-audio'));
-        }}
         navParams={
           page === 'search' &&
           history.length >= 2 &&
@@ -942,25 +903,6 @@ function AppContent({
             : navParams
         }
       />
-
-      <SideMenu 
-        isOpen={isSideMenuOpen} 
-        onClose={() => setIsSideMenuOpen(false)} 
-        onNavigate={handleNavigate}
-        onOpenThemes={handleOpenThemes}
-        currentTheme={theme}
-        currentPage={page}
-      />
-
-      {/* Global Voice Control Toggle - Removed from here, moved to MainMenu */}
-      {/* {page === 'home' && <VoiceControlToggle />} */}
-
-      {isThemeSelectorOpen && (
-        <ThemeSelector 
-          onClose={closeThemeSelector} 
-          isLandscape={isLandscape}
-        />
-      )}
 
       {showExitConfirm && (
           <ExitConfirmModal

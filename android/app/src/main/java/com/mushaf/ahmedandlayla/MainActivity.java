@@ -13,10 +13,7 @@ import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-<<<<<<< HEAD
 import android.view.KeyEvent;
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -42,10 +39,7 @@ public class MainActivity extends BridgeActivity {
     private volatile float appliedSafeBottomCss = -1f;
     private volatile float fallbackStatusBarCss = 0f;
     private volatile boolean initialInsetsCaptured = false;
-<<<<<<< HEAD
     private int lastAdhanConsumedKeyCode = KeyEvent.KEYCODE_UNKNOWN;
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     private static synchronized long nextShortcutSeq() {
         long now = System.currentTimeMillis();
@@ -395,7 +389,6 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-<<<<<<< HEAD
     }
 
     @Override
@@ -414,8 +407,6 @@ public class MainActivity extends BridgeActivity {
             }
         }
         return super.dispatchKeyEvent(event);
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     }
 
     @Override

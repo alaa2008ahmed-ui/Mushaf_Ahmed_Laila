@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Sparkles, Check, ChevronRight, HelpCircle } from 'lucide-react';
+import { X, Plus, HelpCircle } from 'lucide-react';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { CommunitySpotlightGuide, getGuideSeen } from './Community/CommunitySpotlightGuide';
 import { CUSTOM_HABIT_MODAL_STEPS } from './Community/communityTourSteps';
-<<<<<<< HEAD
 import { getCalculator3DStyles } from '../utils/calculator3DStyles';
-=======
-import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { useShowPageGuides } from '../utils/guideManager';
 
 interface CustomHabitModalProps {
@@ -31,13 +26,8 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   onNavigate
 }) => {
   const showPageGuides = useShowPageGuides();
-<<<<<<< HEAD
   const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
   const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
-=======
-  const { theme, themeKey } = useTheme();
-  const tokens = getModernFlatTokens(theme, themeKey);
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   const { language } = useLanguage();
   const isEn = language === 'en';
   const [showGuide, setShowGuide] = useState(false);
@@ -109,31 +99,18 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4" 
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4" 
       onClick={onClose}
       dir={isEn ? 'ltr' : 'rtl'}
     >
-      <motion.div 
-        initial={{ y: '100%', opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: '100%', opacity: 0 }}
-        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-<<<<<<< HEAD
+      <div 
         className={`app-page-card border-0 w-full max-w-lg rounded-t-[28px] sm:rounded-3xl overflow-hidden flex flex-col max-h-[90dvh] ${s3d.surfaceCardClass}`}
         style={{ fontFamily: theme.font }}
-=======
-        className="w-full max-w-lg rounded-t-[28px] sm:rounded-[24px] overflow-hidden flex flex-col max-h-[90dvh] shadow-2xl border-0"
-        style={{ 
-          backgroundColor: tokens.cardBgColor, 
-          color: tokens.textColor,
-          fontFamily: theme.font
-        }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Drag Handle */}
         <div className="pt-3 pb-1 flex justify-center sm:hidden">
-          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
+          <div className="app-3d-drag-handle w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
         </div>
 
         {/* Header */}
@@ -142,26 +119,15 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
             {isEn ? 'Add Custom Worship' : 'إضافة عبادة أو طاعة'}
           </h2>
 
-<<<<<<< HEAD
           <div className="flex items-center gap-2 overflow-visible pb-1">
-=======
-          <div className="flex items-center gap-1">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {showPageGuides && (
               <button
                 type="button"
                 onClick={() => setShowGuide(true)}
-<<<<<<< HEAD
                 className={`app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${s3d.surfaceCardClass}`}
                 title={isEn ? "Guide" : "دليل الإضافة"}
               >
                 <HelpCircle size={18} style={{ color: s3d.textColor }} />
-=======
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
-                title={isEn ? "Guide" : "دليل الإضافة"}
-              >
-                <HelpCircle size={18} style={{ color: tokens.textColor }} />
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
               </button>
             )}
             <button
@@ -195,7 +161,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                   if (errorMsg) setErrorMsg('');
                 }}
                 placeholder={isEn ? 'e.g. Fasting Mondays and Thursdays, Duha prayer...' : 'مثال: صيام الاثنين والخميس، أو ركعتي الضحى...'}
-                className={`border-0 w-full px-4 py-3.5 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 ${s3d.recessedInputClass}`}
+                className={`app-3d-recessed-field border-0 w-full px-4 py-3.5 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 ${s3d.recessedInputClass}`}
               />
               {errorMsg && (
                 <p className="text-xs text-red-500 mt-2 font-bold">{errorMsg}</p>
@@ -213,17 +179,18 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               <div className="grid grid-cols-6 gap-2.5 overflow-visible pb-1">
                 {ICONS_LIST.map((ic) => {
                   const isSelected = selectedIcon === ic;
+                  const isDarkSurface = Boolean(theme.isDark) || Boolean(isNightMode) || s3d.isBlackTheme || themeKey === 'black_gold';
                   return (
                     <button
                       type="button"
                       key={ic}
                       onClick={() => setSelectedIcon(ic)}
-                      className={`app-page-card border-0 h-11 rounded-xl flex items-center justify-center text-xl transition-all cursor-pointer ${s3d.surfaceCardClass}`}
+                      className={`${isSelected ? 'unified-3d-btn' : 'app-page-card'} border-0 h-11 rounded-xl flex items-center justify-center text-xl transition-all cursor-pointer ${s3d.surfaceCardClass}`}
                       style={isSelected ? {
                         backgroundColor: s3d.activeTintBg,
-                        boxShadow: s3d.isBlackTheme
-                          ? '0 0 0 2px #FFFFFF'
-                          : `0 0 0 2px ${s3d.primaryColor}`
+                        boxShadow: isDarkSurface
+                          ? `0 0 0 2px ${s3d.isBlackTheme ? '#FFFFFF' : s3d.primaryColor}, 0 5.5px 0 #09090b, 0 10px 18px rgba(0, 0, 0, 0.72), inset 0 2px 2px rgba(255, 255, 255, 0.25)`
+                          : `0 0 0 2px ${s3d.primaryColor}, 0 5.5px 0 rgba(0, 0, 0, 0.14), 0 10px 18px -2px rgba(0, 0, 0, 0.12), inset 0 2px 2px rgba(255, 255, 255, 0.92)`
                       } : undefined}
                     >
                       {ic}
@@ -277,7 +244,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               {/* Days Selection when Specific */}
               {isSpecificDays && (
                 <div 
-                  className={`border-0 p-3.5 rounded-2xl space-y-3 overflow-visible ${s3d.recessedInputClass}`}
+                  className={`app-3d-recessed-field border-0 p-3.5 rounded-2xl space-y-3 overflow-visible ${s3d.recessedInputClass}`}
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap overflow-visible pb-1">
                     <span className="text-[11px] font-bold" style={{ color: s3d.subtextColor }}>
@@ -330,58 +297,27 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
 
         {/* Action Buttons Footer elevated clearly above phone bottom navigation bar */}
         <div
-<<<<<<< HEAD
           className={`px-5 pt-3.5 modal-sheet-safe-bottom shrink-0 border-t ${s3d.dividerClass} flex gap-2.5 overflow-visible ${s3d.surfaceCardClass}`}
-=======
-          className="px-5 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex gap-2.5"
-          style={{
-            backgroundColor: tokens.cardBgColor
-          }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         >
-          <motion.button
+          <button
             id="custom-habit-save-btn"
-            whileTap={{ scale: 0.98 }}
             type="submit"
             form="custom-habit-form"
-<<<<<<< HEAD
-            className="app-page-card border-0 flex-1 py-3.5 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+            className="app-page-card border-0 flex-1 py-3.5 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 cursor-pointer"
             style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
           >
             <Plus className="w-4 h-4 stroke-[2.75]" />
-=======
-            className="flex-1 py-3.5 px-4 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 text-white cursor-pointer border-0"
-            style={{ backgroundColor: tokens.primaryColor }}
-          >
-            <Plus className="w-4 h-4" />
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <span>{isEn ? 'Add Habit' : 'إضافة العبادة للطاعات 🌿'}</span>
-          </motion.button>
+          </button>
           <button
             type="button"
             onClick={onClose}
-<<<<<<< HEAD
-            className={`app-page-card border-0 py-3.5 px-5 rounded-2xl font-bold text-sm transition-all cursor-pointer ${s3d.surfaceCardClass}`}
-=======
-            className="py-3.5 px-5 rounded-xl font-bold text-sm bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 transition-colors cursor-pointer border-0"
-            style={{ color: tokens.textColor }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+            className={`app-page-card border-0 py-3.5 px-5 rounded-2xl font-bold text-sm cursor-pointer ${s3d.surfaceCardClass}`}
           >
             {isEn ? 'Cancel' : 'إلغاء'}
           </button>
         </div>
-<<<<<<< HEAD
-=======
-
-        <CommunitySpotlightGuide
-          guideKey="custom_habit_modal_spotlight"
-          steps={CUSTOM_HABIT_MODAL_STEPS}
-          isOpen={showGuide}
-          onClose={() => setShowGuide(false)}
-          isEn={isEn}
-        />
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-      </motion.div>
+      </div>
 
       <CommunitySpotlightGuide
         guideKey="custom_habit_modal_spotlight"

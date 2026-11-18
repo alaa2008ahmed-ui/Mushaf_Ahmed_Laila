@@ -1,8 +1,6 @@
 import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getLocalizedLocationName } from '../../utils/prayerTimesTranslations';
-import { HelpCircle } from 'lucide-react';
 import { useShowPageGuides } from '../../utils/guideManager';
 
 import { useTheme } from '../../context/ThemeContext';
@@ -220,7 +218,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                         {/* عنوان المدينة/المحافظة بخط تلقائي الحجم وثابت */}
                         <h1 
                             ref={titleRef}
-                            className={`app-top-bar__title ${language === 'en' ? 'font-sans font-bold' : 'font-kufi font-bold'} whitespace-nowrap overflow-hidden text-ellipsis max-w-full leading-tight`}
+                            className={`app-top-bar__title ${language === 'en' ? 'font-sans font-bold' : 'font-cairo font-bold'} whitespace-nowrap overflow-hidden text-ellipsis max-w-full leading-tight`}
                             style={{ 
                                 fontSize: `${titleFontSize}px`,
                                 color: headerTextColor 
@@ -259,7 +257,6 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                         )}
-                        <ThemePageLock />
                         <button
                             id="prayer-top-bar-settings-btn"
                             onClick={onOpenNotifications}

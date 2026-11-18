@@ -7,7 +7,7 @@ import { ADIA_EN_MAP } from '../data/adiaTranslationsEn';
 import { PhoneNotificationSettings } from '../hooks/useNotificationSettings';
 import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dailyWirdNotificationService';
 import { updateNativeAlertsGroupSummary } from './silentMode';
-import { getActiveNotificationTone, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
+import { getActiveNotificationTone, getActiveNotificationSoundPath } from './prayerTimesUtils';
 import { ensureNotificationPermission } from './permissionHelper';
 
 // Android status bar notification icon: Holy Quran on Rehal (Stand)

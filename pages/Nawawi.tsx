@@ -3,23 +3,33 @@ import { NAWAWI_DATA } from '../data/nawawiData';
 import { NAWAWI_DATA_EN } from '../data/nawawiDataEn';
 import { NAWAWI_EXPLANATIONS, HadithExplanation } from '../data/nawawiExplanationData';
 import { NAWAWI_EXPLANATIONS_EN, HadithExplanationEn } from '../data/nawawiExplanationDataEn';
-import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { motion, AnimatePresence } from 'framer-motion';
 import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
-import { HelpCircle } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { NAWAWI_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
-import { 
-    BookOpen, Sparkles, Lightbulb, Scale, ShieldCheck, 
-    HeartHandshake, Copy, Share2, Volume2, ZoomIn, 
-    X, ArrowRight, ArrowLeft, LayoutGrid, ListFilter,
-    ChevronDown 
+import { getToast3DStyles } from '../utils/toast3DStyles';
+import {
+  BookOpen,
+  Sparkles,
+  Lightbulb,
+  Scale,
+  ShieldCheck,
+  HeartHandshake,
+  Copy,
+  Share2,
+  Volume2,
+  ZoomIn,
+  ArrowRight,
+  ArrowLeft,
+  LayoutGrid,
+  ListFilter,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 
 interface HadithModalProps {
@@ -165,36 +175,28 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
     return (
         <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4" 
+            className="fixed inset-0 bg-black/65 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4" 
             onClick={onClose}
         >
-            <motion.div 
-                initial={{ y: '100%', opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-<<<<<<< HEAD
+            <div 
                 className="app-page-card border-0 w-full max-w-xl max-h-[88dvh] rounded-t-[28px] sm:rounded-[24px] flex flex-col overflow-hidden bg-white dark:bg-[#1E293B]" 
-=======
-                className="w-full max-w-xl max-h-[88dvh] rounded-t-[28px] sm:rounded-[24px] flex flex-col overflow-hidden shadow-2xl border-0" 
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 style={{ 
                     color: 'var(--text-color)', 
-                    fontFamily: theme.font
+                    fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif"
                 }} 
                 onClick={(e) => e.stopPropagation()}
                 dir={isEn ? 'ltr' : 'rtl'}
             >
                 {/* Drag Handle Indicator */}
                 <div className="pt-3 pb-1 flex justify-center sm:hidden">
-                    <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
+                    <div className="app-3d-drag-handle w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
                 </div>
 
                 {/* Header */}
                 <div className="p-4 sm:p-5 flex flex-col gap-3 overflow-visible">
                     <div className="flex items-center justify-between w-full">
                         <span 
-                            className="px-3 py-1 rounded-full text-xs font-bold"
+                            className="app-3d-badge px-3 py-1 rounded-full text-xs font-bold"
                             style={{ 
                                 backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                 color: tokens.primaryColor
@@ -248,12 +250,8 @@ const HadithModal: React.FC<HadithModalProps> = ({
                 
                 {/* Tab 1: Hadith Text */}
                 {activeTab === 'hadith' && (
-<<<<<<< HEAD
                     <div className="p-6 sm:p-8 overflow-y-auto leading-[2.3] text-center flex-1 min-h-0 hide-scrollbar" style={{ fontSize: `${fontSize}px`, color: 'var(--text-color)' }}>
-=======
-                    <div className="p-6 sm:p-8 overflow-y-auto leading-[2.3] text-center flex-1 min-h-0 hide-scrollbar" style={{ fontSize: `${fontSize}px`, color: tokens.textColor }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                        <p className={`whitespace-pre-line leading-[2.3] selection:bg-amber-100 ${isEn ? 'font-sans text-left' : 'font-amiri'}`} style={{ textAlign: isEn ? 'left' : 'center' }}>
+                        <p className={`whitespace-pre-line leading-[2.3] selection:bg-amber-100 ${isEn ? 'font-sans text-left' : 'font-cairo'}`} style={{ textAlign: isEn ? 'left' : 'center' }}>
                             {activeHadithText}
                         </p>
 
@@ -277,11 +275,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
                 {/* Tab 2: Explanation & Benefits */}
                 {activeTab === 'explanation' && (
-<<<<<<< HEAD
                     <div className={`p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 hide-scrollbar space-y-4 pb-6 ${isEn ? 'text-left' : 'text-right'}`}>
-=======
-                    <div className={`p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 hide-scrollbar space-y-4 ${isEn ? 'text-left' : 'text-right'}`}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         {activeExplanation ? (
                             <>
                                 {/* Brief Summary */}
@@ -367,11 +361,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
                 {/* Footer Controls - Clean Modern Style with dynamic safe-area padding */}
                 <div 
-<<<<<<< HEAD
                     className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 app-3d-divider-top flex items-center justify-center gap-3 sm:gap-4 overflow-visible"
-=======
-                    className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-center gap-3 sm:gap-4"
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                     {/* Audio */}
                     <button 
@@ -428,7 +418,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                         <ChevronDown className="w-5 h-5" />
                     </button>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };
@@ -440,8 +430,9 @@ interface NawawiProps {
 }
 
 const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const tokens = getModernFlatTokens(theme, themeKey);
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const { language } = useLanguage();
     const isEn = language === 'en';
     const innerSubBoxClass = `app-inner-3d-box border-0 ${tokens.isDeepBlack ? 'bg-[#18181b]' : 'bg-white dark:bg-[#0F172A]/85'}`;
@@ -590,7 +581,7 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
     });
 
     return (
-        <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif" }} dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -625,7 +616,6 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                             >
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
-                            <ThemePageLock />
                             <button
                                 onClick={() => onNavigate ? onNavigate('home') : onBack()}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer"
@@ -640,33 +630,35 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
             </header>
 
             <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-4 pt-3 app-scroll-safe">
-<<<<<<< HEAD
                 {/* Search and View Mode Control - Embossed 3D Surface */}
                 <div className="mb-5 max-w-3xl mx-auto flex items-center gap-2.5 w-full overflow-visible" dir={isEn ? 'ltr' : 'rtl'}>
-=======
-                {/* Search and View Mode Control - Flat Modern Surface */}
-                <div className="mb-5 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     <div 
-                        className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible transition-all"
+                        className={`app-page-card border-0 relative flex-1 rounded-2xl ${tokens.isDeepBlack ? 'bg-[#18181b]' : 'bg-white dark:bg-[#1E293B]'} flex items-center overflow-visible transition-all focus-within:ring-2 focus-within:ring-opacity-40`}
+                        style={{ '--tw-ring-color': tokens.primaryColor } as any}
                     >
                         <input 
                             type="text" 
                             placeholder={isEn ? "Search hadith, title, explanation..." : "ابحث في الأحاديث والشرح والفوائد..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full bg-transparent py-3 text-sm ${isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
+                            className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
                             style={{ color: 'var(--text-color)' }}
                         />
-                        <i 
-                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-40 text-xs pointer-events-none`} 
-                            style={{ color: 'var(--text-color)' }}
-                        ></i>
+                        <span
+                            className={`app-3d-badge border-0 absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none`}
+                            style={{
+                                backgroundColor: tokens.isDeepBlack ? 'rgba(255, 255, 255, 0.1)' : hexToRgba(tokens.primaryColor, 0.12),
+                                color: tokens.isDeepBlack ? '#FFFFFF' : tokens.primaryColor,
+                            }}
+                            aria-hidden="true"
+                        >
+                            <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
                         {searchQuery && (
                             <button
                                 type="button"
                                 onClick={() => setSearchQuery('')}
-                                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                className={`app-page-card unified-3d-btn border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
                                 aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
@@ -722,18 +714,18 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                                         style={{ color: 'var(--text-color)' }}
                                     >
                                         <div 
-                                            className="w-12 h-12 rounded-2xl flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform duration-300"
+                                            className="app-3d-badge w-12 h-12 rounded-2xl flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform duration-300"
                                             style={{ 
                                                 backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                                 color: tokens.primaryColor
                                             }}
                                         >
-                                            <span className="text-xl font-bold" style={{ fontFamily: theme.font }}>
+                                            <span className="text-xl font-bold" style={{ fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif" }}>
                                                 {isEn ? hadith.id : toArabicDigits(hadith.id)}
                                             </span>
                                         </div>
                                         
-                                        <h2 className="font-bold text-xs sm:text-sm leading-snug line-clamp-2" style={{ color: 'var(--text-color)', fontFamily: theme.font }}>
+                                        <h2 className="font-bold text-xs sm:text-sm leading-snug line-clamp-2" style={{ color: 'var(--text-color)', fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif" }}>
                                             {cleanTitle(displayTitle)}
                                         </h2>
 
@@ -753,7 +745,7 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                                                 <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                                 <span className="truncate">{isEn ? 'Explanation' : 'الفوائد والشرح'}</span>
                                             </button>
-                                            <div className="w-6 h-6 rounded-full flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity shrink-0">
+                                            <div className="app-3d-badge w-6 h-6 rounded-full flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity shrink-0">
                                                 {isEn ? (
                                                     <ArrowRight className="w-3.5 h-3.5" style={{ color: tokens.primaryColor }} />
                                                 ) : (
@@ -784,17 +776,17 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                                         <div className="flex items-center justify-between gap-3 mb-3 pb-3 app-3d-divider border-0">
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <div 
-                                                    className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                                                    className="app-3d-badge w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
                                                     style={{ 
                                                         backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                                         color: tokens.primaryColor
                                                     }}
                                                 >
-                                                    <span className="text-base font-bold" style={{ fontFamily: theme.font }}>
+                                                    <span className="text-base font-bold" style={{ fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif" }}>
                                                         {isEn ? hadith.id : toArabicDigits(hadith.id)}
                                                     </span>
                                                 </div>
-                                                <h2 className="font-bold text-sm sm:text-base truncate" style={{ color: 'var(--text-color)', fontFamily: theme.font }}>
+                                                <h2 className="font-bold text-sm sm:text-base truncate" style={{ color: 'var(--text-color)', fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif" }}>
                                                     {cleanTitle(displayTitle)}
                                                 </h2>
                                             </div>
@@ -818,19 +810,19 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                                         {/* Benefits Pills Preview */}
                                         <div className="flex flex-wrap gap-1.5 mb-4">
                                             {activeExp?.creedBenefits?.length > 0 && (
-                                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0">
+                                                <span className="app-3d-badge inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0">
                                                     <ShieldCheck className="w-3 h-3" />
                                                     <span>{isEn ? `${activeExp.creedBenefits.length} Creed Benefits` : `${toArabicDigits(activeExp.creedBenefits.length)} فوائد عقدية`}</span>
                                                 </span>
                                             )}
                                             {activeExp?.fiqhBenefits?.length > 0 && (
-                                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0">
+                                                <span className="app-3d-badge inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0">
                                                     <Scale className="w-3 h-3" />
                                                     <span>{isEn ? `${activeExp.fiqhBenefits.length} Fiqh Benefits` : `${toArabicDigits(activeExp.fiqhBenefits.length)} فوائد فقهية`}</span>
                                                 </span>
                                             )}
                                             {activeExp?.valuesBenefits?.length > 0 && (
-                                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0">
+                                                <span className="app-3d-badge inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0">
                                                     <HeartHandshake className="w-3 h-3" />
                                                     <span>{isEn ? `${activeExp.valuesBenefits.length} Value Benefits` : `${toArabicDigits(activeExp.valuesBenefits.length)} فوائد تربوية`}</span>
                                                 </span>
@@ -923,36 +915,38 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                 )}
             </main>
 
-            <AnimatePresence>
-                {selectedHadith && (
-                    <HadithModal 
-                        hadith={selectedHadith} 
-                        hadithEn={NAWAWI_DATA_EN[selectedHadith.id - 1]}
-                        initialTab={modalInitialTab}
-                        onClose={() => setSelectedHadith(null)} 
-                        favorites={favorites}
-                        toggleFavorite={toggleFavorite}
-                        handleCopy={handleCopy}
-                        handleShare={handleShare}
-                        setToastMessage={setToastMessage}
-                        isEn={isEn}
-                    />
-                )}
-            </AnimatePresence>
+            {selectedHadith && (
+                <HadithModal 
+                    hadith={selectedHadith} 
+                    hadithEn={NAWAWI_DATA_EN[selectedHadith.id - 1]}
+                    initialTab={modalInitialTab}
+                    onClose={() => setSelectedHadith(null)} 
+                    favorites={favorites}
+                    toggleFavorite={toggleFavorite}
+                    handleCopy={handleCopy}
+                    handleShare={handleShare}
+                    setToastMessage={setToastMessage}
+                    isEn={isEn}
+                />
+            )}
 
-            <AnimatePresence>
-                {toastMessage && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
-                        style={{ bottom: 'calc(var(--app-bottom-clearance) + 1rem)' }}
+            {toastMessage && (
+                <div 
+                    className="app-3d-toast fixed left-1/2 -translate-x-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none flex items-center justify-center gap-2.5"
+                    style={{
+                        bottom: 'calc(var(--app-bottom-clearance) + 1rem)',
+                        ...toast3D.style,
+                    }}
+                >
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
                     >
-                        {toastMessage}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                    <span>{toastMessage}</span>
+                </div>
+            )}
 
             {/* Interactive Spotlight Guide */}
             <CommunitySpotlightGuide

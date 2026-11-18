@@ -1,10 +1,30 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Sparkles, ChevronRight, ChevronLeft, Check, X, HelpCircle, 
-  Eye, Info, MessageSquare, Users, BookOpen, Send, Mic, Paperclip, Smile,
-  Clock, Bell, Calendar, Volume2, Settings, MapPin, Moon, FileText, Share2, Sliders, Compass, LayoutGrid, Cloud
+import {
+  Sparkles,
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  X,
+  MessageSquare,
+  Users,
+  BookOpen,
+  Mic,
+  Paperclip,
+  Smile,
+  Clock,
+  Bell,
+  Calendar,
+  Volume2,
+  Settings,
+  MapPin,
+  Moon,
+  FileText,
+  Share2,
+  Sliders,
+  Compass,
+  LayoutGrid,
+  Cloud
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -163,7 +183,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
 }) => {
   const showPageGuides = useShowPageGuides();
   const { language, formatNumber } = useLanguage();
-  const { isNightMode, homeThemeVariant } = useTheme();
+  const { isNightMode, homeThemeVariant, themeKey } = useTheme();
   const effectiveIsEn = isEn || language === 'en';
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -475,7 +495,6 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         width: cardWidth,
         maxHeight: minCardMaxHeight
       };
-<<<<<<< HEAD
     } else if (step.preferredPlacement === 'top' && spaceAbove >= 200) {
       // Requested top and has ample room above — anchor by bottom so card never overlaps target
       pointerPlacement = 'bottom';
@@ -511,34 +530,6 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         left: computedLeft,
         width: cardWidth,
         maxHeight: Math.max(160, screenHeight - targetRect.bottom - margin - 16)
-=======
-    } else if (step.preferredPlacement === 'top' && spaceAbove >= cardHeight + margin + 10 && targetRect.top >= 200) {
-      // Requested top and has ample room above
-      pointerPlacement = 'bottom';
-      cardPositionStyle = {
-        top: Math.max(24, targetRect.top - cardHeight - margin),
-        left: computedLeft,
-        width: cardWidth,
-        maxHeight: Math.max(200, targetRect.top - margin - 24)
-      };
-    } else if (spaceBelow >= Math.min(200, cardHeight + margin) || targetRect.top <= 160) {
-      // Target is in top half of screen or has good room below: place below target
-      pointerPlacement = 'top';
-      cardPositionStyle = {
-        top: Math.min(Math.max(24, targetRect.bottom + margin), screenHeight - 240),
-        left: computedLeft,
-        width: cardWidth,
-        maxHeight: Math.max(200, screenHeight - targetRect.bottom - margin - 24)
-      };
-    } else if (spaceAbove >= cardHeight + margin + 10 && targetRect.top >= 200) {
-      // Ample space above
-      pointerPlacement = 'bottom';
-      cardPositionStyle = {
-        top: Math.max(24, targetRect.top - cardHeight - margin),
-        left: computedLeft,
-        width: cardWidth,
-        maxHeight: Math.max(200, targetRect.top - margin - 24)
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       };
     } else {
       // Safe fallback: center on screen
@@ -566,8 +557,9 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   }
 
   // Dynamic theme accent color adaptation according to active theme
+  const isDarkCard = isNightMode || themeKey === 'deep_black' || themeKey === 'black_gold';
   let themeAccent = step?.accentColor;
-  if (isNightMode) {
+  if (isDarkCard) {
     themeAccent = '#F59E0B'; // Amber Gold for Night Mode
   } else if (homeThemeVariant === 'sky') {
     themeAccent = '#0284C7'; // Sky Blue
@@ -578,13 +570,50 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   } else if (homeThemeVariant === 'gold') {
     themeAccent = '#D97706'; // Golden Amber
   }
-<<<<<<< HEAD
-=======
 
   const currentAccent = themeAccent || step?.accentColor || '#10b981';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
-  const currentAccent = themeAccent || step?.accentColor || '#10b981';
+  const cardSurface = (() => {
+    if (isDarkCard) {
+      return {
+        bg: 'linear-gradient(168deg, #252530 0%, #15151e 100%)',
+        beakTopBg: '#24242f',
+        beakBottomBg: '#16161f',
+        lip: '#07070b',
+        outerShadow: '0 22px 48px rgba(0, 0, 0, 0.85)',
+        inset: 'rgba(255, 255, 255, 0.16)',
+        text: '#ffffff',
+        descText: '#e4e4e7',
+        divider: 'rgba(255, 255, 255, 0.12)',
+        dotInactive: 'rgba(255, 255, 255, 0.28)',
+        pillBg: 'linear-gradient(180deg, #32323e 0%, #24242e 100%)',
+        pillLip: '#09090d',
+        pillText: '#e4e4e7',
+        pillBorder: 'rgba(255, 255, 255, 0.16)',
+      };
+    }
+    const tintBottom =
+      homeThemeVariant === 'sky' ? '#eff8ff' :
+      homeThemeVariant === 'emerald' ? '#ecfdf5' :
+      homeThemeVariant === 'burgundy' ? '#fff1f2' :
+      '#fffbeb';
+    return {
+      bg: `linear-gradient(180deg, #ffffff 0%, ${tintBottom} 100%)`,
+      beakTopBg: '#ffffff',
+      beakBottomBg: tintBottom,
+      lip: `${currentAccent}55`,
+      outerShadow: '0 22px 44px rgba(15, 23, 42, 0.30)',
+      inset: 'rgba(255, 255, 255, 0.98)',
+      text: '#0f172a',
+      descText: '#334155',
+      divider: 'rgba(15, 23, 42, 0.10)',
+      dotInactive: 'rgba(15, 23, 42, 0.18)',
+      pillBg: 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
+      pillLip: 'rgba(15, 23, 42, 0.18)',
+      pillText: '#1e293b',
+      pillBorder: 'rgba(15, 23, 42, 0.14)',
+    };
+  })();
 
   const guideContent = (
     <div 
@@ -624,19 +653,16 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         </svg>
       ) : (
         <div 
-          className="absolute inset-0 bg-black/45 backdrop-blur-[1px] pointer-events-auto transition-opacity"
+          className="absolute inset-0 bg-black/50 pointer-events-auto"
           onClick={(e) => { e.stopPropagation(); handleSkip(); }}
         />
       )}
 
       {/* Target Element Luminous Spotlight Highlight Frame - Crisp & 100% Clear with zero dimming */}
       {targetRect && (
-        <motion.div
+        <div
           key={`spotlight-${step.id}`}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.2 }}
-          className="absolute pointer-events-none rounded-2xl transition-all duration-300"
+          className="absolute pointer-events-none rounded-2xl"
           style={{
             top: Math.max(0, targetRect.top - 6),
             left: Math.max(0, targetRect.left - 6),
@@ -664,23 +690,21 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 rounded-full shadow-md"
             style={{ backgroundColor: currentAccent }}
           />
-        </motion.div>
+        </div>
       )}
 
-      {/* Floating Tooltip Card */}
-      <motion.div
+      {/* Floating Tooltip Card — Unified 3D Elevated Style */}
+      <div
         key={`card-${step.id}`}
         ref={cardRef}
         data-guide-card="true"
-        initial={{ opacity: 0, scale: 0.93, y: pointerPlacement === 'top' ? -12 : (pointerPlacement === 'bottom' ? 12 : 0) }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.93 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="fixed z-[100003] pointer-events-auto rounded-3xl p-4 sm:p-5 shadow-2xl border-2 flex flex-col bg-slate-900/98 text-white backdrop-blur-xl overflow-hidden box-border max-w-[calc(100vw-28px)]"
+        className="fixed z-[100003] pointer-events-auto rounded-3xl p-4 sm:p-5 border-2 flex flex-col overflow-visible box-border max-w-[calc(100vw-28px)]"
         style={{
           ...cardPositionStyle,
+          background: cardSurface.bg,
+          color: cardSurface.text,
           borderColor: currentAccent,
-          boxShadow: `0 20px 50px -10px ${currentAccent}45, 0 0 0 1px ${currentAccent}60`
+          boxShadow: `0 7px 0 ${cardSurface.lip}, ${cardSurface.outerShadow}, inset 0 2px 2px ${cardSurface.inset}`
         }}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -691,36 +715,46 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         {/* Pointer Beak pointing dynamically toward highlighted target */}
         {pointerPlacement === 'top' && (
           <div 
-            className="absolute -top-2.5 w-4 h-4 rotate-45 border-t-2 border-l-2 bg-slate-900"
-            style={{ borderColor: currentAccent, left: beakLeft }}
+            className="absolute -top-2.5 w-4 h-4 rotate-45 border-t-2 border-l-2"
+            style={{
+              backgroundColor: cardSurface.beakTopBg,
+              borderColor: currentAccent,
+              left: beakLeft
+            }}
           />
         )}
         {pointerPlacement === 'bottom' && (
           <div 
-            className="absolute -bottom-2.5 w-4 h-4 rotate-45 border-b-2 border-r-2 bg-slate-900"
-            style={{ borderColor: currentAccent, left: beakLeft }}
+            className="absolute -bottom-2.5 w-4 h-4 rotate-45 border-b-2 border-r-2"
+            style={{
+              backgroundColor: cardSurface.beakBottomBg,
+              borderColor: currentAccent,
+              left: beakLeft
+            }}
           />
         )}
 
-        {/* Colorful Gradient Accent Header Bar */}
+        {/* Top Accent Bevel Bar */}
         <div 
-          className="absolute -top-1.5 inset-x-6 h-1.5 rounded-full bg-gradient-to-r opacity-90 shadow-sm"
+          className="absolute top-0 inset-x-10 h-1 rounded-b-full opacity-90 pointer-events-none"
           style={{
             backgroundImage: `linear-gradient(to right, ${currentAccent}, #ffffff, ${currentAccent})`
           }}
         />
 
         {/* Scrollable Content Container */}
-        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar mb-2 pe-0.5">
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar mb-2.5 pe-0.5">
           {/* Top Header: Badge, Step counter, Close / Skip */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2 min-w-0">
-              {/* Step Icon inside colorful circular badge */}
+              {/* Step Icon inside 3D pedestal */}
               <div 
-                className="w-8 h-8 rounded-2xl flex items-center justify-center font-bold shadow-md flex-shrink-0"
+                className="w-9 h-9 rounded-2xl flex items-center justify-center font-bold flex-shrink-0"
                 style={{
                   backgroundColor: currentAccent,
-                  color: '#ffffff'
+                  backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(0,0,0,0.12) 100%)',
+                  color: '#ffffff',
+                  boxShadow: `0 3.5px 0 rgba(0,0,0,0.28), 0 6px 12px ${currentAccent}45, inset 0 1.5px 1px rgba(255,255,255,0.45)`
                 }}
               >
                 {renderStepIcon(step.iconName, currentAccent)}
@@ -728,11 +762,12 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
 
               {/* Step Tag */}
               <span 
-                className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs truncate max-w-[180px]"
+                className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider truncate max-w-[180px]"
                 style={{
-                  backgroundColor: `${currentAccent}25`,
-                  color: currentAccent,
-                  border: `1px solid ${currentAccent}50`
+                  backgroundColor: isDarkCard ? `${currentAccent}28` : `${currentAccent}1a`,
+                  color: isDarkCard ? '#f8fafc' : '#0f172a',
+                  border: `1px solid ${currentAccent}55`,
+                  boxShadow: `0 2px 0 ${currentAccent}30, inset 0 1px 1px rgba(255,255,255,${isDarkCard ? '0.15' : '0.6'})`
                 }}
               >
                 {effectiveIsEn 
@@ -744,28 +779,37 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             <button
               type="button"
               onClick={handleSkip}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer shrink-0"
+              className="unified-3d-btn w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 cursor-pointer shrink-0"
+              style={{
+                background: cardSurface.pillBg,
+                color: cardSurface.pillText,
+                border: `1px solid ${cardSurface.pillBorder}`,
+                boxShadow: `0 2.5px 0 ${cardSurface.pillLip}, 0 4px 8px rgba(0,0,0,0.14), inset 0 1px 1px ${cardSurface.inset}`
+              }}
               title={effectiveIsEn ? "Skip Tour" : "تخطي الإرشاد"}
             >
-              <X size={15} />
+              <X size={15} strokeWidth={2.5} />
             </button>
           </div>
 
           {/* Title */}
-          <h3 className="text-base sm:text-lg font-black font-kufi mb-1.5 flex items-center gap-1.5 leading-snug">
-            <span style={{ color: currentAccent }}>
+          <h3 className="text-base sm:text-lg font-black font-cairo mb-1.5 flex items-center gap-1.5 leading-snug">
+            <span style={{ color: isDarkCard ? currentAccent : '#0f172a' }}>
               {effectiveIsEn ? (step.titleEn || step.titleAr) : step.titleAr}
             </span>
           </h3>
 
           {/* Detailed Explanation */}
-          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium whitespace-pre-line">
+          <p className="text-xs sm:text-sm leading-relaxed font-medium whitespace-pre-line" style={{ color: cardSurface.descText }}>
             {effectiveIsEn ? (step.descEn || formatNumber(step.descAr)) : step.descAr}
           </p>
         </div>
 
         {/* Bottom Bar: Dots Progress & Action Controls */}
-        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-white/10 shrink-0 mt-auto w-full min-w-0 overflow-hidden">
+        <div 
+          className="flex items-center justify-between gap-2 pt-2.5 shrink-0 mt-auto w-full min-w-0"
+          style={{ borderTop: `1px solid ${cardSurface.divider}` }}
+        >
           {/* Progress Dots or Compact Step Indicator */}
           {steps.length <= 6 ? (
             <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
@@ -775,16 +819,24 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
                   className="h-1.5 rounded-full transition-all duration-300 shrink-0"
                   style={{
                     width: idx === currentStepIndex ? '16px' : '5px',
-                    backgroundColor: idx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
+                    backgroundColor: idx === currentStepIndex ? currentAccent : cardSurface.dotInactive
                   }}
                 />
               ))}
             </div>
           ) : (
             <div className="flex items-center gap-1.5 shrink min-w-0 overflow-hidden">
-              <span className="text-[11px] font-black px-2 py-0.5 rounded-lg bg-white/10 text-slate-200 whitespace-nowrap shrink-0">
-                <span style={{ color: currentAccent }}>{formatNumber(currentStepIndex + 1)}</span>
-                <span className="opacity-40 mx-0.5">/</span>
+              <span 
+                className="text-[11px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap shrink-0"
+                style={{
+                  background: cardSurface.pillBg,
+                  color: cardSurface.pillText,
+                  border: `1px solid ${cardSurface.pillBorder}`,
+                  boxShadow: `0 2px 0 ${cardSurface.pillLip}, inset 0 1px 1px ${cardSurface.inset}`
+                }}
+              >
+                <span style={{ color: isDarkCard ? currentAccent : cardSurface.pillText }}>{formatNumber(currentStepIndex + 1)}</span>
+                <span className="opacity-45 mx-0.5">/</span>
                 <span>{formatNumber(steps.length)}</span>
               </span>
               <div className="flex items-center gap-1 shrink-0 overflow-hidden">
@@ -803,7 +855,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
                         className="h-1.5 rounded-full transition-all duration-300 shrink-0"
                         style={{
                           width: actualIdx === currentStepIndex ? '14px' : '4px',
-                          backgroundColor: actualIdx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
+                          backgroundColor: actualIdx === currentStepIndex ? currentAccent : cardSurface.dotInactive
                         }}
                       />
                     );
@@ -814,12 +866,18 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
           )}
 
           {/* Buttons: Prev & Next */}
-          <div className="flex items-center gap-1.5 shrink-0 ms-auto">
+          <div className="flex items-center gap-2 shrink-0 ms-auto">
             {!isFirstStep && (
               <button
                 type="button"
                 onClick={handlePrev}
-                className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                className="unified-3d-btn px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                style={{
+                  background: cardSurface.pillBg,
+                  color: cardSurface.pillText,
+                  border: `1px solid ${cardSurface.pillBorder}`,
+                  boxShadow: `0 3px 0 ${cardSurface.pillLip}, 0 5px 10px rgba(0,0,0,0.14), inset 0 1.5px 1px ${cardSurface.inset}`
+                }}
               >
                 {effectiveIsEn ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
                 <span>{effectiveIsEn ? 'Back' : 'السابق'}</span>
@@ -829,11 +887,12 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             <button
               type="button"
               onClick={handleNext}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0 relative z-10 whitespace-nowrap"
+              className="unified-3d-btn px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shrink-0 relative z-10 whitespace-nowrap"
               style={{
                 backgroundColor: currentAccent,
+                backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(0,0,0,0.08) 100%)',
                 color: '#ffffff',
-                boxShadow: `0 4px 14px ${currentAccent}60`
+                boxShadow: `0 4px 0 rgba(0,0,0,0.32), 0 8px 16px -2px ${currentAccent}55, inset 0 1.5px 1px rgba(255,255,255,0.45)`
               }}
             >
               <span>
@@ -849,7 +908,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 

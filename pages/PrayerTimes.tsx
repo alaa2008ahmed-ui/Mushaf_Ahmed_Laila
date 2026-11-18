@@ -11,9 +11,10 @@ import PrayerTimesDateSearch from '../components/PrayerTimes/PrayerTimesDateSear
 import NextPrayerCard from '../components/PrayerTimes/NextPrayerCard';
 import NotificationSettingsModal from '../components/QuranReader/NotificationSettingsModal';
 import VisualSunPath from '../components/PrayerTimes/VisualSunPath';
-import { Bell, MapPin } from 'lucide-react';
+import { Bell, MapPin, Check } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { App as CapacitorApp } from '@capacitor/app';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { PRAYER_TIMES_PAGE_STEPS } from '../components/Community/communityTourSteps';
@@ -22,6 +23,7 @@ import { fetchOutdoorPrayerWeather, OutdoorPrayerWeather } from '../utils/weathe
 import OutdoorWeatherBadge from '../components/MainMenu/OutdoorWeatherBadge';
 import { showGlobalAppToast } from '../utils/appNotificationSettings';
 import { openLocationSettings, requestLocationPermission } from '../utils/permissionHelper';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 import {
     applyOffset,
     formatTime12,
@@ -48,8 +50,8 @@ class ModalErrorBoundary extends React.Component<{ children: React.ReactNode; on
     render() {
         if (this.state.hasError) {
             return (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1300] flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-white p-6 rounded-2xl max-w-sm w-full text-center space-y-4 shadow-xl">
+                <div className="fixed inset-0 bg-black/65 z-[1300] flex items-center justify-center p-4">
+                    <div className="app-page-card border-0 bg-white dark:bg-[#18181b] text-slate-800 dark:text-white p-6 rounded-3xl max-w-sm w-full text-center space-y-4">
                         <p className="font-bold text-sm">حدث خطأ غير متوقع أثناء فتح الإعدادات</p>
                         <button
                             type="button"
@@ -57,7 +59,8 @@ class ModalErrorBoundary extends React.Component<{ children: React.ReactNode; on
                                 this.setState({ hasError: false });
                                 if (this.props.onClose) this.props.onClose();
                             }}
-                            className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
+                            className="unified-3d-btn border-0 px-5 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
+                            style={{ boxShadow: '0 4px 0 #047857, 0 8px 16px -2px rgba(5, 150, 105, 0.35), inset 0 1.5px 1px rgba(255, 255, 255, 0.38)' }}
                         >
                             إغلاق
                         </button>
@@ -74,7 +77,7 @@ function PrayerTimes({ onBack, onNavigate }) {
     const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const { 
-        times, dates, nextPrayer, config, refreshLocation, manualSearch, updateConfig,
+        times, dates, nextPrayer, config, refreshLocation, manualSearch, selectLocation, updateConfig,
         isPrayerSilentActive, activeSilentPrayerName, manuallyRestoreSilent, activeCalculationMethodName, activeAsrMadhabName
     } = usePrayerTimes();
     const countdown = usePrayerCountdown();
@@ -94,6 +97,7 @@ function PrayerTimes({ onBack, onNavigate }) {
     const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || theme.palette?.[0] || '#4B5563');
     const pageBgColor = isBlackTheme ? '#000000' : (theme.bgColor || '#F8FAFC');
     const topBarTextColor = isGoldenTheme ? '#000000' : '#FFFFFF';
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
 
     const cardBorderColor = isBlackTheme ? '#FFFFFF' : 'transparent';
     const nextPrayerCardBorderColor = primaryColor;
@@ -447,6 +451,10 @@ function PrayerTimes({ onBack, onNavigate }) {
                         searchInput={searchInput}
                         setSearchInput={setSearchInput}
                         handleManualSearch={handleManualSearch}
+                        onSelectLocation={(suggestion) => {
+                            selectLocation(suggestion);
+                            showToast(tPrayer('toastCitySuccess', language));
+                        }}
                         searchIconRef={searchIconRef}
                         primaryColor={primaryColor}
                         secondaryColor={secondaryColor}
@@ -456,7 +464,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                     />
 
                     {/* Row 2: Action Buttons (Nearby Mosques, Monthly Times, Calculation Method) */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 overflow-visible pb-0.5">
                         <button
                             onClick={async () => {
                                 const lat = config.location?.lat;
@@ -477,12 +485,12 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 }
                             }}
                             id="nearby-mosques-btn"
-                            className={`flex-1 rounded-2xl py-3 px-2 sm:px-3 flex items-center justify-center font-bold text-xs sm:text-[13px] active:scale-95 transition-all cursor-pointer ${
+                            className={`app-page-card border-0 flex-1 rounded-2xl py-3 px-2 sm:px-3 flex items-center justify-center font-bold text-xs sm:text-[13px] transition-all cursor-pointer ${
                                 isBlackTheme 
-                                    ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
-                                    : 'bg-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                                    ? 'bg-[#18181b] text-white' 
+                                    : 'bg-white text-slate-900'
                             }`}
-                            style={{ borderRadius: '16px', color: isBlackTheme ? '#FFFFFF' : '#000000' }}
+                            style={{ borderRadius: '16px', border: 'none', color: isBlackTheme ? '#FFFFFF' : '#000000' }}
                         >
                             <span className="truncate whitespace-nowrap font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : '#000000' }}>
                                 {tPrayer('nearbyMosques', language)}
@@ -491,12 +499,12 @@ function PrayerTimes({ onBack, onNavigate }) {
                         <button
                             onClick={() => onNavigate('monthly-prayer-times')}
                             id="monthly-times-btn"
-                            className={`flex-1 rounded-2xl py-3 px-2 sm:px-3 flex items-center justify-center font-bold text-xs sm:text-[13px] active:scale-95 transition-all cursor-pointer ${
+                            className={`app-page-card border-0 flex-1 rounded-2xl py-3 px-2 sm:px-3 flex items-center justify-center font-bold text-xs sm:text-[13px] transition-all cursor-pointer ${
                                 isBlackTheme 
-                                    ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
-                                    : 'bg-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                                    ? 'bg-[#18181b] text-white' 
+                                    : 'bg-white text-slate-900'
                             }`}
-                            style={{ borderRadius: '16px', color: isBlackTheme ? '#FFFFFF' : '#000000' }}
+                            style={{ borderRadius: '16px', border: 'none', color: isBlackTheme ? '#FFFFFF' : '#000000' }}
                         >
                             <span className="truncate whitespace-nowrap font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : '#000000' }}>
                                 {tPrayer('monthlyTimes', language)}
@@ -505,12 +513,12 @@ function PrayerTimes({ onBack, onNavigate }) {
                         <button
                             onClick={() => onNavigate('prayer-calculation-settings')}
                             id="calculation-method-btn"
-                            className={`flex-1 rounded-2xl py-3 px-2 sm:px-3 flex items-center justify-center font-bold text-xs sm:text-[13px] active:scale-95 transition-all cursor-pointer ${
+                            className={`app-page-card border-0 flex-1 rounded-2xl py-3 px-2 sm:px-3 flex items-center justify-center font-bold text-xs sm:text-[13px] transition-all cursor-pointer ${
                                 isBlackTheme 
-                                    ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
-                                    : 'bg-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                                    ? 'bg-[#18181b] text-white' 
+                                    : 'bg-white text-slate-900'
                             }`}
-                            style={{ borderRadius: '16px', color: isBlackTheme ? '#FFFFFF' : '#000000' }}
+                            style={{ borderRadius: '16px', border: 'none', color: isBlackTheme ? '#FFFFFF' : '#000000' }}
                             title={language === 'en' ? 'Calculation & Fiqh Settings' : 'إعدادات طريقة الحساب والمذاهب الفقهية'}
                         >
                             <span className="truncate whitespace-nowrap font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : '#000000' }}>
@@ -565,6 +573,15 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         }
                                     });
 
+                                    // اهتزاز الهاتف عند التفعيل أو التعطيل
+                                    if (Capacitor.isNativePlatform()) {
+                                        Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {
+                                            try { navigator?.vibrate?.(45); } catch {}
+                                        });
+                                    } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                                        try { navigator.vibrate(45); } catch {}
+                                    }
+
                                     const isEn = language === 'en';
                                     const namesAr: Record<string, string> = {
                                         firstThird: 'تنبيه أول الليل',
@@ -587,17 +604,24 @@ function PrayerTimes({ onBack, onNavigate }) {
                     })()}
 
                     {isAudioMuted && (
-                        <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-3 mb-4 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                                <Bell className="w-5 h-5" />
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-bold">{tPrayer('audioAlertsPaused', language)}</span>
-                                    <span className="text-xs opacity-80">{tPrayer('untilDate', language)}{new Date(config.audioMutedUntil!).toLocaleDateString(language === 'en' ? 'en-US-u-nu-latn' : 'ar-EG-u-nu-arab')}</span>
+                        <div className="app-page-card border-0 bg-red-50 dark:bg-red-950/60 rounded-2xl p-3.5 mb-2 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400 min-w-0">
+                                <div className="app-3d-badge w-9 h-9 rounded-xl bg-white dark:bg-red-900/60 flex items-center justify-center shrink-0 text-red-600 dark:text-red-300">
+                                    <Bell className="w-4 h-4" />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-sm font-extrabold truncate">{tPrayer('audioAlertsPaused', language)}</span>
+                                    <span className="text-xs opacity-85 truncate">{tPrayer('untilDate', language)}{new Date(config.audioMutedUntil!).toLocaleDateString(language === 'en' ? 'en-US-u-nu-latn' : 'ar-EG-u-nu-arab')}</span>
                                 </div>
                             </div>
                             <button 
+                                type="button"
                                 onClick={() => updateConfig({ audioMutedUntil: undefined })}
-                                className="text-xs bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-lg font-bold"
+                                className="unified-3d-btn text-xs bg-red-600 text-white px-3.5 py-2 rounded-xl font-black cursor-pointer shrink-0 border-0"
+                                style={{
+                                    backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.08) 100%)',
+                                    boxShadow: '0 3.5px 0 #991b1b, 0 6px 12px -2px rgba(220,38,38,0.35), inset 0 1.5px 1px rgba(255,255,255,0.35)'
+                                }}
                             >
                                 {tPrayer('enable', language)}
                             </button>
@@ -606,13 +630,13 @@ function PrayerTimes({ onBack, onNavigate }) {
 
                     {/* Live active notification banner if currently active during prayer */}
                     {isPrayerSilentActive && (
-                        <div className="p-2.5 px-3.5 mt-2 rounded-2xl bg-purple-100 dark:bg-purple-900/40 border border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 flex items-center justify-between text-xs font-bold gap-2 flex-wrap">
-                            <div className="flex items-center gap-2">
-                                <span className="text-base">🔕</span>
-                                <span>{tPrayer('silentModeActive', language, { p: getPrayerDisplayName(activeSilentPrayerName, language) })}</span>
+                        <div className="app-page-card border-0 p-3 px-3.5 mt-1 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-900 dark:text-purple-100 flex items-center justify-between text-xs font-bold gap-2.5 flex-wrap">
+                            <div className="flex items-center gap-2.5">
+                                <span className="app-3d-badge w-8 h-8 rounded-xl bg-white dark:bg-purple-900/70 flex items-center justify-center text-base shrink-0">🔕</span>
+                                <span className="font-extrabold">{tPrayer('silentModeActive', language, { p: getPrayerDisplayName(activeSilentPrayerName, language) })}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] opacity-75 font-normal">{tPrayer('mayAllahAccept', language)}</span>
+                                <span className="text-[10px] opacity-80 font-semibold">{tPrayer('mayAllahAccept', language)}</span>
                                 <button
                                     type="button"
                                     onClick={async () => {
@@ -621,7 +645,11 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         }
                                         showToast(language === 'ar' ? 'تمت استعادة صوت الهاتف وإلغاء وضع الصامت' : 'Device sound restored');
                                     }}
-                                    className="py-1 px-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 active:scale-95 text-white text-[11px] font-black transition-all cursor-pointer shadow-xs flex items-center gap-1"
+                                    className="unified-3d-btn py-1.5 px-3 rounded-xl bg-purple-600 text-white text-[11px] font-black transition-all cursor-pointer flex items-center gap-1.5 border-0"
+                                    style={{
+                                        backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.08) 100%)',
+                                        boxShadow: '0 3.5px 0 #581c87, 0 6px 12px -2px rgba(147,51,234,0.38), inset 0 1.5px 1px rgba(255,255,255,0.35)'
+                                    }}
                                     title={language === 'ar' ? 'إلغاء وضع الصامت واستعادة الصوت فوراً' : 'Unmute device sound now'}
                                 >
                                     <i className="fa-solid fa-volume-high text-[10px]"></i>
@@ -680,11 +708,13 @@ function PrayerTimes({ onBack, onNavigate }) {
                         })}
                     </div>
                     
-                    <div className="flex justify-center mt-2 mb-3 shrink-0 px-2">
+                    <div className="flex justify-center mt-2.5 mb-3 shrink-0 px-2">
                         <button
                             type="button"
                             onClick={handleOpenLocationSettings}
-                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-center text-xs sm:text-sm font-extrabold transition-all active:scale-95 cursor-pointer underline decoration-2 underline-offset-4"
+                            className={`app-page-card unified-3d-btn border-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-center text-xs sm:text-sm font-extrabold cursor-pointer ${
+                                isBlackTheme ? 'bg-[#18181b]' : 'bg-white'
+                            }`}
                             style={{
                                 color: isBlackTheme ? '#FBBF24' : primaryColor,
                             }}
@@ -756,11 +786,20 @@ function PrayerTimes({ onBack, onNavigate }) {
             )}
 
             {toastMessage && (
-                <div 
-                    className="fixed left-1/2 -translate-x-1/2 bg-gray-900/95 text-white max-w-[85vw] px-4 py-2.5 rounded-2xl shadow-xl border border-white/10 z-[99999999] text-center text-xs sm:text-sm font-bold leading-normal break-words pointer-events-none"
-                    style={{ bottom: 'calc(var(--app-bottom-clearance) + 1rem)' }}
+                <div
+                    className="app-3d-toast fixed left-1/2 -translate-x-1/2 z-[99999999] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl text-center text-xs sm:text-sm font-bold leading-normal break-words pointer-events-none flex items-center justify-center gap-2.5"
+                    style={{
+                        bottom: 'calc(var(--app-bottom-clearance) + 1rem)',
+                        ...toast3D.style,
+                    }}
                 >
-                    {toastMessage}
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
+                    >
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                    <span>{toastMessage}</span>
                 </div>
             )}
 

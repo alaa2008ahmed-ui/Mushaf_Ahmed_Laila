@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, Copy, Check, Share2, ZoomIn, ChevronDown, Columns } from 'lucide-react';
+import { Volume2, VolumeX, Copy, Check, Share2, ZoomIn, ChevronDown, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { toArabic } from './constants';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface TafseerModalProps {
     isOpen: boolean;
@@ -11,7 +12,6 @@ interface TafseerModalProps {
     title: string;
     text: string;
     onClose: () => void;
-    onOpenThemes?: () => void;
     onOpenCompare?: () => void;
     isLandscape?: boolean;
     currentTheme?: any;
@@ -73,9 +73,7 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
 
     if (!isOpen) return null;
 
-    const themeAccent = currentTheme?.accent || '#10b981';
-    const isDeepBlack = currentTheme?.id === 'deep_black';
-    const themeAccentColor = isDeepBlack ? '#ffffff' : themeAccent;
+    const p = resolveQuranModalPalette(currentTheme);
 
     // Derived category title if not explicitly passed
     const badgeCategoryTitle = categoryTitle || (
@@ -155,123 +153,153 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
         setIsPlaying(true);
     };
 
+    const sourceSubTitle = surahName && ayahNumber
+        ? (isEn ? `${surahName} • Ayah ${ayahNumber}` : `${surahName} • آية ${toArabic(ayahNumber)}`)
+        : '';
+
     return (
         <div 
-            className="fixed inset-0 z-[1300] bg-black/65 backdrop-blur-xs flex flex-col justify-end select-none animate-fadeIn"
+            className={`fixed inset-0 z-[1300] bg-black/70 flex flex-col select-none ${isLandscape ? 'justify-center items-center p-2.5' : 'justify-end'}`}
             onClick={handleClose}
             dir={dir}
         >
             <div 
-                className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col overflow-hidden relative shadow-2xl animate-modal-enter ${
-                    isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'
+                className={`zoom-modal-sheet modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} flex flex-col overflow-hidden relative shadow-2xl border-0 ${
+                    isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%] rounded-3xl' : 'w-full max-w-xl mx-auto rounded-t-[32px] max-h-[88dvh]'
                 }`}
                 style={{ 
-                    backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff', 
-                    color: currentTheme?.modalText || currentTheme?.text || '#000000',
-                    fontFamily: currentTheme?.font || "'Cairo', sans-serif"
+                    backgroundColor: p.modalBg, 
+                    color: p.modalText,
+                    fontFamily: p.fontFamily || "'Cairo', sans-serif",
+                    border: 'none',
+                    outline: 'none'
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Top Drag Handle & Category Badge */}
-                <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
-                    <div className="w-12 h-1.5 rounded-full mb-2.5 bg-slate-300 dark:bg-zinc-700 opacity-70 mx-auto" />
+                {/* Canonical Raised 3D Header */}
+                <div className={`${isLandscape ? 'pt-2.5 px-3 pb-1.5' : 'pt-3 px-4 sm:px-5 pb-2.5'} shrink-0 flex flex-col`}>
+                    {!isLandscape && (
+                        <div className="app-3d-drag-handle w-12 h-1.5 rounded-full mb-2.5 bg-slate-300/80 dark:bg-zinc-600/80 mx-auto" />
+                    )}
                     
-                    <div className="w-full flex items-center justify-center relative px-2">
-                        <span 
-                            className="px-4 py-1.5 rounded-full text-xs font-extrabold shadow-2xs border transition-all"
-                            style={{
-                                backgroundColor: `${themeAccent}18`,
-                                borderColor: `${themeAccent}40`,
-                                color: themeAccentColor
-                            }}
-                        >
-                            {badgeCategoryTitle}
-                        </span>
+                    <div 
+                        className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between gap-2 quran-raised-card border-0`}
+                        style={{ backgroundColor: p.headerBg }}
+                    >
+                        <div className="flex flex-col min-w-0 text-start">
+                            <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide truncate`} style={{ color: p.headerAccent }}>
+                                {badgeCategoryTitle}
+                            </span>
+                            {sourceSubTitle && (
+                                <span className={`${isLandscape ? 'text-[10px]' : 'text-[11px]'} font-bold truncate`} style={{ color: p.mutedText }}>
+                                    {sourceSubTitle}
+                                </span>
+                            )}
+                        </div>
 
-                        {onOpenCompare && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {onOpenCompare && (
+                                <button 
+                                    type="button"
+                                    onClick={onOpenCompare}
+                                    className={`${isLandscape ? 'px-2.5 h-7 text-[11px]' : 'px-3.5 h-8 text-xs'} rounded-full font-black flex items-center justify-center border-0 quran-raised-btn cursor-pointer font-cairo`}
+                                    style={{
+                                        backgroundColor: p.closeBg,
+                                        color: p.headerAccent
+                                    }}
+                                    title={isEn ? "Compare Tafseers" : "مقارنة تفاسير متعددة"}
+                                >
+                                    <span>{isEn ? "Compare" : "مقارنة"}</span>
+                                </button>
+                            )}
                             <button 
-                                onClick={onOpenCompare}
-                                className="absolute left-2 rtl:left-auto rtl:right-2 p-1.5 px-3.5 rounded-full text-xs font-bold flex items-center justify-center border transition-all cursor-pointer font-cairo shadow-2xs active:scale-95"
-                                style={{
-                                    backgroundColor: `${themeAccent}18`,
-                                    borderColor: `${themeAccent}40`,
-                                    color: themeAccentColor
-                                }}
-                                title={isEn ? "Compare Tafseers" : "مقارنة تفاسير متعددة"}
+                                type="button"
+                                onClick={handleClose} 
+                                className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer shrink-0`}
+                                style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+                                aria-label={isEn ? "Close" : "إغلاق"}
                             >
-                                <span>{isEn ? "Compare" : "مقارنة"}</span>
+                                <X size={isLandscape ? 14 : 16} />
                             </button>
-                        )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Scrollable Content Area */}
-                <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-6 py-3">
-                    {/* Display Ayah Text if available */}
+                <div className={`overflow-y-auto custom-scrollbar flex-1 min-h-0 ${isLandscape ? 'px-3 pt-1 pb-3 space-y-2.5' : 'px-4 sm:px-5 pt-2 pb-5 space-y-4'}`}>
+                    {/* Display Ayah Text in Raised 3D Card */}
                     {ayahText && (
                         <div 
-                            className="py-3 px-4 my-2.5 rounded-2xl text-center select-text leading-[2.1] font-bold border quran-raised-card transition-all"
+                            className="p-4 rounded-2xl text-center select-text leading-[2.1] font-bold border-0 quran-raised-card"
                             style={{
-                                backgroundColor: `${themeAccent}0d`,
-                                borderColor: `${themeAccent}25`,
+                                backgroundColor: p.cardBg,
+                                color: p.cardText,
                                 fontSize: `${fontSize + 4}px`,
                                 fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
                             }}
                             dir="rtl"
                         >
-                            {ayahText} {ayahNumber ? <span>﴿{toArabic(ayahNumber)}﴾</span> : ''}
+                            {ayahText} {ayahNumber ? <span style={{ color: p.headerAccent }}>﴿{toArabic(ayahNumber)}﴾</span> : ''}
                         </div>
                     )}
 
-                    {/* Main Explanation / Tafseer / Meaning / Translation Text */}
-                    {isLoading ? (
-                        <div className="py-14 flex flex-col items-center justify-center gap-3">
-                            <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: themeAccentColor }}></div>
-                            <p className="font-bold opacity-60 text-sm">{isEn ? "Loading..." : "جاري التحميل..."}</p>
-                        </div>
-                    ) : (
-                        <div 
-                            className={`leading-[2.2] sm:leading-[2.4] font-bold text-center select-text py-2 px-1 transition-all ${
-                                isEn ? 'font-sans' : 'font-cairo'
-                            }`}
-                            style={{ 
-                                fontSize: `${fontSize}px`,
-                                whiteSpace: 'pre-wrap',
-                                color: currentTheme?.modalText || currentTheme?.text || '#000000'
-                            }}
-                            dir={isEn ? 'ltr' : 'rtl'}
-                        >
-                            {text}
-                        </div>
-                    )}
+                    {/* Main Explanation / Tafseer / Meaning / Translation inside Raised 3D Card */}
+                    <div 
+                        className="p-4 sm:p-5 rounded-2xl border-0 quran-raised-card"
+                        style={{
+                            backgroundColor: p.cardBg,
+                            color: p.cardText
+                        }}
+                    >
+                        {isLoading ? (
+                            <div className="py-12 flex flex-col items-center justify-center gap-3">
+                                <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: p.headerAccent }}></div>
+                                <p className="font-bold opacity-60 text-sm">{isEn ? "Loading..." : "جاري التحميل..."}</p>
+                            </div>
+                        ) : (
+                            <div 
+                                className={`leading-[2.2] sm:leading-[2.4] font-bold text-center select-text ${
+                                    isEn ? 'font-sans' : 'font-cairo'
+                                }`}
+                                style={{ 
+                                    fontSize: `${fontSize}px`,
+                                    whiteSpace: 'pre-wrap',
+                                    color: p.cardText
+                                }}
+                                dir={isEn ? 'ltr' : 'rtl'}
+                            >
+                                {text}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
+                {/* Sculpted 3D Action Bar (5 round quran-raised-btn buttons in RTL) */}
                 <div 
                     data-toast-bottom-bar="true"
-                    className="px-4 pt-3.5 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-200/50 dark:border-white/10"
+                    className={`${isLandscape ? 'px-3 pt-2 pb-2.5 gap-3' : 'px-4 pt-3.5 pb-4 modal-sheet-safe-bottom gap-3.5 sm:gap-4'} shrink-0 flex items-center justify-center zoom-modal-action-bar-3d`}
                     dir="rtl"
                     style={{
-                        backgroundColor: currentTheme?.modalBg || currentTheme?.cardBg || currentTheme?.bg || '#ffffff'
+                        backgroundColor: p.modalBg
                     }}
                 >
                     {/* 1. Audio / Recitation Play Button (RIGHTMOST in RTL) */}
                     <button
                         type="button"
                         onClick={handlePlayAudio}
-                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md ${
+                        className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0 quran-raised-btn ${
                             isAudioActive ? 'ring-2 ring-red-400/80 animate-pulse' : ''
                         }`}
                         style={{
-                            backgroundColor: isAudioActive ? '#dc2626' : '#ffffff',
-                            color: isAudioActive ? '#ffffff' : (currentTheme?.accent || themeAccent)
+                            backgroundColor: isAudioActive ? '#dc2626' : p.closeBg,
+                            color: isAudioActive ? '#ffffff' : p.headerAccent
                         }}
                         title={isEn ? (isAudioActive ? 'Stop audio' : 'Play audio') : (isAudioActive ? 'إيقاف الصوت' : 'استماع صوتي')}
                     >
                         {isAudioActive ? (
-                            <VolumeX className="w-5 h-5 text-white animate-pulse" />
+                            <VolumeX className={`${isLandscape ? 'w-4 h-4' : 'w-5 h-5'} text-white animate-pulse`} />
                         ) : (
-                            <Volume2 className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
+                            <Volume2 className={isLandscape ? 'w-4 h-4' : 'w-5 h-5'} style={{ color: p.headerAccent, stroke: p.headerAccent }} />
                         )}
                     </button>
 
@@ -279,31 +307,31 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleShare}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
+                        className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0 quran-raised-btn`}
                         style={{
-                            backgroundColor: '#ffffff',
-                            color: currentTheme?.accent || themeAccent
+                            backgroundColor: p.closeBg,
+                            color: p.headerAccent
                         }}
                         title={isEn ? 'Share' : 'مشاركة'}
                     >
-                        <Share2 className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
+                        <Share2 className={isLandscape ? 'w-4 h-4' : 'w-5 h-5'} style={{ color: p.headerAccent, stroke: p.headerAccent }} />
                     </button>
 
                     {/* 3. Copy Button */}
                     <button
                         type="button"
                         onClick={handleCopy}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
+                        className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0 quran-raised-btn`}
                         style={{
-                            backgroundColor: copied ? '#10b981' : '#ffffff',
-                            color: copied ? '#ffffff' : (currentTheme?.accent || themeAccent)
+                            backgroundColor: copied ? '#10b981' : p.closeBg,
+                            color: copied ? '#ffffff' : p.headerAccent
                         }}
                         title={isEn ? 'Copy text' : 'نسخ النص'}
                     >
                         {copied ? (
-                            <Check className="w-5 h-5 text-white stroke-[2.5]" />
+                            <Check className={`${isLandscape ? 'w-4 h-4' : 'w-5 h-5'} text-white stroke-[2.5]`} />
                         ) : (
-                            <Copy className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
+                            <Copy className={isLandscape ? 'w-4 h-4' : 'w-5 h-5'} style={{ color: p.headerAccent, stroke: p.headerAccent }} />
                         )}
                     </button>
 
@@ -311,28 +339,28 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleToggleZoom}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
+                        className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0 quran-raised-btn`}
                         style={{
-                            backgroundColor: '#ffffff',
-                            color: currentTheme?.accent || themeAccent
+                            backgroundColor: p.closeBg,
+                            color: p.headerAccent
                         }}
                         title={isEn ? 'Enlarge font size' : 'تكبير حجم الخط'}
                     >
-                        <ZoomIn className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
+                        <ZoomIn className={isLandscape ? 'w-4 h-4' : 'w-5 h-5'} style={{ color: p.headerAccent, stroke: p.headerAccent }} />
                     </button>
 
                     {/* 5. Chevron Down / Hide Modal Button (LEFTMOST in RTL) */}
                     <button
                         type="button"
                         onClick={handleClose}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
+                        className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer shrink-0 border-0 quran-raised-btn`}
                         style={{
-                            backgroundColor: '#ffffff',
-                            color: currentTheme?.accent || themeAccent
+                            backgroundColor: p.closeBg,
+                            color: p.headerAccent
                         }}
                         title={isEn ? 'Hide list' : 'إخفاء القائمة'}
                     >
-                        <ChevronDown className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
+                        <ChevronDown className={isLandscape ? 'w-4 h-4' : 'w-5 h-5'} style={{ color: p.headerAccent, stroke: p.headerAccent }} />
                     </button>
                 </div>
             </div>
@@ -340,4 +368,4 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
     );
 };
 
-export default TafseerModal;
+export default React.memo(TafseerModal);

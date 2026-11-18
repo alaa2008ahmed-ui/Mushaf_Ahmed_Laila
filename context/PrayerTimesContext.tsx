@@ -5,15 +5,16 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Geolocation } from '@capacitor/geolocation';
-import { prayerNamesAr, ADHAN_CHANNELS_CONFIG, DEFAULT_NOTIFICATION_TONE, CALCULATION_METHOD_OPTIONS, ASR_MADHAB_OPTIONS, HIGH_LATITUDE_RULE_OPTIONS } from '../data/prayerTimesData';
-import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound, getActiveNotificationTone, setActiveNotificationTone, getActiveNotificationSoundPath, setStoredAlertVolume, getStoredAlertVolume } from '../utils/prayerTimesUtils';
+import { prayerNamesAr, ADHAN_CHANNELS_CONFIG, CALCULATION_METHOD_OPTIONS, ASR_MADHAB_OPTIONS, HIGH_LATITUDE_RULE_OPTIONS } from '../data/prayerTimesData';
+import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound, getActiveNotificationTone, setActiveNotificationTone, getActiveNotificationSoundPath, setStoredAlertVolume } from '../utils/prayerTimesUtils';
 import { updateAndroidWidget } from '../utils/widgetUtils';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, updateNativeAlertsGroupSummary, manualRestoreDeviceSound, getNativeSilentStatus, addNativeSilentStateListener, SilentStatus, scheduleNativeAdhanAlarms, cancelNativeAdhanAlarms, ScheduledAdhanAlarm, scheduleNativeIqamaAlarms, cancelNativeIqamaAlarms, ScheduledIqamaAlarm } from '../utils/silentMode';
 import { useTheme } from './ThemeContext';
 import { useLanguage } from './LanguageContext';
-import { PRAYER_NAMES_EN, LOCATION_TRANSLATIONS, getLocalizedLocationName } from '../utils/prayerTimesTranslations';
+import { PRAYER_NAMES_EN, getLocalizedLocationName } from '../utils/prayerTimesTranslations';
 import { ensureNotificationPermission, isMainAppEntered } from '../utils/permissionHelper';
+import { getCountryInfo, LocationSearchSuggestion } from '../utils/locationSearchService';
 
 // --- Types ---
 interface PrayerConfig {
@@ -72,6 +73,7 @@ interface PrayerTimesContextType {
     setConfig: React.Dispatch<React.SetStateAction<PrayerConfig>>;
     refreshLocation: (isManualUserAction?: boolean) => Promise<void>;
     manualSearch: (query: string) => Promise<void>;
+    selectLocation: (suggestion: LocationSearchSuggestion) => void;
     updateConfig: (newConfig: Partial<PrayerConfig>) => void;
     alertVolume: number;
     setAlertVolume: (vol: number) => void;
@@ -172,64 +174,6 @@ export const isPrayerIqamaEnabled = (config: any, key: string): boolean => {
         return config.iqamaReminder.enabled !== false;
     }
     return true;
-};
-
-const getCountryInfo = (countryCode: string, countryName: string, cityName: string) => {
-    const code = countryCode?.toLowerCase() || '';
-    
-    const dialCodes: Record<string, string> = {
-        'sa': '+966', 'eg': '+20', 'ae': '+971', 'kw': '+965', 'qa': '+974', 'bh': '+973', 
-        'om': '+968', 'jo': '+962', 'sy': '+963', 'lb': '+961', 'ps': '+970', 'iq': '+964', 
-        'ye': '+967', 'sd': '+249', 'ly': '+218', 'tn': '+216', 'dz': '+213', 'ma': '+212', 
-        'mr': '+222', 'so': '+252', 'dj': '+253', 'tr': '+90', 'us': '+1', 'gb': '+44',
-        'fr': '+33', 'de': '+49', 'it': '+39', 'es': '+34', 'ca': '+1', 'au': '+61'
-    };
-
-    const fullNames: Record<string, string> = {
-        'sa': 'المملكة العربية السعودية', 'eg': 'جمهورية مصر العربية', 'ae': 'الإمارات العربية المتحدة',
-        'kw': 'دولة الكويت', 'qa': 'دولة قطر', 'bh': 'مملكة البحرين', 'om': 'سلطنة عمان',
-        'jo': 'المملكة الأردنية الهاشمية', 'sy': 'الجمهورية العربية السورية', 'lb': 'الجمهورية اللبنانية',
-        'ps': 'دولة فلسطين', 'iq': 'جمهورية العراق', 'ye': 'الجمهورية اليمنية', 'sd': 'جمهورية السودان',
-        'ly': 'دولة ليبيا', 'tn': 'الجمهورية التونسية', 'dz': 'الجمهورية الجزائرية الديمقراطية الشعبية',
-        'ma': 'المملكة المغربية', 'mr': 'الجمهورية الإسلامية الموريتانية', 'so': 'جمهورية الصومال الفيدرالية',
-        'dj': 'جمهورية جيبوتي'
-    };
-
-    const fullNamesEn: Record<string, string> = {
-        'sa': 'Saudi Arabia', 'eg': 'Egypt', 'ae': 'United Arab Emirates',
-        'kw': 'Kuwait', 'qa': 'Qatar', 'bh': 'Bahrain', 'om': 'Oman',
-        'jo': 'Jordan', 'sy': 'Syria', 'lb': 'Lebanon',
-        'ps': 'Palestine', 'iq': 'Iraq', 'ye': 'Yemen', 'sd': 'Sudan',
-        'ly': 'Libya', 'tn': 'Tunisia', 'dz': 'Algeria',
-        'ma': 'Morocco', 'mr': 'Mauritania', 'so': 'Somalia',
-        'dj': 'Djibouti', 'tr': 'Turkey', 'us': 'United States',
-        'gb': 'United Kingdom', 'fr': 'France', 'de': 'Germany',
-        'it': 'Italy', 'es': 'Spain', 'ca': 'Canada', 'au': 'Australia'
-    };
-
-    const saudiCities: Record<string, string> = {
-        'الرياض': '11', 'الخرج': '11', 'مكة': '12', 'مكة المكرمة': '12', 'جدة': '12', 'الطائف': '12',
-        'الدمام': '13', 'الخبر': '13', 'الظهران': '13', 'الجبيل': '13', 'الأحساء': '13', 'الهفوف': '13', 'حفر الباطن': '13',
-        'المدينة': '14', 'المدينة المنورة': '14', 'تبوك': '14', 'ينبع': '14', 'عرعر': '14',
-        'القصيم': '16', 'بريدة': '16', 'عنيزة': '16', 'حائل': '16', 'المجمعة': '16',
-        'أبها': '17', 'خميس مشيط': '17', 'نجران': '17', 'جازان': '17', 'الباحة': '17'
-    };
-
-    const egyptCities: Record<string, string> = {
-        'القاهرة': '2', 'الجيزة': '2', 'الإسكندرية': '3', 'بورسعيد': '66', 'السويس': '62', 'الإسماعيلية': '64',
-        'الأقصر': '95', 'أسوان': '97', 'أسيوط': '88', 'سوهاج': '93', 'المنصورة': '50', 'الدقهلية': '50',
-        'الزقازيق': '55', 'الشرقية': '55', 'طنطا': '40', 'الغربية': '40', 'المنوفية': '48', 'شبين الكوم': '48',
-        'البحيرة': '45', 'دمنهور': '45', 'الفيوم': '84', 'بني سويف': '82', 'المنيا': '86', 'قنا': '96',
-        'دمياط': '57', 'كفر الشيخ': '47', 'البحر الأحمر': '65', 'الغردقة': '65', 'الوادي الجديد': '92',
-        'مطروح': '46', 'شمال سيناء': '68', 'العريش': '68', 'جنوب سيناء': '69', 'الطور': '69', 'شرم الشيخ': '69'
-    };
-
-    let baseDialCode = dialCodes[code] || '';
-    let fullNameAr = fullNames[code] || countryName;
-    let fullNameEn = fullNamesEn[code] || countryName;
-    let combinedCode = baseDialCode; // Keep it simple: just the dial code
-
-    return { fullName: fullNameAr, fullNameAr, fullNameEn, combinedCode };
 };
 
 export const getCalculationParams = (date: Date, locationData?: any, userConfig?: Partial<PrayerConfig>) => {
@@ -1063,6 +1007,32 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         } catch(e) { 
             throw e;
         } 
+    }, [isEn]);
+
+    const selectLocation = useCallback((suggestion: LocationSearchSuggestion) => {
+        if (!suggestion) return;
+        const cityGovAr = suggestion.cityGovAr || suggestion.titleAr;
+        const cityGovEn = suggestion.cityGovEn || suggestion.titleEn;
+        const fullCountryAr = suggestion.fullCountryAr || suggestion.titleAr;
+        const fullCountryEn = suggestion.fullCountryEn || suggestion.titleEn;
+
+        const newLocation = {
+            cityGov: isEn ? cityGovEn : cityGovAr,
+            fullCountry: isEn ? fullCountryEn : fullCountryAr,
+            cityGovAr,
+            cityGovEn,
+            fullCountryAr,
+            fullCountryEn,
+            combinedCode: suggestion.combinedCode || '',
+            lat: suggestion.lat,
+            lng: suggestion.lng
+        };
+        const resetOffsets = { Fajr: 0, Sunrise: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 };
+        setConfig(prev => ({
+            ...prev,
+            location: newLocation,
+            prayerOffsets: resetOffsets
+        }));
     }, [isEn]);
 
     const updateConfig = useCallback((newConfig: Partial<PrayerConfig>) => {
@@ -1972,7 +1942,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     const cityTimeStr = now.toLocaleString('en-US', { timeZone: cityTimezone });
                     now = new Date(cityTimeStr);
                 } catch (e) {
-                    console.error("Timezone conversion failed:", e);
+                    console.warn("Timezone conversion failed:", e);
                 }
             }
 
@@ -2395,6 +2365,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         setConfig,
         refreshLocation,
         manualSearch,
+        selectLocation,
         updateConfig,
         alertVolume: effectiveAlertVolume,
         setAlertVolume,
@@ -2415,6 +2386,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         config,
         refreshLocation,
         manualSearch,
+        selectLocation,
         updateConfig,
         effectiveAlertVolume,
         setAlertVolume,

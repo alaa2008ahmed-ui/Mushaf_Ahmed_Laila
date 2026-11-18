@@ -63,7 +63,7 @@ export const VisualQibla = ({ lat, lng, theme }: { lat: number, lng: number, the
     if (!isOnline) {
         return (
             <div className={`app-page-card border-0 w-full h-full rounded-3xl flex flex-col items-center justify-center p-6 text-center ${surfaceCardClass}`}>
-                <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                <div className={`app-inner-3d-box border-0 w-20 h-20 rounded-full flex items-center justify-center mb-4 ${isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                     <i className="fa-solid fa-wifi text-4xl opacity-70" style={{ color: primaryColor }}></i>
                 </div>
                 <h3 className="text-xl font-black mb-2">
@@ -196,7 +196,7 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme }: any) => {
                     )}
                 </div>
                 <div 
-                    className="mt-8 bg-black/75 backdrop-blur-md px-6 py-3 rounded-full text-white font-black text-base sm:text-lg border-0"
+                    className="app-3d-badge border-0 mt-8 bg-black/85 px-6 py-3 rounded-full text-white font-black text-base sm:text-lg"
                 >
                     {isAligned ? (isEn ? 'Facing Qibla' : 'أنت متجه للقبلة') : (isEn ? 'Point camera towards the Kaaba' : 'وجه الكاميرا نحو الكعبة')}
                 </div>
@@ -231,7 +231,7 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
         >
             {/* Phone heading indicator (fixed at top) */}
             <div 
-                className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 w-9 h-9 rounded-full bg-red-500 z-20 flex items-center justify-center border-0"
+                className="app-3d-badge border-0 absolute top-0 left-1/2 -translate-x-1/2 -mt-4 w-9 h-9 rounded-full bg-red-500 z-20 flex items-center justify-center"
             >
                 <i className="fa-solid fa-mobile-screen text-white text-sm"></i>
             </div>
@@ -271,40 +271,35 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
     );
 
     return (
-<<<<<<< HEAD
         <div className="w-full shrink-0 flex flex-col gap-5 pb-4" dir={isEn ? 'ltr' : 'rtl'}>
             <div className={`app-page-card border-0 p-6 sm:p-8 rounded-3xl flex flex-col items-center justify-center text-center relative overflow-hidden ${surfaceCardClass}`}>
-=======
-        <div className="w-full shrink-0 flex flex-col gap-6" dir={isEn ? 'ltr' : 'rtl'}>
-            <div className="bg-white dark:bg-[#1E293B] p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className={`absolute top-4 ${isEn ? 'left-4' : 'right-4'} text-yellow-500 opacity-10`}><i className="fa-solid fa-sun text-6xl"></i></div>
                 <h3 className="text-2xl font-black mb-4" style={{ color: primaryColor }}>
                     {isEn ? 'Qibla Direction by Sun' : 'تحديد القبلة عن طريق الشمس'}
                 </h3>
                 
-                <div className={`mb-6 p-4 rounded-2xl max-w-sm ${isBlackTheme ? 'bg-white/10' : 'bg-amber-50/90 dark:bg-amber-950/30'}`}>
+                <div className={`app-inner-3d-box border-0 mb-6 p-4 rounded-2xl max-w-sm ${isBlackTheme ? 'bg-white/10' : 'bg-amber-50/90 dark:bg-amber-950/30'}`}>
                     <p className="text-sm leading-relaxed font-bold text-amber-700 dark:text-amber-300">
                         {isEn 
-                            ? 'Point your device (red marker) towards the Sun in the sky; the Kaaba arrow will indicate the Qibla.' 
-                            : 'وجه هاتفك (العلامة الحمراء) نحو الشمس في السماء، وسيشير سهم الكعبة إلى القبلة.'}
+                            ? 'Point your phone (red marker) toward the Sun to verify direction, then rotate your phone until the green Kaaba aligns with the red phone icon to face the Qibla.' 
+                            : 'وجه هاتفك (العلامة الحمراء) نحو الشمس في السماء لمطابقة الاتجاه، ثم أدر هاتفك نحو الكعبة الخضراء حتى تتطابق مع أيقونة الهاتف الحمراء لتكون متجهاً للقبلة.'}
                     </p>
                 </div>
                 
                 <CompassDial targetHeading={sunHeading} targetIcon="fa-sun" targetColor="#eab308" />
 
                 <div className="w-full space-y-2.5 mb-4">
-                    <div className={`flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
+                    <div className={`app-inner-3d-box border-0 flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
                         <span className="text-sm font-bold opacity-80">{isEn ? 'Sun Direction:' : 'اتجاه الشمس:'}</span>
                         <span className="font-mono text-lg font-black tabular-nums">{Math.round(sunHeading)}°</span>
                     </div>
-                    <div className={`flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
+                    <div className={`app-inner-3d-box border-0 flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
                         <span className="text-sm font-bold opacity-80">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
                         <span className="font-mono text-lg font-black tabular-nums" style={{ color: primaryColor }}>{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
-                <div className={`p-4 rounded-2xl w-full ${isBlackTheme ? 'bg-white/10' : 'bg-amber-50/90 dark:bg-amber-950/30'}`}>
+                <div className={`app-inner-3d-box border-0 p-4 rounded-2xl w-full ${isBlackTheme ? 'bg-white/10' : 'bg-amber-50/90 dark:bg-amber-950/30'}`}>
                     <p className="font-black text-amber-600 dark:text-amber-400 text-sm">
                         {isEn 
                             ? `Qibla is ${Math.round(sunDiff)}° away from the Sun` 
@@ -319,29 +314,35 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
                     {isEn ? 'Qibla Direction by Moon' : 'تحديد القبلة عن طريق القمر'}
                 </h3>
                 
-                <div className={`mb-6 p-4 rounded-2xl max-w-sm ${isBlackTheme ? 'bg-white/10' : 'bg-blue-50/90 dark:bg-blue-950/30'}`}>
-                    <p className="text-sm leading-relaxed font-bold text-blue-700 dark:text-blue-300">
+                <div
+                    className="app-inner-3d-box border-0 mb-6 p-4 rounded-2xl max-w-sm"
+                    style={{ backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.14 : 0.09) }}
+                >
+                    <p className="text-sm leading-relaxed font-bold" style={{ color: primaryColor }}>
                         {isEn 
-                            ? 'Point your device (red marker) towards the Moon in the sky; the Kaaba arrow will indicate the Qibla.' 
-                            : 'وجه هاتفك (العلامة الحمراء) نحو القمر في السماء، وسيشير سهم الكعبة إلى القبلة.'}
+                            ? 'Point your phone (red marker) toward the Moon to verify direction, then rotate your phone until the green Kaaba aligns with the red phone icon to face the Qibla.' 
+                            : 'وجه هاتفك (العلامة الحمراء) نحو القمر في السماء لمطابقة الاتجاه، ثم أدر هاتفك نحو الكعبة الخضراء حتى تتطابق مع أيقونة الهاتف الحمراء لتكون متجهاً للقبلة.'}
                     </p>
                 </div>
                 
                 <CompassDial targetHeading={moonHeading} targetIcon="fa-moon" targetColor="#60a5fa" />
 
                 <div className="w-full space-y-2.5 mb-4">
-                    <div className={`flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
+                    <div className={`app-inner-3d-box border-0 flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
                         <span className="text-sm font-bold opacity-80">{isEn ? 'Moon Direction:' : 'اتجاه القمر:'}</span>
                         <span className="font-mono text-lg font-black tabular-nums">{Math.round(moonHeading)}°</span>
                     </div>
-                    <div className={`flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
+                    <div className={`app-inner-3d-box border-0 flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
                         <span className="text-sm font-bold opacity-80">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
                         <span className="font-mono text-lg font-black tabular-nums" style={{ color: primaryColor }}>{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
-                <div className={`p-4 rounded-2xl w-full ${isBlackTheme ? 'bg-white/10' : 'bg-blue-50/90 dark:bg-blue-950/30'}`}>
-                    <p className="font-black text-blue-600 dark:text-blue-400 text-sm">
+                <div
+                    className="app-inner-3d-box border-0 p-4 rounded-2xl w-full"
+                    style={{ backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.14 : 0.09) }}
+                >
+                    <p className="font-black text-sm" style={{ color: primaryColor }}>
                         {isEn 
                             ? `Qibla is ${Math.round(moonDiff)}° away from the Moon` 
                             : `القبلة تبعد عن القمر بـ ${Math.round(moonDiff)} درجة`}
@@ -369,11 +370,7 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
     const shadowDiff = Math.abs((shadowHeading - qiblaDirection + 540) % 360 - 180);
 
     return (
-<<<<<<< HEAD
         <div className={`app-page-card border-0 w-full shrink-0 flex flex-col items-center justify-start p-6 sm:p-8 rounded-3xl text-center relative overflow-hidden mb-4 ${surfaceCardClass}`} dir={isEn ? 'ltr' : 'rtl'}>
-=======
-        <div className="w-full shrink-0 flex flex-col items-center justify-start bg-white dark:bg-[#1E293B] p-6 sm:p-8 rounded-2xl text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5" dir={isEn ? 'ltr' : 'rtl'}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
                 <i className="fa-solid fa-person-rays text-[15rem]"></i>
             </div>
@@ -383,11 +380,11 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
                     {isEn ? 'Qibla Direction by Shadow' : 'تحديد القبلة عن طريق الظل'}
                 </h3>
                 
-                <div className={`mb-6 p-4 rounded-2xl w-full max-w-md ${isBlackTheme ? 'bg-white/10' : 'bg-emerald-50/90 dark:bg-emerald-950/30'}`}>
+                <div className={`app-inner-3d-box border-0 mb-6 p-4 rounded-2xl w-full max-w-md ${isBlackTheme ? 'bg-white/10' : 'bg-emerald-50/90 dark:bg-emerald-950/30'}`}>
                     <p className="text-sm leading-relaxed font-bold text-emerald-700 dark:text-emerald-300">
                         {isEn 
-                            ? 'Place a stick vertically on flat ground. Its shadow points directly opposite to the Sun. Point your device (red marker) towards the shadow, and the Kaaba arrow will point to the Qibla.' 
-                            : 'ضع عصا بشكل عمودي على الأرض المستوية. ظل العصا يشير إلى الاتجاه المعاكس للشمس. وجه هاتفك (العلامة الحمراء) نحو الظل، وسيشير سهم الكعبة إلى القبلة.'}
+                            ? 'Place a stick vertically on flat ground; its shadow points opposite to the Sun. Point your phone (red marker) toward the shadow to verify direction, then rotate your phone until the green Kaaba aligns with the red phone icon to face the Qibla.' 
+                            : 'ضع عصا بشكل عمودي على الأرض المستوية؛ ظل العصا يشير إلى الاتجاه المعاكس للشمس. وجه هاتفك (العلامة الحمراء) نحو الظل لمطابقة الاتجاه، ثم أدر هاتفك نحو الكعبة الخضراء حتى تتطابق مع أيقونة الهاتف الحمراء لتكون متجهاً للقبلة.'}
                     </p>
                 </div>
 
@@ -396,7 +393,7 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
                 >
                     {/* Phone heading indicator */}
                     <div 
-                        className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 w-9 h-9 rounded-full bg-red-500 z-20 flex items-center justify-center border-0"
+                        className="app-3d-badge border-0 absolute top-0 left-1/2 -translate-x-1/2 -mt-4 w-9 h-9 rounded-full bg-red-500 z-20 flex items-center justify-center"
                     >
                         <i className="fa-solid fa-mobile-screen text-white text-sm"></i>
                     </div>
@@ -435,18 +432,18 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
                 </div>
 
                 <div className="w-full space-y-2.5 mt-4">
-                    <div className={`flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
+                    <div className={`app-inner-3d-box border-0 flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
                         <span className="text-sm font-bold opacity-80">{isEn ? 'Current Shadow Direction:' : 'اتجاه الظل الحالي:'}</span>
                         <span className="font-mono text-lg font-black tabular-nums">{Math.round(shadowHeading)}°</span>
                     </div>
-                    <div className={`flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
+                    <div className={`app-inner-3d-box border-0 flex justify-between items-center p-3.5 rounded-2xl ${softRowClass}`}>
                         <span className="text-sm font-bold opacity-80">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
                         <span className="font-mono text-lg font-black tabular-nums" style={{ color: primaryColor }}>{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
                 <div 
-                    className="mt-4 p-4 rounded-2xl w-full"
+                    className="app-inner-3d-box border-0 mt-4 p-4 rounded-2xl w-full"
                     style={{ backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.14 : 0.09) }}
                 >
                     <p className="font-black text-sm" style={{ color: primaryColor }}>

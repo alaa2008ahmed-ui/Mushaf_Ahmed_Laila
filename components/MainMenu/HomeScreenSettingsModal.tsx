@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { BookCheck } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -10,13 +10,9 @@ import FontSelectModal from '../QuranReader/FontSelectModal';
 import ReciterSelectModal from '../QuranReader/ReciterSelectModal';
 import TafseerSelectionModal from '../QuranReader/TafseerSelectionModal';
 import SurahDesignPickerModal from '../QuranReader/SurahDesignPickerModal';
-<<<<<<< HEAD
 import ScrollSpeedModal from '../QuranReader/ScrollSpeedModal';
 import ApprovedSourcesModal from './ApprovedSourcesModal';
 import ShareDesignSelectorSection from './ShareDesignSelectorSection';
-=======
-import ApprovedSourcesModal from './ApprovedSourcesModal';
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { READERS, ARABIC_READERS, MEMORIZATION_READERS, SURAH_INFO, THEMES, DEFAULT_SETTINGS, getValidReaderForMode } from '../QuranReader/constants';
 import { QuranDownloadModal, TafsirDownloadModal } from '../QuranReader/DownloadModals';
 import { quranData as rawQuranData } from '../../utils/quranData';
@@ -322,7 +318,6 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     setActiveQuranSubModal(null);
   };
 
-<<<<<<< HEAD
   const handleSelectScrollSpeed = (minutes: number) => {
     try {
       const saved = localStorage.getItem('quran_settings');
@@ -334,8 +329,6 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     setActiveQuranSubModal(null);
   };
 
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   // Hardware/System Back Button Interceptor for Settings Page & All its Sub-views
   const backStateRef = useRef({
     activeQuranSubModal,
@@ -417,13 +410,8 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
+      <div
         id="home-screen-settings-modal"
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 15 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
         className="fixed inset-0 z-[999999] flex flex-col font-cairo select-none overflow-hidden"
         style={{ 
           backgroundColor: pageBgColor
@@ -439,7 +427,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
                   title={isEn ? "Go Back" : "رجوع للخلف"}
                   aria-label={isEn ? "Go Back" : "رجوع للخلف"}
                 >
@@ -449,7 +437,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
 
               {/* Title in center */}
               <div className="text-center px-12 min-w-0">
-                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate">
                   {isEn ? 'Settings' : 'الإعدادات'}
                 </h1>
               </div>
@@ -459,7 +447,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
                   title={isEn ? "Home" : "الصفحة الرئيسية"}
                   aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                 >
@@ -479,13 +467,14 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
           <div className="grid grid-cols-1 gap-3">
             {/* Grouped Large Card: Notifications */}
             <div className="p-4 sm:p-5 rounded-3xl transition-all white-3d-container-card space-y-3">
-              <div className="pb-2 border-b border-amber-500/20 dark:border-zinc-800">
+              <div className="space-y-2">
                 <h3
                   className="text-sm sm:text-base font-black tracking-wide"
                   style={{ color: themeAccentColor }}
                 >
                   {isEn ? 'Notifications' : 'الإشعارات'}
                 </h3>
+                <div className="app-3d-divider" />
               </div>
 
               <div className="space-y-2.5 pt-1">
@@ -524,7 +513,6 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
               </h4>
             </button>
 
-<<<<<<< HEAD
             {/* Share Card Designs Picker Section */}
             <ShareDesignSelectorSection
               isEn={isEn}
@@ -532,17 +520,16 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
               themeAccentColor={themeAccentColor}
             />
 
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {/* Grouped Large Card: Downloads */}
             <div className="p-4 sm:p-5 rounded-3xl transition-all white-3d-container-card space-y-3">
-              <div className="pb-2 border-b border-amber-500/20 dark:border-zinc-800">
+              <div className="space-y-2">
                 <h3
                   className="text-sm sm:text-base font-black tracking-wide"
                   style={{ color: themeAccentColor }}
                 >
                   {isEn ? 'Downloads' : 'التحميلات'}
                 </h3>
+                <div className="app-3d-divider" />
               </div>
 
               <div className="space-y-2.5 pt-1">
@@ -575,217 +562,195 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
           <div className="grid grid-cols-1 gap-3 pt-2">
             {/* Grouped Large Card: Show on Home Screen */}
             <div className="p-4 sm:p-5 rounded-3xl transition-all white-3d-container-card space-y-3">
-              <div className="pb-2 border-b border-amber-500/20 dark:border-zinc-800">
+              <div className="space-y-2">
                 <h3
                   className="text-sm sm:text-base font-black tracking-wide"
                   style={{ color: themeAccentColor }}
                 >
                   {isEn ? 'Show on Home Screen' : 'الظهور بالصفحة الرئيسية'}
                 </h3>
+                <div className="app-3d-divider" />
               </div>
 
               <div className="space-y-2.5 pt-1">
                 {/* Toggle 1: Listen to Quran Card */}
-                <div className="p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0">
+                <button
+                  type="button"
+                  onClick={handleToggleListen}
+                  role="switch"
+                  aria-checked={showListenCard}
+                  title={showListenCard ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
+                  className="w-full text-start p-3.5 sm:p-4 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0"
+                >
                   <h4 className="text-base sm:text-lg font-black truncate min-w-0 flex-1">
                     {isEn ? 'Show Listen to Quran Card' : 'بطاقة الاستماع للقرآن'}
                   </h4>
 
-                  <button
-                    type="button"
-                    onClick={handleToggleListen}
-                    className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 cursor-pointer border-none outline-none ${
+                  <div
+                    aria-hidden="true"
+                    className={`app-3d-switch-track relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 pointer-events-none ${
                       !showListenCard ? (isNightMode ? 'bg-zinc-700' : 'bg-slate-300') : ''
                     }`}
                     style={{
                       backgroundColor: showListenCard ? themeAccentColor : undefined
                     }}
-                    role="switch"
-                    aria-checked={showListenCard}
-                    title={showListenCard ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
                   >
                     <motion.div
                       layout
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className={`w-6 h-6 rounded-full bg-white shadow-md transform ${
+                      className={`app-3d-switch-thumb w-6 h-6 rounded-full bg-white transform ${
                         showListenCard ? (isEn ? 'translate-x-6' : '-translate-x-6') : 'translate-x-0'
                       }`}
                     />
-                  </button>
-                </div>
+                  </div>
+                </button>
 
                 {/* Toggle 2: Tasbeeh Card */}
-                <div className="p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0">
+                <button
+                  type="button"
+                  onClick={handleToggleTasbeeh}
+                  role="switch"
+                  aria-checked={showTasbeehCard}
+                  title={showTasbeehCard ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
+                  className="w-full text-start p-3.5 sm:p-4 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0"
+                >
                   <h4 className="text-base sm:text-lg font-black truncate min-w-0 flex-1">
                     {isEn ? 'Tasbeeh Card' : 'بطاقة التسبيح'}
                   </h4>
 
-                  <button
-                    type="button"
-                    onClick={handleToggleTasbeeh}
-                    className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 cursor-pointer border-none outline-none ${
+                  <div
+                    aria-hidden="true"
+                    className={`app-3d-switch-track relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 pointer-events-none ${
                       !showTasbeehCard ? (isNightMode ? 'bg-zinc-700' : 'bg-slate-300') : ''
                     }`}
                     style={{
                       backgroundColor: showTasbeehCard ? themeAccentColor : undefined
                     }}
-                    role="switch"
-                    aria-checked={showTasbeehCard}
-                    title={showTasbeehCard ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
                   >
                     <motion.div
                       layout
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className={`w-6 h-6 rounded-full bg-white shadow-md transform ${
+                      className={`app-3d-switch-thumb w-6 h-6 rounded-full bg-white transform ${
                         showTasbeehCard ? (isEn ? 'translate-x-6' : '-translate-x-6') : 'translate-x-0'
                       }`}
                     />
-                  </button>
-                </div>
+                  </div>
+                </button>
 
                 {/* Toggle 3: Tawaf Counter Card */}
-                <div className="p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0">
+                <button
+                  type="button"
+                  onClick={handleToggleTawaf}
+                  role="switch"
+                  aria-checked={tawafState.showOnHome}
+                  title={tawafState.showOnHome ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
+                  className="w-full text-start p-3.5 sm:p-4 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0"
+                >
                   <h4 className="text-base sm:text-lg font-black truncate min-w-0 flex-1">
                     {isEn ? 'Tawaf & Sa\'i Counter Card' : 'بطاقة عداد الأشواط'}
                   </h4>
 
-                  <button
-                    type="button"
-                    onClick={handleToggleTawaf}
-                    className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 cursor-pointer border-none outline-none ${
+                  <div
+                    aria-hidden="true"
+                    className={`app-3d-switch-track relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 pointer-events-none ${
                       !tawafState.showOnHome ? (isNightMode ? 'bg-zinc-700' : 'bg-slate-300') : ''
                     }`}
                     style={{
                       backgroundColor: tawafState.showOnHome ? themeAccentColor : undefined
                     }}
-                    role="switch"
-                    aria-checked={tawafState.showOnHome}
-                    title={tawafState.showOnHome ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
                   >
                     <motion.div
                       layout
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className={`w-6 h-6 rounded-full bg-white shadow-md transform ${
+                      className={`app-3d-switch-thumb w-6 h-6 rounded-full bg-white transform ${
                         tawafState.showOnHome ? (isEn ? 'translate-x-6' : '-translate-x-6') : 'translate-x-0'
                       }`}
                     />
-                  </button>
-                </div>
+                  </div>
+                </button>
 
-<<<<<<< HEAD
               </div>
             </div>
 
             {/* Grouped Large Card: Other */}
             <div className="p-4 sm:p-5 rounded-3xl transition-all white-3d-container-card space-y-3">
-              <div className="pb-2 border-b border-amber-500/20 dark:border-zinc-800">
+              <div className="space-y-2">
                 <h3
                   className="text-sm sm:text-base font-black tracking-wide"
                   style={{ color: themeAccentColor }}
                 >
                   {isEn ? 'Other' : 'أخرى'}
                 </h3>
+                <div className="app-3d-divider" />
               </div>
 
               <div className="space-y-2.5 pt-1">
                 {/* Toggle: Floating Audio Button */}
-=======
-                {/* Toggle 4: Floating Audio Button */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                <div className="p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0">
+                <button
+                  type="button"
+                  onClick={handleToggleFloatingListenBtn}
+                  role="switch"
+                  aria-checked={showFloatingListenBtn}
+                  title={showFloatingListenBtn ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
+                  className="w-full text-start p-3.5 sm:p-4 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0"
+                >
                   <h4 className="text-base sm:text-lg font-black truncate min-w-0 flex-1">
                     {isEn ? 'Floating Audio Button' : 'زر الصوت العائم'}
                   </h4>
 
-                  <button
-                    type="button"
-                    onClick={handleToggleFloatingListenBtn}
-                    className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 cursor-pointer border-none outline-none ${
+                  <div
+                    aria-hidden="true"
+                    className={`app-3d-switch-track relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 pointer-events-none ${
                       !showFloatingListenBtn ? (isNightMode ? 'bg-zinc-700' : 'bg-slate-300') : ''
                     }`}
                     style={{
                       backgroundColor: showFloatingListenBtn ? themeAccentColor : undefined
                     }}
-                    role="switch"
-                    aria-checked={showFloatingListenBtn}
-                    title={showFloatingListenBtn ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
                   >
                     <motion.div
                       layout
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className={`w-6 h-6 rounded-full bg-white shadow-md transform ${
+                      className={`app-3d-switch-thumb w-6 h-6 rounded-full bg-white transform ${
                         showFloatingListenBtn ? (isEn ? 'translate-x-6' : '-translate-x-6') : 'translate-x-0'
                       }`}
                     />
-                  </button>
-                </div>
-<<<<<<< HEAD
+                  </div>
+                </button>
 
                 {/* Toggle: Show Page Guides Button */}
-                <div className="p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0">
+                <button
+                  type="button"
+                  onClick={handleTogglePageGuides}
+                  role="switch"
+                  aria-checked={showPageGuides}
+                  title={showPageGuides ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
+                  className="w-full text-start p-3.5 sm:p-4 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0"
+                >
                   <h4 className="text-base sm:text-lg font-black truncate min-w-0 flex-1">
                     {isEn ? 'Guides Button' : 'زر الإرشادات'}
                   </h4>
 
-                  <button
-                    type="button"
-                    onClick={handleTogglePageGuides}
-                    className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 cursor-pointer border-none outline-none ${
+                  <div
+                    aria-hidden="true"
+                    className={`app-3d-switch-track relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 pointer-events-none ${
                       !showPageGuides ? (isNightMode ? 'bg-zinc-700' : 'bg-slate-300') : ''
                     }`}
                     style={{
                       backgroundColor: showPageGuides ? themeAccentColor : undefined
                     }}
-                    role="switch"
-                    aria-checked={showPageGuides}
-                    title={showPageGuides ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
                   >
                     <motion.div
                       layout
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className={`w-6 h-6 rounded-full bg-white shadow-md transform ${
+                      className={`app-3d-switch-thumb w-6 h-6 rounded-full bg-white transform ${
                         showPageGuides ? (isEn ? 'translate-x-6' : '-translate-x-6') : 'translate-x-0'
                       }`}
                     />
-                  </button>
-                </div>
+                  </div>
+                </button>
               </div>
             </div>
 
-=======
-              </div>
-            </div>
-
-            {/* Toggle 4: Show Page Guides Button */}
-            <div className="p-4 sm:p-5 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn">
-              <h4 className="text-base sm:text-lg font-black truncate min-w-0 flex-1">
-                {isEn ? 'Guides Button' : 'زر الإرشادات'}
-              </h4>
-
-              <button
-                type="button"
-                onClick={handleTogglePageGuides}
-                className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 cursor-pointer border-none outline-none ${
-                  !showPageGuides ? (isNightMode ? 'bg-zinc-700' : 'bg-slate-300') : ''
-                }`}
-                style={{
-                  backgroundColor: showPageGuides ? themeAccentColor : undefined
-                }}
-                role="switch"
-                aria-checked={showPageGuides}
-                title={showPageGuides ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
-              >
-                <motion.div
-                  layout
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  className={`w-6 h-6 rounded-full bg-white shadow-md transform ${
-                    showPageGuides ? (isEn ? 'translate-x-6' : '-translate-x-6') : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {/* Approved Sources & References Button */}
             <button
               type="button"
@@ -870,11 +835,8 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
             isLandscape={false}
             readersList={READERS}
             readingMode="mushaf"
-            hideHeader={true}
-<<<<<<< HEAD
+            currentTheme={activeQuranTheme}
             zIndexClass="z-[99999999]"
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             onSelect={handleSelectReciter}
           />
         )}
@@ -901,7 +863,6 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
           />
         )}
 
-<<<<<<< HEAD
         {activeQuranSubModal === 'scroll-speed-modal' && (
           <ScrollSpeedModal
             isOpen={true}
@@ -941,8 +902,6 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
           />
         )}
 
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         {/* Full-Screen Child Page 4: Download Holy Quran (3 Options) */}
         {showQuranDownloadMenu && (
           <div
@@ -957,7 +916,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                     <button
                       type="button"
                       onClick={() => setShowQuranDownloadMenu(false)}
-                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                      className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
                       title={isEn ? 'Go Back' : 'رجوع للخلف'}
                       aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
                     >
@@ -966,7 +925,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                   </div>
 
                   <div className="text-center px-12 min-w-0">
-                    <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                    <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate">
                       {isEn ? 'Download Holy Quran' : 'تحميل القرآن الكريم'}
                     </h1>
                   </div>
@@ -978,7 +937,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                         setShowQuranDownloadMenu(false);
                         onClose();
                       }}
-                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                      className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
                       title={isEn ? 'Home' : 'الصفحة الرئيسية'}
                       aria-label={isEn ? 'Home' : 'الصفحة الرئيسية'}
                     >
@@ -1092,8 +1051,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
             onClose();
           }}
         />
-      </motion.div>
-    </AnimatePresence>
+      </div>
   );
 };
 

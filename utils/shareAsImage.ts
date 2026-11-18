@@ -36,9 +36,20 @@ import {
     drawSunsetSaffronUpperMotif,
     drawSunsetSaffronLowerMotif,
 } from './shareCardDesigns';
+import {
+    drawExtraDesignBackdropAndFrame,
+    drawExtraDesignUpperMotif,
+    drawExtraDesignLowerMotif,
+} from './shareCardDesignsExtra';
 
 export type { ShareDesignId };
-export { SHARE_CARD_DESIGNS, getSelectedShareDesign, setSelectedShareDesign, getShareDesignMeta };
+export {
+    SHARE_CARD_DESIGNS,
+    getSelectedShareDesign,
+    setSelectedShareDesign,
+    getShareDesignMeta,
+    getDesignTypographyTheme,
+};
 
 export interface ShareOptions {
     text: string;
@@ -607,8 +618,7 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     const height = 1920;
     const outerMargin = 32;
     const innerMargin = 56;
-    const horizontalContentPadding = activeDesignId === 'classic_gold' ? 110 : 124;
-    const maxTextWidth = width - (horizontalContentPadding * 2);
+    const baseHorizontalPadding = activeDesignId === 'classic_gold' ? 96 : 104;
 
     const fontFamily = isEn 
         ? "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
@@ -651,25 +661,60 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         }
     }
 
+    // Prevent duplicate Surah / Ayah citations from appearing both at top (Title) and bottom (Source)
+    if (cleanTitle && cleanSource) {
+        const normalizeRef = (str: string) =>
+            str
+                .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ة/g, 'ه')
+                .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+                .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+
+        const genericRefWords = new Set([
+            'سوره',
+            'الايات',
+            'ايات',
+            'الايه',
+            'ايه',
+            'من',
+            'surah',
+            'ayat',
+            'ayah',
+            'verses',
+            'verse',
+            'from',
+        ]);
+
+        const normTitle = normalizeRef(cleanTitle);
+        const titleCoreSet = new Set(
+            normTitle.split(' ').filter((w) => w && !genericRefWords.has(w))
+        );
+
+        const isSegmentRedundant = (seg: string): boolean => {
+            const normSeg = normalizeRef(seg);
+            if (!normSeg) return true;
+            if (normTitle.includes(normSeg)) return true;
+
+            const segTokens = normSeg.split(' ').filter((w) => w && !genericRefWords.has(w));
+            if (segTokens.length === 0) return false;
+            const hasDigit = segTokens.some((t) => /\d/.test(t));
+            if (!hasDigit && segTokens.length < 2) return false;
+            return segTokens.every((t) => titleCoreSet.has(t));
+        };
+
+        const segments = cleanSource.split(/\s*[•|]\s*/).filter(Boolean);
+        const remainingSegments = segments.filter((seg) => !isSegmentRedundant(seg));
+        cleanSource = remainingSegments.join(' • ');
+    }
+
     let cleanText = text ? text.trim() : '';
     if (isEn && cleanText && /[\u0600-\u06FF]/.test(cleanText)) {
         cleanText = cleanText.replace(/[\u0600-\u06FF]/g, '').trim() || text;
     }
-
-    // --- MEASURE TOP & BOTTOM FIXED BOUNDARIES ---
-    const topSectionStartY = innerMargin + 50;
-    const bismillahText = isEn 
-        ? 'In the Name of Allah, the Entirely Merciful, the Especially Merciful' 
-        : 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
-
-    let topSectionEndY = topSectionStartY + (isEn ? 32 : 56);
-    if (cleanCategory) {
-        topSectionEndY += 18 + 48; // badge height (48px)
-    }
-    topSectionEndY += 20;
-
-    const footerStartY = height - innerMargin - 130; // y ~ 1734
-    const availableMiddleSpace = footerStartY - topSectionEndY - 40; // ~ 1400px
 
     // Temporary measurement canvas
     const tempCanvas = document.createElement('canvas');
@@ -678,86 +723,198 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     const tempCtx = tempCanvas.getContext('2d')!;
     tempCtx.direction = isEn ? 'ltr' : 'rtl';
 
-    const measureLinesHeight = (linesList: { text: string; isHighlight?: boolean; isBullet?: boolean }[], lh: number) => {
+    // --- 1. FIXED TOP HEADER (Bismillah + Category Cartouche + Anchored Title) ---
+    const topSectionStartY = innerMargin + 82; // 138px — safely below all 20 frame arches/belts
+    const bismillahText = isEn 
+        ? 'In the Name of Allah, the Entirely Merciful, the Especially Merciful' 
+        : 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+
+    let headerEndY = topSectionStartY + (isEn ? 34 : 56);
+    if (cleanCategory) {
+        headerEndY += 12 + 46; // badge height (46px)
+    }
+
+    // Anchor Title cleanly under Header (never stranded mid-canvas) and wrap if wide
+    const defaultMaxWidth = width - baseHorizontalPadding * 2;
+    let titleFontSize = isEn ? 32 : 40;
+    let titleLineHeight = Math.round(titleFontSize * 1.38);
+    let titleLines: { text: string }[] = [];
+    if (cleanTitle) {
+        if (cleanTitle.length > 48) titleFontSize = isEn ? 26 : 33;
+        else if (cleanTitle.length > 28) titleFontSize = isEn ? 29 : 36;
+        titleLineHeight = Math.round(titleFontSize * 1.36);
+        tempCtx.font = `bold ${titleFontSize}px ${fontFamily}`;
+        titleLines = wrapText(tempCtx, cleanTitle, defaultMaxWidth - 24);
+        headerEndY += 18 + titleLines.length * titleLineHeight;
+    } else {
+        headerEndY += 14;
+    }
+
+    // --- 2. FIXED FOOTER ANCHOR ---
+    const footerStartY = height - innerMargin - 160; // y = 1704 — safely above all 20 frame belts/domes
+    const contentZoneBottomY = footerStartY - 16;    // y = 1688
+    const totalMiddleZoneH = Math.max(400, contentZoneBottomY - headerEndY); // ~1360-1500px full card body zone
+
+    const getLineHeightForSize = (fs: number): number => {
+        const ratio =
+            fs >= 64 ? (isEn ? 1.56 : 1.72) :
+            fs >= 48 ? (isEn ? 1.50 : 1.64) :
+            fs >= 34 ? (isEn ? 1.44 : 1.54) :
+            fs >= 24 ? (isEn ? 1.38 : 1.48) :
+                       (isEn ? 1.32 : 1.42);
+        return Math.round(fs * ratio);
+    };
+
+    const measureBodyHeight = (
+        linesList: { text: string; isHighlight?: boolean; isBullet?: boolean }[],
+        lh: number,
+        isDense: boolean
+    ) => {
         let total = 0;
+        const emptyGap = Math.round(lh * (isDense ? 0.30 : 0.44));
         for (const l of linesList) {
-            total += !l.text ? lh * 0.45 : lh;
+            total += !l.text ? emptyGap : lh;
         }
         return total;
     };
 
-    // Reserved vertical space for Title, Source, and Islamic Ornaments
-    let reservedMiddleExtras = 0;
-    if (cleanTitle) {
-        reservedMiddleExtras += 56 + 24; // Title font + spacing
+    // --- 3. INTELLIGENT ADAPTIVE TYPOGRAPHY & FULL-CARD AUTO-FIT ENGINE ---
+    const plainStripped = cleanText
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    // Strip Arabic diacritics/Tashkeel so heavy vocalization does not artificially cap font size
+    const visualLen = plainStripped.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '').length;
+
+    // Upper aesthetic caps by visual character count while binary search maximizes canvas fill
+    const maxFontCap =
+        visualLen <= 50 ? (isEn ? 66 : 84) :
+        visualLen <= 110 ? (isEn ? 62 : 82) :
+        visualLen <= 220 ? (isEn ? 54 : 74) :
+        visualLen <= 460 ? (isEn ? 46 : 64) :
+                           (isEn ? 40 : 54);
+
+    const standardMinFont = isEn ? 18 : 22;
+
+    // Minimum compact ornament reservation so long text claims up to 88%+ of the canvas
+    const minReservedMotifs = 180; // 70px upper + 78px lower + 32px cushion
+    const computeLayoutForFont = (fs: number, padX: number) => {
+        const wLimit = width - padX * 2;
+        const lh = getLineHeightForSize(fs);
+        tempCtx.font = `600 ${fs}px ${fontFamily}`;
+        const wrapped = wrapText(tempCtx, cleanText, wLimit);
+        const isDense = wrapped.length >= 12 || fs <= 34;
+        const bodyH = measureBodyHeight(wrapped, lh, isDense);
+
+        let srcFontSize = 0;
+        let srcLines: { text: string }[] = [];
+        let srcBlockH = 0;
+        if (cleanSource) {
+            srcFontSize = Math.min(32, Math.max(20, Math.round(fs * 0.58)));
+            tempCtx.font = `bold ${srcFontSize}px ${fontFamily}`;
+            srcLines = wrapText(tempCtx, cleanSource, wLimit - 40);
+            srcBlockH = 28 + srcLines.length * Math.round(srcFontSize * 1.35) + 12;
+        }
+
+        return { fs, padX, wLimit, lh, wrapped, isDense, bodyH, srcFontSize, srcLines, srcBlockH };
+    };
+
+    // Binary search for the largest readable font size that comfortably fits with ornaments
+    let low = standardMinFont;
+    let high = maxFontCap;
+    let bestLayout = computeLayoutForFont(standardMinFont, baseHorizontalPadding);
+
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const candidate = computeLayoutForFont(mid, baseHorizontalPadding);
+        // For short/medium text, require enough breathing room (~280px) so motifs look majestic;
+        // for dense text, allow filling up to minReservedMotifs cleanly.
+        const requiredExtras = candidate.wrapped.length <= 6 ? 340 : candidate.wrapped.length <= 12 ? 250 : minReservedMotifs;
+        if (candidate.bodyH + candidate.srcBlockH + requiredExtras <= totalMiddleZoneH) {
+            bestLayout = candidate;
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
     }
-    if (cleanSource) {
-        reservedMiddleExtras += 36 + 24; // Divider + source
-    }
-    // Reserve minimum space for upper and lower Islamic motifs (at least 180px combined)
-    const baseMotifsHeight = 200;
-    reservedMiddleExtras += baseMotifsHeight;
 
-    const maxAllowedTextHeight = Math.max(220, availableMiddleSpace - reservedMiddleExtras);
-
-    // --- SUBSTANTIALLY ENLARGED FONT SIZES TO FILL CANVAS MAJESTICALLY ---
-    const cleanLen = cleanText.replace(/<[^>]+>/g, '').length;
-    let initialFontSize: number;
-
-    if (cleanLen < 80) {
-        initialFontSize = isEn ? 64 : 78;
-    } else if (cleanLen < 170) {
-        initialFontSize = isEn ? 54 : 66;
-    } else if (cleanLen < 320) {
-        initialFontSize = isEn ? 44 : 54;
-    } else if (cleanLen < 600) {
-        initialFontSize = isEn ? 36 : 42;
-    } else if (cleanLen < 950) {
-        initialFontSize = isEn ? 28 : 34;
-    } else {
-        initialFontSize = isEn ? 24 : 28;
+    // Safeguard for ultra-massive texts (e.g., 2,500+ chars): widen text box slightly & scale down smoothly
+    if (bestLayout.bodyH + bestLayout.srcBlockH + 140 > totalMiddleZoneH) {
+        const widePad = activeDesignId === 'classic_gold' ? 76 : 84;
+        let fallbackSize = standardMinFont;
+        bestLayout = computeLayoutForFont(fallbackSize, widePad);
+        while (
+            bestLayout.bodyH + bestLayout.srcBlockH + 140 > totalMiddleZoneH &&
+            fallbackSize > 14
+        ) {
+            fallbackSize -= 1;
+            bestLayout = computeLayoutForFont(fallbackSize, widePad);
+        }
     }
 
-    let bodyFontSize = initialFontSize;
-    let lineHeight = Math.round(bodyFontSize * (isEn ? 1.72 : 1.9));
-    tempCtx.font = `600 ${bodyFontSize}px ${fontFamily}`;
-    let lines = wrapText(tempCtx, cleanText, maxTextWidth);
-    let textHeight = measureLinesHeight(lines, lineHeight);
+    const {
+        fs: bodyFontSize,
+        padX: horizontalContentPadding,
+        lh: baseLineHeight,
+        wrapped: lines,
+        isDense,
+        bodyH: baseTextHeight,
+        srcFontSize: sourceFontSize,
+        srcLines,
+        srcBlockH: sourceBlockHeight,
+    } = bestLayout;
 
-    // If text overflows available height, iteratively scale down smoothly
-    const minFontSize = isEn ? 18 : 20;
-    while (textHeight > maxAllowedTextHeight && bodyFontSize > minFontSize) {
-        bodyFontSize -= 1;
-        lineHeight = Math.round(bodyFontSize * (isEn ? 1.62 : 1.76));
-        tempCtx.font = `600 ${bodyFontSize}px ${fontFamily}`;
-        lines = wrapText(tempCtx, cleanText, maxTextWidth);
-        textHeight = measureLinesHeight(lines, lineHeight);
+    // Gentle vertical breathing expansion when multi-line texts still leave plenty of blank canvas height
+    let lineHeight = baseLineHeight;
+    let textHeight = baseTextHeight;
+    const nonEmptyLineCount = lines.filter((l) => Boolean(l.text)).length;
+    const minNeededForMotifsAndMargins = nonEmptyLineCount <= 5 ? 360 : 280;
+    const expandableSlack =
+        totalMiddleZoneH - (baseTextHeight + sourceBlockHeight + minNeededForMotifsAndMargins);
+    if (nonEmptyLineCount >= 3 && expandableSlack > 40) {
+        const maxPerLineBoost = Math.max(4, Math.round(bodyFontSize * 0.24));
+        const boostPerLine = Math.min(
+            maxPerLineBoost,
+            Math.floor(expandableSlack / nonEmptyLineCount)
+        );
+        if (boostPerLine >= 2) {
+            lineHeight = baseLineHeight + boostPerLine;
+            textHeight = measureBodyHeight(lines, lineHeight, isDense);
+        }
     }
 
-    // Dynamic title and source sizes proportional to body font size
-    const titleFontSize = Math.min(50, Math.max(30, Math.round(bodyFontSize * 0.95)));
-    const sourceFontSize = Math.min(26, Math.max(18, Math.round(bodyFontSize * 0.58)));
+    // --- 4. BALANCED FULL-CANVAS VERTICAL DISTRIBUTION (NO EMPTY VOIDS) ---
+    const contentBlockH = textHeight + sourceBlockHeight;
+    const remainingMiddleSpace = Math.max(96, totalMiddleZoneH - contentBlockH);
 
-    // Calculate actual middle text height (without drawings)
-    let textAndTitleHeight = textHeight;
-    if (cleanTitle) {
-        textAndTitleHeight += titleFontSize + 28;
-    }
-    if (cleanSource) {
-        textAndTitleHeight += 36 + sourceFontSize + 14;
-    }
+    // Dynamically size upper and lower Islamic motifs based on available space
+    const upperMotifHeight =
+        remainingMiddleSpace >= 420
+            ? Math.min(185, Math.round(remainingMiddleSpace * 0.24))
+            : remainingMiddleSpace >= 220
+            ? Math.round(remainingMiddleSpace * 0.34)
+            : Math.max(58, Math.round(remainingMiddleSpace * 0.40));
 
-    // Calculate dynamic remaining space for Islamic Drawings before and after text!
-    const remainingMiddleSpace = Math.max(120, availableMiddleSpace - textAndTitleHeight);
-    // Divide remaining space harmoniously between upper motif and lower rosette
-    const upperMotifHeight = Math.min(210, Math.max(70, Math.round(remainingMiddleSpace * 0.44)));
-    const lowerRosetteHeight = Math.min(230, Math.max(80, Math.round(remainingMiddleSpace * 0.56)));
+    const lowerRosetteHeight =
+        remainingMiddleSpace >= 420
+            ? Math.min(195, Math.round(remainingMiddleSpace * 0.26))
+            : remainingMiddleSpace >= 220
+            ? Math.round(remainingMiddleSpace * 0.36)
+            : Math.max(64, Math.round(remainingMiddleSpace * 0.44));
 
-    const totalCalculatedMiddleHeight = textAndTitleHeight + upperMotifHeight + lowerRosetteHeight;
-    const middleStartY = topSectionEndY + Math.max(15, Math.round((availableMiddleSpace - totalCalculatedMiddleHeight) / 2));
+    const cushionPool = Math.max(8, remainingMiddleSpace - upperMotifHeight - lowerRosetteHeight);
+    // Distribute cushion across top-to-upper, upper-to-text, text-to-lower, and lower-to-footer
+    // so content and ornaments span harmoniously from top to bottom of the entire card
+    const gapBeforeUpper = Math.round(cushionPool * 0.16);
+    const gapAfterUpper = Math.round(cushionPool * 0.34);
+    const gapBeforeLower = Math.round(cushionPool * 0.34);
 
-    // Create target canvas (Crisp 1080x1920 or scaled preview resolution)
-    const scale = renderScale && renderScale > 0 && renderScale <= 1 ? renderScale : 1;
+    const upperMotifTopY = headerEndY + gapBeforeUpper;
+    const bodyStartY = upperMotifTopY + upperMotifHeight + gapAfterUpper;
+    const lowerMotifTopY = bodyStartY + contentBlockH + gapBeforeLower;
+
+    // Create target canvas (Supports up to 2.5x Ultra-HD high-DPI resolution)
+    const scale = renderScale && renderScale > 0 && renderScale <= 2.5 ? renderScale : 1;
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(width * scale);
     canvas.height = Math.round(height * scale);
@@ -771,88 +928,9 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     ctx.direction = isEn ? 'ltr' : 'rtl';
 
     // --- PALETTE & BACKDROP BY SELECTED DESIGN ---
-    const goldPrimary = '#C59B27';
-    const emeraldPrimary = '#064E3B';
+    drawBackdropForDesign(ctx, activeDesignId, width, height, outerMargin, innerMargin);
 
-    if (activeDesignId === 'sanaani_qamariya') {
-        drawSanaaniBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else if (activeDesignId === 'lapis_turquoise') {
-        drawLapisBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else if (activeDesignId === 'rasulid_garnet') {
-        drawRasulidBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else if (activeDesignId === 'hadrami_jade') {
-        drawHadramiBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else if (activeDesignId === 'obsidian_gold') {
-        drawObsidianGoldBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else if (activeDesignId === 'sky_azure') {
-        drawSkyAzureBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else if (activeDesignId === 'emerald_sanctuary') {
-        drawEmeraldSanctuaryBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else if (activeDesignId === 'royal_amethyst') {
-        drawRoyalAmethystBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else if (activeDesignId === 'sunset_saffron') {
-        drawSunsetSaffronBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
-    } else {
-        // Classic Design 1: Radiant Luminous Islamic Parchment Background (Unchanged)
-        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-        bgGrad.addColorStop(0, '#FFFDF8');
-        bgGrad.addColorStop(0.35, '#FAF4E4');
-        bgGrad.addColorStop(0.7, '#F7EDD5');
-        bgGrad.addColorStop(1, '#F3E3C0');
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, width, height);
-
-        const centerGlow = ctx.createRadialGradient(width / 2, height * 0.48, 80, width / 2, height * 0.48, width * 0.78);
-        centerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-        centerGlow.addColorStop(0.45, 'rgba(254, 243, 199, 0.55)');
-        centerGlow.addColorStop(0.8, 'rgba(247, 230, 185, 0.25)');
-        centerGlow.addColorStop(1, 'rgba(235, 214, 160, 0.05)');
-        ctx.fillStyle = centerGlow;
-        ctx.fillRect(0, 0, width, height);
-
-        ctx.save();
-        ctx.strokeStyle = 'rgba(197, 155, 39, 0.085)';
-        ctx.lineWidth = 1.2;
-        const starGridStep = 90;
-        for (let x = 45; x < width; x += starGridStep) {
-            for (let y = 45; y < height; y += starGridStep) {
-                drawIslamicStar(ctx, x, y, 16, 8, 8, undefined, 'rgba(197, 155, 39, 0.075)', 1);
-            }
-        }
-        ctx.restore();
-
-        ctx.strokeStyle = 'rgba(197, 155, 39, 0.75)';
-        ctx.lineWidth = 3.5;
-        drawRoundRect(ctx, outerMargin, outerMargin, width - outerMargin * 2, height - outerMargin * 2, 38);
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(230, 198, 101, 0.85)';
-        ctx.lineWidth = 1.2;
-        drawRoundRect(ctx, outerMargin + 7, outerMargin + 7, width - (outerMargin + 7) * 2, height - (outerMargin + 7) * 2, 32);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(255, 253, 247, 0.65)';
-        ctx.strokeStyle = emeraldPrimary;
-        ctx.lineWidth = 2.4;
-        drawRoundRect(ctx, innerMargin, innerMargin, width - innerMargin * 2, height - innerMargin * 2, 28);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(197, 155, 39, 0.65)';
-        ctx.lineWidth = 1.4;
-        drawRoundRect(ctx, innerMargin + 6, innerMargin + 6, width - (innerMargin + 6) * 2, height - (innerMargin + 6) * 2, 22);
-        ctx.stroke();
-
-        const cornerArabesqueSize = 75;
-        drawIslamicCornerArabesque(ctx, innerMargin + 10, innerMargin + 10, cornerArabesqueSize, 1, 1, goldPrimary, emeraldPrimary);
-        drawIslamicCornerArabesque(ctx, width - innerMargin - 10, innerMargin + 10, cornerArabesqueSize, -1, 1, goldPrimary, emeraldPrimary);
-        drawIslamicCornerArabesque(ctx, innerMargin + 10, height - innerMargin - 10, cornerArabesqueSize, 1, -1, goldPrimary, emeraldPrimary);
-        drawIslamicCornerArabesque(ctx, width - innerMargin - 10, height - innerMargin - 10, cornerArabesqueSize, -1, -1, goldPrimary, emeraldPrimary);
-
-        drawTopMihrabArch(ctx, innerMargin + 14, innerMargin + 18, width - (innerMargin + 14) * 2, 70, goldPrimary, emeraldPrimary);
-    }
-
-    // 5. TOP SECTION: Bismillah & Category Badge
+    // 5. TOP SECTION: Bismillah, Category Badge, and Top-Anchored Title
     let currentTopY = topSectionStartY;
     ctx.save();
     ctx.font = isEn ? `bold 22px ${fontFamily}` : `700 44px 'Amiri', 'Traditional Arabic', serif`;
@@ -864,13 +942,15 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     ctx.fillText(bismillahText, width / 2, currentTopY + (isEn ? 22 : 38));
     ctx.restore();
 
-    currentTopY += isEn ? 38 : 62;
+    currentTopY += isEn ? 36 : 58;
 
     // Category Badge (Ornate Illuminated Cartouche)
     if (cleanCategory) {
+        ctx.save();
         ctx.font = `bold 22px ${fontFamily}`;
+        const maxPillWidth = defaultMaxWidth - 20;
         const catMetrics = ctx.measureText(cleanCategory);
-        const pillW = catMetrics.width + 68;
+        const pillW = Math.min(maxPillWidth, catMetrics.width + 68);
         const pillH = 46;
         const pillX = (width - pillW) / 2;
 
@@ -895,14 +975,14 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
 
         ctx.fillStyle = typoTheme.badgeTextColor;
         ctx.textAlign = 'center';
-        ctx.fillText(cleanCategory, width / 2, currentTopY + 30);
+        ctx.fillText(cleanCategory, width / 2, currentTopY + 30, pillW - 44);
+        ctx.restore();
+
+        currentTopY += pillH + 16;
     }
 
-    // 6. MIDDLE SECTION: Layout
-    let currentMiddleY = middleStartY;
-
-    // Optional Title (if not identical to Category)
-    if (cleanTitle) {
+    // Anchored Wrapped Title right beneath Category
+    if (titleLines.length > 0) {
         ctx.save();
         ctx.font = `bold ${titleFontSize}px ${fontFamily}`;
         ctx.fillStyle = typoTheme.titleColor;
@@ -910,15 +990,22 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         ctx.shadowColor = typoTheme.titleShadow;
         ctx.shadowBlur = 6;
         ctx.shadowOffsetY = 2;
-        ctx.fillText(cleanTitle, width / 2, currentMiddleY + titleFontSize * 0.88);
+        for (const tLine of titleLines) {
+            if (tLine.text) {
+                ctx.fillText(tLine.text, width / 2, currentTopY + titleFontSize * 0.85, defaultMaxWidth);
+                currentTopY += titleLineHeight;
+            }
+        }
         ctx.restore();
-
-        currentMiddleY += titleFontSize + 20;
     }
 
-    // UPPER ISLAMIC DRAWING (Specific to selected design)
-    const upperMotifCenterY = currentMiddleY + upperMotifHeight * 0.5;
-    if (activeDesignId === 'sanaani_qamariya') {
+    // 6. UPPER ISLAMIC DRAWING (Positioned cleanly under Header)
+    const goldPrimary = '#C59B27';
+    const emeraldPrimary = '#064E3B';
+    const upperMotifCenterY = upperMotifTopY + upperMotifHeight * 0.5;
+    if (drawExtraDesignUpperMotif(ctx, activeDesignId, width / 2, upperMotifCenterY, upperMotifHeight)) {
+        // Rendered by extra design renderer
+    } else if (activeDesignId === 'sanaani_qamariya') {
         drawSanaaniUpperQamariya(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
     } else if (activeDesignId === 'lapis_turquoise') {
         drawLapisUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
@@ -939,15 +1026,16 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     } else {
         drawUpperIslamicMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight, goldPrimary, emeraldPrimary);
     }
-    currentMiddleY += upperMotifHeight;
 
-    // 7. BODY TEXT: Dignified, Calligraphic, Enlarged, Crisp
+    // 7. BODY TEXT: Auto-Fitted, Full-Canvas Distributed, Calligraphic & Crisp
+    let currentMiddleY = bodyStartY;
+    const emptyLineGap = Math.round(lineHeight * (isDense ? 0.30 : 0.44));
     ctx.direction = isEn ? 'ltr' : 'rtl';
     ctx.textAlign = 'center';
 
     for (const lineObj of lines) {
         if (!lineObj.text) {
-            currentMiddleY += lineHeight * 0.45;
+            currentMiddleY += emptyLineGap;
             continue;
         }
 
@@ -974,10 +1062,9 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         currentMiddleY += lineHeight;
     }
 
-    currentMiddleY += 16;
-
-    // Source & Metadata (if provided)
-    if (cleanSource) {
+    // Source & Metadata (Wrapped cleanly if long)
+    if (srcLines.length > 0) {
+        currentMiddleY += 12;
         ctx.strokeStyle = typoTheme.sourceDividerColor;
         ctx.lineWidth = 1.4;
         ctx.beginPath();
@@ -991,17 +1078,26 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         ctx.arc(width - horizontalContentPadding - 60, currentMiddleY, 3, 0, Math.PI * 2);
         ctx.fill();
 
+        const srcLineHeight = Math.round(sourceFontSize * 1.35);
+        currentMiddleY += 16;
+        ctx.save();
         ctx.font = `bold ${sourceFontSize}px ${fontFamily}`;
         ctx.fillStyle = typoTheme.sourceColor;
         ctx.textAlign = 'center';
-        ctx.fillText(cleanSource, width / 2, currentMiddleY + sourceFontSize + 12);
-
-        currentMiddleY += sourceFontSize + 26;
+        for (const sLine of srcLines) {
+            if (sLine.text) {
+                ctx.fillText(sLine.text, width / 2, currentMiddleY + sourceFontSize * 0.88);
+                currentMiddleY += srcLineHeight;
+            }
+        }
+        ctx.restore();
     }
 
-    // LOWER ISLAMIC DRAWING (Specific to selected design)
-    const lowerRosetteCenterY = currentMiddleY + lowerRosetteHeight * 0.5;
-    if (activeDesignId === 'sanaani_qamariya') {
+    // LOWER ISLAMIC DRAWING (Anchored cleanly toward Footer)
+    const lowerRosetteCenterY = lowerMotifTopY + lowerRosetteHeight * 0.5;
+    if (drawExtraDesignLowerMotif(ctx, activeDesignId, width / 2, lowerRosetteCenterY, lowerRosetteHeight)) {
+        // Rendered by extra design renderer
+    } else if (activeDesignId === 'sanaani_qamariya') {
         drawSanaaniLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
     } else if (activeDesignId === 'lapis_turquoise') {
         drawLapisLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
@@ -1044,20 +1140,46 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         : 'تلاوة وتدبر وسيرة نبوية';
 
     ctx.save();
-    ctx.font = isEn ? `bold 28px ${fontFamily}` : `700 34px 'Amiri', 'Traditional Arabic', serif`;
+    ctx.font = isEn ? `bold 32px ${fontFamily}` : `700 40px 'Amiri', 'Traditional Arabic', serif`;
     ctx.fillStyle = typoTheme.brandColor;
     ctx.textAlign = 'center';
     ctx.shadowColor = typoTheme.brandShadow;
     ctx.shadowBlur = 6;
     ctx.shadowOffsetY = 1;
-    ctx.fillText(brandName, width / 2, footerStartY + 38);
+    ctx.fillText(brandName, width / 2, footerStartY + 42);
 
     ctx.font = `600 18px ${fontFamily}`;
     ctx.fillStyle = typoTheme.subtitleColor;
-    ctx.fillText(brandSubtitle, width / 2, footerStartY + 68);
+    ctx.fillText(brandSubtitle, width / 2, footerStartY + 72);
     ctx.restore();
 
     return canvas;
+}
+
+/**
+ * Encodes a high-DPI canvas into a crisp JPEG while automatically tuning quality
+ * so the final file remains compact and fast to share across messaging apps.
+ */
+export function encodeHighResCompactImage(
+    canvas: HTMLCanvasElement,
+    targetMaxBytes = 380 * 1024,
+    initialQuality = 0.88,
+    minQuality = 0.68
+): string {
+    const estimateBytes = (url: string) => {
+        const commaIdx = url.indexOf(',');
+        const payloadLen = commaIdx === -1 ? url.length : url.length - commaIdx - 1;
+        return Math.floor(payloadLen * 0.75);
+    };
+
+    let quality = initialQuality;
+    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+    while (estimateBytes(dataUrl) > targetMaxBytes && quality > minQuality) {
+        quality = Math.max(minQuality, Number((quality - 0.04).toFixed(2)));
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+        if (quality === minQuality) break;
+    }
+    return dataUrl;
 }
 
 /**
@@ -1071,6 +1193,7 @@ export const shareAsImage = async ({ text, title, source, category, theme, isEn:
     }
 
     try {
+        // Render at 2x Ultra-HD (2160x3840) for razor-sharp Arabic calligraphy & fine ornaments
         const canvas = await renderCardToPureCanvas({
             text,
             title,
@@ -1080,10 +1203,11 @@ export const shareAsImage = async ({ text, title, source, category, theme, isEn:
             isEn,
             language: isEn ? 'en' : 'ar',
             setToastMessage,
-            designId
+            designId,
+            renderScale: 2,
         });
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        const dataUrl = encodeHighResCompactImage(canvas, 380 * 1024, 0.88, 0.68);
 
         if (!dataUrl || dataUrl === 'data:,') {
             throw new Error('Failed to generate image data');
@@ -1177,3 +1301,220 @@ const downloadFile = async (dataUrl: string, isEn: boolean, setToastMessage?: (m
         }
     }
 };
+
+function drawClassicGoldBackdropAndFrame(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    outerMargin: number,
+    innerMargin: number
+) {
+    const goldPrimary = '#C59B27';
+    const emeraldPrimary = '#064E3B';
+
+    const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+    bgGrad.addColorStop(0, '#FFFDF8');
+    bgGrad.addColorStop(0.35, '#FAF4E4');
+    bgGrad.addColorStop(0.7, '#F7EDD5');
+    bgGrad.addColorStop(1, '#F3E3C0');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    const centerGlow = ctx.createRadialGradient(width / 2, height * 0.48, 80, width / 2, height * 0.48, width * 0.78);
+    centerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    centerGlow.addColorStop(0.45, 'rgba(254, 243, 199, 0.55)');
+    centerGlow.addColorStop(0.8, 'rgba(247, 230, 185, 0.25)');
+    centerGlow.addColorStop(1, 'rgba(235, 214, 160, 0.05)');
+    ctx.fillStyle = centerGlow;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(197, 155, 39, 0.085)';
+    ctx.lineWidth = 1.2;
+    const starGridStep = 90;
+    for (let x = 45; x < width; x += starGridStep) {
+        for (let y = 45; y < height; y += starGridStep) {
+            drawIslamicStar(ctx, x, y, 16, 8, 8, undefined, 'rgba(197, 155, 39, 0.075)', 1);
+        }
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(197, 155, 39, 0.75)';
+    ctx.lineWidth = 3.5;
+    drawRoundRect(ctx, outerMargin, outerMargin, width - outerMargin * 2, height - outerMargin * 2, 38);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(230, 198, 101, 0.85)';
+    ctx.lineWidth = 1.2;
+    drawRoundRect(ctx, outerMargin + 7, outerMargin + 7, width - (outerMargin + 7) * 2, height - (outerMargin + 7) * 2, 32);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255, 253, 247, 0.65)';
+    ctx.strokeStyle = emeraldPrimary;
+    ctx.lineWidth = 2.4;
+    drawRoundRect(ctx, innerMargin, innerMargin, width - innerMargin * 2, height - innerMargin * 2, 28);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(197, 155, 39, 0.65)';
+    ctx.lineWidth = 1.4;
+    drawRoundRect(ctx, innerMargin + 6, innerMargin + 6, width - (innerMargin + 6) * 2, height - (innerMargin + 6) * 2, 22);
+    ctx.stroke();
+
+    const cornerArabesqueSize = 75;
+    drawIslamicCornerArabesque(ctx, innerMargin + 10, innerMargin + 10, cornerArabesqueSize, 1, 1, goldPrimary, emeraldPrimary);
+    drawIslamicCornerArabesque(ctx, width - innerMargin - 10, innerMargin + 10, cornerArabesqueSize, -1, 1, goldPrimary, emeraldPrimary);
+    drawIslamicCornerArabesque(ctx, innerMargin + 10, height - innerMargin - 10, cornerArabesqueSize, 1, -1, goldPrimary, emeraldPrimary);
+    drawIslamicCornerArabesque(ctx, width - innerMargin - 10, height - innerMargin - 10, cornerArabesqueSize, -1, -1, goldPrimary, emeraldPrimary);
+
+    drawTopMihrabArch(ctx, innerMargin + 14, innerMargin + 18, width - (innerMargin + 14) * 2, 70, goldPrimary, emeraldPrimary);
+}
+
+function drawBackdropForDesign(
+    ctx: CanvasRenderingContext2D,
+    designId: ShareDesignId,
+    width: number,
+    height: number,
+    outerMargin: number,
+    innerMargin: number
+) {
+    if (drawExtraDesignBackdropAndFrame(ctx, designId, width, height, outerMargin, innerMargin)) {
+        return;
+    } else if (designId === 'sanaani_qamariya') {
+        drawSanaaniBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (designId === 'lapis_turquoise') {
+        drawLapisBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (designId === 'rasulid_garnet') {
+        drawRasulidBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (designId === 'hadrami_jade') {
+        drawHadramiBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (designId === 'obsidian_gold') {
+        drawObsidianGoldBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (designId === 'sky_azure') {
+        drawSkyAzureBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (designId === 'emerald_sanctuary') {
+        drawEmeraldSanctuaryBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (designId === 'royal_amethyst') {
+        drawRoyalAmethystBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (designId === 'sunset_saffron') {
+        drawSunsetSaffronBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else {
+        drawClassicGoldBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    }
+}
+
+const designBackdropCache = new Map<string, string>();
+const designMotifCache = new Map<string, string>();
+
+/**
+ * Renders the ornate vector backdrop & architectural frame for any of the 10 Share Card Designs
+ * at canonical 1080px width and returns a cached JPEG data URL.
+ */
+export function renderDesignBackdropToDataUrl(designId: ShareDesignId, height = 1920): string {
+    const safeHeight = Math.max(720, Math.round(height));
+    const cacheKey = `${designId}_${safeHeight}`;
+    const cached = designBackdropCache.get(cacheKey);
+    if (cached) return cached;
+
+    if (typeof document === 'undefined') return '';
+
+    const width = 1080;
+    const outerMargin = 32;
+    const innerMargin = 56;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = safeHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    drawBackdropForDesign(ctx, designId, width, safeHeight, outerMargin, innerMargin);
+
+    const url = canvas.toDataURL('image/jpeg', 0.92);
+    designBackdropCache.set(cacheKey, url);
+    return url;
+}
+
+/**
+ * Renders the upper or lower signature vector motif for a Share Card Design
+ * on a transparent 720x160 PNG canvas and returns a cached data URL.
+ */
+export function renderDesignMotifDataUrl(designId: ShareDesignId, position: 'upper' | 'lower'): string {
+    const cacheKey = `${designId}_${position}`;
+    const cached = designMotifCache.get(cacheKey);
+    if (cached) return cached;
+
+    if (typeof document === 'undefined') return '';
+
+    const width = 720;
+    const height = 160;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    const cx = width / 2;
+    const cy = height / 2;
+    const availableHeight = 120;
+    const goldPrimary = '#C59B27';
+    const emeraldPrimary = '#064E3B';
+
+    if (position === 'upper') {
+        if (drawExtraDesignUpperMotif(ctx, designId, cx, cy, availableHeight)) {
+            // Rendered by extra design renderer
+        } else if (designId === 'sanaani_qamariya') {
+            drawSanaaniUpperQamariya(ctx, cx, cy, availableHeight);
+        } else if (designId === 'lapis_turquoise') {
+            drawLapisUpperMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'rasulid_garnet') {
+            drawRasulidUpperMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'hadrami_jade') {
+            drawHadramiUpperMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'obsidian_gold') {
+            drawObsidianGoldUpperMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'sky_azure') {
+            drawSkyAzureUpperMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'emerald_sanctuary') {
+            drawEmeraldSanctuaryUpperMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'royal_amethyst') {
+            drawRoyalAmethystUpperMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'sunset_saffron') {
+            drawSunsetSaffronUpperMotif(ctx, cx, cy, availableHeight);
+        } else {
+            drawUpperIslamicMotif(ctx, cx, cy, availableHeight, goldPrimary, emeraldPrimary);
+        }
+    } else {
+        if (drawExtraDesignLowerMotif(ctx, designId, cx, cy, availableHeight)) {
+            // Rendered by extra design renderer
+        } else if (designId === 'sanaani_qamariya') {
+            drawSanaaniLowerMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'lapis_turquoise') {
+            drawLapisLowerMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'rasulid_garnet') {
+            drawRasulidLowerMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'hadrami_jade') {
+            drawHadramiLowerMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'obsidian_gold') {
+            drawObsidianGoldLowerMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'sky_azure') {
+            drawSkyAzureLowerMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'emerald_sanctuary') {
+            drawEmeraldSanctuaryLowerMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'royal_amethyst') {
+            drawRoyalAmethystLowerMotif(ctx, cx, cy, availableHeight);
+        } else if (designId === 'sunset_saffron') {
+            drawSunsetSaffronLowerMotif(ctx, cx, cy, availableHeight);
+        } else {
+            drawLowerIslamicRosette(ctx, cx, cy, availableHeight, goldPrimary, emeraldPrimary);
+        }
+    }
+
+    const url = canvas.toDataURL('image/png');
+    designMotifCache.set(cacheKey, url);
+    return url;
+}

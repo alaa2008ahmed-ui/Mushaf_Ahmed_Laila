@@ -1,4 +1,4 @@
-import { PRESET_MEMORIZATION_PLANS, MemorizationPlanItem } from '../utils/quranMemorizationUtils';
+import { PRESET_MEMORIZATION_PLANS } from '../utils/quranMemorizationUtils';
 import { quranData as quranJsonData } from '../utils/quranData';
 
 export type MasteryLevel = 'perfect' | 'good' | 'needs_work';

@@ -1,35 +1,17 @@
 import React, { createContext, useState, useContext, useEffect, useLayoutEffect, useMemo, useCallback, ReactNode } from 'react';
 import { presetThemes, Theme } from './themes';
 import { syncWidgetThemeColors } from '../utils/widgetUtils';
-import { getQuranThemeForLayout, THEMES as QURAN_THEMES, getLinkedQuranThemeForHomeVariant, applyQuranThemeForHomeVariant, isDarkQuranTheme } from '../components/QuranReader/constants';
+import { getQuranThemeForLayout, THEMES as QURAN_THEMES, applyQuranThemeForHomeVariant, isDarkQuranTheme } from '../components/QuranReader/constants';
 import { syncCurrentSplashImage } from '../utils/splashThemeHelper';
 import { syncSystemStatusBar } from '../utils/statusBar';
-<<<<<<< HEAD
 import {
     setSelectedShareDesign,
     getShareDesignForHomeVariant,
-    getShareDesignForPresetTheme,
 } from '../utils/shareCardDesigns';
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-
-// State to be saved to localStorage
-interface ThemeSettings {
-    themeKey: string;
-    isGlobalTheme: boolean;
-    pageThemes: Record<string, string>;
-    lockedPages?: string[];
-    customBg?: {
-        url: string;
-        isVideo: boolean;
-    };
-}
 
 interface ThemeContextType {
     theme: Theme;
     themeKey: string;
-    isGlobalTheme: boolean;
-    isPageLocked: boolean;
     isQuranPage: boolean;
     currentPage: string;
     isNightMode: boolean;
@@ -38,55 +20,16 @@ interface ThemeContextType {
     setHomeThemeVariant: (variant: 'gold' | 'sky' | 'emerald' | 'burgundy') => void;
     toggleNightMode: () => void;
     setNightModeActive: (active: boolean) => void;
-    customBg?: {
-        url: string;
-        isVideo: boolean;
-    };
-    togglePageLock: () => void;
-    applyPresetTheme: (themeKey: string) => void;
-    setCustomBackground: (dataUrl: string, isVideo: boolean) => void;
-    resetBackground: () => void;
-    setIsGlobalTheme: (isGlobal: boolean) => void;
     setCurrentPage: (pageId: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-const THEME_SETTINGS_KEY = 'theme_settings_v3';
 
 function hexToRgb(hex: string | null) {
     if (!hex) return null;
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
 }
-
-const convertQuranThemeToTheme = (quranThemeObj: any, themeId: string): Theme => {
-    const isDark = quranThemeObj.bg === '#000000' || themeId === 'deep_black' || themeId.startsWith('i_');
-    return {
-        name: quranThemeObj.name || themeId,
-        bgColor: quranThemeObj.bg || '#ffffff',
-        isDark,
-        textColor: quranThemeObj.text || (isDark ? '#ffffff' : '#000000'),
-        font: quranThemeObj.font || "'Cairo', sans-serif",
-        palette: [quranThemeObj.accent || '#10b981', quranThemeObj.sajdah || '#d97706', quranThemeObj.highlightText || '#10b981'],
-        barBg: quranThemeObj.barBg || quranThemeObj.bg || (isDark ? '#000000' : '#ffffff'),
-        barBorder: quranThemeObj.barBorder || (isDark ? '1px solid #333333' : 'none'),
-        topBarBg: quranThemeObj.headerBg || quranThemeObj.barBg || (isDark ? '#000000' : '#ffffff'),
-        topBarText: quranThemeObj.headerText || quranThemeObj.barText || (isDark ? '#ffffff' : '#000000'),
-        btnBg: quranThemeObj.btnBg || quranThemeObj.bg || (isDark ? '#111111' : '#ffffff'),
-        btnText: quranThemeObj.btnText || quranThemeObj.text || (isDark ? '#ffffff' : '#000000'),
-        btnBorder: quranThemeObj.btnBorder || 'none',
-        accent: quranThemeObj.accent || '#10b981',
-        accentText: quranThemeObj.accentText || '#ffffff',
-        highlightText: quranThemeObj.highlightText || quranThemeObj.accent || '#10b981',
-        cardBg: quranThemeObj.cardBg || (isDark ? '#111111' : '#ffffff'),
-        cardText: quranThemeObj.cardText || quranThemeObj.text || (isDark ? '#ffffff' : '#000000'),
-        cardBorder: quranThemeObj.cardBorder || (isDark ? '#333333' : 'none'),
-        modalBg: quranThemeObj.modalBg || (isDark ? '#0a0a0a' : '#ffffff'),
-        modalText: quranThemeObj.modalText || (isDark ? '#ffffff' : '#000000'),
-        sajdah: quranThemeObj.sajdah || '#d97706'
-    };
-};
 
 export const syncModernDOMClasses = (isNight: boolean, variant: 'gold' | 'sky' | 'emerald' | 'burgundy') => {
     if (typeof document === 'undefined') return;
@@ -139,30 +82,23 @@ export const restoreHomeThemeDOMInstantly = () => {
         body.classList.remove('quran-context', 'quran-page-active');
         body.style.removeProperty('background-color');
 
-        const layout = localStorage.getItem('home_layout_system') || 'modern';
-        const isModern = layout !== 'classic';
         const isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
         const variant = (localStorage.getItem('modern_home_theme_variant') as any) || 'gold';
 
-        if (isModern) {
-            syncModernDOMClasses(isNight, variant);
-            body.style.backgroundColor = isNight ? '#000000' : '#FFFFFF';
-            body.style.backgroundImage = 'none';
-            syncSystemStatusBar(isNight, '#FFFFFF', `modern:${isNight ? 'night' : variant}`);
-        }
+        syncModernDOMClasses(isNight, variant);
+        body.style.backgroundColor = isNight ? '#000000' : '#FFFFFF';
+        body.style.backgroundImage = 'none';
+        syncSystemStatusBar(isNight, '#FFFFFF', `modern:${isNight ? 'night' : variant}`);
     } catch (e) {}
 };
 
 // Immediate DOM sync on load to prevent any initial render theme flash
 try {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        const layout = localStorage.getItem('home_layout_system') || 'modern';
-        if (layout !== 'classic') {
-            const isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
-            const variant = (localStorage.getItem('modern_home_theme_variant') as any) || 'gold';
-            syncModernDOMClasses(isNight, variant);
-            syncSystemStatusBar(isNight, '#FFFFFF', `modern:${isNight ? 'night' : variant}`);
-        }
+        const isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
+        const variant = (localStorage.getItem('modern_home_theme_variant') as any) || 'gold';
+        syncModernDOMClasses(isNight, variant);
+        syncSystemStatusBar(isNight, '#FFFFFF', `modern:${isNight ? 'night' : variant}`);
     }
 } catch (e) {}
 
@@ -174,50 +110,17 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }
         setCurrentPageState(prev => (prev === pageId ? prev : pageId));
     }, []);
-    const [settings, setSettings] = useState<ThemeSettings>(() => {
-        try {
-            const saved = localStorage.getItem(THEME_SETTINGS_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                return {
-                    themeKey: parsed.themeKey || 'default',
-                    isGlobalTheme: parsed.isGlobalTheme !== undefined ? parsed.isGlobalTheme : true,
-                    pageThemes: parsed.pageThemes || {},
-                    lockedPages: parsed.lockedPages || [],
-                    customBg: parsed.customBg
-                };
-            }
-            return { themeKey: 'default', isGlobalTheme: true, pageThemes: {}, lockedPages: [] };
-        } catch (e) {
-            return { themeKey: 'default', isGlobalTheme: true, pageThemes: {}, lockedPages: [] };
-        }
-    });
+    const homeLayout = 'modern';
 
-    const [homeLayout, setHomeLayout] = useState<string>(() => {
-        try {
-            const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('home_layout_system') : 'modern';
-            return (saved === 'classic' || saved === 'modern') ? saved : 'modern';
-        } catch {
-            return 'modern';
-        }
-    });
-
-    const [layoutNightModes, setLayoutNightModes] = useState<Record<string, boolean>>(() => {
+    const [isNightMode, setIsNightMode] = useState<boolean>(() => {
         try {
             const legacy = localStorage.getItem('night_mode_active') === 'true';
             const modernSaved = localStorage.getItem('night_mode_active_modern');
-            const classicSaved = localStorage.getItem('night_mode_active_classic');
-            return {
-                modern: modernSaved !== null ? modernSaved === 'true' : legacy,
-                classic: classicSaved !== null ? classicSaved === 'true' : false
-            };
+            return modernSaved !== null ? modernSaved === 'true' : legacy;
         } catch {
-            return { modern: false, classic: false };
+            return false;
         }
     });
-
-    const currentLayoutKey = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
-    const isNightMode = Boolean(layoutNightModes[currentLayoutKey]);
 
     const [homeThemeVariant, setHomeThemeVariantState] = useState<'gold' | 'sky' | 'emerald' | 'burgundy'>(() => {
         try {
@@ -231,13 +134,11 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }
     });
 
-<<<<<<< HEAD
     const applyHomeThemeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy', syncShareDesign = true) => {
         setHomeThemeVariantState(variant);
         try {
             localStorage.setItem('modern_home_theme_variant', variant);
-            const layout = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
-            const storedNight = localStorage.getItem(`night_mode_active_${layout}`);
+            const storedNight = localStorage.getItem('night_mode_active_modern');
             const effectiveNight = storedNight !== null ? storedNight === 'true' : isNightMode;
             syncModernDOMClasses(effectiveNight, variant);
             syncCurrentSplashImage(effectiveNight, variant);
@@ -245,15 +146,6 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             if (syncShareDesign && !effectiveNight) {
                 setSelectedShareDesign(getShareDesignForHomeVariant(variant, false));
             }
-=======
-    const setHomeThemeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy') => {
-        setHomeThemeVariantState(variant);
-        try {
-            localStorage.setItem('modern_home_theme_variant', variant);
-            syncModernDOMClasses(isNightMode, variant);
-            syncCurrentSplashImage(isNightMode, variant);
-            applyQuranThemeForHomeVariant(variant);
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         } catch {}
         setTimeout(() => {
             window.dispatchEvent(new Event('themeChanged'));
@@ -262,13 +154,10 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }, 0);
     };
 
-<<<<<<< HEAD
     const setHomeThemeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy') => {
         applyHomeThemeVariant(variant, true);
     };
 
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     useEffect(() => {
         try {
             const syncedVariant = localStorage.getItem('quran_synced_home_theme_variant');
@@ -283,90 +172,34 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     }, [isNightMode, homeThemeVariant]);
 
     const setNightModeActive = (active: boolean) => {
-        const layout = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
-<<<<<<< HEAD
         try {
-            localStorage.setItem(`night_mode_active_${layout}`, String(active));
+            localStorage.setItem('night_mode_active_modern', String(active));
             localStorage.setItem('night_mode_active', String(active));
         } catch (e) {}
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         syncCurrentSplashImage(active, homeThemeVariant);
-        if (layout === 'modern') {
-            syncModernDOMClasses(active, homeThemeVariant);
-        }
-<<<<<<< HEAD
+        syncModernDOMClasses(active, homeThemeVariant);
         setSelectedShareDesign(
-            active
-                ? 'obsidian_gold'
-                : layout === 'modern'
-                    ? getShareDesignForHomeVariant(homeThemeVariant, false)
-                    : getShareDesignForPresetTheme(settings.themeKey, false)
+            active ? 'obsidian_gold' : getShareDesignForHomeVariant(homeThemeVariant, false)
         );
-        setLayoutNightModes(prev => ({
-            ...prev,
-            [layout]: active
-        }));
-=======
-        setLayoutNightModes(prev => {
-            try {
-                localStorage.setItem(`night_mode_active_${layout}`, String(active));
-                localStorage.setItem('night_mode_active', String(active));
-            } catch (e) {}
-            return {
-                ...prev,
-                [layout]: active
-            };
-        });
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+        setIsNightMode(active);
         setTimeout(() => {
             window.dispatchEvent(new Event('themeChanged'));
         }, 0);
     };
 
     const toggleNightMode = () => {
-        const layout = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
-<<<<<<< HEAD
-        const currentVal = Boolean(layoutNightModes[layout]);
-        const nextVal = !currentVal;
+        const nextVal = !isNightMode;
         try {
-            localStorage.setItem(`night_mode_active_${layout}`, String(nextVal));
+            localStorage.setItem('night_mode_active_modern', String(nextVal));
             localStorage.setItem('night_mode_active', String(nextVal));
         } catch (e) {}
         syncCurrentSplashImage(nextVal, homeThemeVariant);
-        if (layout === 'modern') {
-            syncModernDOMClasses(nextVal, homeThemeVariant);
-        }
+        syncModernDOMClasses(nextVal, homeThemeVariant);
         setSelectedShareDesign(
-            nextVal
-                ? 'obsidian_gold'
-                : layout === 'modern'
-                    ? getShareDesignForHomeVariant(homeThemeVariant, false)
-                    : getShareDesignForPresetTheme(settings.themeKey, false)
+            nextVal ? 'obsidian_gold' : getShareDesignForHomeVariant(homeThemeVariant, false)
         );
 
-        setLayoutNightModes(prev => ({
-            ...prev,
-            [layout]: nextVal
-        }));
-=======
-        
-        setLayoutNightModes(prev => {
-            const currentVal = Boolean(prev[layout]);
-            const nextVal = !currentVal;
-            syncCurrentSplashImage(nextVal, homeThemeVariant);
-            
-            try {
-                localStorage.setItem(`night_mode_active_${layout}`, String(nextVal));
-                localStorage.setItem('night_mode_active', String(nextVal));
-            } catch (e) {}
-            
-            return {
-                ...prev,
-                [layout]: nextVal
-            };
-        });
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+        setIsNightMode(nextVal);
 
         setTimeout(() => {
             window.dispatchEvent(new Event('themeChanged'));
@@ -374,80 +207,29 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     };
 
     const activeThemeKey = useMemo(() => {
-        const isModern = homeLayout === 'modern' || (typeof localStorage !== 'undefined' && localStorage.getItem('home_layout_system') === 'modern');
-
-        // في التصميم الذكي الحديث: يبقى الثيم ثابتاً ومستقراً ومطابقاً للوضع المختار دائماً لمنع أي وميض أو تبديل لحظي
-        if (isModern) {
-            if (isNightMode) return 'black_gold';
-            if (homeThemeVariant === 'sky') return 'sky_mode';
-            if (homeThemeVariant === 'emerald') return 'emerald_mode';
-            if (homeThemeVariant === 'burgundy') return 'burgundy_mode';
-            return 'shiny_gold';
-        }
-
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
-
-        if (pageKey === 'quran') {
-            const layout = isModern ? 'modern' : 'classic';
-            const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
-            const quranThemeId = getQuranThemeForLayout(layout, modeSuffix);
-            if (presetThemes[quranThemeId] || (QURAN_THEMES as any)[quranThemeId]) {
-                return quranThemeId;
-            }
-            if (isNightMode) {
-                return 'deep_black';
-            }
-            return 'default';
-        }
-
-        if (isNightMode) {
-            return 'black_gold';
-        }
-
-        if (pageKey === 'home') {
-            const homeKey = settings.themeKey || 'default';
-            return presetThemes[homeKey] ? homeKey : 'default';
-        }
-
-        const isLocked = settings.lockedPages?.includes(pageKey);
-        if (isLocked && settings.pageThemes[pageKey] && presetThemes[settings.pageThemes[pageKey]]) {
-            return settings.pageThemes[pageKey];
-        }
-
-        const activeKey = settings.themeKey || 'default';
-        return presetThemes[activeKey] ? activeKey : 'default';
-    }, [settings, currentPage, homeLayout, isNightMode, homeThemeVariant]);
+        if (isNightMode) return 'black_gold';
+        if (homeThemeVariant === 'sky') return 'sky_mode';
+        if (homeThemeVariant === 'emerald') return 'emerald_mode';
+        if (homeThemeVariant === 'burgundy') return 'burgundy_mode';
+        return 'shiny_gold';
+    }, [isNightMode, homeThemeVariant]);
 
     const theme = useMemo(() => {
-        let baseTheme = presetThemes[activeThemeKey];
-        if (!baseTheme && (QURAN_THEMES as any)[activeThemeKey]) {
-            baseTheme = convertQuranThemeToTheme((QURAN_THEMES as any)[activeThemeKey], activeThemeKey);
-        }
-        if (!baseTheme) {
-            baseTheme = presetThemes.default;
-        }
+        const baseTheme = presetThemes[activeThemeKey] || presetThemes.shiny_gold;
 
         const bg = (baseTheme.bgColor || '').toUpperCase();
-        const darkBgs = [
-            '#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', 
-            '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', 
-            '#2E1065', '#0B0F19', '#022C22', '#134E4A', '#334155', '#280A1E', '#041E3A', '#09090B',
-            '#1C1917', '#1E3A8A', '#422006', '#78350F', '#0A0A0A', '#111111'
-        ];
-        
+        const darkBgs = ['#000000', '#0A0A0A', '#111111'];
+
         // Improved isDark detection: if specific textColor is white OR bgColor is in dark list
-        const isDark = (baseTheme.textColor && baseTheme.textColor.toLowerCase() === '#ffffff') || 
-                      !baseTheme.bgColor || 
+        const isDark = (baseTheme.textColor && baseTheme.textColor.toLowerCase() === '#ffffff') ||
+                      !baseTheme.bgColor ||
                       darkBgs.includes(bg);
-                      
-        const isGlass = activeThemeKey.includes('glass') || activeThemeKey.includes('emerald') || activeThemeKey.includes('crystal');
-        
-        const isBlackTheme = (baseTheme.bgColor === '#000000') || baseTheme.name === 'اسود' || baseTheme.name === 'أبيض وأسود' || activeThemeKey === 'deep_black';
-        
+
+        const isBlackTheme = baseTheme.bgColor === '#000000';
+
         return {
             ...baseTheme,
             isDark,
-            isGlass,
             cardBg: isBlackTheme ? '#111111' : (baseTheme.cardBg || (isDark ? '#1e293b' : '#ffffff')),
             cardBorder: isBlackTheme ? '#333333' : (baseTheme.cardBorder || (isDark ? '#334155' : '#e2e8f0')),
             textColor: isBlackTheme ? '#FFFFFF' : (baseTheme.textColor || (isDark ? '#ffffff' : '#000000')),
@@ -459,48 +241,13 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         };
     }, [activeThemeKey]);
 
-    const saveSettings = (newSettings: ThemeSettings) => {
-        setSettings(newSettings);
-        try {
-            localStorage.setItem(THEME_SETTINGS_KEY, JSON.stringify(newSettings));
-            // Force a refresh of the context globally
-            window.dispatchEvent(new Event('themeChanged'));
-        } catch (e) {
-            console.warn('Failed to save theme settings:', e);
-        }
-    };
-
     useEffect(() => {
         const syncTheme = () => {
             try {
-                const saved = localStorage.getItem(THEME_SETTINGS_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    setSettings(s => {
-                        if (JSON.stringify(s) !== JSON.stringify(parsed)) {
-                            return { ...s, ...parsed };
-                        }
-                        return s;
-                    });
-                }
-            } catch (e) {}
-            try {
-                const layout = localStorage.getItem('home_layout_system') || 'modern';
-                const validLayout = (layout === 'classic' || layout === 'modern') ? layout : 'modern';
-                setHomeLayout(prev => prev !== validLayout ? validLayout : prev);
-            } catch (e) {}
-            try {
                 const legacy = localStorage.getItem('night_mode_active') === 'true';
                 const modernSaved = localStorage.getItem('night_mode_active_modern');
-                const classicSaved = localStorage.getItem('night_mode_active_classic');
                 const nextModern = modernSaved !== null ? modernSaved === 'true' : legacy;
-                const nextClassic = classicSaved !== null ? classicSaved === 'true' : false;
-                setLayoutNightModes(prev => {
-                    if (prev.modern === nextModern && prev.classic === nextClassic) {
-                        return prev;
-                    }
-                    return { modern: nextModern, classic: nextClassic };
-                });
+                setIsNightMode(prev => (prev !== nextModern ? nextModern : prev));
             } catch (e) {}
             try {
                 const savedVariant = localStorage.getItem('modern_home_theme_variant');
@@ -509,83 +256,13 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
                 }
             } catch (e) {}
         };
-        const handleLayoutChange = (e: any) => {
-            const layout = (e && e.detail) || (typeof localStorage !== 'undefined' ? localStorage.getItem('home_layout_system') : 'modern') || 'modern';
-            setHomeLayout(layout);
-        };
         window.addEventListener('themeChanged', syncTheme);
         window.addEventListener('storage', syncTheme);
-        window.addEventListener('home-layout-changed', handleLayoutChange);
         return () => {
             window.removeEventListener('themeChanged', syncTheme);
             window.removeEventListener('storage', syncTheme);
-            window.removeEventListener('home-layout-changed', handleLayoutChange);
         };
     }, []);
-    
-    const applyPresetTheme = (key: string) => {
-        if (key === 'sky_mode') {
-<<<<<<< HEAD
-            applyHomeThemeVariant('sky', false);
-        } else if (key === 'emerald_mode') {
-            applyHomeThemeVariant('emerald', false);
-        } else if (key === 'burgundy_mode') {
-            applyHomeThemeVariant('burgundy', false);
-        } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
-            applyHomeThemeVariant('gold', false);
-=======
-            setHomeThemeVariant('sky');
-        } else if (key === 'emerald_mode') {
-            setHomeThemeVariant('emerald');
-        } else if (key === 'burgundy_mode') {
-            setHomeThemeVariant('burgundy');
-        } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
-            setHomeThemeVariant('gold');
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-        }
-
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
-        const isLocked = settings.lockedPages?.includes(pageKey);
-
-        let nextSettings = { ...settings };
-
-        if (pageKey === 'home' || !isLocked) {
-            // Changing theme for all UNLOCKED pages (excluding Quran)
-            nextSettings.themeKey = key;
-            
-            // Sync all unlocked pages that have specific theme entries (skip Quran)
-            const nextPageThemes = { ...settings.pageThemes };
-            Object.keys(nextPageThemes).forEach(pk => {
-                if (pk !== 'quran' && !settings.lockedPages?.includes(pk)) {
-                    nextPageThemes[pk] = key;
-                }
-            });
-            
-            // Ensure the current page is updated if not home and not Quran
-            if (pageKey !== 'home' && pageKey !== 'quran') {
-                nextPageThemes[pageKey] = key;
-            }
-            
-            nextSettings.pageThemes = nextPageThemes;
-
-            // Quran has its own separate themes and is never overwritten here
-        } else {
-            // Updating only the current LOCKED page
-            nextSettings.pageThemes = { ...settings.pageThemes, [pageKey]: key };
-            if (pageKey === 'quran') {
-                try {
-                    const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
-                    localStorage.setItem('current_theme_id' + modeSuffix, key);
-                } catch (e) {}
-            }
-        }
-        
-        saveSettings(nextSettings);
-        setSelectedShareDesign(getShareDesignForPresetTheme(key, false));
-
-        const targetTheme = presetThemes[key] || presetThemes.default;
-        syncWidgetThemeColors(key, targetTheme);
-    };
 
     useEffect(() => {
         if (theme && activeThemeKey) {
@@ -593,29 +270,11 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }
     }, [activeThemeKey, theme]);
 
-    const setIsGlobalTheme = (isGlobal: boolean) => {
-        saveSettings({ ...settings, isGlobalTheme: isGlobal });
-    };
-
-    const setCustomBackground = (url: string, isVideo: boolean) => {
-        saveSettings({ ...settings, customBg: { url, isVideo } });
-    };
-
-    const resetBackground = () => {
-        const { customBg, ...newSettings } = settings;
-        saveSettings(newSettings as ThemeSettings);
-    };
-
     useLayoutEffect(() => {
         const root = document.documentElement;
         const videoBg = document.getElementById('video-background') as HTMLVideoElement;
 
         const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || currentPage.startsWith('quran_') ? 'quran' : currentPage;
-        
-        // Apply visual updates immediately
-        const isReadingMode = pageKey === 'quran';
-        const isPinned = settings.lockedPages?.includes(pageKey);
-        const isHome = currentPage === 'home';
 
         // Always disable CSS transition on body background to prevent color fading flashes during navigation
         document.body.style.transition = 'none';
@@ -633,109 +292,31 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             document.body.classList.remove('hide-top-bars');
         }
 
-        const isModern = homeLayout === 'modern' || (typeof localStorage !== 'undefined' && localStorage.getItem('home_layout_system') === 'modern');
-        const allowCustomBg = settings.customBg && (!isModern || isHome);
-
-        if (allowCustomBg && settings.customBg) {
-            if (settings.customBg.isVideo && videoBg) {
-                videoBg.style.display = 'block';
-                videoBg.muted = true;
-                if (videoBg.src !== settings.customBg.url) {
-                    videoBg.src = settings.customBg.url;
-                }
-                const startPlay = async () => {
-                    try {
-                        await videoBg.play();
-                    } catch (e: any) {
-                        const isAutoplayError = 
-                            e.name === 'NotAllowedError' || 
-                            (e.message && (
-                                e.message.includes('user agent') || 
-                                e.message.includes('platform') || 
-                                e.message.includes('permission') ||
-                                e.message.includes('interact')
-                            ));
-
-                        if (e.name !== 'AbortError' && !isAutoplayError) {
-                            console.warn("Background video play failed:", e);
-                        }
-                    }
-                };
-                startPlay();
-                document.body.style.backgroundImage = 'none';
-                document.body.style.backgroundColor = 'black';
-            } else {
-                if (videoBg) videoBg.style.display = 'none';
-                document.body.style.backgroundImage = `url(${settings.customBg.url})`;
-                document.body.style.backgroundSize = 'cover';
-                document.body.style.backgroundPosition = 'center';
-                document.body.style.backgroundColor = '';
-            }
+        if (videoBg) videoBg.style.display = 'none';
+        if (pageKey === 'quran') {
+            document.body.style.backgroundImage = 'none';
+            document.body.classList.add('quran-page-active');
+            const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
+            const quranThemeId = getQuranThemeForLayout('modern', modeSuffix);
+            const quranThemeObj = QURAN_THEMES[quranThemeId as keyof typeof QURAN_THEMES];
+            const isDarkQuran = quranThemeId === 'deep_black';
+            const quranBg = (quranThemeObj && quranThemeObj.bg) ? quranThemeObj.bg : (isDarkQuran ? '#000000' : '#ffffff');
+            document.body.style.setProperty('background-color', quranBg, 'important');
         } else {
-            if (videoBg) videoBg.style.display = 'none';
-            if (pageKey === 'quran') {
-                document.body.style.backgroundImage = 'none';
-                document.body.classList.add('quran-page-active');
-                const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
-                const layout = isModern ? 'modern' : 'classic';
-                const quranThemeId = getQuranThemeForLayout(layout, modeSuffix);
-                const quranThemeObj = QURAN_THEMES[quranThemeId as keyof typeof QURAN_THEMES];
-                const isDarkQuran = quranThemeId === 'deep_black' || quranThemeId.startsWith('i_');
-                const quranBg = (quranThemeObj && quranThemeObj.bg) ? quranThemeObj.bg : (isDarkQuran ? '#000000' : '#ffffff');
-                document.body.style.setProperty('background-color', quranBg, 'important');
-            } else {
-                document.documentElement.classList.remove('quran-page-active');
-                document.body.classList.remove('quran-page-active');
-                document.body.style.removeProperty('background-color');
-                if (isModern) {
-                    document.body.style.backgroundColor = isNightMode ? '#000000' : '#FFFFFF';
-                    document.body.style.backgroundImage = 'none';
-                } else {
-                    document.body.style.backgroundColor = theme.bgColor || '#DFE5EC';
-                    document.body.style.backgroundImage = 'none';
-                }
-            }
+            document.documentElement.classList.remove('quran-page-active');
+            document.body.classList.remove('quran-page-active');
+            document.body.style.removeProperty('background-color');
+            document.body.style.backgroundColor = isNightMode ? '#000000' : '#FFFFFF';
+            document.body.style.backgroundImage = 'none';
         }
 
-        const isBlackTheme = (theme.bgColor === '#000000') || theme.name === 'اسود' || theme.name === 'أبيض وأسود' || activeThemeKey === 'deep_black';
+        const isBlackTheme = theme.bgColor === '#000000';
         const isDark = theme.isDark;
 
-        if (isModern) {
-            // الثيم الحديث يبقى دائماً في DOM بدون أي حذف عند الانتقال إلى أي صفحة
-            syncModernDOMClasses(isNightMode, homeThemeVariant);
-            document.body.style.color = isNightMode ? '#FFFFFF' : '#000000';
-            document.body.style.fontFamily = "'Cairo', sans-serif";
-            root.style.setProperty('--theme-font', "'Cairo', sans-serif");
-        } else {
-            document.documentElement.classList.remove('modern-home-active', 'theme-sky', 'theme-emerald', 'theme-burgundy', 'theme-shiny-gold', 'theme-black-gold');
-            document.body.classList.remove('modern-home-active', 'theme-sky', 'theme-emerald', 'theme-burgundy', 'theme-shiny-gold', 'theme-black-gold');
-            document.body.style.color = theme.textColor;
-            document.body.style.fontFamily = theme.font;
-            root.style.setProperty('--theme-font', theme.font);
-
-            if (isBlackTheme) {
-                document.documentElement.classList.add('theme-black');
-                document.body.classList.add('theme-black');
-            } else {
-                document.documentElement.classList.remove('theme-black');
-                document.body.classList.remove('theme-black');
-            }
-
-            const isShinyGold = activeThemeKey === 'shiny_gold' && pageKey !== 'quran';
-            if (isShinyGold) {
-                document.documentElement.classList.add('theme-shiny-gold');
-                document.body.classList.add('theme-shiny-gold');
-            } else {
-                document.documentElement.classList.remove('theme-shiny-gold');
-                document.body.classList.remove('theme-shiny-gold');
-            }
-
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        }
+        syncModernDOMClasses(isNightMode, homeThemeVariant);
+        document.body.style.color = isNightMode ? '#FFFFFF' : '#000000';
+        document.body.style.fontFamily = "'Cairo', sans-serif";
+        root.style.setProperty('--theme-font', "'Cairo', sans-serif");
 
         root.style.setProperty('--bg-color', theme.bgColor || '#0D1B2A');
         root.style.setProperty('--text-color', isBlackTheme ? '#FFFFFF' : theme.textColor);
@@ -808,54 +389,19 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             let shouldUseLightStatusBarIcons = false;
             if (pageKey === 'quran') {
                 const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
-                const layout = isModern ? 'modern' : 'classic';
-                const quranThemeId = getQuranThemeForLayout(layout, modeSuffix);
+                const quranThemeId = getQuranThemeForLayout('modern', modeSuffix);
                 shouldUseLightStatusBarIcons = isDarkQuranTheme(quranThemeId);
             } else {
                 shouldUseLightStatusBarIcons = isNightMode || isBlackTheme || Boolean(isDark);
             }
-            const statusColor = isModern ? '#FFFFFF' : (theme.topBarBg || theme.bgColor || '#FFFFFF');
-            syncSystemStatusBar(shouldUseLightStatusBarIcons, statusColor, activeThemeKey);
+            syncSystemStatusBar(shouldUseLightStatusBarIcons, '#FFFFFF', activeThemeKey);
         }
-    }, [settings.customBg, theme, currentPage, homeLayout, homeThemeVariant, isNightMode]);
+    }, [theme, currentPage, homeThemeVariant, isNightMode]);
 
     useEffect(() => {
         // Instantly synchronize home screen theme colors with all widgets
         syncWidgetThemeColors(activeThemeKey, theme);
     }, [activeThemeKey, theme]);
-
-    const isPageLocked = useMemo(() => {
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
-        if (pageKey === 'home') return false; // Home cannot be locked
-        return settings.lockedPages?.includes(pageKey) || false;
-    }, [settings.lockedPages, currentPage]);
-
-    const togglePageLock = () => {
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
-        if (pageKey === 'quran' || pageKey === 'home') return;
-
-        setSettings(prev => {
-            const locked = prev.lockedPages || [];
-            const isLocked = locked.includes(pageKey);
-            let nextLocked: string[];
-            let nextThemes = { ...prev.pageThemes };
-
-            if (isLocked) {
-                // UNLOCKING: Page stays on its current theme
-                // It will resolve to settings.themeKey only when the global theme changes
-                nextLocked = locked.filter(k => k !== pageKey);
-                // We keep nextThemes[pageKey] as is to avoid immediate jump
-            } else {
-                // LOCKING: Page records its current theme as its locked state
-                nextLocked = [...locked, pageKey];
-                nextThemes[pageKey] = activeThemeKey;
-            }
-
-            const next = { ...prev, lockedPages: nextLocked, pageThemes: nextThemes };
-            localStorage.setItem(THEME_SETTINGS_KEY, JSON.stringify(next));
-            return next;
-        });
-    };
 
     const isQuranPage = useMemo(() => {
         const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
@@ -865,8 +411,6 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     const contextValue = useMemo(() => ({
         theme,
         themeKey: activeThemeKey,
-        isGlobalTheme: settings.isGlobalTheme,
-        isPageLocked,
         isQuranPage,
         currentPage,
         isNightMode,
@@ -875,14 +419,8 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         setHomeThemeVariant,
         toggleNightMode,
         setNightModeActive,
-        customBg: settings.customBg,
-        togglePageLock,
-        applyPresetTheme,
-        setCustomBackground,
-        resetBackground,
-        setIsGlobalTheme,
         setCurrentPage
-    }), [theme, settings, activeThemeKey, isPageLocked, currentPage, isNightMode, homeLayout, homeThemeVariant]);
+    }), [theme, activeThemeKey, isQuranPage, currentPage, isNightMode, homeLayout, homeThemeVariant]);
 
     return (
         <ThemeContext.Provider value={contextValue}>

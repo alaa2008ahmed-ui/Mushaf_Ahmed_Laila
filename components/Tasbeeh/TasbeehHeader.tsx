@@ -1,5 +1,4 @@
 import React from 'react';
-import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { tTasbeeh } from '../../utils/tasbeehTranslations';
 import { useShowPageGuides } from '../../utils/guideManager';
@@ -46,12 +45,12 @@ const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({
 
                     {/* Page title in center */}
                     <div className="text-center px-24 sm:px-28 min-w-0 max-w-full">
-                        <h1 className="app-top-bar__title text-base sm:text-xl font-bold font-kufi truncate">
+                        <h1 className="app-top-bar__title text-base sm:text-xl font-bold font-cairo truncate">
                             {localizedTitle}
                         </h1>
                     </div>
 
-                    {/* Guide, Home icon & Theme Lock on left/right */}
+                    {/* Guide and Home icon on left/right */}
                     <div className="absolute left-0 flex items-center gap-1 rtl:left-0 rtl:right-auto ltr:left-auto ltr:right-0">
                         {onOpenGuide && showPageGuides && (
                             <button
@@ -65,7 +64,6 @@ const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                         )}
-                        <ThemePageLock />
                         {onHome && (
                             <button
                                 onClick={onHome}

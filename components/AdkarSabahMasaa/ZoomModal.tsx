@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { getAdhkarTranslation } from '../../data/adkarTranslationsEn';
@@ -101,34 +100,25 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
     };
 
     return (
-        <AnimatePresence>
+        <div 
+            className="fixed inset-0 bg-black/65 z-[120] flex flex-col justify-end select-none" 
+            onClick={onClose}
+            dir={dir}
+        >
             <div 
-                className="fixed inset-0 bg-black/60 z-[120] flex flex-col justify-end backdrop-blur-xs select-none" 
-                onClick={onClose}
-                dir={dir}
-            >
-                <motion.div 
-                    initial={{ y: '100%', opacity: 0.6 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: '100%', opacity: 0 }}
-                    transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-<<<<<<< HEAD
-                    className="app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative bg-white dark:bg-[#1E293B]"
-=======
-                    className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl"
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                className="app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative bg-white dark:bg-[#1E293B]"
                     style={{ 
                         color: 'var(--text-color)',
-                        fontFamily: isEn ? 'sans-serif' : theme.font,
+                        fontFamily: isEn ? 'sans-serif' : "'Cairo', sans-serif",
                     }} 
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Top Drag Handle without X button */}
                     <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
-                        <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700 mb-2" />
+                        <div className="app-3d-drag-handle w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700 mb-2" />
                         <div className="w-full flex items-center justify-center">
                             <span 
-                                className="px-3.5 py-1 rounded-full text-xs font-bold"
+                                className="app-3d-badge px-3.5 py-1 rounded-full text-xs font-bold"
                                 style={{
                                     backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                     color: tokens.primaryColor
@@ -151,7 +141,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                             </div>
                         ) : (
                             <div 
-                                className="leading-[2.4] font-amiri text-center select-none py-2"
+                                className="leading-loose font-medium font-cairo text-center select-none py-2"
                                 style={{ fontSize: `${fontSize + 4}px` }}
                                 dir="rtl"
                             >
@@ -172,7 +162,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                         {zoomedDhikr.count && zoomedDhikr.count > 1 && (
                             <div className="flex justify-center mt-3">
                                 <span 
-                                    className="px-3.5 py-1 rounded-full text-xs font-bold"
+                                    className="app-3d-badge px-3.5 py-1 rounded-full text-xs font-bold"
                                     style={{
                                         backgroundColor: hexToRgba(tokens.primaryColor, 0.08),
                                         color: tokens.primaryColor
@@ -188,14 +178,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
 
                     {/* Action Bar (Audio, Share, Copy, Zoom, ChevronDown to hide) with safe-area bottom elevation */}
                     <div 
-<<<<<<< HEAD
                         className="px-4 pt-3 pb-2 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5 overflow-visible" 
-=======
-                        className="px-4 pt-3 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
-                        style={{ 
-                            backgroundColor: tokens.cardBgColor
-                        }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     >
                         {/* Audio Button */}
                         <button
@@ -264,9 +247,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                             <ChevronDown className="w-5 h-5" />
                         </button>
                     </div>
-                </motion.div>
+                </div>
             </div>
-        </AnimatePresence>
     );
 };
 

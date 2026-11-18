@@ -2,9 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import ThemePageLock from '../components/ThemePageLock';
 import IslamicHistoryMemoryBottomSheet from '../components/MainMenu/IslamicHistoryMemoryBottomSheet';
-import { gregorianMonths, hijriMonths, islamicEvents, IslamicEvent } from '../data/calendarData';
+import { hijriMonths, islamicEvents } from '../data/calendarData';
 import {
     tCalendar,
     formatCalendarNumber,
@@ -18,13 +17,13 @@ import {
     HistoricalEventLocalized,
     Language
 } from '../utils/calendarTranslations';
-import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, RefreshCw, ZoomIn, Copy, Share2, HelpCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, RefreshCw, ZoomIn, Copy, Share2, Check } from 'lucide-react';
 import { shareAsImage } from '../utils/shareAsImage';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { CALENDAR_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { getCalculator3DStyles, Calculator3DStyles } from '../utils/calculator3DStyles';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 // Helper to convert hex colors to RGBA for smooth dynamic theme tints
 function hexToRgba(hex: string, alpha: number = 1): string {
@@ -241,7 +240,7 @@ const CalendarGrid = ({
                 } else if (cell.isCurrentMonth) {
                     buttonClass = `app-page-card border-0 ${s3d.surfaceCardClass}`;
                 } else {
-                    buttonClass = 'border-0 bg-transparent opacity-30 hover:opacity-55 active:scale-95';
+                    buttonClass = `app-inner-3d-box border-0 opacity-45 hover:opacity-75 active:scale-95 ${s3d.isBlackTheme ? 'bg-[#18181b]/75' : 'bg-slate-100/80 dark:bg-zinc-900/50'}`;
                 }
 
                 return (
@@ -284,6 +283,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
     const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const primaryColor = s3d.primaryColor;
 
     const [viewDate, setViewDate] = useState(new Date());
@@ -509,15 +509,11 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
     };
 
     return (
-<<<<<<< HEAD
         <div
             className="h-[100dvh] flex flex-col font-sans overflow-hidden"
             style={{ backgroundColor: s3d.pageBgColor, color: s3d.textColor, fontFamily: theme.font }}
             dir={dir}
         >
-=======
-        <div className="h-[100dvh] flex flex-col bg-transparent font-sans overflow-hidden" dir={dir}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {/* Top Bar */}
             <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
@@ -536,7 +532,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
 
                         {/* Page Title */}
                         <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate">
                                 {tCalendar('pageTitle', language)}
                             </h1>
                         </div>
@@ -553,7 +549,6 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                             >
                                 <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
-                            <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -601,15 +596,9 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                     </div>
 
                     {activeTab === 'calendar' ? (
-<<<<<<< HEAD
                         <div className="space-y-4">
                             {/* Calendar Card: 3D Tasbeeh Card */}
                             <div className={`app-page-card border-0 rounded-3xl overflow-hidden ${s3d.surfaceCardClass}`}>
-=======
-                        <div className="space-y-3.5">
-                            {/* Calendar Card: 3D tactile card depth with NO borders */}
-                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden" style={{ border: 'none' }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 {/* Month Navigation Header */}
                                 <div className={`flex items-center justify-between gap-2 p-3.5 sm:p-4 pb-4.5 border-b overflow-visible ${s3d.dividerClass}`}>
                                     <button 
@@ -661,14 +650,12 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                 </div>
                             </div>
 
-<<<<<<< HEAD
                             {/* Event List Section (أبرز المناسبات): 3D Tasbeeh Card */}
                             <div className={`app-page-card border-0 p-5 rounded-3xl ${s3d.surfaceCardClass}`}>
-=======
-                            {/* Event List Section (أبرز المناسبات): 3D tactile card depth without borders */}
-                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl" style={{ border: 'none' }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                                <h3 className="font-kufi font-black text-base sm:text-lg mb-4 flex items-center gap-2.5">
+                                <h3
+                                    className="font-cairo font-black text-base sm:text-lg mb-4 flex items-center gap-2.5"
+                                    style={{ fontFamily: "'Cairo', sans-serif" }}
+                                >
                                     <div className="w-1.5 h-5 rounded-full" style={{ backgroundColor: primaryColor }}></div>
                                     <span style={{ color: primaryColor }}>{tCalendar('eventsTitle', language)}</span>
                                 </h3>
@@ -702,7 +689,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                                 return (
                                                     <div 
                                                         key={event.id} 
-                                                        className={`border-0 flex items-center gap-3.5 p-3.5 rounded-2xl transition-all ${s3d.recessedInputClass}`}
+                                                        className={`app-inner-3d-box border-0 flex items-center gap-3.5 p-3.5 rounded-2xl transition-all ${s3d.innerCardClass}`}
                                                     >
                                                         <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${event.isPrimary ? 'bg-red-500' : 'bg-blue-500'}`}></div>
                                                         <div className="flex-1 min-w-0">
@@ -725,7 +712,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                             });
                                         }
                                         return (
-                                            <div className={`border-0 text-center py-8 rounded-2xl ${s3d.recessedInputClass}`} style={{ color: s3d.subtextColor }}>
+                                            <div className={`app-3d-recessed-field border-0 text-center py-8 rounded-2xl ${s3d.recessedInputClass}`} style={{ color: s3d.subtextColor }}>
                                                 <CalendarIcon size={32} className="mx-auto mb-2 opacity-50" />
                                                 <p className="text-xs sm:text-sm font-bold">{tCalendar('noEvents', language)}</p>
                                             </div>
@@ -735,18 +722,12 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                             </div>
                         </div>
                     ) : (
-<<<<<<< HEAD
                         /* Converter View (محول التاريخ): 3D Tasbeeh Card */
                         <div className="space-y-4">
                             <div className={`app-page-card border-0 p-5 rounded-3xl space-y-5 relative ${s3d.surfaceCardClass}`}>
-=======
-                        /* Converter View (محول التاريخ): 3D tactile card depth without borders */
-                        <div className="space-y-3.5">
-                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl space-y-5 relative" style={{ border: 'none' }}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 
                                 {/* Mode Toggles: Hijri <-> Gregorian 3D Segmented Control */}
-                                <div className={`border-0 flex p-2 pb-2.5 rounded-2xl gap-2 text-xs font-bold overflow-visible ${s3d.recessedInputClass}`}>
+                                <div className={`app-3d-recessed-field border-0 flex p-2 pb-2.5 rounded-2xl gap-2 text-xs font-bold overflow-visible ${s3d.recessedInputClass}`}>
                                     <button 
                                         type="button"
                                         onClick={() => setConvTab('hijriToGregorian')}
@@ -771,6 +752,18 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                     >
                                         {tCalendar('gregorianToHijri', language)}
                                     </button>
+                                </div>
+
+                                {/* Convert Date Section Label */}
+                                <div className="flex items-center justify-center gap-2.5 pt-0.5">
+                                    <div className="h-px flex-1 opacity-20" style={{ backgroundColor: primaryColor }} />
+                                    <span
+                                        className="font-cairo text-xs sm:text-sm font-black tracking-wide"
+                                        style={{ color: primaryColor, fontFamily: "'Cairo', sans-serif" }}
+                                    >
+                                        {language === 'en' ? 'Convert Date' : 'تحويل التاريخ'}
+                                    </span>
+                                    <div className="h-px flex-1 opacity-20" style={{ backgroundColor: primaryColor }} />
                                 </div>
 
                                 {/* 3D Sculpted Picker Fields for Day / Month / Year */}
@@ -857,43 +850,32 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                 </div>
 
                                 {/* 3D Conversion Result Container */}
-                                <AnimatePresence>
-                                    {convResult && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, y: 8 }} 
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -8 }}
-                                            className="border-0 text-center p-5 rounded-2xl relative transition-all duration-300"
-                                            style={{ backgroundColor: s3d.softResultBg }}
+                                {convResult && (
+                                    <div 
+                                        className="app-inner-3d-box border-0 text-center p-5 rounded-2xl relative"
+                                        style={{ backgroundColor: s3d.softResultBg }}
+                                    >
+                                        <p 
+                                            className="text-xs font-bold mb-1 tracking-wider opacity-85"
+                                            style={{ color: primaryColor }}
                                         >
-                                            <p 
-                                                className="text-xs font-bold mb-1 tracking-wider opacity-85"
-                                                style={{ color: primaryColor }}
-                                            >
-                                                {convMessage}
-                                            </p>
-                                            <p 
-                                                className="text-lg sm:text-2xl font-black" 
-                                                style={{ color: primaryColor }}
-                                            >
-                                                {convResult}
-                                            </p>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                            {convMessage}
+                                        </p>
+                                        <p 
+                                            className="text-lg sm:text-2xl font-black" 
+                                            style={{ color: primaryColor }}
+                                        >
+                                            {convResult}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Historical Event Card (بطاقة ذاكرة التاريخ): 3D Tasbeeh Card */}
                             {historicalEvent && (
-                                <motion.div 
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-<<<<<<< HEAD
-                                    className={`app-page-card border-0 p-5 rounded-3xl relative group ${s3d.surfaceCardClass}`}
-=======
-                                    className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl relative group"
-                                    style={{ border: 'none' }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                                <div 
+                                    className={`app-page-card border-0 p-5 rounded-3xl relative group ${s3d.surfaceCardClass} ${language === 'ar' ? 'font-cairo' : 'font-sans'}`}
+                                    style={{ fontFamily: language === 'en' ? 'sans-serif' : "'Cairo', sans-serif" }}
                                 >
                                     <div className="flex justify-between items-center mb-3.5 pb-1 overflow-visible">
                                         <div className="flex items-center gap-2.5 overflow-visible">
@@ -903,9 +885,9 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                                 className={`app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${s3d.surfaceCardClass}`}
                                                 title={tCalendar('anotherEvent', language)}
                                             >
-                                                <RefreshCw size={14} className="hover:rotate-180 transition-transform duration-500" style={{ color: primaryColor }} />
+                                                <RefreshCw size={14} className="hover:rotate-180 transition-transform duration-500" style={{ color: s3d.textColor }} />
                                             </button>
-                                            <h4 className="text-[11px] font-bold uppercase tracking-widest" style={{ color: s3d.subtextColor }}>
+                                            <h4 className={`text-[11px] font-bold uppercase tracking-widest ${language === 'ar' ? 'font-cairo' : 'font-sans'}`} style={{ color: s3d.subtextColor }}>
                                                 {tCalendar('historyTitle', language)}
                                             </h4>
                                         </div>
@@ -916,7 +898,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                                 className={`app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${s3d.surfaceCardClass}`}
                                                 title={tCalendar('zoomIn', language)}
                                             >
-                                                <ZoomIn size={15} style={{ color: primaryColor }} />
+                                                <ZoomIn size={15} style={{ color: s3d.textColor }} />
                                             </button>
                                             <button 
                                                 type="button"
@@ -924,7 +906,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                                 className={`app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${s3d.surfaceCardClass}`}
                                                 title={tCalendar('copy', language)}
                                             >
-                                                <Copy size={15} style={{ color: primaryColor }} />
+                                                <Copy size={15} style={{ color: s3d.textColor }} />
                                             </button>
                                             <button 
                                                 type="button"
@@ -935,29 +917,28 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                                 className={`app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${s3d.surfaceCardClass}`}
                                                 title={tCalendar('share', language)}
                                             >
-                                                <Share2 size={15} style={{ color: primaryColor }} />
+                                                <Share2 size={15} style={{ color: s3d.textColor }} />
                                             </button>
                                         </div>
                                     </div>
                                     <h5 
-                                        className="text-lg sm:text-xl font-black mb-2.5" 
+                                        className={`text-lg sm:text-xl font-black mb-2.5 ${language === 'ar' ? 'font-cairo' : 'font-sans'}`} 
                                         style={{ color: primaryColor }}
                                     >
                                         {language === 'en' ? historicalEvent.titleEn : historicalEvent.titleAr}
                                     </h5>
-                                    <div className="flex flex-wrap gap-2 text-xs font-bold mb-3.5 justify-end" style={{ color: s3d.subtextColor }}>
-                                        <span className={`border-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${s3d.recessedInputClass}`}>
+                                    <div className={`flex flex-wrap gap-2 text-xs font-bold mb-3.5 justify-end ${language === 'ar' ? 'font-cairo' : 'font-sans'}`} style={{ color: s3d.subtextColor }}>
+                                        <span className={`app-3d-badge border-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${s3d.innerCardClass}`}>
                                             <CalendarIcon size={13} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.hijriYearEn : historicalEvent.hijriYearAr}
                                         </span>
-                                        <span className={`border-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${s3d.recessedInputClass}`}>
+                                        <span className={`app-3d-badge border-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${s3d.innerCardClass}`}>
                                             <CalendarIcon size={13} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.gregorianYearEn : historicalEvent.gregorianYearAr}
                                         </span>
                                     </div>
-<<<<<<< HEAD
-                                    <div className={`border-0 p-4 rounded-2xl ${s3d.recessedInputClass}`}>
+                                    <div className={`app-inner-3d-box border-0 p-4 rounded-2xl ${s3d.recessedInputClass}`}>
                                         <p 
                                             className={`leading-relaxed text-center font-medium ${
-                                                language === 'ar' ? 'font-amiri' : 'font-sans'
+                                                language === 'ar' ? 'font-cairo' : 'font-sans'
                                             }`} 
                                             style={{ 
                                                 color: s3d.textColor,
@@ -967,20 +948,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                             {(language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr)?.replace(/[ \t]+/g, ' ').trim()}
                                         </p>
                                     </div>
-=======
-                                    <p 
-                                        className={`leading-relaxed text-slate-700 dark:text-slate-300 text-center ${
-                                            language === 'ar' ? 'font-amiri border-r-2 pr-4' : 'font-sans border-l-2 pl-4'
-                                        }`} 
-                                        style={{ 
-                                            borderColor: primaryColor,
-                                            fontSize: `${1.0 * historyFontSize}rem`
-                                        }}
-                                    >
-                                        {(language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr)?.replace(/[ \t]+/g, ' ').trim()}
-                                    </p>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                                </motion.div>
+                                </div>
                             )}
                         </div>
                     )}
@@ -991,18 +959,20 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
             </main>
 
             {/* Toast Notification */}
-            <AnimatePresence>
-                {toastMessage && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 z-[200] bg-slate-900 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
+            {toastMessage && (
+                <div 
+                    className="app-3d-toast fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 -translate-x-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none flex items-center justify-center gap-2.5"
+                    style={toast3D.style}
+                >
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
                     >
-                        {toastMessage}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                    <span>{toastMessage}</span>
+                </div>
+            )}
 
             {/* Zoom Bottom Sheet (ذاكرة التاريخ الإسلامي) */}
             <IslamicHistoryMemoryBottomSheet
@@ -1030,34 +1000,22 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                 }}
             />
 
-<<<<<<< HEAD
             {/* Custom Picker Modal - 3D Sculpted */}
-=======
-            {/* Custom Picker Modal */}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {pickerConfig.isOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/55 z-[300] flex items-center justify-center p-6 backdrop-blur-xs"
+                    className="fixed inset-0 bg-black/60 z-[300] flex items-center justify-center p-6"
                     onClick={() => setPickerConfig(p => ({ ...p, isOpen: false }))}
                     dir={dir}
                 >
                     <div 
-<<<<<<< HEAD
                         className={`app-page-card border-0 w-full max-w-[295px] rounded-3xl flex flex-col max-h-[72dvh] overflow-hidden ${s3d.surfaceCardClass}`}
-=======
-                        className="bg-white dark:bg-slate-900 w-full max-w-[290px] rounded-3xl shadow-2xl flex flex-col max-h-[72dvh] overflow-hidden border border-slate-100 dark:border-white/10"
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         onClick={e => e.stopPropagation()}
                     >
                         <div className={`p-4 border-b ${s3d.dividerClass} text-center shrink-0`}>
                             <h3 className="text-sm font-black" style={{ color: primaryColor }}>{pickerConfig.title}</h3>
                         </div>
 
-<<<<<<< HEAD
                         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3.5 py-3 space-y-2.5 hide-scrollbar">
-=======
-                        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3.5 py-3 space-y-1 hide-scrollbar">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {pickerConfig.options.map((opt, i) => {
                                 const currentValue = pickerConfig.type === 'calendarMonth' ? viewDate.getMonth() 
                                                     : pickerConfig.type === 'calendarYear' ? viewDate.getFullYear()

@@ -1,13 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import ThemePageLock from '../components/ThemePageLock';
 import { usePrayerTimes, getCalculationParams } from '../context/PrayerTimesContext';
 import { Coordinates, PrayerTimes as AdhanPrayerTimes } from 'adhan';
 import moment from 'moment-hijri';
-import { formatTime12_clean, applyOffset } from '../utils/prayerTimesUtils';
+import { applyOffset } from '../utils/prayerTimesUtils';
 import jsPDF from 'jspdf';
 import { safeHtml2Canvas } from '../utils/canvasHelper';
-import { Share2, ChevronRight, ChevronLeft, Calendar, X, FileText } from 'lucide-react';
+import { Share2, ChevronRight, ChevronLeft, Calendar, X, FileText, ChevronDown, Check } from 'lucide-react';
 import { Share as CapacitorShare } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
@@ -60,6 +59,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     const [viewDate, setViewDate] = useState(moment());
     const [calendarType, setCalendarType] = useState<'hijri' | 'gregorian'>('hijri');
     const [isPickerOpen, setIsPickerOpen] = useState(false);
+    const [openPickerMenu, setOpenPickerMenu] = useState<'month' | 'year' | null>(null);
     const [isExporting, setIsExporting] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
@@ -82,6 +82,10 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
     useEffect(() => {
         const interceptor = () => {
+            if (openPickerMenu) {
+                setOpenPickerMenu(null);
+                return true;
+            }
             if (isPickerOpen) {
                 setIsPickerOpen(false);
                 return true;
@@ -90,7 +94,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [isPickerOpen]);
+    }, [isPickerOpen, openPickerMenu]);
 
     const monthData = useMemo(() => {
         const data = [];
@@ -380,7 +384,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
                         {/* Center Title */}
                         <div className="text-center px-2 min-w-0 flex-1">
-                            <h1 className="app-top-bar__title text-base sm:text-lg font-kufi truncate">
+                            <h1 className="app-top-bar__title text-base sm:text-lg font-cairo truncate">
                                 {tPrayer('monthlyPrayerTitle', language)}
                             </h1>
                         </div>
@@ -402,7 +406,6 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                 <Share2 size={15} />
                                 <span className="hidden xs:inline">{isSharing ? '...' : tPrayer('share', language)}</span>
                             </button>
-                            <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
                                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -429,8 +432,11 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                 <div className="flex flex-col items-center gap-1.5">
                     <button 
                         id="btn-monthly-picker"
-                        onClick={() => setIsPickerOpen(true)}
-                        className={`app-page-card border-0 text-sm sm:text-base font-bold flex items-center gap-2 px-4 py-1.5 rounded-2xl transition-all cursor-pointer ${s3d.surfaceCardClass}`} 
+                        onClick={() => {
+                            setOpenPickerMenu(null);
+                            setIsPickerOpen(true);
+                        }}
+                        className={`app-page-card unified-3d-btn border-0 text-sm sm:text-base font-bold flex items-center gap-2 px-4 py-1.5 rounded-2xl transition-all cursor-pointer ${s3d.surfaceCardClass}`} 
                         style={{ color: primaryColor }}
                     >
                         <span>{monthNameDisplay}</span>
@@ -469,137 +475,138 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
             {/* Table */}
             <main 
-<<<<<<< HEAD
                 className="flex-1 min-h-0 flex flex-col overflow-hidden px-3 pt-1 app-scroll-safe" 
-=======
-                className="flex-1 min-h-0 flex flex-col overflow-hidden px-2 pt-1 app-scroll-safe" 
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 dir={dir}
             >
                 <div 
                     id="monthly-table-container"
-<<<<<<< HEAD
-                    className="app-page-card border-0 max-w-4xl w-full min-h-0 mx-auto overflow-auto rounded-2xl bg-white" 
-                    style={{ backgroundColor: '#FFFFFF' }}
-=======
-                    className="max-w-4xl w-full min-h-0 mx-auto overflow-auto rounded-xl shadow-sm bg-white" 
-                    style={{ 
-                        border: `2px solid ${tableBorderColor}`, 
-                        borderColor: tableBorderColor,
-                        backgroundColor: '#FFFFFF' 
-                    }}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                    className={`app-page-card border-0 max-w-4xl w-full min-h-0 mx-auto overflow-auto rounded-3xl p-2 sm:p-2.5 ${s3d.surfaceCardClass}`}
                 >
                     <table 
-                        className="w-full text-center text-[11px] xs:text-xs border-collapse bg-white" 
+                        className="w-full text-center text-[11px] xs:text-xs border-separate" 
                         dir={dir} 
                         style={{ 
-                            border: `1.5px solid ${tableBorderColor}`,
-                            borderColor: tableBorderColor,
-                            backgroundColor: '#FFFFFF'
+                            borderSpacing: '3px 5px',
                         }}
                     >
                         <thead className="z-20">
-                            <tr style={{ borderBottom: `2px solid ${tableBorderColor}` }}>
-                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
-                                    {tPrayer('dayHeader', language)}
-                                </th>
-                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
-                                    {tPrayer('dateHeader', language)}
-                                </th>
-                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
-                                    {getPrayerDisplayName('Fajr', language)}
-                                </th>
-                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
-                                    {getPrayerDisplayName('Dhuhr', language)}
-                                </th>
-                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
-                                    {getPrayerDisplayName('Asr', language)}
-                                </th>
-                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
-                                    {getPrayerDisplayName('Maghrib', language)}
-                                </th>
-                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
-                                    {getPrayerDisplayName('Isha', language)}
-                                </th>
-                            </tr>
+                            {(() => {
+                                const headerBg = isDefaultTheme
+                                    ? '#f1f5f9'
+                                    : (isBlackAndWhite ? '#27272a' : (isShinyGold ? '#D97706' : s3d.primaryColor));
+                                const headerText = isDefaultTheme ? '#0f172a' : '#FFFFFF';
+                                const headerShadow = isBlackAndWhite || s3d.isDark
+                                    ? '0 3px 0 #09090b, 0 5px 10px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.22)'
+                                    : '0 3px 0 rgba(0, 0, 0, 0.16), 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 1.5px 1px rgba(255, 255, 255, 0.55)';
+                                const thStyle: React.CSSProperties = {
+                                    backgroundColor: headerBg,
+                                    color: headerText,
+                                    fontWeight: 900,
+                                    boxShadow: headerShadow,
+                                };
+                                return (
+                                    <tr>
+                                        <th className="sticky top-0 px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10 rounded-xl border-0" style={thStyle}>
+                                            {tPrayer('dayHeader', language)}
+                                        </th>
+                                        <th className="sticky top-0 px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10 rounded-xl border-0" style={thStyle}>
+                                            {tPrayer('dateHeader', language)}
+                                        </th>
+                                        <th className="sticky top-0 px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10 rounded-xl border-0" style={thStyle}>
+                                            {getPrayerDisplayName('Fajr', language)}
+                                        </th>
+                                        <th className="sticky top-0 px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10 rounded-xl border-0" style={thStyle}>
+                                            {getPrayerDisplayName('Dhuhr', language)}
+                                        </th>
+                                        <th className="sticky top-0 px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10 rounded-xl border-0" style={thStyle}>
+                                            {getPrayerDisplayName('Asr', language)}
+                                        </th>
+                                        <th className="sticky top-0 px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10 rounded-xl border-0" style={thStyle}>
+                                            {getPrayerDisplayName('Maghrib', language)}
+                                        </th>
+                                        <th className="sticky top-0 px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10 rounded-xl border-0" style={thStyle}>
+                                            {getPrayerDisplayName('Isha', language)}
+                                        </th>
+                                    </tr>
+                                );
+                            })()}
                         </thead>
                         <tbody>
                             {monthData.map((day, idx) => {
                                 const isToday = day.rawGregorianDateStr === `${new Date().getFullYear()}/${new Date().getMonth() + 1}/${new Date().getDate()}`;
                                 
-                                let rowBg = '#FFFFFF';
-                                let rowTextColor = '#000000';
-                                let rowBorderColor = isShinyGold ? 'rgba(217, 119, 6, 0.35)' : (isDefaultTheme ? '#D1D5DB' : tableBorderColor);
+                                let rowBg = s3d.isDark
+                                    ? (isBlackAndWhite ? (idx % 2 === 0 ? '#222226' : '#1b1b1f') : (idx % 2 === 0 ? '#1E293B' : '#172030'))
+                                    : (idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC');
+                                let rowTextColor = s3d.isDark ? '#FFFFFF' : '#0F172A';
+                                let cellShadow = s3d.isDark
+                                    ? '0 2.5px 0 #09090b, 0 4px 8px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.14), inset 0 -1px 2px rgba(0, 0, 0, 0.35)'
+                                    : '0 2.5px 0 rgba(15, 23, 42, 0.08), 0 3px 7px rgba(15, 23, 42, 0.06), inset 0 1.5px 1px rgba(255, 255, 255, 0.96), inset 0 -1px 2px rgba(15, 23, 42, 0.04)';
 
                                 if (isToday) {
                                     if (isBlackAndWhite) {
-                                        rowBg = '#000000';
-                                        rowTextColor = '#FFFFFF';
-                                        rowBorderColor = '#000000';
+                                        rowBg = '#FFFFFF';
+                                        rowTextColor = '#000000';
+                                        cellShadow = '0 3px 0 #52525b, 0 6px 12px rgba(255, 255, 255, 0.16), inset 0 1.5px 1px rgba(255, 255, 255, 0.95)';
                                     } else if (isDefaultTheme) {
-                                        rowBg = '#000000';
+                                        rowBg = '#0F172A';
                                         rowTextColor = '#FFFFFF';
-                                        rowBorderColor = '#FFFFFF';
+                                        cellShadow = '0 3px 0 rgba(0, 0, 0, 0.35), 0 6px 12px rgba(15, 23, 42, 0.22), inset 0 1.5px 1px rgba(255, 255, 255, 0.22)';
                                     } else {
-                                        // Golden row for today's date
                                         rowBg = '#FEF08A';
                                         rowTextColor = '#000000';
-                                        rowBorderColor = '#D97706';
+                                        cellShadow = '0 3px 0 rgba(180, 83, 9, 0.32), 0 6px 12px rgba(217, 119, 6, 0.18), inset 0 1.5px 1px rgba(255, 255, 255, 0.9)';
                                     }
                                 }
 
-                                const cellStyle = {
-                                    border: `1.5px solid ${rowBorderColor}`,
-                                    backgroundColor: isToday ? rowBg : '#FFFFFF',
+                                const cellStyle: React.CSSProperties = {
+                                    border: 'none',
+                                    backgroundColor: rowBg,
                                     color: rowTextColor,
-                                    fontWeight: '800' as const
+                                    fontWeight: 800,
+                                    boxShadow: cellShadow,
                                 };
 
                                 return (
                                     <tr 
                                         key={idx} 
                                         ref={isToday ? todayRowRef : null}
-                                        className={`transition-colors font-black ${isToday ? 'shadow-xs' : 'hover:bg-amber-50/50'}`} 
-                                        style={{ 
-                                            backgroundColor: isToday ? rowBg : '#FFFFFF',
-                                            color: rowTextColor 
-                                        }}
+                                        className="font-black" 
                                     >
-                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-black" style={cellStyle}>
-                                            <span style={{ color: rowTextColor, fontWeight: '800' }}>{day.dayName}</span>
+                                        <td className="px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm rounded-xl border-0" style={cellStyle}>
+                                            <span style={{ color: rowTextColor, fontWeight: 800 }}>{day.dayName}</span>
                                         </td>
-                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir="ltr">
-                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                        <td className="px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap rounded-xl border-0" style={cellStyle} dir="ltr">
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: 800 }}>
                                                 {day.hijriDay}
                                             </span>
                                             <span className="mx-0.5 font-black opacity-70" style={{ color: rowTextColor }}>/</span>
-                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: 800 }}>
                                                 {day.gregorianDay}
                                             </span>
                                         </td>
-                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                        <td className="px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap rounded-xl border-0" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: 800 }}>
                                                 {formatLocalizedTime(applyOffset(day.timings.Fajr, getOffset('Fajr')), language === 'ar')}
                                             </span>
                                         </td>
-                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                        <td className="px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap rounded-xl border-0" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: 800 }}>
                                                 {formatLocalizedTime(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')), language === 'ar')}
                                             </span>
                                         </td>
-                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                        <td className="px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap rounded-xl border-0" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: 800 }}>
                                                 {formatLocalizedTime(applyOffset(day.timings.Asr, getOffset('Asr')), language === 'ar')}
                                             </span>
                                         </td>
-                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                        <td className="px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap rounded-xl border-0" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: 800 }}>
                                                 {formatLocalizedTime(applyOffset(day.timings.Maghrib, getOffset('Maghrib')), language === 'ar')}
                                             </span>
                                         </td>
-                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                        <td className="px-1.5 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap rounded-xl border-0" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: 800 }}>
                                                 {formatLocalizedTime(applyOffset(day.timings.Isha, getOffset('Isha')), language === 'ar')}
                                             </span>
                                         </td>
@@ -663,16 +670,30 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
             {/* Month/Year Picker Modal */}
             {isPickerOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className={`app-page-card border-0 w-full max-w-sm rounded-3xl overflow-hidden animate-in zoom-in-95 duration-200 ${s3d.surfaceCardClass}`} dir={dir}>
-                        <div className="p-6 flex flex-col gap-6">
+                <div
+                    className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 settings-3d-adia-scope ${s3d.isDark ? 'settings-3d-dark' : ''}`}
+                    onClick={() => {
+                        setOpenPickerMenu(null);
+                        setIsPickerOpen(false);
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className={`app-page-card border-0 w-full max-w-sm rounded-3xl overflow-hidden ${s3d.surfaceCardClass}`}
+                        dir={dir}
+                    >
+                        <div className="p-5 sm:p-6 flex flex-col gap-5">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-bold font-kufi" style={{ color: s3d.noticeAccent }}>
+                                <h3 className="text-lg sm:text-xl font-black font-kufi" style={{ color: s3d.noticeAccent }}>
                                     {tPrayer('selectMonthYear', language)}
                                 </h3>
                                 <button 
-                                    onClick={() => setIsPickerOpen(false)} 
-                                    className={`app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${s3d.surfaceCardClass}`}
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenPickerMenu(null);
+                                        setIsPickerOpen(false);
+                                    }} 
+                                    className={`app-page-card unified-3d-btn border-0 w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${s3d.innerCardClass}`}
                                     title={tPrayer('close', language)}
                                     aria-label={tPrayer('close', language)}
                                 >
@@ -680,57 +701,125 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs opacity-65 font-bold">{tPrayer('month', language)}</label>
-                                    <select 
-                                        value={calendarType === 'hijri' ? viewDate.iMonth() : viewDate.month()}
-                                        onChange={(e) => {
-                                            const val = parseInt(e.target.value);
-                                            if (calendarType === 'hijri') {
-                                                setViewDate(prev => prev.clone().iMonth(val));
-                                            } else {
-                                                setViewDate(prev => prev.clone().month(val));
-                                            }
-                                        }}
-                                        className={`${s3d.recessedInputClass} border-0 p-3 rounded-xl outline-none focus:ring-2 transition-all cursor-pointer font-bold`}
-                                    >
-                                        {(calendarType === 'hijri' 
-                                            ? (language === 'en' ? HIJRI_MONTHS_EN : HIJRI_MONTHS_AR) 
-                                            : (language === 'en' ? GREGORIAN_MONTHS_EN : GREGORIAN_MONTHS_AR)
-                                        ).map((m, i) => (
-                                            <option key={i} value={i} style={{ backgroundColor: theme.cardBg, color: theme.textColor }}>{m}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs opacity-65 font-bold">{tPrayer('year', language)}</label>
-                                    <select 
-                                        value={calendarType === 'hijri' ? viewDate.iYear() : viewDate.year()}
-                                        onChange={(e) => {
-                                            const val = parseInt(e.target.value);
-                                            if (calendarType === 'hijri') {
-                                                setViewDate(prev => prev.clone().iYear(val));
-                                            } else {
-                                                setViewDate(prev => prev.clone().year(val));
-                                            }
-                                        }}
-                                        className={`${s3d.recessedInputClass} border-0 p-3 rounded-xl outline-none focus:ring-2 transition-all cursor-pointer font-bold font-mono`}
-                                    >
-                                        {Array.from({ length: 20 }, (_, i) => {
-                                            const baseYear = calendarType === 'hijri' ? moment().iYear() : moment().year();
-                                            const year = baseYear - 10 + i;
-                                            return <option key={year} value={year} style={{ backgroundColor: theme.cardBg, color: theme.textColor }}>{language === 'ar' ? toArabicDigits(year) : year}</option>;
-                                        })}
-                                    </select>
-                                </div>
-                            </div>
+                            {(() => {
+                                const monthsList = calendarType === 'hijri'
+                                    ? (language === 'en' ? HIJRI_MONTHS_EN : HIJRI_MONTHS_AR)
+                                    : (language === 'en' ? GREGORIAN_MONTHS_EN : GREGORIAN_MONTHS_AR);
+                                const selectedMonth = calendarType === 'hijri' ? viewDate.iMonth() : viewDate.month();
+                                const selectedYear = calendarType === 'hijri' ? viewDate.iYear() : viewDate.year();
+                                const baseYear = calendarType === 'hijri' ? moment().iYear() : moment().year();
+                                const yearsList = Array.from({ length: 20 }, (_, i) => baseYear - 10 + i);
+
+                                return (
+                                    <div className="flex flex-col gap-3">
+                                        <div className="grid grid-cols-2 gap-3.5">
+                                            <div className="flex flex-col gap-2">
+                                                <label className="text-xs opacity-70 font-bold">{tPrayer('month', language)}</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOpenPickerMenu(prev => prev === 'month' ? null : 'month')}
+                                                    className={`${s3d.recessedInputClass} app-3d-recessed-field border-0 px-3 py-3 rounded-xl flex items-center justify-between gap-2 transition-all cursor-pointer font-bold text-xs sm:text-sm ${
+                                                        openPickerMenu === 'month' ? 'ring-2' : ''
+                                                    }`}
+                                                    style={openPickerMenu === 'month' ? ({ '--tw-ring-color': s3d.primaryColor } as React.CSSProperties) : undefined}
+                                                >
+                                                    <span className="truncate">{monthsList[selectedMonth]}</span>
+                                                    <ChevronDown
+                                                        size={16}
+                                                        className={`shrink-0 transition-transform duration-200 ${openPickerMenu === 'month' ? 'rotate-180' : ''}`}
+                                                        style={{ color: s3d.noticeAccent }}
+                                                    />
+                                                </button>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <label className="text-xs opacity-70 font-bold">{tPrayer('year', language)}</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOpenPickerMenu(prev => prev === 'year' ? null : 'year')}
+                                                    className={`${s3d.recessedInputClass} app-3d-recessed-field border-0 px-3 py-3 rounded-xl flex items-center justify-between gap-2 transition-all cursor-pointer font-bold font-mono text-xs sm:text-sm ${
+                                                        openPickerMenu === 'year' ? 'ring-2' : ''
+                                                    }`}
+                                                    style={openPickerMenu === 'year' ? ({ '--tw-ring-color': s3d.primaryColor } as React.CSSProperties) : undefined}
+                                                >
+                                                    <span>{language === 'ar' ? toArabicDigits(selectedYear) : selectedYear}</span>
+                                                    <ChevronDown
+                                                        size={16}
+                                                        className={`shrink-0 transition-transform duration-200 ${openPickerMenu === 'year' ? 'rotate-180' : ''}`}
+                                                        style={{ color: s3d.noticeAccent }}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {openPickerMenu === 'month' && (
+                                            <div className={`app-3d-recessed-field border-0 rounded-2xl p-2 grid grid-cols-2 gap-1.5 max-h-52 overflow-y-auto ${s3d.recessedInputClass}`}>
+                                                {monthsList.map((m, i) => {
+                                                    const isSelected = selectedMonth === i;
+                                                    return (
+                                                        <button
+                                                            key={i}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (calendarType === 'hijri') {
+                                                                    setViewDate(prev => prev.clone().iMonth(i));
+                                                                } else {
+                                                                    setViewDate(prev => prev.clone().month(i));
+                                                                }
+                                                                setOpenPickerMenu(null);
+                                                            }}
+                                                            className={`app-page-card unified-3d-btn border-0 px-2.5 py-2 rounded-xl text-xs font-bold flex items-center justify-between gap-1 cursor-pointer transition-all ${
+                                                                isSelected ? '' : s3d.innerCardClass
+                                                            }`}
+                                                            style={isSelected ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
+                                                        >
+                                                            <span className="truncate">{m}</span>
+                                                            {isSelected && <Check size={13} className="shrink-0" />}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {openPickerMenu === 'year' && (
+                                            <div className={`app-3d-recessed-field border-0 rounded-2xl p-2 grid grid-cols-3 gap-1.5 max-h-52 overflow-y-auto ${s3d.recessedInputClass}`}>
+                                                {yearsList.map((year) => {
+                                                    const isSelected = selectedYear === year;
+                                                    return (
+                                                        <button
+                                                            key={year}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (calendarType === 'hijri') {
+                                                                    setViewDate(prev => prev.clone().iYear(year));
+                                                                } else {
+                                                                    setViewDate(prev => prev.clone().year(year));
+                                                                }
+                                                                setOpenPickerMenu(null);
+                                                            }}
+                                                            className={`app-page-card unified-3d-btn border-0 px-2 py-2 rounded-xl text-xs font-bold font-mono flex items-center justify-center gap-1 cursor-pointer transition-all ${
+                                                                isSelected ? '' : s3d.innerCardClass
+                                                            }`}
+                                                            style={isSelected ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
+                                                        >
+                                                            <span>{language === 'ar' ? toArabicDigits(year) : year}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             <div className="pb-1 overflow-visible">
                                 <button 
-                                    onClick={() => setIsPickerOpen(false)} 
-                                    className="app-page-card border-0 w-full py-3.5 rounded-2xl font-extrabold transition-all cursor-pointer"
-                                    style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenPickerMenu(null);
+                                        setIsPickerOpen(false);
+                                    }} 
+                                    className="app-page-card unified-3d-btn border-0 w-full py-3.5 rounded-2xl font-extrabold transition-all cursor-pointer"
+                                    style={s3d.primary3DStyle}
                                 >
                                     {tPrayer('done', language)}
                                 </button>

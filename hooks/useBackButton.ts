@@ -2,14 +2,10 @@ import { useEffect, useRef, useCallback } from 'react';
 import { App } from '@capacitor/app';
 
 interface UseBackButtonProps {
-    isThemeSelectorOpen: boolean;
     showExitConfirm: boolean;
-    isSideMenuOpen?: boolean;
     history: string[];
     navigateBack: () => void;
-    setIsThemeSelectorOpen: (isOpen: boolean) => void;
     setShowExitConfirm: (show: boolean) => void;
-    setIsSideMenuOpen?: (isOpen: boolean) => void;
 }
 
 // Global stack of interceptors
@@ -26,44 +22,26 @@ export const registerBackInterceptor = (interceptor: () => boolean) => {
 };
 
 export function useBackButton({
-    isThemeSelectorOpen,
     showExitConfirm,
-    isSideMenuOpen,
     history,
     navigateBack,
-    setIsThemeSelectorOpen,
     setShowExitConfirm,
-    setIsSideMenuOpen,
 }: UseBackButtonProps) {
     const historyRef = useRef(history);
     useEffect(() => {
         historyRef.current = history;
     }, [history]);
 
-    const isThemeSelectorOpenRef = useRef(isThemeSelectorOpen);
-    useEffect(() => {
-        isThemeSelectorOpenRef.current = isThemeSelectorOpen;
-    }, [isThemeSelectorOpen]);
-
     const showExitConfirmRef = useRef(showExitConfirm);
     useEffect(() => {
         showExitConfirmRef.current = showExitConfirm;
     }, [showExitConfirm]);
 
-    const isSideMenuOpenRef = useRef(isSideMenuOpen);
-    useEffect(() => {
-        isSideMenuOpenRef.current = isSideMenuOpen;
-    }, [isSideMenuOpen]);
-
     const lastBackTimeRef = useRef(0);
     const navigateBackRef = useRef(navigateBack);
     navigateBackRef.current = navigateBack;
-    const setIsThemeSelectorOpenRef = useRef(setIsThemeSelectorOpen);
-    setIsThemeSelectorOpenRef.current = setIsThemeSelectorOpen;
     const setShowExitConfirmRef = useRef(setShowExitConfirm);
     setShowExitConfirmRef.current = setShowExitConfirm;
-    const setIsSideMenuOpenRef = useRef(setIsSideMenuOpen);
-    setIsSideMenuOpenRef.current = setIsSideMenuOpen;
 
     const handleBackButton = useCallback(() => {
         const now = Date.now();
@@ -79,19 +57,7 @@ export function useBackButton({
             return;
         }
 
-        // 2. Close side menu if open
-        if (isSideMenuOpenRef.current && setIsSideMenuOpenRef.current) {
-            setIsSideMenuOpenRef.current(false);
-            return;
-        }
-
-        // 3. Close theme selector if open
-        if (isThemeSelectorOpenRef.current) {
-            setIsThemeSelectorOpenRef.current(false);
-            return;
-        }
-
-        // 4. Check in-page interceptors (LIFO: newest child modal/overlay runs first)
+        // 2. Check in-page interceptors (LIFO: newest child modal/overlay runs first)
         for (let i = backButtonInterceptors.length - 1; i >= 0; i--) {
             const interceptor = backButtonInterceptors[i];
             try {
@@ -103,11 +69,11 @@ export function useBackButton({
             }
         }
 
-        // 5. Navigate back in history if not at root home screen
+        // 3. Navigate back in history if not at root home screen
         if (historyRef.current.length > 1) {
             navigateBackRef.current();
         } else {
-            // At root home screen (Classic or Modern Smart): prompt exit confirmation modal
+            // At root home screen: prompt exit confirmation modal
             setShowExitConfirmRef.current(true);
         }
     }, []);

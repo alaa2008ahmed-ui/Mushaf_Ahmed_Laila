@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDbre0eogQtQDlyPowjcNSii1jMqURYKK8UjFm9Y2zsZDU5oT9ZmOJgmbz_UarqXp3aduvrlHuGU5F/pub?output=csv';
 
 interface FloatingNeonTickerProps {
-  layoutMode?: 'classic' | 'modern';
+  layoutMode?: 'modern';
   isGolden?: boolean;
 }
 

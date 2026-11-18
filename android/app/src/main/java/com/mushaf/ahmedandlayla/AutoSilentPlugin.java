@@ -6,10 +6,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import androidx.core.content.ContextCompat;
@@ -26,6 +32,9 @@ public class AutoSilentPlugin extends Plugin {
 
     private static volatile WeakReference<AutoSilentPlugin> activePluginRef = null;
     private BroadcastReceiver ringerModeReceiver = null;
+    private String activeTorchCameraId = null;
+    private boolean isNativeTorchOn = false;
+    private Object torchCallbackObj = null;
 
     @Override
     public void load() {
@@ -55,12 +64,15 @@ public class AutoSilentPlugin extends Plugin {
     protected void handleOnStop() {
         super.handleOnStop();
         unregisterRingerReceiver();
+        turnOffNativeTorchInternal();
     }
 
     @Override
     protected void handleOnDestroy() {
         super.handleOnDestroy();
         unregisterRingerReceiver();
+        turnOffNativeTorchInternal();
+        unregisterTorchCallback();
     }
 
     private void registerRingerReceiver() {
@@ -251,6 +263,193 @@ public class AutoSilentPlugin extends Plugin {
                 ret.put("error", ex.getMessage());
                 call.resolve(ret);
             }
+        }
+    }
+
+    private String resolveFlashCameraId(CameraManager cm) {
+        if (cm == null) return null;
+        try {
+            String fallbackId = null;
+            String[] ids = cm.getCameraIdList();
+            for (String id : ids) {
+                CameraCharacteristics chars = cm.getCameraCharacteristics(id);
+                Boolean hasFlash = chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                if (Boolean.TRUE.equals(hasFlash)) {
+                    Integer facing = chars.get(CameraCharacteristics.LENS_FACING);
+                    if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
+                        return id;
+                    }
+                    if (fallbackId == null) {
+                        fallbackId = id;
+                    }
+                }
+            }
+            return fallbackId;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private void ensureTorchCallback(CameraManager cm) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || cm == null || torchCallbackObj != null) {
+            return;
+        }
+        try {
+            CameraManager.TorchCallback cb = new CameraManager.TorchCallback() {
+                @Override
+                public void onTorchModeChanged(String cameraId, boolean enabled) {
+                    if (activeTorchCameraId == null || activeTorchCameraId.equals(cameraId)) {
+                        isNativeTorchOn = enabled;
+                        JSObject data = new JSObject();
+                        data.put("enabled", enabled);
+                        data.put("cameraId", cameraId);
+                        notifyListeners("torchStateChanged", data);
+                    }
+                }
+
+                @Override
+                public void onTorchModeUnavailable(String cameraId) {
+                    if (activeTorchCameraId != null && activeTorchCameraId.equals(cameraId)) {
+                        isNativeTorchOn = false;
+                    }
+                }
+            };
+            cm.registerTorchCallback(cb, new Handler(Looper.getMainLooper()));
+            torchCallbackObj = cb;
+        } catch (Exception ignored) {
+            torchCallbackObj = null;
+        }
+    }
+
+    private void unregisterTorchCallback() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || torchCallbackObj == null) {
+            return;
+        }
+        Context context = getContext();
+        if (context != null) {
+            try {
+                CameraManager cm = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+                if (cm != null && torchCallbackObj instanceof CameraManager.TorchCallback) {
+                    cm.unregisterTorchCallback((CameraManager.TorchCallback) torchCallbackObj);
+                }
+            } catch (Exception ignored) {}
+        }
+        torchCallbackObj = null;
+    }
+
+    private void turnOffNativeTorchInternal() {
+        if (!isNativeTorchOn) return;
+        isNativeTorchOn = false;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+        Context context = getContext();
+        if (context == null) return;
+        try {
+            CameraManager cm = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+            if (cm != null) {
+                String camId = activeTorchCameraId != null ? activeTorchCameraId : resolveFlashCameraId(cm);
+                if (camId != null) {
+                    cm.setTorchMode(camId, false);
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    @PluginMethod
+    public void checkTorchAvailability(PluginCall call) {
+        JSObject ret = new JSObject();
+        Context context = getContext();
+        if (context == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            ret.put("available", false);
+            ret.put("enabled", false);
+            call.resolve(ret);
+            return;
+        }
+
+        try {
+            PackageManager pm = context.getPackageManager();
+            boolean hasFeature = pm != null && pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+            CameraManager cm = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+            String camId = resolveFlashCameraId(cm);
+            if (camId != null) {
+                activeTorchCameraId = camId;
+                ensureTorchCallback(cm);
+            }
+            boolean available = camId != null || hasFeature;
+            ret.put("available", available);
+            ret.put("cameraId", camId != null ? camId : "");
+            ret.put("enabled", isNativeTorchOn);
+        } catch (Exception e) {
+            ret.put("available", false);
+            ret.put("enabled", false);
+        }
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void setTorchEnabled(PluginCall call) {
+        boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled", false));
+        JSObject ret = new JSObject();
+        Context context = getContext();
+
+        if (context == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            ret.put("success", false);
+            ret.put("reason", "UNSUPPORTED");
+            ret.put("error", "Camera2 torch requires Android 6.0+");
+            call.resolve(ret);
+            return;
+        }
+
+        try {
+            CameraManager cm = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+            if (cm == null) {
+                ret.put("success", false);
+                ret.put("reason", "UNAVAILABLE");
+                ret.put("error", "CameraManager unavailable");
+                call.resolve(ret);
+                return;
+            }
+
+            String camId = activeTorchCameraId != null ? activeTorchCameraId : resolveFlashCameraId(cm);
+            if (camId == null) {
+                ret.put("success", false);
+                ret.put("reason", "NO_FLASH");
+                ret.put("error", "No camera flash unit found on device");
+                call.resolve(ret);
+                return;
+            }
+
+            activeTorchCameraId = camId;
+            ensureTorchCallback(cm);
+            cm.setTorchMode(camId, enabled);
+            isNativeTorchOn = enabled;
+
+            ret.put("success", true);
+            ret.put("enabled", enabled);
+            ret.put("cameraId", camId);
+            call.resolve(ret);
+        } catch (CameraAccessException e) {
+            String reason = "ACCESS_ERROR";
+            int code = e.getReason();
+            if (code == CameraAccessException.CAMERA_IN_USE || code == CameraAccessException.MAX_CAMERAS_IN_USE) {
+                reason = "CAMERA_IN_USE";
+            } else if (code == CameraAccessException.CAMERA_DISABLED) {
+                reason = "CAMERA_DISABLED";
+            }
+            if (!enabled) {
+                isNativeTorchOn = false;
+            }
+            ret.put("success", false);
+            ret.put("reason", reason);
+            ret.put("error", e.getMessage() != null ? e.getMessage() : "CameraAccessException");
+            call.resolve(ret);
+        } catch (Exception e) {
+            if (!enabled) {
+                isNativeTorchOn = false;
+            }
+            ret.put("success", false);
+            ret.put("reason", "ERROR");
+            ret.put("error", e.getMessage() != null ? e.getMessage() : "Torch control failed");
+            call.resolve(ret);
         }
     }
 

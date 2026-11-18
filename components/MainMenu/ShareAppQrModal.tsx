@@ -583,7 +583,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
       {showPrintModal && (
         <div
           dir={dir}
-          className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in font-['Cairo']"
+          className="fixed inset-0 z-[10000] bg-black/65 flex items-center justify-center p-4 font-['Cairo']"
           onClick={() => setShowPrintModal(false)}
         >
           <div

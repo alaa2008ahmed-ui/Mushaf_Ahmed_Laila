@@ -1383,7 +1383,7 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   nearbyMosques: { ar: 'المساجد القريبة', en: 'Nearby Mosques' },
   monthlyTimes: { ar: 'المواقيت الشهرية', en: 'Monthly Times' },
   searchBtn: { ar: 'بحث', en: 'Search' },
-  searchPlaceholder: { ar: 'عن مدينة أو محافظة...', en: 'Search city or province...' },
+  searchPlaceholder: { ar: 'ابحث عن مدينة أو بلد أو دولة...', en: 'Search city, town, or country...' },
 
   // Muted Alert Banner
   audioAlertsPaused: { ar: 'التنبيهات الصوتية متوقفة', en: 'Audio alerts paused' },

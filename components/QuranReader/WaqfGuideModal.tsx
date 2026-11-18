@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  ChevronDown, 
-  ZoomIn, 
-  Copy, 
-  Check, 
-  Share2, 
-  Volume2, 
-  VolumeX, 
-  Compass, 
-  AlertCircle, 
-  CheckCircle2, 
-  Info,
+import {
+  ChevronDown,
+  ZoomIn,
+  Copy,
+  Check,
+  Share2,
+  Volume2,
+  VolumeX,
+  Compass,
+  AlertCircle,
+  CheckCircle2,
   BookOpen,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 import { 
   WAQF_SIGNS, 
@@ -21,11 +21,12 @@ import {
   extractWaqfOccurrencesFromVerse, 
   parseVerseWithWaqfMarks 
 } from '../../data/waqfData';
-import { normalizeQuranText, formatQuranWordForLabel } from '../../utils/quranData';
+import { formatQuranWordForLabel } from '../../utils/quranData';
 import { useLanguage } from '../../context/LanguageContext';
 import { SURAH_NAMES_EN, toArabic } from './constants';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface WaqfGuideModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ interface WaqfGuideModalProps {
   isLandscape?: boolean;
 }
 
-const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
+const WaqfGuideModal: React.FC<WaqfGuideModalProps> = React.memo(({
   isOpen,
   onClose,
   currentTheme,
@@ -78,12 +79,14 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
   }, []);
 
   const occurrences = useMemo(() => {
+    if (!isOpen) return [];
     return extractWaqfOccurrencesFromVerse(currentAyahText);
-  }, [currentAyahText]);
+  }, [isOpen, currentAyahText]);
 
   const verseSegments = useMemo(() => {
+    if (!isOpen) return [];
     return parseVerseWithWaqfMarks(currentAyahText);
-  }, [currentAyahText]);
+  }, [isOpen, currentAyahText]);
 
   // Reset or initialize selection whenever modal opens or ayah changes
   useEffect(() => {
@@ -119,11 +122,7 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
 
   if (!isOpen) return null;
 
-  const themeAccent = currentTheme?.accent || '#10b981';
-  const isDark = currentTheme?.id === 'deep_black';
-  const themeAccentColor = isDark ? '#ffffff' : themeAccent;
-  const modalBg = currentTheme?.modalBg || currentTheme?.bg || '#ffffff';
-  const modalText = currentTheme?.modalText || currentTheme?.text || '#000000';
+  const p = resolveQuranModalPalette(currentTheme);
 
   // Sanitize Surah Name to prevent "سورة سُورَةُ"
   const surahNameEn = SURAH_NAMES_EN[surahNumber - 1] || `Surah ${surahNumber}`;
@@ -218,54 +217,65 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[1300] bg-black/65 backdrop-blur-xs flex flex-col justify-end select-none animate-fadeIn"
+      className={`fixed inset-0 z-[1300] bg-black/70 flex flex-col select-none ${isLandscape ? 'justify-center items-center p-2.5' : 'justify-end'}`}
       onClick={handleClose}
       dir={dir}
     >
       <div 
-        className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col overflow-hidden relative shadow-2xl animate-modal-enter ${
-          isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'
+        className={`zoom-modal-sheet modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} flex flex-col overflow-hidden relative shadow-2xl border-0 ${
+          isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%] rounded-3xl' : 'w-full max-w-xl mx-auto rounded-t-[32px] max-h-[88dvh]'
         }`}
         style={{ 
-          backgroundColor: modalBg, 
-          color: modalText,
-          fontFamily: "'Cairo', sans-serif"
+          backgroundColor: p.modalBg, 
+          color: p.modalText,
+          fontFamily: p.fontFamily || "'Cairo', sans-serif",
+          border: 'none',
+          outline: 'none'
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Drag Handle & Title Bar */}
-        <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
-          <div className="w-12 h-1.5 rounded-full mb-2 bg-slate-300 dark:bg-zinc-700 opacity-70 mx-auto" />
+        {/* Canonical Raised 3D Header */}
+        <div className={`${isLandscape ? 'pt-2.5 px-3 pb-1.5' : 'pt-3 px-4 sm:px-5 pb-2.5'} shrink-0 flex flex-col`}>
+          {!isLandscape && (
+            <div className="app-3d-drag-handle w-12 h-1.5 rounded-full mb-2.5 bg-slate-300/80 dark:bg-zinc-600/80 mx-auto" />
+          )}
           
-          <div className="w-full flex flex-col items-center justify-center relative px-2">
-            <span 
-              className="px-4 py-1.5 rounded-full text-xs font-black shadow-xs border transition-all"
-              style={{
-                backgroundColor: `${themeAccent}18`,
-                borderColor: `${themeAccent}40`,
-                color: themeAccentColor
-              }}
+          <div 
+            className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between gap-2 quran-raised-card border-0`}
+            style={{ backgroundColor: p.headerBg }}
+          >
+            <div className="flex flex-col min-w-0 text-start">
+              <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide truncate`} style={{ color: p.headerAccent }}>
+                {isEn ? "Waqf & Stopping Signs Guide" : "دليل علامات الوقف وضبط المصحف"}
+              </span>
+              <span className={`${isLandscape ? 'text-[10px]' : 'text-[11px]'} font-bold truncate font-cairo`} style={{ color: p.mutedText }}>
+                {isEn 
+                  ? `${displaySurah} • Ayah ${ayahNumber}` 
+                  : `${displaySurah} • آية ${toArabic(ayahNumber)}`}
+              </span>
+            </div>
+            <button 
+              type="button"
+              onClick={handleClose} 
+              className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer shrink-0`}
+              style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+              aria-label={isEn ? "Close" : "إغلاق"}
             >
-              {isEn ? "Waqf & Stopping Signs Guide" : "دليل علامات الوقف وضبط المصحف"}
-            </span>
-            <span className="text-[12px] font-black opacity-75 mt-1 font-cairo">
-              {isEn 
-                ? `${displaySurah} (Ayah ${ayahNumber})` 
-                : `${displaySurah} (آية ${toArabic(ayahNumber)})`}
-            </span>
+              <X size={isLandscape ? 14 : 16} />
+            </button>
           </div>
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-4 sm:px-6 py-2 space-y-3">
+        <div className={`overflow-y-auto custom-scrollbar flex-1 min-h-0 ${isLandscape ? 'px-3 pt-1 pb-3 space-y-2.5' : 'px-4 sm:px-5 pt-2 pb-5 space-y-4'}`}>
           
           {/* 1. Display Ayah Card with Illuminated Colored Waqf Marks */}
           {currentAyahText && (
             <div 
-              className="py-3.5 px-4 rounded-2xl text-center select-text leading-[2.3] font-bold border quran-raised-card transition-all"
+              className="p-4 rounded-2xl text-center select-text leading-[2.3] font-bold border-0 quran-raised-card"
               style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#ffffff',
-                borderColor: `${themeAccent}30`,
+                backgroundColor: p.cardBg,
+                color: p.cardText,
                 fontSize: `${fontSize + 3}px`,
                 fontFamily: "'Amiri Quran', 'Amiri', 'Cairo', serif"
               }}
@@ -280,7 +290,7 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
                   );
                 }
 
-                // Waqf Mark Segment: Illuminated and Colored
+                // Waqf Mark Segment: Illuminated and Colored 3D chip
                 const isSelected = hasSignsInVerse && selectedOccurrenceIdx === seg.occurrenceIndex;
                 const signInfo = seg.sign;
 
@@ -293,16 +303,12 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
                       setSelectedOccurrenceIdx(seg.occurrenceIndex);
                       setSelectedGeneralSignId(null);
                     }}
-                    className={`inline-flex items-center justify-center mx-1.5 px-2.5 py-0.5 rounded-xl font-black transition-all cursor-pointer select-none align-middle ${
-                      isSelected 
-                        ? 'scale-110 shadow-md ring-2 ring-offset-1' 
-                        : 'hover:scale-105 opacity-90 hover:opacity-100'
+                    className={`inline-flex items-center justify-center mx-1.5 px-2.5 py-0.5 rounded-xl font-black cursor-pointer select-none align-middle border-0 quran-raised-btn ${
+                      isSelected ? 'ring-2 ring-offset-1' : ''
                     }`}
                     style={{
                       backgroundColor: isSelected ? signInfo.color : signInfo.bgColor,
                       color: isSelected ? '#ffffff' : signInfo.color,
-                      borderColor: signInfo.borderColor,
-                      borderWidth: '1.5px',
                       fontSize: `${Math.max(13, fontSize - 4)}px`,
                       fontFamily: "'Cairo', sans-serif",
                       lineHeight: '1.4'
@@ -317,7 +323,7 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
               
               {/* Ayah End Symbol */}
               {ayahNumber ? (
-                <span className="mr-2 text-amber-600 dark:text-amber-400 font-extrabold whitespace-nowrap">
+                <span className="mr-2 font-extrabold whitespace-nowrap" style={{ color: p.headerAccent }}>
                   ﴿{toArabic(ayahNumber)}﴾
                 </span>
               ) : null}
@@ -328,7 +334,7 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
           {hasSignsInVerse ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-1.5 font-black text-xs sm:text-sm" style={{ color: themeAccentColor }}>
+                <div className="flex items-center gap-1.5 font-black text-xs sm:text-sm" style={{ color: p.headerAccent }}>
                   <Compass size={17} />
                   <span>
                     {isEn 
@@ -337,14 +343,14 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
                   </span>
                 </div>
                 {occurrences.length > 1 && (
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400">
+                  <span className="text-[11px] font-bold" style={{ color: p.mutedText }}>
                     {isEn ? 'Tap to view rule' : 'انقر على العلامة لمعرفة حكمها'}
                   </span>
                 )}
               </div>
 
-              {/* Pills for each occurrence found in this specific ayah */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 custom-scrollbar">
+              {/* 3D Pills for each occurrence found in this specific ayah (pb-3.5 prevents clipping 6.5px bevel) */}
+              <div className="flex items-center gap-2.5 overflow-x-auto pt-1.5 pb-3.5 px-1 custom-scrollbar">
                 {occurrences.map((occ, idx) => {
                   const isSelected = selectedOccurrenceIdx === idx && !selectedGeneralSignId;
                   const sign = occ.sign;
@@ -357,26 +363,29 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
                         setSelectedOccurrenceIdx(idx);
                         setSelectedGeneralSignId(null);
                       }}
-                      className={`px-3.5 py-2 rounded-xl font-black text-xs whitespace-nowrap border transition-all flex items-center gap-2 cursor-pointer shadow-2xs ${
-                        isSelected ? 'scale-[1.02] shadow-sm' : 'opacity-85 hover:opacity-100'
-                      }`}
+                      className="px-3.5 py-2.5 rounded-2xl font-black text-xs whitespace-nowrap border-0 flex items-center gap-2.5 cursor-pointer quran-raised-btn shrink-0"
                       style={{
-                        backgroundColor: isSelected ? `${sign.color}20` : (isDark ? 'rgba(255,255,255,0.04)' : '#ffffff'),
-                        borderColor: isSelected ? sign.color : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'),
-                        color: isSelected ? sign.color : modalText
+                        backgroundColor: isSelected ? sign.color : p.cardBg,
+                        color: isSelected ? '#ffffff' : p.cardText
                       }}
                     >
                       <span 
-                        className="px-2 py-0.5 rounded-lg text-xs font-black text-white"
-                        style={{ backgroundColor: sign.color }}
+                        className="px-2 py-0.5 rounded-lg text-xs font-black"
+                        style={{ 
+                          backgroundColor: isSelected ? 'rgba(255,255,255,0.22)' : sign.color,
+                          color: '#ffffff'
+                        }}
                       >
                         {sign.symbol}
                       </span>
                       <div className="flex flex-col text-start">
                         <span className="text-xs font-black">{sign.nameAr}</span>
                         {occ.wordBefore && (
-                          <span className="text-xs font-bold font-cairo text-amber-900/90 dark:text-amber-200/90 leading-tight">
-                            عند: «<span className="font-extrabold text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 px-0.5" style={{ fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif", letterSpacing: '0px' }}>{formatQuranWordForLabel(occ.wordBefore)}</span>»
+                          <span 
+                            className="text-xs font-bold font-cairo leading-tight"
+                            style={{ color: isSelected ? 'rgba(255,255,255,0.92)' : p.mutedText }}
+                          >
+                            عند: «<span className="font-extrabold text-xs sm:text-sm px-0.5" style={{ fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif", letterSpacing: '0px', color: isSelected ? '#ffffff' : (p.isDark ? '#34d399' : '#065f46') }}>{formatQuranWordForLabel(occ.wordBefore)}</span>»
                           </span>
                         )}
                       </div>
@@ -388,19 +397,19 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
           ) : (
             /* No Waqf Signs in this Ayah Notice */
             <div 
-              className="p-4 rounded-2xl border text-start space-y-2 quran-raised-card transition-all"
+              className="p-4 sm:p-5 rounded-2xl border-0 text-start space-y-2 quran-raised-card"
               style={{
-                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)',
-                borderColor: 'rgba(16, 185, 129, 0.25)'
+                backgroundColor: p.cardBg,
+                color: p.cardText
               }}
             >
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-black text-sm">
+              <div className="flex items-center gap-2 font-black text-sm" style={{ color: p.isDark ? '#34d399' : '#047857' }}>
                 <Sparkles size={18} />
                 <span>
                   {isEn ? "Continuous Recitation (No intermediate waqf marks in this Ayah)" : "آية متصلة (لا توجد علامات وقف وسطية في هذه الآية)"}
                 </span>
               </div>
-              <p className="text-xs sm:text-[13px] leading-[1.8] font-bold text-slate-700 dark:text-zinc-300">
+              <p className="text-xs sm:text-[13px] leading-[1.85] font-bold" style={{ color: p.cardText }}>
                 {isEn
                   ? `This noble Ayah does not contain intermediate stopping symbols. The reciter continues recitation smoothly until the end of the verse (Ayah ${ayahNumber}), where stopping is Sunnah. In case of running out of breath, stop with a permissible pause and resume cleanly.`
                   : `هذه الآية الكريمة لا تتضمن علامات وقف وسطية؛ وتُقرأ متصلة المعنى حتى رأس الآية ﴿${toArabic(ayahNumber)}﴾، حيث يُسنّ الوقف عند رؤوس الآيات اتباعاً لهدي المصطفى ﷺ. وإن انقطع النَّفَس أثناء تلاوتها يجوز الوقف الاضطراري وحُسن الابتداء بما يربط المعنى دون إخلال.`}
@@ -410,18 +419,17 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
 
           {/* 3. Active Sign Detail Card */}
           <div 
-            className="p-4 sm:p-5 rounded-2xl border quran-raised-card space-y-3.5 transition-all"
+            className="p-4 sm:p-5 rounded-2xl border-0 quran-raised-card space-y-3.5"
             style={{ 
-              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#ffffff', 
-              borderColor: activeSign ? `${activeSign.color}40` : `${themeAccent}30`,
-              boxShadow: activeSign ? `0 4px 20px ${activeSign.color}15` : undefined
+              backgroundColor: p.cardBg,
+              color: p.cardText
             }}
           >
             {/* Header: Symbol + Name + Location */}
             <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-slate-200/60 dark:border-zinc-800">
               <div className="flex items-center gap-2.5">
                 <span 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg text-white shadow-sm"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg text-white quran-raised-card border-0 shrink-0"
                   style={{ backgroundColor: activeSign.color }}
                 >
                   {activeSign.symbol}
@@ -439,10 +447,9 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
               </div>
 
               <span 
-                className="text-xs px-2.5 py-1 rounded-lg font-black border" 
+                className="text-xs px-2.5 py-1 rounded-lg font-black" 
                 style={{ 
-                  backgroundColor: `${activeSign.color}15`, 
-                  borderColor: `${activeSign.color}35`, 
+                  backgroundColor: `${activeSign.color}18`, 
                   color: activeSign.color 
                 }}
               >
@@ -490,13 +497,13 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
           </div>
 
           {/* 4. Complete Waqf Signs Reference (Always accessible for browsing) */}
-          <div className="pt-2 pb-1 space-y-2">
-            <div className="flex items-center gap-1.5 px-1 font-black text-xs text-slate-500 dark:text-zinc-400">
+          <div className="pt-1 space-y-2">
+            <div className="flex items-center gap-1.5 px-1 font-black text-xs" style={{ color: p.mutedText }}>
               <BookOpen size={15} />
               <span>{isEn ? "General Quranic Waqf Signs Guide (6 Marks):" : "الدليل الشامل لعلامات الوقف بالمصحف الشريف:"}</span>
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+            <div className="flex items-center gap-2.5 overflow-x-auto pt-1.5 pb-3.5 px-1 custom-scrollbar">
               {WAQF_SIGNS.slice(0, 6).map((s) => {
                 const isSelected = activeSign.id === s.id;
                 return (
@@ -506,16 +513,13 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
                     onClick={() => {
                       setSelectedGeneralSignId(s.id);
                     }}
-                    className={`px-3 py-1.5 rounded-xl font-black text-xs whitespace-nowrap border transition-all flex items-center gap-1.5 cursor-pointer ${
-                      isSelected ? 'ring-2 ring-offset-1' : 'opacity-70 hover:opacity-100'
-                    }`}
+                    className="px-3.5 py-2 rounded-2xl font-black text-xs whitespace-nowrap border-0 flex items-center gap-1.5 cursor-pointer quran-raised-btn shrink-0"
                     style={{
-                      backgroundColor: isSelected ? `${s.color}20` : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
-                      borderColor: isSelected ? s.color : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'),
-                      color: isSelected ? s.color : modalText
+                      backgroundColor: isSelected ? s.color : p.cardBg,
+                      color: isSelected ? '#ffffff' : p.cardText
                     }}
                   >
-                    <span className="font-extrabold" style={{ color: s.color }}>{s.symbol}</span>
+                    <span className="font-extrabold" style={{ color: isSelected ? '#ffffff' : s.color }}>{s.symbol}</span>
                     <span>{s.shortNameAr}</span>
                   </button>
                 );
@@ -524,81 +528,81 @@ const WaqfGuideModal: React.FC<WaqfGuideModalProps> = ({
           </div>
         </div>
 
-        {/* Bottom Action Bar: Audio, Share, Copy, Zoom, Close */}
+        {/* Sculpted 3D Bottom Action Bar: Audio, Share, Copy, Zoom, Close */}
         <div 
           data-toast-bottom-bar="true"
-          className="pt-3 px-6 modal-sheet-safe-bottom border-t shrink-0 flex items-center justify-center gap-3 sm:gap-4 font-cairo border-slate-200/50 dark:border-white/10"
+          className={`${isLandscape ? 'pt-2 pb-2.5 px-3 gap-3' : 'pt-3.5 pb-4 px-6 modal-sheet-safe-bottom gap-3.5 sm:gap-4'} shrink-0 flex items-center justify-center font-cairo zoom-modal-action-bar-3d`}
           dir="rtl"
           style={{
-            backgroundColor: modalBg
+            backgroundColor: p.modalBg
           }}
         >
           {/* 1. Audio / Recitation Play Button (RIGHTMOST in RTL) */}
           <button 
             type="button"
             onClick={handlePlayAudio}
-            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80 ${
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn ${
               isAudioActive ? 'ring-2 ring-red-400/80 animate-pulse' : ''
             }`}
             style={{ 
-              backgroundColor: isAudioActive ? '#dc2626' : '#ffffff', 
-              color: isAudioActive ? '#ffffff' : (currentTheme?.accent || themeAccent)
+              backgroundColor: isAudioActive ? '#dc2626' : p.closeBg, 
+              color: isAudioActive ? '#ffffff' : p.headerAccent
             }}
             title={isAudioActive ? (isEn ? "Stop Audio" : "إيقاف الصوت") : (isEn ? "Listen to Ayah" : "استماع للآية")}
           >
-            {isAudioActive ? <VolumeX size={20} className="text-white animate-pulse" /> : <Volume2 size={20} style={{ color: currentTheme?.accent || themeAccent }} />}
+            {isAudioActive ? <VolumeX size={isLandscape ? 17 : 20} className="text-white animate-pulse" /> : <Volume2 size={isLandscape ? 17 : 20} style={{ color: p.headerAccent }} />}
           </button>
 
           {/* 2. Share Button */}
           <button 
             type="button"
             onClick={handleShare}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80"
-            style={{ backgroundColor: '#ffffff', color: currentTheme?.accent || themeAccent }}
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn`}
+            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
             title={isEn ? "Share" : "مشاركة"}
           >
-            <Share2 size={20} style={{ color: currentTheme?.accent || themeAccent }} />
+            <Share2 size={isLandscape ? 17 : 20} style={{ color: p.headerAccent }} />
           </button>
 
           {/* 3. Copy Button */}
           <button 
             type="button"
             onClick={handleCopy}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80"
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn`}
             style={{ 
-              backgroundColor: copied ? '#10b981' : '#ffffff', 
-              color: copied ? '#ffffff' : (currentTheme?.accent || themeAccent)
+              backgroundColor: copied ? '#10b981' : p.closeBg, 
+              color: copied ? '#ffffff' : p.headerAccent
             }}
             title={isEn ? "Copy" : "نسخ"}
           >
-            {copied ? <Check size={20} className="text-white stroke-[2.5]" /> : <Copy size={20} style={{ color: currentTheme?.accent || themeAccent }} />}
+            {copied ? <Check size={isLandscape ? 17 : 20} className="text-white stroke-[2.5]" /> : <Copy size={isLandscape ? 17 : 20} style={{ color: p.headerAccent }} />}
           </button>
 
           {/* 4. Zoom Button */}
           <button 
             type="button"
             onClick={handleToggleZoom}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80"
-            style={{ backgroundColor: '#ffffff', color: currentTheme?.accent || themeAccent }}
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn`}
+            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
             title={isEn ? "Text Size" : "حجم الخط"}
           >
-            <ZoomIn size={20} style={{ color: currentTheme?.accent || themeAccent }} />
+            <ZoomIn size={isLandscape ? 17 : 20} style={{ color: p.headerAccent }} />
           </button>
 
           {/* 5. Chevron Down / Hide Modal Button (LEFTMOST in RTL) */}
           <button 
             type="button"
             onClick={handleClose}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80"
-            style={{ backgroundColor: '#ffffff', color: currentTheme?.accent || themeAccent }}
+            className={`${isLandscape ? 'w-9 h-9' : 'w-11 h-11 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center cursor-pointer font-cairo border-0 quran-raised-btn`}
+            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
             title={isEn ? "Close" : "إغلاق"}
           >
-            <ChevronDown size={22} style={{ color: currentTheme?.accent || themeAccent }} />
+            <ChevronDown size={isLandscape ? 18 : 22} style={{ color: p.headerAccent }} />
           </button>
         </div>
       </div>
     </div>
   );
-};
+});
 
 export default WaqfGuideModal;

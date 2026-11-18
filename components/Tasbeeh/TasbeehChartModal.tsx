@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Zap } from 'lucide-react';
 import { Theme } from '../../context/themes';
 import { useLanguage } from '../../context/LanguageContext';
@@ -142,15 +141,11 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
     const barWidth = period === 'weekly' ? Math.min(28, barSpacing * 0.65) : Math.min(8, barSpacing * 0.7);
 
     return (
-        <AnimatePresence>
-            <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex flex-col text-gray-900 dark:text-gray-100 transition-colors"
-                style={{ backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) }}
-                dir={dir}
-            >
+        <div 
+            className="fixed inset-0 z-50 flex flex-col text-gray-900 dark:text-gray-100"
+            style={{ backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) }}
+            dir={dir}
+        >
                 {/* Full Screen Top Header */}
                 <header className="app-top-bar shrink-0">
                     <div className="app-top-bar__inner">
@@ -169,7 +164,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
 
                             {/* Page Title */}
                             <div className="text-center px-12 min-w-0">
-                                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate">
                                     {isEn ? 'Tasbeeh Chart' : 'مخطط التسبيح'}
                                 </h1>
                             </div>
@@ -194,7 +189,6 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
 
                 {/* Main Scrollable Content */}
                 <main 
-<<<<<<< HEAD
                     className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pt-3 pb-5 max-w-lg mx-auto w-full space-y-4 overscroll-contain app-scroll-safe"
                 >
                     {/* Period Switcher (Weekly / Monthly) */}
@@ -230,45 +224,6 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                         >
                             <span>{tTasbeeh('monthlyTab', language)}</span>
                         </button>
-=======
-                    className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pt-3 max-w-lg mx-auto w-full space-y-3.5 overscroll-contain app-scroll-safe"
-                >
-                    {/* Period Switcher (Weekly / Monthly) */}
-                    <div className="shrink-0">
-                        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-gray-200/70 dark:bg-gray-800" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setPeriod('weekly');
-                                    setSelectedDayIndex(null);
-                                }}
-                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
-                                    period === 'weekly' 
-                                        ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' 
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                                style={period === 'weekly' ? { color: primaryColor } : {}}
-                            >
-                                <span>{tTasbeeh('weeklyTab', language)}</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setPeriod('monthly');
-                                    setSelectedDayIndex(null);
-                                }}
-                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
-                                    period === 'monthly' 
-                                        ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' 
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                                style={period === 'monthly' ? { color: primaryColor } : {}}
-                            >
-                                <span>{tTasbeeh('monthlyTab', language)}</span>
-                            </button>
-                        </div>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     </div>
 
                     {/* Quick Stats Summary Grid */}
@@ -495,11 +450,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                             </span>
                         </div>
 
-<<<<<<< HEAD
                         <div className="space-y-2.5 pb-2">
-=======
-                        <div className="space-y-1.5">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {chartData.filter(d => !d.isFuture).reverse().map((item, idx) => {
                                 const percentOfMax = statsSummary.max > 0 ? (item.count / statsSummary.max) * 100 : 0;
                                 const isSelected = activeSelectedDay?.date === item.date;
@@ -524,7 +475,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                                     {item.isToday ? (isEn ? 'Today' : 'اليوم') : item.dayName}
                                                 </span>
                                                 {item.isToday && (
-                                                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
+                                                    <span className="app-3d-badge border-0 text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
                                                         {isEn ? 'Current' : 'الحالي'}
                                                     </span>
                                                 )}
@@ -534,9 +485,9 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                             </div>
 
                                             {/* Mini progress bar */}
-                                            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                                            <div className="app-3d-progress-track border-0 w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mt-1.5 overflow-hidden">
                                                 <div 
-                                                    className="h-full rounded-full transition-all duration-500"
+                                                    className="app-3d-progress-fill h-full rounded-full transition-all duration-500"
                                                     style={{ 
                                                         width: `${percentOfMax}%`,
                                                         backgroundColor: item.isToday ? '#f59e0b' : primaryColor
@@ -560,8 +511,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                         </div>
                     </div>
                 </main>
-            </motion.div>
-        </AnimatePresence>
+            </div>
     );
 };
 

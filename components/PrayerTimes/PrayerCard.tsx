@@ -1,18 +1,17 @@
 import React from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getPrayerDisplayName, tPrayer } from '../../utils/prayerTimesTranslations';
-import { 
-    Moon, 
-    Sun, 
-    CloudSun, 
-    Sunset, 
-    Bell, 
-    BellOff, 
-    SlidersHorizontal,
-    Clock,
-    CloudRain,
-    Cloud,
-    Info
+import {
+  Moon,
+  Sun,
+  CloudSun,
+  Bell,
+  BellOff,
+  SlidersHorizontal,
+  Clock,
+  CloudRain,
+  Cloud,
+  Info
 } from 'lucide-react';
 
 export interface PrayerWeatherInfo {
@@ -155,10 +154,25 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
         ? nextPrayerDynamicBg
         : (isBlackTheme ? '#18181b' : '#FFFFFF');
 
+    const inlineBtnClass = isNextPrayer ? 'unified-3d-btn border-0' : 'app-inner-3d-box unified-3d-btn border-0';
+    const inlineBtnSurfaceStyle: React.CSSProperties = isNextPrayer
+        ? (isLightNextBg
+            ? {
+                backgroundColor: isBlackTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.52)',
+                boxShadow: '0 2.5px 0 rgba(0, 0, 0, 0.14), 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.85), inset 0 -1px 1.5px rgba(0, 0, 0, 0.08)',
+            }
+            : {
+                backgroundColor: 'rgba(255, 255, 255, 0.16)',
+                boxShadow: '0 2.5px 0 rgba(0, 0, 0, 0.22), 0 4px 8px rgba(0, 0, 0, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.42), inset 0 -1px 1.5px rgba(0, 0, 0, 0.14)',
+            })
+        : {
+            backgroundColor: isBlackTheme ? '#27272a' : '#f8fafc',
+        };
+
     return (
         <div 
             dir={dir}
-            className={`prayer-card app-page-card border-0 rounded-2xl pt-1.5 pb-1.5 px-3 sm:pt-2 sm:pb-2 sm:px-3.5 flex flex-col items-center justify-between relative min-h-[124px] transition-all duration-300 ${
+            className={`prayer-card app-page-card border-0 rounded-2xl pt-1.5 pb-1.5 px-2.5 sm:pt-2 sm:pb-2 sm:px-3.5 flex flex-col items-center justify-between relative min-h-[128px] transition-all duration-300 ${
                 isNextPrayer ? 'scale-[1.02]' : ''
             }`}
             style={{
@@ -169,8 +183,8 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
             }}
         >
             {/* Top row: Weather chip on left, Bell & Settings stacked vertically on right */}
-            <div className="w-full flex justify-between items-start z-10 relative px-0.5 pt-3 sm:pt-3.5">
-                {/* 1. Left Side: Weather Chip (No Background, No Info Circle) */}
+            <div className="w-full flex justify-between items-start z-10 relative px-0.5 pt-1.5 sm:pt-2">
+                {/* 1. Left Side: Weather Chip */}
                 <button
                     id={idx === 0 ? "prayer-card-weather-btn" : undefined}
                     type="button"
@@ -178,8 +192,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                         e.stopPropagation();
                         if (onOpenWeather) onOpenWeather();
                     }}
-                    className="inline-flex items-center gap-1 p-0.5 bg-transparent border-none shadow-none transition-opacity hover:opacity-80 cursor-pointer select-none active:scale-95 shrink-0 outline-none"
+                    className={`${inlineBtnClass} inline-flex items-center gap-1 px-2 py-1 rounded-xl cursor-pointer select-none shrink-0 outline-none`}
                     style={{
+                        ...inlineBtnSurfaceStyle,
                         color: isNextPrayer
                             ? (isLightNextBg ? '#000000' : '#FFFFFF')
                             : (isBlackTheme ? '#E4E4E7' : '#000000')
@@ -207,16 +222,17 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                     </span>
                 </button>
 
-                {/* 2. Right Side: Bell and Settings stacked vertically (No Background) */}
-                <div className="flex flex-col items-center gap-1 shrink-0">
+                {/* 2. Right Side: Bell and Settings stacked vertically */}
+                <div className="flex flex-col items-center gap-1.5 shrink-0">
                     {/* Bell / Mute Toggle Button */}
                     {prayerKey !== 'Sunrise' ? (
                         <button 
                             id={idx === 0 ? "prayer-sound-toggle-btn" : undefined}
                             type="button"
                             onClick={() => togglePrayerSound(prayerKey)} 
-                            className="p-0.5 flex items-center justify-center transition-all active:scale-90 cursor-pointer bg-transparent"
+                            className={`${inlineBtnClass} w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer`}
                             style={{
+                                ...inlineBtnSurfaceStyle,
                                 color: isMuted 
                                     ? '#EF4444' 
                                     : (isNextPrayer 
@@ -227,9 +243,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                             aria-label={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
                         >
                             {isMuted ? (
-                                <BellOff className="w-5 h-5" />
+                                <BellOff className="w-4 h-4" />
                             ) : (
-                                <Bell className="w-5 h-5" />
+                                <Bell className="w-4 h-4" />
                             )}
                         </button>
                     ) : (
@@ -237,8 +253,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                             <button 
                                 type="button"
                                 onClick={toggleSummerTime}
-                                className="p-0.5 flex items-center justify-center transition-colors text-xs cursor-pointer bg-transparent"
+                                className={`${inlineBtnClass} w-7 h-7 rounded-xl flex items-center justify-center text-xs cursor-pointer`}
                                 style={{
+                                    ...inlineBtnSurfaceStyle,
                                     color: isNextPrayer 
                                         ? nextTextColor 
                                         : (isBlackTheme ? '#FFFFFF' : '#000000')
@@ -246,7 +263,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                                 title={tPrayer('dstTooltip', language)}
                                 aria-label={tPrayer('dstTooltip', language)}
                             >
-                                <Clock className="w-5 h-5" />
+                                <Clock className="w-4 h-4" />
                             </button>
                         )
                     )}
@@ -257,8 +274,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                             id={idx === 0 ? "prayer-settings-btn" : undefined}
                             type="button"
                             onClick={() => openSettings(prayerKey)} 
-                            className="p-0.5 flex items-center justify-center transition-all active:scale-90 cursor-pointer bg-transparent"
+                            className={`${inlineBtnClass} w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer`}
                             style={{
+                                ...inlineBtnSurfaceStyle,
                                 color: isNextPrayer 
                                     ? nextTextColor 
                                     : (isBlackTheme ? '#FFFFFF' : '#000000')
@@ -266,7 +284,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                             title={tPrayer('customize', language)}
                             aria-label={tPrayer('customize', language)}
                         >
-                            <SlidersHorizontal className="w-5 h-5" />
+                            <SlidersHorizontal className="w-4 h-4" />
                         </button>
                     )}
                 </div>
@@ -298,18 +316,17 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
             </div>
 
             {/* Bottom: Iqama Chip */}
-            <div className="w-full flex justify-center items-center z-10 relative -mt-3.5 pb-2.5 min-h-[18px]">
+            <div className="w-full flex justify-center items-center z-10 relative -mt-2 pb-1.5 min-h-[22px]">
                 {prayerKey !== 'Sunrise' && iqamaTime && !iqamaTime.includes('--') ? (
                     <button 
                         type="button"
                         onClick={() => openSettings(prayerKey)}
-                        className="text-[11px] font-extrabold px-1 py-0.5 whitespace-nowrap leading-tight cursor-pointer hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 bg-transparent border-0" 
+                        className={`${inlineBtnClass} text-[11px] font-extrabold px-2.5 py-0.5 rounded-xl whitespace-nowrap leading-tight cursor-pointer flex items-center gap-1`} 
                         style={{
+                            ...inlineBtnSurfaceStyle,
                             color: isNextPrayer 
                                 ? nextTextColor 
-                                : (isBlackTheme ? '#FFFFFF' : '#000000'), 
-                            backgroundColor: 'transparent',
-                            border: 'none'
+                                : (isBlackTheme ? '#FFFFFF' : '#000000'),
                         }}
                         title={tPrayer('iqamaButtonTooltip', language)}
                         aria-label={tPrayer('iqamaButtonTooltip', language)}

@@ -1,21 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import ThemePageLock from '../components/ThemePageLock';
 import { baseAthkar, specialZikr, prayerOptions, fajrDhikr, fajrMaghribDhikr, SalahDhikrItem } from '../data/athkarAlSalahData';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { motion, AnimatePresence } from 'motion/react';
 import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
 import { BottomSalahGuides } from '../components/AthkarAlSalah/BottomSalahGuides';
-import { LayoutGrid, ListFilter, Search, HelpCircle } from 'lucide-react';
+import { LayoutGrid, ListFilter, Search, Check } from 'lucide-react';
 import ZoomModal from '../components/AthkarAlSalah/ZoomModal';
 import { scrollToNextCard } from '../utils/cardScrollHelper';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ATHKAR_SALAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { useShowPageGuides } from '../utils/guideManager';
+import { getToast3DStyles } from '../utils/toast3DStyles';
 
 const SalahZikrCard = ({ 
     zikr, 
@@ -139,11 +138,7 @@ const SalahZikrCard = ({
     return (
         <div 
             data-card-item="true"
-<<<<<<< HEAD
             className={`app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-5 pb-4 rounded-2xl relative overflow-visible group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60 cursor-pointer' : 'cursor-pointer'}`} 
-=======
-            className={`app-page-card border-0 bg-white dark:bg-[#1E293B] p-5 pb-3 rounded-2xl relative overflow-hidden group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60 cursor-pointer' : 'cursor-pointer'}`} 
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             onClick={(e) => {
                 onDecrement();
                 if (zikr.currentCount <= 1 || isFinished) {
@@ -153,7 +148,7 @@ const SalahZikrCard = ({
             }}
         >
             <div className={`flex justify-between items-start mb-2 ${isEn ? 'flex-row' : ''}`}>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold" style={{ backgroundColor: `${primaryColor}14`, color: accentHex }}>
+                <span className="app-3d-badge inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold" style={{ backgroundColor: `${primaryColor}14`, color: accentHex }}>
                     {displayNote}
                 </span>
                 <div 
@@ -249,7 +244,8 @@ interface AthkarAlSalahProps {
 
 function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
     const showPageGuides = useShowPageGuides();
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+    const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود';
@@ -489,7 +485,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
 
                         {/* عنوان الصفحة في الوسط - يشغل كامل المساحة بين الأيقونات دون تداخل */}
                         <div className="flex-1 min-w-0 text-center px-1">
-                            <h1 className={`app-top-bar__title ${titleSizeClass} font-kufi font-bold truncate leading-tight`}>
+                            <h1 className={`app-top-bar__title ${titleSizeClass} font-cairo font-bold truncate leading-tight`}>
                                 {pageTitle}
                             </h1>
                         </div>
@@ -508,7 +504,6 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                     <i className="fa-solid fa-circle-question text-lg"></i>
                                 </button>
                             )}
-                            <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -523,16 +518,11 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
             </header>
 
             <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 app-scroll-safe-fab">
-<<<<<<< HEAD
                 {/* Controls Bar: Search and View Mode Switch - Matches Tasbeeh 3D */}
                 <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
-=======
-                {/* Controls Bar: Search and View Mode Switch - Matches Adia/OthersPage */}
-                <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     {/* Search Input */}
                     <div 
-                        className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible focus-within:ring-2 transition-all" 
+                        className={`app-page-card border-0 relative flex-1 rounded-2xl ${isBlackTheme ? 'bg-[#18181b]' : 'bg-white dark:bg-[#1E293B]'} overflow-visible focus-within:ring-2 transition-all`} 
                         style={{ 
                             '--tw-ring-color': primaryColor,
                         } as any}
@@ -542,18 +532,24 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                             placeholder={isEn ? "Search prayer remembrances..." : "ابحث في أذكار الصلاة..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full bg-transparent py-3 ${isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                            className={`w-full bg-transparent py-3 ${isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
                             style={{ color: 'var(--text-color)' }}
                         />
-                        <i 
-                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50 pointer-events-none`} 
-                            style={{ color: 'var(--text-color)' }}
-                        ></i>
+                        <span
+                            className={`app-3d-badge border-0 absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none`}
+                            style={{
+                                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : `${primaryColor}1A`,
+                                color: primaryColor,
+                            }}
+                            aria-hidden="true"
+                        >
+                            <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
                         {searchQuery && (
                             <button
                                 type="button"
                                 onClick={() => setSearchQuery('')}
-                                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                className={`app-page-card unified-3d-btn border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
                                 aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
@@ -630,15 +626,11 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                           `أذكار ${prayer.title}`, 
                                           `${prayer.titleEn} Adhkar`
                                       )} 
-<<<<<<< HEAD
                                       className={`app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-2xl flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer transition-all group overflow-visible`}
-=======
-                                      className={`app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-2xl flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer active:scale-98 transition-all group`}
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                  >
                                     <div className={`flex ${activeTab === 'grid' ? 'flex-col items-center gap-3' : 'items-center gap-4'}`}>
                                         <div 
-                                             className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105 shrink-0" 
+                                             className="app-3d-badge w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105 shrink-0" 
                                              style={{
                                                  backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : `${primaryColor}14`, 
                                                  color: primaryColor
@@ -653,8 +645,14 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                         </div>
                                     </div>
                                     {activeTab === 'list' && (
-                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 dark:text-zinc-500 opacity-60">
-                                            <i className={`fa-solid ${isEn ? 'fa-chevron-right' : 'fa-chevron-left'} text-sm`}></i>
+                                        <div
+                                            className="app-3d-badge border-0 w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                                            style={{
+                                                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : `${primaryColor}14`,
+                                                color: primaryColor
+                                            }}
+                                        >
+                                            <i className={`fa-solid ${isEn ? 'fa-chevron-right' : 'fa-chevron-left'} text-xs`}></i>
                                         </div>
                                     )}
                                 </div>
@@ -707,17 +705,12 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 ref={fabContainerRef} 
                 className={`fixed app-fab-bottom ${isEn ? 'left-4 items-start' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
             >
-                <AnimatePresence>
-                    {isMenuOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
-                            transition={{ duration: 0.2 }}
-                            className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-4' : 'top-full mt-4'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
-                            style={{ color: 'var(--text-color)' }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
+                {isMenuOpen && (
+                    <div
+                        className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-4' : 'top-full mt-4'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
+                        style={{ color: 'var(--text-color)' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                             <button 
                                 type="button"
                                 onClick={() => { setIsFavoritesView(true); setCurrentPrayer(null); setIsMenuOpen(false); }}
@@ -727,7 +720,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
                                 <i className="fa-solid fa-heart text-xs opacity-75"></i>
                             </button>
-                            <div className="h-px bg-black/5 dark:bg-white/10 my-0.5 mx-2" />
+                            <div className="app-3d-divider my-0.5 mx-1" />
                             {prayerOptions.map(prayer => (
                                 <button 
                                     type="button"
@@ -743,12 +736,11 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                     className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all cursor-pointer`}
                                     style={currentPrayer?.id === prayer.id ? { backgroundColor: primaryColor, color: isBlackTheme ? '#000000' : '#FFFFFF' } : undefined}
                                 >
-                                    {isEn ? prayer.titleEn : prayer.title}
-                                </button>
-                            ))}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            {isEn ? prayer.titleEn : prayer.title}
+                        </button>
+                    ))}
+                </div>
+            )}
 
                 <button 
                     type="button"
@@ -775,19 +767,20 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 setToastMessage={setToastMessage} 
             />
 
-            <AnimatePresence>
-                {toastMessage && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+            {toastMessage && (
+                <div 
+                    className="app-3d-toast fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 -translate-x-1/2 z-[101] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none flex items-center justify-center gap-2.5"
+                    style={toast3D.style}
+                >
+                    <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={toast3D.iconStyle}
                     >
-                        <i className="fa-solid fa-spinner fa-spin text-primary" style={{ color: theme.palette[0] }}></i>
-                        {toastMessage}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                    <span>{toastMessage}</span>
+                </div>
+            )}
             <CommunitySpotlightGuide
                 isOpen={showGuide}
                 onClose={() => {

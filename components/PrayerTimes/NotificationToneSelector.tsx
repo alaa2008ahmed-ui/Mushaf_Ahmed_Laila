@@ -3,7 +3,7 @@ import { Bell, ChevronDown, Check, X, Play, Square } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getToneDisplayName } from '../../utils/prayerTimesTranslations';
 import { playNotificationSound, stopNotificationSound } from '../../utils/prayerTimesUtils';
-import { shortNotificationTones, DEFAULT_NOTIFICATION_TONE, NotificationToneOption } from '../../data/prayerTimesData';
+import { shortNotificationTones, DEFAULT_NOTIFICATION_TONE } from '../../data/prayerTimesData';
 
 export interface NotificationToneState {
     id: string;
@@ -22,11 +22,8 @@ interface NotificationToneSelectorProps {
     isBlackTheme?: boolean;
     hideLabel?: boolean;
     hidePreviewButton?: boolean;
-<<<<<<< HEAD
     use3dAdiaStyle?: boolean;
     cardBg?: string;
-=======
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }
 
 const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
@@ -38,13 +35,9 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
     isDefaultTheme,
     isBlackTheme,
     hideLabel = false,
-<<<<<<< HEAD
     hidePreviewButton = false,
     use3dAdiaStyle = false,
     cardBg
-=======
-    hidePreviewButton = false
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }) => {
     const { language, dir } = useLanguage();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -164,6 +157,9 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
     };
 
     const itemBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor));
+    const lipShadow = isBlackTheme ? '#09090b' : 'rgba(0,0,0,0.14)';
+    const insetBevel = isBlackTheme ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.95)';
+    const surfaceBg = cardBg || (isBlackTheme ? '#18181b' : '#ffffff');
 
     const optionsList: Array<{ id: string; name: string; path?: string; fileName?: string }> = [
         { id: 'none', name: 'بدون صوت' },
@@ -187,11 +183,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
             )}
             
             {/* Notification Tone Row: Modal Trigger Button + Live Audition/Preview Button */}
-<<<<<<< HEAD
             <div className="flex items-center gap-2.5 overflow-visible">
-=======
-            <div className="flex items-center gap-2">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <button
                     type="button"
                     onClick={() => {
@@ -199,27 +191,23 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                         setPlayingTone(null);
                         setIsModalOpen(true);
                     }}
-<<<<<<< HEAD
                     className={use3dAdiaStyle
                         ? "flex-1 flex items-center justify-between p-3.5 rounded-2xl transition-all cursor-pointer font-bold text-xs sm:text-sm app-page-card border-0"
-                        : "flex-1 flex items-center justify-between themed-bg-alt p-3 rounded-2xl shadow-xs transition-all cursor-pointer font-bold text-xs sm:text-sm hover:opacity-90"
+                        : "unified-3d-btn flex-1 flex items-center justify-between p-3.5 rounded-2xl transition-all cursor-pointer font-bold text-xs sm:text-sm border-0"
                     }
                     style={use3dAdiaStyle ? {
-                        backgroundColor: cardBg || (isBlackTheme ? '#18181b' : '#ffffff'),
+                        backgroundColor: surfaceBg,
                         color: isBlackTheme ? '#FFFFFF' : primaryColor
                     } : { 
-=======
-                    className="flex-1 flex items-center justify-between themed-bg-alt p-3 rounded-2xl shadow-xs transition-all cursor-pointer font-bold text-xs sm:text-sm hover:opacity-90"
-                    style={{ 
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                        border: `2px solid ${itemBorderColor}`,
-                        color: isBlackTheme ? '#FFFFFF' : primaryColor
+                        backgroundColor: surfaceBg,
+                        color: isBlackTheme ? '#FFFFFF' : primaryColor,
+                        boxShadow: `0 4.5px 0 ${lipShadow}, 0 8px 16px -3px rgba(0,0,0,0.12), inset 0 2px 1.5px ${insetBevel}`
                     }}
                 >
                     <div className="flex items-center gap-2.5 min-w-0">
                         <span className="truncate">{getToneDisplayName(selectedName, language)}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0 opacity-70">
+                    <div className="flex items-center gap-1.5 shrink-0 opacity-75">
                         <span className="text-[10px] font-medium hidden sm:inline" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>
                             {tPrayer('changeTone', language)}
                         </span>
@@ -232,30 +220,25 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                     <button
                         type="button"
                         onClick={(e) => handleTogglePreview(currentPlayableSource, e)}
-<<<<<<< HEAD
                         className={use3dAdiaStyle
                             ? "p-3.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer transition-all app-page-card border-0"
-                            : "p-3 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-xs"
+                            : "unified-3d-btn p-3.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer transition-all border-0"
                         }
                         style={use3dAdiaStyle ? {
                             backgroundColor: playingTone === currentPlayableSource
                                 ? (isBlackTheme ? '#FFFFFF' : primaryColor)
-                                : (cardBg || (isBlackTheme ? '#18181b' : '#ffffff')),
+                                : surfaceBg,
                             color: playingTone === currentPlayableSource
                                 ? (isBlackTheme ? '#000000' : '#ffffff')
                                 : (isBlackTheme ? '#ffffff' : primaryColor)
                         } : {
-=======
-                        className="p-3 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-xs"
-                        style={{
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                            border: `2px solid ${itemBorderColor}`,
                             backgroundColor: playingTone === currentPlayableSource
                                 ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor))
-                                : 'var(--card-bg, #ffffff)',
+                                : surfaceBg,
                             color: playingTone === currentPlayableSource
                                 ? (isDefaultTheme ? '#ffffff' : (isBlackTheme ? '#000000' : '#ffffff'))
-                                : (isBlackTheme ? '#ffffff' : primaryColor)
+                                : (isBlackTheme ? '#ffffff' : primaryColor),
+                            boxShadow: `0 4.5px 0 ${lipShadow}, 0 8px 16px -3px rgba(0,0,0,0.12), inset 0 2px 1.5px ${insetBevel}`
                         }}
                         title={playingTone === currentPlayableSource ? (language === 'ar' ? 'إيقاف المعاينة' : 'Stop Preview') : (language === 'ar' ? 'معاينة النغمة' : 'Preview Tone')}
                         aria-label={playingTone === currentPlayableSource ? 'Stop' : 'Play'}
@@ -288,37 +271,34 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
             {/* Dedicated Notification Tone Selection Modal */}
             {isModalOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
+                    className="fixed inset-0 bg-black/65 z-[70] flex items-center justify-center p-4"
                     onClick={handleCloseModal}
                     dir={dir}
                 >
                     <div 
-<<<<<<< HEAD
-                        className={use3dAdiaStyle
-                            ? `settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150`
-                            : "rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
-                        }
-                        style={use3dAdiaStyle ? {
-                            backgroundColor: isBlackTheme ? '#09090b' : 'var(--modal-bg, #ffffff)',
-                            color: isBlackTheme ? '#ffffff' : 'var(--modal-text, #000000)'
-                        } : { 
-=======
-                        className="rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
-                        style={{ 
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                            backgroundColor: isBlackTheme ? '#000000' : 'var(--modal-bg, #ffffff)', 
+                        className={`settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6`}
+                        style={{
+                            backgroundColor: isBlackTheme ? '#121216' : 'var(--modal-bg, #ffffff)',
                             color: isBlackTheme ? '#ffffff' : 'var(--modal-text, #000000)',
-                            border: `2px solid ${itemBorderColor}`
+                            border: 'none',
+                            boxShadow: isBlackTheme
+                                ? '0 8px 0 #09090b, 0 24px 50px rgba(0,0,0,0.85), inset 0 2px 2px rgba(255,255,255,0.14)'
+                                : '0 8px 0 rgba(0,0,0,0.14), 0 24px 48px rgba(0,0,0,0.28), inset 0 2px 2px rgba(255,255,255,0.96)'
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
                         <div 
-                            className="flex justify-between items-center mb-4 pb-2 border-b shrink-0"
-                            style={{ borderColor: isBlackTheme ? '#333333' : 'var(--card-border, #e5e7eb)' }}
+                            className="flex justify-between items-center mb-4 pb-2.5 border-b shrink-0"
+                            style={{ borderColor: isBlackTheme ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.1)' }}
                         >
-                            <div className="flex items-center gap-2">
-                                <Bell className="w-4 h-4" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
+                            <div className="flex items-center gap-2.5">
+                                <span
+                                    className="app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                                    style={{ backgroundColor: isBlackTheme ? '#27272a' : '#f8fafc' }}
+                                >
+                                    <Bell className="w-4 h-4" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
+                                </span>
                                 <h3 className="font-black text-sm sm:text-base font-kufi" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }}>
                                     {tPrayer('selectNotificationToneModalTitle', language)}
                                 </h3>
@@ -326,21 +306,20 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                             <button 
                                 type="button"
                                 onClick={handleCloseModal} 
-                                className="hover:text-red-500 transition-colors cursor-pointer p-1 rounded-full"
-                                style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}
+                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                                style={{
+                                    backgroundColor: isBlackTheme ? '#27272a' : '#ffffff',
+                                    color: isBlackTheme ? '#FFFFFF' : secondaryColor
+                                }}
                                 title={tPrayer('close', language)}
                                 aria-label={tPrayer('close', language)}
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
 
-                        {/* Tone List as Rounded Framed Items with Direct Audition */}
-<<<<<<< HEAD
-                        <div className={`${use3dAdiaStyle ? 'space-y-3 py-2 px-1.5' : 'space-y-2 py-1 px-1'} overflow-y-auto flex-1 min-h-0 max-h-[62dvh] no-scrollbar`}>
-=======
-                        <div className="space-y-2 overflow-y-auto flex-1 min-h-0 max-h-[62dvh] py-1 px-1 no-scrollbar">
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                        {/* Tone List as 3D Framed Items with Direct Audition */}
+                        <div className="space-y-3 py-2 px-1.5 overflow-y-auto flex-1 min-h-0 max-h-[62dvh] no-scrollbar">
                             {optionsList.map((option) => {
                                 const isSelected = selectedId === option.id;
                                 const isPlayable = option.id !== 'none' && !!option.path;
@@ -349,51 +328,25 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                 return (
                                     <div
                                         key={option.id}
-<<<<<<< HEAD
                                         className="w-full flex items-center gap-2.5 overflow-visible"
-=======
-                                        className="w-full flex items-center gap-2"
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         <button
                                             type="button"
                                             onClick={() => handleSelectOption(option)}
-<<<<<<< HEAD
-                                            className={use3dAdiaStyle
-                                                ? "flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-all flex items-center justify-between relative cursor-pointer app-page-card border-0"
-                                                : "flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-transform active:scale-95 flex items-center justify-between relative cursor-pointer"
-                                            }
-                                            style={use3dAdiaStyle ? {
+                                            className="flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-all flex items-center justify-between relative cursor-pointer app-page-card border-0"
+                                            style={{
                                                 backgroundColor: isSelected
                                                     ? (isBlackTheme ? '#FFFFFF' : primaryColor)
-                                                    : (cardBg || (isBlackTheme ? '#18181b' : '#ffffff')),
+                                                    : surfaceBg,
                                                 color: isSelected
                                                     ? (isBlackTheme ? '#000000' : '#ffffff')
                                                     : (isBlackTheme ? '#ffffff' : '#0f172a')
-                                            } : {
-=======
-                                            className="flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-transform active:scale-95 flex items-center justify-between relative cursor-pointer"
-                                            style={{
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                                                border: `2px solid ${itemBorderColor}`,
-                                                backgroundColor: isSelected 
-                                                    ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor)) 
-                                                    : 'var(--card-bg, #ffffff)',
-                                                color: isSelected 
-                                                    ? (isDefaultTheme ? '#ffffff' : (isBlackTheme ? '#000000' : '#ffffff')) 
-                                                    : (isBlackTheme ? '#ffffff' : '#000000')
                                             }}
                                         >
                                             <span className="font-bold truncate">{getToneDisplayName(option.name, language)}</span>
                                             {isSelected && (
                                                 <Check className={`w-4 h-4 shrink-0 ${
-<<<<<<< HEAD
-                                                    use3dAdiaStyle
-                                                        ? (isBlackTheme ? 'text-black' : 'text-white')
-                                                        : (isDefaultTheme ? 'text-white' : (isBlackTheme ? 'text-black' : 'text-white'))
-=======
-                                                    isDefaultTheme ? 'text-white' : (isBlackTheme ? 'text-black' : 'text-white')
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
+                                                    isBlackTheme ? 'text-black' : 'text-white'
                                                 }`} />
                                             )}
                                         </button>
@@ -402,29 +355,13 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                             <button
                                                 type="button"
                                                 onClick={(e) => handleTogglePreview(option.path!, e)}
-<<<<<<< HEAD
-                                                className={use3dAdiaStyle
-                                                    ? "p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer transition-all app-page-card border-0"
-                                                    : "p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-90 transition-all shadow-xs"
-                                                }
-                                                style={use3dAdiaStyle ? {
+                                                className="p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer transition-all app-page-card border-0"
+                                                style={{
                                                     backgroundColor: isTonePlaying
                                                         ? (isBlackTheme ? '#FFFFFF' : primaryColor)
-                                                        : (cardBg || (isBlackTheme ? '#18181b' : '#ffffff')),
+                                                        : surfaceBg,
                                                     color: isTonePlaying
                                                         ? (isBlackTheme ? '#000000' : '#ffffff')
-                                                        : (isBlackTheme ? '#ffffff' : primaryColor)
-                                                } : {
-=======
-                                                className="p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-90 transition-all shadow-xs"
-                                                style={{
->>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
-                                                    border: `2px solid ${itemBorderColor}`,
-                                                    backgroundColor: isTonePlaying
-                                                        ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor))
-                                                        : 'var(--card-bg, #ffffff)',
-                                                    color: isTonePlaying
-                                                        ? (isDefaultTheme ? '#ffffff' : (isBlackTheme ? '#000000' : '#ffffff'))
                                                         : (isBlackTheme ? '#ffffff' : primaryColor)
                                                 }}
                                                 title={isTonePlaying ? (language === 'ar' ? 'إيقاف' : 'Stop') : (language === 'ar' ? 'معاينة' : 'Preview')}

@@ -9,9 +9,10 @@ interface SurahInfoModalProps {
   quranData: any;
   onClose: () => void;
   isEnglishMode?: boolean;
+  isLandscape?: boolean;
 }
 
-const SurahInfoModal: React.FC<SurahInfoModalProps> = ({ surahName, surahNumber, quranData, onClose, isEnglishMode = false }) => {
+const SurahInfoModal: React.FC<SurahInfoModalProps> = ({ surahName, surahNumber, quranData, onClose, isEnglishMode = false, isLandscape = false }) => {
   const details = SURAH_DETAILS[surahNumber];
   const surahData = quranData?.surahs?.[surahNumber - 1];
   const enSurahName = SURAH_NAMES_EN[surahNumber - 1] || surahName;
@@ -41,23 +42,23 @@ const SurahInfoModal: React.FC<SurahInfoModalProps> = ({ surahName, surahNumber,
   if (!details || !surahData) return null;
 
   return (
-    <div className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className={`fixed inset-0 z-[1300] flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'} bg-black/55`} onClick={onClose}>
       <div 
-        className="modal-skinned w-full max-w-2xl max-h-[88dvh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border-0 animate-modal-enter"
+        className={`modal-skinned ${isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%]' : 'w-full max-w-2xl max-h-[88dvh]'} rounded-3xl shadow-2xl overflow-hidden flex flex-col border-0`}
         style={{ border: 'none', outline: 'none' }}
         onClick={e => e.stopPropagation()}
         dir={isEnglishMode ? "ltr" : "rtl"}
       >
         {/* Header */}
-        <div className="p-5 theme-header-bg flex items-center justify-between border-0 relative shrink-0">
+        <div className={`${isLandscape ? 'p-3' : 'p-5'} theme-header-bg flex items-center justify-between border-0 relative shrink-0`}>
           {/* Surah Number */}
-          <div className="w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/10 flex items-center justify-center text-2xl font-bold theme-header-text z-10 quran-raised-card border-0">
+          <div className={`${isLandscape ? 'w-9 h-9 text-lg rounded-xl' : 'w-12 h-12 text-2xl rounded-2xl'} bg-black/5 dark:bg-white/10 flex items-center justify-center font-bold theme-header-text z-10 quran-raised-card border-0`}>
             <span className="quran-3d-icon">{isEnglishMode ? surahNumber : toArabic(surahNumber)}</span>
           </div>
 
           {/* Centered Title */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <h2 className="text-2xl font-bold theme-header-text leading-tight" style={{ fontFamily: isEnglishMode ? 'system-ui, sans-serif' : 'var(--font-amiri)' }}>
+            <h2 className={`${isLandscape ? 'text-lg' : 'text-2xl'} font-bold theme-header-text leading-tight`} style={{ fontFamily: isEnglishMode ? 'system-ui, sans-serif' : 'var(--font-amiri)' }}>
               {isEnglishMode ? `Surah ${enSurahName}` : surahName}
             </h2>
             <p className="text-[10px] opacity-60 font-bold theme-header-text">
@@ -68,17 +69,17 @@ const SurahInfoModal: React.FC<SurahInfoModalProps> = ({ surahName, surahNumber,
           {/* Close Button */}
           <button 
             onClick={onClose}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center transition-colors theme-header-text z-10 quran-raised-btn border-0 active:scale-90"
+            className={`${isLandscape ? 'w-8 h-8 rounded-xl' : 'w-10 h-10 rounded-2xl'} flex items-center justify-center transition-colors theme-header-text z-10 quran-raised-btn border-0 active:scale-90`}
           >
-            <X size={20} className="quran-3d-icon" />
+            <X size={isLandscape ? 16 : 20} className="quran-3d-icon" />
           </button>
         </div>
 
         {/* Content */}
-        <div className={`flex-1 min-h-0 overflow-y-auto p-6 space-y-6 custom-scrollbar ${isEnglishMode ? 'text-left' : 'text-right'} theme-card-bg`}>
+        <div className={`flex-1 min-h-0 overflow-y-auto ${isLandscape ? 'p-3.5 space-y-3.5' : 'p-6 space-y-6'} custom-scrollbar ${isEnglishMode ? 'text-left' : 'text-right'} theme-card-bg`}>
           
           {/* Metadata Section - Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+          <div className={`grid ${isLandscape ? 'grid-cols-3 gap-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4'}`}>
             <div className="rounded-2xl p-3 text-center border-0 quran-raised-card transition-transform hover:scale-[1.02]">
               <div className="text-xs opacity-60 mb-1 theme-card-text">
                 {isEnglishMode ? "Revelation Place" : "مكان النزول"}

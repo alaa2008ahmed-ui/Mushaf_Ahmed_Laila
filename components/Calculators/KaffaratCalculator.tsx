@@ -28,7 +28,7 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = () => {
             {/* Header Actions */}
             <div id="kaffarat-header-actions" className="flex justify-between items-center mb-2 overflow-visible">
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2.5" style={{ color: s3d.textColor }}>
-                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-hand-holding-heart" style={{ color: s3d.primaryColor }}></i>
                     </span>
                     <span>{isEn ? 'Expiations (Kaffarat) Calculator' : 'حساب الكفارات'}</span>
@@ -49,7 +49,7 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                 className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
             >
                 <h3 className="text-base sm:text-lg font-bold mb-1.5 flex items-center gap-2.5">
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-bowl-food text-sm" style={{ color: s3d.primaryColor }}></i>
                     </span>
                     <span>{isEn ? 'Fasting Fidyah (Fidyat al-Siyam)' : 'فدية الصيام'}</span>
@@ -75,7 +75,7 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                             placeholder={isEn ? 'Number of days' : 'عدد الأيام'} 
                             value={missedFastingDays} 
                             onChange={e => setMissedFastingDays(e.target.value)} 
-                            className={`border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold tabular-nums ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
+                            className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold tabular-nums ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
                         />
                     </div>
                     <div>
@@ -92,13 +92,13 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                             placeholder={isEn ? 'Meal cost' : 'التكلفة'} 
                             value={fidyahFeedingCost} 
                             onChange={e => setFidyahFeedingCost(e.target.value)} 
-                            className={`border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold tabular-nums ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
+                            className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold tabular-nums ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
                         />
                     </div>
                 </div>
                 
                 <div 
-                    className="border-0 mt-4 p-4 rounded-2xl flex justify-between items-center"
+                    className="app-inner-3d-box border-0 mt-4 p-4 rounded-2xl flex justify-between items-center"
                     style={{ backgroundColor: s3d.softResultBg }}
                 >
                     <span className="font-bold text-sm">
@@ -116,7 +116,7 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                 className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
             >
                 <h3 className="text-base sm:text-lg font-bold mb-1.5 flex items-center gap-2.5">
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                    <span className={`app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
                         <i className="fa-solid fa-hand-sparkles text-sm" style={{ color: s3d.primaryColor }}></i>
                     </span>
                     <span>{isEn ? 'Oath Expiation (Kaffarat al-Yamin)' : 'كفارة اليمين'}</span>
@@ -141,12 +141,12 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                         placeholder={isEn ? 'Meal cost' : 'التكلفة'} 
                         value={yaminFeedingCost} 
                         onChange={e => setYaminFeedingCost(e.target.value)} 
-                        className={`border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold tabular-nums ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
+                        className={`app-3d-recessed-field border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden transition-all text-sm font-bold tabular-nums ${s3d.recessedInputClass} ${isEn ? 'text-left' : 'text-right'}`}
                     />
                 </div>
                 
                 <div 
-                    className="border-0 mt-4 p-4 rounded-2xl flex justify-between items-center"
+                    className="app-inner-3d-box border-0 mt-4 p-4 rounded-2xl flex justify-between items-center"
                     style={{ backgroundColor: s3d.softResultBg }}
                 >
                     <span className="font-bold text-sm">
