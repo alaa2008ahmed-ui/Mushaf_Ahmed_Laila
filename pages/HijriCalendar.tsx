@@ -509,11 +509,15 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
     };
 
     return (
+<<<<<<< HEAD
         <div
             className="h-[100dvh] flex flex-col font-sans overflow-hidden"
             style={{ backgroundColor: s3d.pageBgColor, color: s3d.textColor, fontFamily: theme.font }}
             dir={dir}
         >
+=======
+        <div className="h-[100dvh] flex flex-col bg-transparent font-sans overflow-hidden" dir={dir}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {/* Top Bar */}
             <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
@@ -597,9 +601,15 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                     </div>
 
                     {activeTab === 'calendar' ? (
+<<<<<<< HEAD
                         <div className="space-y-4">
                             {/* Calendar Card: 3D Tasbeeh Card */}
                             <div className={`app-page-card border-0 rounded-3xl overflow-hidden ${s3d.surfaceCardClass}`}>
+=======
+                        <div className="space-y-3.5">
+                            {/* Calendar Card: 3D tactile card depth with NO borders */}
+                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden" style={{ border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 {/* Month Navigation Header */}
                                 <div className={`flex items-center justify-between gap-2 p-3.5 sm:p-4 pb-4.5 border-b overflow-visible ${s3d.dividerClass}`}>
                                     <button 
@@ -651,8 +661,13 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                 </div>
                             </div>
 
+<<<<<<< HEAD
                             {/* Event List Section (أبرز المناسبات): 3D Tasbeeh Card */}
                             <div className={`app-page-card border-0 p-5 rounded-3xl ${s3d.surfaceCardClass}`}>
+=======
+                            {/* Event List Section (أبرز المناسبات): 3D tactile card depth without borders */}
+                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl" style={{ border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 <h3 className="font-kufi font-black text-base sm:text-lg mb-4 flex items-center gap-2.5">
                                     <div className="w-1.5 h-5 rounded-full" style={{ backgroundColor: primaryColor }}></div>
                                     <span style={{ color: primaryColor }}>{tCalendar('eventsTitle', language)}</span>
@@ -720,9 +735,15 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                             </div>
                         </div>
                     ) : (
+<<<<<<< HEAD
                         /* Converter View (محول التاريخ): 3D Tasbeeh Card */
                         <div className="space-y-4">
                             <div className={`app-page-card border-0 p-5 rounded-3xl space-y-5 relative ${s3d.surfaceCardClass}`}>
+=======
+                        /* Converter View (محول التاريخ): 3D tactile card depth without borders */
+                        <div className="space-y-3.5">
+                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl space-y-5 relative" style={{ border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 
                                 {/* Mode Toggles: Hijri <-> Gregorian 3D Segmented Control */}
                                 <div className={`border-0 flex p-2 pb-2.5 rounded-2xl gap-2 text-xs font-bold overflow-visible ${s3d.recessedInputClass}`}>
@@ -867,7 +888,12 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                 <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
+<<<<<<< HEAD
                                     className={`app-page-card border-0 p-5 rounded-3xl relative group ${s3d.surfaceCardClass}`}
+=======
+                                    className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl relative group"
+                                    style={{ border: 'none' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 >
                                     <div className="flex justify-between items-center mb-3.5 pb-1 overflow-visible">
                                         <div className="flex items-center gap-2.5 overflow-visible">
@@ -927,6 +953,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                             <CalendarIcon size={13} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.gregorianYearEn : historicalEvent.gregorianYearAr}
                                         </span>
                                     </div>
+<<<<<<< HEAD
                                     <div className={`border-0 p-4 rounded-2xl ${s3d.recessedInputClass}`}>
                                         <p 
                                             className={`leading-relaxed text-center font-medium ${
@@ -940,6 +967,19 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                             {(language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr)?.replace(/[ \t]+/g, ' ').trim()}
                                         </p>
                                     </div>
+=======
+                                    <p 
+                                        className={`leading-relaxed text-slate-700 dark:text-slate-300 text-center ${
+                                            language === 'ar' ? 'font-amiri border-r-2 pr-4' : 'font-sans border-l-2 pl-4'
+                                        }`} 
+                                        style={{ 
+                                            borderColor: primaryColor,
+                                            fontSize: `${1.0 * historyFontSize}rem`
+                                        }}
+                                    >
+                                        {(language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr)?.replace(/[ \t]+/g, ' ').trim()}
+                                    </p>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 </motion.div>
                             )}
                         </div>
@@ -990,7 +1030,11 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                 }}
             />
 
+<<<<<<< HEAD
             {/* Custom Picker Modal - 3D Sculpted */}
+=======
+            {/* Custom Picker Modal */}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {pickerConfig.isOpen && (
                 <div 
                     className="fixed inset-0 bg-black/55 z-[300] flex items-center justify-center p-6 backdrop-blur-xs"
@@ -998,14 +1042,22 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                     dir={dir}
                 >
                     <div 
+<<<<<<< HEAD
                         className={`app-page-card border-0 w-full max-w-[295px] rounded-3xl flex flex-col max-h-[72dvh] overflow-hidden ${s3d.surfaceCardClass}`}
+=======
+                        className="bg-white dark:bg-slate-900 w-full max-w-[290px] rounded-3xl shadow-2xl flex flex-col max-h-[72dvh] overflow-hidden border border-slate-100 dark:border-white/10"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         onClick={e => e.stopPropagation()}
                     >
                         <div className={`p-4 border-b ${s3d.dividerClass} text-center shrink-0`}>
                             <h3 className="text-sm font-black" style={{ color: primaryColor }}>{pickerConfig.title}</h3>
                         </div>
 
+<<<<<<< HEAD
                         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3.5 py-3 space-y-2.5 hide-scrollbar">
+=======
+                        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3.5 py-3 space-y-1 hide-scrollbar">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {pickerConfig.options.map((opt, i) => {
                                 const currentValue = pickerConfig.type === 'calendarMonth' ? viewDate.getMonth() 
                                                     : pickerConfig.type === 'calendarYear' ? viewDate.getFullYear()

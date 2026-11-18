@@ -271,8 +271,13 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
     );
 
     return (
+<<<<<<< HEAD
         <div className="w-full shrink-0 flex flex-col gap-5 pb-4" dir={isEn ? 'ltr' : 'rtl'}>
             <div className={`app-page-card border-0 p-6 sm:p-8 rounded-3xl flex flex-col items-center justify-center text-center relative overflow-hidden ${surfaceCardClass}`}>
+=======
+        <div className="w-full shrink-0 flex flex-col gap-6" dir={isEn ? 'ltr' : 'rtl'}>
+            <div className="bg-white dark:bg-[#1E293B] p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className={`absolute top-4 ${isEn ? 'left-4' : 'right-4'} text-yellow-500 opacity-10`}><i className="fa-solid fa-sun text-6xl"></i></div>
                 <h3 className="text-2xl font-black mb-4" style={{ color: primaryColor }}>
                     {isEn ? 'Qibla Direction by Sun' : 'تحديد القبلة عن طريق الشمس'}
@@ -364,7 +369,11 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
     const shadowDiff = Math.abs((shadowHeading - qiblaDirection + 540) % 360 - 180);
 
     return (
+<<<<<<< HEAD
         <div className={`app-page-card border-0 w-full shrink-0 flex flex-col items-center justify-start p-6 sm:p-8 rounded-3xl text-center relative overflow-hidden mb-4 ${surfaceCardClass}`} dir={isEn ? 'ltr' : 'rtl'}>
+=======
+        <div className="w-full shrink-0 flex flex-col items-center justify-start bg-white dark:bg-[#1E293B] p-6 sm:p-8 rounded-2xl text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5" dir={isEn ? 'ltr' : 'rtl'}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
                 <i className="fa-solid fa-person-rays text-[15rem]"></i>
             </div>

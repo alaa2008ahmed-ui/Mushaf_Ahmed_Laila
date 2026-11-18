@@ -351,14 +351,24 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                         id={`ruqyah-card-${item.id}`}
                         key={item.id} 
                         data-card-item="true"
+<<<<<<< HEAD
                         className="app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative transition-all duration-300 overflow-visible group flex flex-col justify-between cursor-pointer" 
+=======
+                        className="app-page-card border-0 p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group flex flex-col justify-between cursor-pointer" 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         onClick={(e) => {
                           const cardEl = e.currentTarget as HTMLElement;
                           setTimeout(() => scrollToNextCard(cardEl), 60);
                         }}
                         style={{ 
                           fontFamily: isEn ? 'inherit' : theme.font,
+<<<<<<< HEAD
                           color: 'var(--text-color)',
+=======
+                          backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
+                          color: 'var(--text-color)',
+                          border: 'none'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         }}
                       >
                         {/* Text: generous line-height to prevent tashkeel overlap */}
@@ -463,9 +473,17 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
             {activeTab === 'guide' && (
               <div className="space-y-4 col-span-full" dir={isEn ? 'ltr' : 'rtl'}>
                 <div 
+<<<<<<< HEAD
                   className="app-page-card border-0 p-6 rounded-2xl bg-white dark:bg-[#1E293B] space-y-4 overflow-visible"
                   style={{
                     color: 'var(--text-color)',
+=======
+                  className="app-page-card border-0 p-6 rounded-[18px] space-y-4"
+                  style={{
+                    backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
+                    color: 'var(--text-color)',
+                    border: 'none'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   }}
                 >
                   <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">

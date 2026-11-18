@@ -173,7 +173,11 @@ const HadithModal: React.FC<HadithModalProps> = ({
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+<<<<<<< HEAD
                 className="app-page-card border-0 w-full max-w-xl max-h-[88dvh] rounded-t-[28px] sm:rounded-[24px] flex flex-col overflow-hidden bg-white dark:bg-[#1E293B]" 
+=======
+                className="w-full max-w-xl max-h-[88dvh] rounded-t-[28px] sm:rounded-[24px] flex flex-col overflow-hidden shadow-2xl border-0" 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 style={{ 
                     color: 'var(--text-color)', 
                     fontFamily: theme.font
@@ -244,7 +248,11 @@ const HadithModal: React.FC<HadithModalProps> = ({
                 
                 {/* Tab 1: Hadith Text */}
                 {activeTab === 'hadith' && (
+<<<<<<< HEAD
                     <div className="p-6 sm:p-8 overflow-y-auto leading-[2.3] text-center flex-1 min-h-0 hide-scrollbar" style={{ fontSize: `${fontSize}px`, color: 'var(--text-color)' }}>
+=======
+                    <div className="p-6 sm:p-8 overflow-y-auto leading-[2.3] text-center flex-1 min-h-0 hide-scrollbar" style={{ fontSize: `${fontSize}px`, color: tokens.textColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         <p className={`whitespace-pre-line leading-[2.3] selection:bg-amber-100 ${isEn ? 'font-sans text-left' : 'font-amiri'}`} style={{ textAlign: isEn ? 'left' : 'center' }}>
                             {activeHadithText}
                         </p>
@@ -269,7 +277,11 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
                 {/* Tab 2: Explanation & Benefits */}
                 {activeTab === 'explanation' && (
+<<<<<<< HEAD
                     <div className={`p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 hide-scrollbar space-y-4 pb-6 ${isEn ? 'text-left' : 'text-right'}`}>
+=======
+                    <div className={`p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 hide-scrollbar space-y-4 ${isEn ? 'text-left' : 'text-right'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         {activeExplanation ? (
                             <>
                                 {/* Brief Summary */}
@@ -355,7 +367,11 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
                 {/* Footer Controls - Clean Modern Style with dynamic safe-area padding */}
                 <div 
+<<<<<<< HEAD
                     className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 app-3d-divider-top flex items-center justify-center gap-3 sm:gap-4 overflow-visible"
+=======
+                    className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-center gap-3 sm:gap-4"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                     {/* Audio */}
                     <button 
@@ -624,8 +640,13 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
             </header>
 
             <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-4 pt-3 app-scroll-safe">
+<<<<<<< HEAD
                 {/* Search and View Mode Control - Embossed 3D Surface */}
                 <div className="mb-5 max-w-3xl mx-auto flex items-center gap-2.5 w-full overflow-visible" dir={isEn ? 'ltr' : 'rtl'}>
+=======
+                {/* Search and View Mode Control - Flat Modern Surface */}
+                <div className="mb-5 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     <div 
                         className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible transition-all"
                     >

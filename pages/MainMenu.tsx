@@ -15,7 +15,10 @@ import FloatingNeonTicker from '../components/FloatingNeonTicker';
 import { Palette, LayoutDashboard, LayoutGrid, Moon, Sun, Check, HelpCircle, RotateCcw, Settings } from 'lucide-react';
 import ModernHomeView from '../components/MainMenu/ModernHomeView';
 import HomeScreenSettingsModal from '../components/MainMenu/HomeScreenSettingsModal';
+<<<<<<< HEAD
 import { prewarmShareDesignThumbs } from '../components/MainMenu/ShareDesignSelectorSection';
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { SMART_HOME_PAGE_STEPS, getDynamicSmartHomeSteps } from '../components/Community/communityTourSteps';
 import { useShowPageGuides } from '../utils/guideManager';

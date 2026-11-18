@@ -1128,7 +1128,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         {isEn ? "The Holy Quran" : "القرآن الكريم"}
                                     </h4>
                                     <div className="flex items-center gap-2">
+<<<<<<< HEAD
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
+=======
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             {isEn ? (
                                                 totalQuranWordOccurrences > quranResults.length
                                                     ? `${quranResults.length} Ayahs (${totalQuranWordOccurrences} matches)`
@@ -1171,7 +1175,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                             {surahDisplayName}
                                                         </h4>
                                                         <div className="flex items-center gap-2">
+<<<<<<< HEAD
                                                             <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
+=======
+                                                            <span className="text-xs font-bold px-2 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                                 {isEn ? (
                                                                     surahWordOccurrences > group.ayahs.length
                                                                         ? `${group.ayahs.length} Ayahs (${surahWordOccurrences} matches)`
@@ -1271,7 +1279,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                     {surahDisplayName}
                                                 </h4>
                                                 <div className="flex items-center gap-2">
+<<<<<<< HEAD
                                                     <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
+=======
+                                                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {isEn ? (
                                                             surahWordOccurrences > group.ayahs.length
                                                                 ? `${group.ayahs.length} Ayahs (${surahWordOccurrences} matches)`
@@ -2067,6 +2079,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 {showDivineMiracles && divineMiraclesResults.length > 0 && (
                     <div className="space-y-3 mt-4">
                         {isAllSelected ? (
+<<<<<<< HEAD
                             <div className={`mb-3 rounded-2xl ${card3DClass} overflow-hidden border-0`} style={headerCardStyle('rgba(255,255,255,0.03)')}>
                                 <button 
                                     onClick={() => setExpandedCategories(p => ({ ...p, divineMiracles: !p.divineMiracles }))}
@@ -2074,11 +2087,24 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
+=======
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, divineMiracles: !p.divineMiracles }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         <Sparkles className="w-5 h-5 quran-3d-icon" /> 
                                         {isEn ? "Divine Miracles" : "المعجزات الإلهية"}
                                     </h4>
                                     <div className="flex items-center gap-2">
+<<<<<<< HEAD
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
+=======
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             {isEn ? divineMiraclesResults.length : toArabic(divineMiraclesResults.length)}
                                         </span>
                                         <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.divineMiracles ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
@@ -2089,11 +2115,19 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         {divineMiraclesResults.map((r, idx) => (
                                             <button 
                                                 key={`divineMiracles-${idx}`} 
+<<<<<<< HEAD
                                                 className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl ${card3DClass} border-0 transition-all cursor-pointer`}
                                                 onClick={() => handleResultClick('divine-miracles', { highlightId: r.id, itemId: r.id })}
                                                 style={itemCardStyle('rgba(255,255,255,0.05)')}
                                             >
                                                 <div className="font-bold text-sm mb-1" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
+=======
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => handleResultClick('divine-miracles', { highlightId: r.id, itemId: r.id })}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                <div className="font-bold text-sm mb-1" style={{ color: theme.accent || theme.palette[0] }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {isEn ? r.titleEn : r.titleAr}
                                                 </div>
                                                 <div className="text-xs leading-relaxed opacity-80 line-clamp-2" style={{ color: theme.textColor }}>
@@ -2106,8 +2140,13 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             </div>
                         ) : (
                             <>
+<<<<<<< HEAD
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
+=======
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         <Sparkles className="w-4 h-4 quran-3d-icon" />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
@@ -2117,11 +2156,19 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                 {divineMiraclesResults.map((r, idx) => (
                                     <button 
                                         key={`divineMiracles-${idx}`} 
+<<<<<<< HEAD
                                         className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl ${card3DClass} border-0 transition-all cursor-pointer mb-2.5`}
                                         style={itemCardStyle('rgba(255,255,255,0.05)')}
                                         onClick={() => handleResultClick('divine-miracles', { highlightId: r.id, itemId: r.id })}
                                     >
                                         <div className="font-bold text-base mb-1.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
+=======
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => handleResultClick('divine-miracles', { highlightId: r.id, itemId: r.id })}
+                                    >
+                                        <div className="font-bold text-base mb-1.5" style={{ color: theme.accent || theme.palette[0] }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             {isEn ? r.titleEn : r.titleAr}
                                         </div>
                                         <div className="text-xs leading-relaxed opacity-80 mb-2" style={{ color: theme.textColor }}>

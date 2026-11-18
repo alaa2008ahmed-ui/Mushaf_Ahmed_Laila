@@ -141,7 +141,12 @@ const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle,
                         <div className="p-4 pt-1">
                             <div 
                                 onClick={handleZoomClick}
+<<<<<<< HEAD
                                 className={`border-0 flex flex-col gap-4 p-5 rounded-2xl relative min-h-[160px] justify-center items-center text-center cursor-pointer ${s3d.recessedInputClass}`}
+=======
+                                className="flex flex-col gap-4 p-5 rounded-[16px] relative min-h-[160px] justify-center items-center text-center border-0 cursor-pointer" 
+                                style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <span className={`border-0 absolute top-3 ${isRTL ? 'right-4' : 'left-4'} text-xs font-bold font-mono px-2.5 py-0.5 rounded-full ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-200/70 dark:bg-white/10'}`} style={{ color: s3d.subtextColor }}>
                                     {currentIndex + 1} / {items.length}
@@ -254,9 +259,15 @@ const ChecklistScreen = ({ s3d, cardTextScale, onZoom }: { s3d: Calculator3DStyl
                                 title: cat.title,
                                 points: cat.items.map(item => isEn ? (CHECKLIST_ITEMS_EN[item.id] || item.ar) : item.ar)
                             })}
+<<<<<<< HEAD
                             className={`pb-2.5 mb-3 border-b ${s3d.dividerClass} cursor-pointer`}
                         >
                             <h3 className="font-extrabold text-base text-start" style={{ color: s3d.primaryColor, fontSize: `${15 * cardTextScale}px` }}>
+=======
+                            className="pb-2.5 mb-3 border-b border-slate-100 dark:border-zinc-800 cursor-pointer"
+                        >
+                            <h3 className="font-bold text-base text-start" style={{ color: tokens.primaryColor, fontSize: `${15 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 {cat.title}
                             </h3>
                         </div>
@@ -507,10 +518,18 @@ const HomeScreen = ({ setScreen, s3d, cardTextScale, onZoom }: { setScreen: any,
                         points: item.content,
                         text: item.type === 'hadith' ? item.content[0] : undefined
                     })}
+<<<<<<< HEAD
                     className={`app-page-card tasbeeh-pressable border-0 rounded-3xl p-5 text-start relative cursor-pointer transition-all ${s3d.surfaceCardClass}`}
                  >
                     <div className="mb-2.5">
                         <h3 className="font-extrabold text-base leading-snug" style={{ color: s3d.primaryColor, fontSize: `${15 * cardTextScale}px` }}>
+=======
+                    className="rounded-[18px] p-5 text-start relative border-0 cursor-pointer hover:shadow-md transition-all" 
+                    style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                 >
+                    <div className="mb-2">
+                        <h3 className="font-bold text-base leading-snug" style={{ color: tokens.primaryColor, fontSize: `${15 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             <span>{item.title}</span>
                         </h3>
                     </div>
@@ -540,10 +559,18 @@ const HomeScreen = ({ setScreen, s3d, cardTextScale, onZoom }: { setScreen: any,
                         ? 'Omitting a pillar invalidates the ritual, whereas omitting an obligation requires a sacrificial penalty (dam), and committing prohibitions incurs an expiation (fidyah).' 
                         : 'ترك ركن يبطل النسك، أما ترك واجب فيُجبر بدم، وارتكاب المحظورات يوجب الفدية.'
                 })}
+<<<<<<< HEAD
                 className={`app-page-card tasbeeh-pressable border-0 col-span-1 md:col-span-2 rounded-3xl p-5 text-start relative cursor-pointer transition-all ${s3d.surfaceCardClass}`}
             >
                 <div className="mb-1.5">
                     <h3 className="font-extrabold text-orange-600 dark:text-orange-400 text-base" style={{ fontSize: `${15 * cardTextScale}px` }}>
+=======
+                className="col-span-1 md:col-span-2 rounded-[18px] p-5 text-start relative border-0 cursor-pointer hover:shadow-md transition-all" 
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+            >
+                <div className="mb-1.5">
+                    <h3 className="font-bold text-orange-600 dark:text-orange-400 text-base" style={{ fontSize: `${15 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         <span>{isEn ? 'Important Warning' : 'تنبيه هام'}</span>
                     </h3>
                 </div>
@@ -558,7 +585,11 @@ const HomeScreen = ({ setScreen, s3d, cardTextScale, onZoom }: { setScreen: any,
     );
 };
 
+<<<<<<< HEAD
 const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calculator3DStyles, onSelectDetail: (data: CardZoomData) => void, cardTextScale: number, onZoom: (data: CardZoomData) => void }) => {
+=======
+const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens: any, onSelectDetail: (data: CardZoomData) => void, cardTextScale: number, onZoom: (data: CardZoomData) => void }) => {
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     const { language } = useLanguage();
     const isEn = language === 'en';
 
@@ -603,6 +634,7 @@ const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calc
                     subtitle: tHajj('umrahVirtuesSubtitle', language),
                     virtues: virtuesList
                 })}
+<<<<<<< HEAD
                 className={`app-page-card border-0 w-full text-start rounded-3xl p-4.5 flex items-center justify-between gap-3.5 transition-all group cursor-pointer ${s3d.surfaceCardClass}`}
             >
                 <div className="flex-1 min-w-0">
@@ -610,6 +642,16 @@ const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calc
                         {tHajj('umrahVirtuesTitle', language)}
                     </h3>
                     <p className="text-xs font-medium mt-0.5 truncate" style={{ color: s3d.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
+=======
+                className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer"
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+            >
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm md:text-base leading-snug" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
+                        {tHajj('umrahVirtuesTitle', language)}
+                    </h3>
+                    <p className="text-xs opacity-75 mt-0.5 truncate" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         {tHajj('umrahVirtuesSubtitle', language)}
                     </p>
                 </div>
@@ -639,6 +681,7 @@ const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calc
                         }
                     ]
                 })}
+<<<<<<< HEAD
                 className={`app-page-card border-0 w-full text-start rounded-3xl p-4.5 flex items-center justify-between gap-3.5 transition-all group cursor-pointer ${s3d.surfaceCardClass}`}
             >
                 <div className="flex-1 min-w-0">
@@ -646,6 +689,16 @@ const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calc
                         {isEn ? `${tHajj('pillarsLabel', language)} & ${tHajj('obligationsLabel', language)}` : `${tHajj('pillarsLabel', language)} والواجبات`}
                     </h3>
                     <p className="text-xs font-medium mt-0.5 truncate" style={{ color: s3d.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
+=======
+                className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer" 
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+            >
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm md:text-base leading-snug truncate" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
+                        {isEn ? `${tHajj('pillarsLabel', language)} & ${tHajj('obligationsLabel', language)}` : `${tHajj('pillarsLabel', language)} والواجبات`}
+                    </h3>
+                    <p className="text-xs opacity-75 mt-0.5 truncate" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         {isEn ? 'Ihram, Tawaf, Sa\'i • Miqat, Shaving or Trimming' : 'الإحرام، الطواف، السعي • الميقات، الحلق أو التقصير'}
                     </p>
                 </div>
@@ -674,6 +727,7 @@ const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calc
                         }
                     ]
                 })}
+<<<<<<< HEAD
                 className={`app-page-card border-0 w-full text-start rounded-3xl p-4.5 flex items-center justify-between gap-3.5 transition-all group cursor-pointer ${s3d.surfaceCardClass}`}
             >
                 <div className="flex-1 min-w-0">
@@ -681,6 +735,16 @@ const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calc
                         {isEn ? `${tHajj('sunnahsLabel', language)} & ${tHajj('prohibitionsLabel', language)}` : `${tHajj('sunnahsLabel', language)} والمفسدات`}
                     </h3>
                     <p className="text-xs font-medium mt-0.5 truncate" style={{ color: s3d.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
+=======
+                className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer" 
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+            >
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm md:text-base leading-snug truncate" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
+                        {isEn ? `${tHajj('sunnahsLabel', language)} & ${tHajj('prohibitionsLabel', language)}` : `${tHajj('sunnahsLabel', language)} والمفسدات`}
+                    </h3>
+                    <p className="text-xs opacity-75 mt-0.5 truncate" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         {isEn ? 'Ghusl, Talbiyah, Idtiba\' • Intercourse, omitting pillars, violations' : 'الغسل، الطيب، التلبية، الرمل • الجماع، ترك ركن، المحظورات'}
                     </p>
                 </div>
@@ -696,7 +760,12 @@ const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calc
                 <div 
                     key={step.title}
                     onClick={() => openStepZoom(step)}
+<<<<<<< HEAD
                     className={`app-page-card tasbeeh-pressable border-0 w-full text-start rounded-3xl p-4.5 flex items-center justify-between gap-3.5 transition-all group cursor-pointer ${s3d.surfaceCardClass}`}
+=======
+                    className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer"
+                    style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -717,7 +786,11 @@ const UmrahScreen = ({ s3d, onSelectDetail, cardTextScale, onZoom }: { s3d: Calc
     );
 };
 
+<<<<<<< HEAD
 const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZoom: _onZoom, s3d }: { hajjType: any, setHajjType: any, onSelectDetail: (data: CardZoomData) => void, cardTextScale: number, onZoom: (data: CardZoomData) => void, s3d: Calculator3DStyles }) => {
+=======
+const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZoom, tokens }: { hajjType: any, setHajjType: any, onSelectDetail: (data: CardZoomData) => void, cardTextScale: number, onZoom: (data: CardZoomData) => void, tokens: any }) => {
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     const { language } = useLanguage();
     const isEn = language === 'en';
 
@@ -770,7 +843,11 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
                             }`}
                             style={isSelected ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
                         >
+<<<<<<< HEAD
                             <span className="block text-xs sm:text-sm">{t.name}</span>
+=======
+                            <span className="block font-bold text-xs sm:text-sm">{t.name}</span>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         </button>
                     );
                 })}
@@ -781,6 +858,7 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
                 <div className="space-y-3">
                     {/* Section 1: Badge & Centered Definition */}
                     <div 
+<<<<<<< HEAD
                         className={`app-page-card border-0 rounded-3xl p-5 text-center relative ${s3d.surfaceCardClass}`}
                     >
                         <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -789,6 +867,17 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
                             </span>
                         </div>
                         <p className="text-xs font-medium mt-3 leading-relaxed text-center" style={{ color: s3d.textColor, fontSize: `${12.5 * cardTextScale}px` }}>
+=======
+                        className="rounded-[18px] p-5 text-center relative border-0" 
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
+                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                            <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border-0">
+                                {currentType.badge}
+                            </span>
+                        </div>
+                        <p className="text-xs font-medium mt-2.5 leading-relaxed text-center" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${12.5 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {currentType.definition}
                         </p>
                     </div>
@@ -827,10 +916,18 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
                                     onSelectDetail(card.payload);
                                 }
                             }}
+<<<<<<< HEAD
                             className={`app-page-card tasbeeh-pressable border-0 w-full text-start rounded-3xl p-4.5 flex items-center justify-between gap-3.5 transition-all group cursor-pointer ${s3d.surfaceCardClass}`}
                         >
                             <div className="flex-1 min-w-0">
                                 <h5 className="font-extrabold text-sm md:text-base" style={{ color: s3d.textColor, fontSize: `${15 * cardTextScale}px` }}>
+=======
+                            className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer"
+                            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                        >
+                            <div className="flex-1 min-w-0">
+                                <h5 className="font-bold text-sm md:text-base" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     {card.title}
                                 </h5>
                             </div>
@@ -842,7 +939,11 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
 
         {/* Timeline */}
         <div className="pt-2">
+<<<<<<< HEAD
             <h3 className="text-base font-extrabold mb-3 text-center" style={{ color: s3d.textColor, fontSize: `${16 * cardTextScale}px` }}>
+=======
+            <h3 className="text-base font-bold mb-3 text-center" style={{ color: tokens.textColor, fontSize: `${16 * cardTextScale}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <span>{tHajj('hajjTimelineSectionTitle', language)}</span>
             </h3>
             <div className="space-y-3">
@@ -850,11 +951,20 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
                     <div 
                         key={i} 
                         onClick={() => openTimelineDayZoom(day)}
+<<<<<<< HEAD
                         className={`app-page-card tasbeeh-pressable border-0 w-full text-start rounded-3xl p-4.5 flex items-center justify-between gap-3.5 transition-all group cursor-pointer ${s3d.surfaceCardClass}`}
                     >
                         <div className="flex-1 min-w-0">
                             <h5 className="font-extrabold text-sm md:text-base" style={{ color: s3d.textColor, fontSize: `${15 * cardTextScale}px` }}>{day.day}</h5>
                             <p className="text-xs font-medium mt-0.5 truncate" style={{ color: s3d.subtextColor, fontSize: `${12 * cardTextScale}px` }}>{day.summary}</p>
+=======
+                        className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer"
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
+                        <div className="flex-1 min-w-0">
+                            <h5 className="font-bold text-sm md:text-base" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>{day.day}</h5>
+                            <p className="text-xs opacity-75 mt-0.5 truncate" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>{day.summary}</p>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {day.evidence && (
                                 <p className="text-[11px] text-amber-700 dark:text-amber-300 font-semibold mt-1 truncate" style={{ fontSize: `${11 * cardTextScale}px` }}>
                                     {day.evidence}
@@ -1179,9 +1289,15 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
     const renderScreen = () => {
         switch (screen) {
             case 'umrah': 
+<<<<<<< HEAD
                 return <UmrahScreen key="umrah" s3d={s3d} onSelectDetail={openZoomModal} cardTextScale={cardTextScale} onZoom={openZoomModal} />;
             case 'hajj': 
                 return <HajjScreen key="hajj" hajjType={hajjType} setHajjType={setHajjType} s3d={s3d} onSelectDetail={openZoomModal} cardTextScale={cardTextScale} onZoom={openZoomModal} />;
+=======
+                return <UmrahScreen key="umrah" tokens={tokens} onSelectDetail={openZoomModal} cardTextScale={cardTextScale} onZoom={openZoomModal} />;
+            case 'hajj': 
+                return <HajjScreen key="hajj" hajjType={hajjType} setHajjType={setHajjType} tokens={tokens} onSelectDetail={openZoomModal} cardTextScale={cardTextScale} onZoom={openZoomModal} />;
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             case 'duaa': 
                 return <DuaaScreen key="duaa" s3d={s3d} openDuaaId={openDuaaId} onToggle={handleDuaaToggle} onZoom={openZoomModal} cardTextScale={cardTextScale} />;
             case 'checklist': 
@@ -1194,7 +1310,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
     };
 
     return (
+<<<<<<< HEAD
         <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: s3d.pageBgColor, color: s3d.textColor, fontFamily: theme.font }} dir={dir}>
+=======
+        <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={dir}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -1266,7 +1386,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                 {renderScreen()}
             </main>
 
+<<<<<<< HEAD
             {/* Magnifier / Zoom Modal - Unified 3D Sculpted Bottom Sheet Style */}
+=======
+            {/* Magnifier / Zoom Modal - Unified Duas & Adhkar Bottom Sheet Style (without audio button) */}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <AnimatePresence>
                 {zoomedCard && (
                     <div 
@@ -1279,16 +1403,32 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+<<<<<<< HEAD
                             className={`app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative ${s3d.surfaceCardClass}`} 
                             style={{ fontFamily: isEn ? 'sans-serif' : theme.font }} 
                             onClick={e => e.stopPropagation()}
                         >
                             {/* Top Drag Handle & Category Badge */}
+=======
+                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl" 
+                            style={{ 
+                                backgroundColor: tokens.isDark ? tokens.cardBgColor : '#FFFFFF', 
+                                color: tokens.isDark ? tokens.textColor : '#000000',
+                                fontFamily: isEn ? 'sans-serif' : theme.font
+                            }} 
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Top Drag Handle & Category Pill without X or top ZoomIn buttons */}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
                                 <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600 mb-2.5" />
                                 <div className="w-full flex items-center justify-center">
                                     <span 
+<<<<<<< HEAD
                                         className="border-0 px-3.5 py-1 rounded-full text-xs font-extrabold text-center"
+=======
+                                        className="px-3.5 py-1 rounded-full text-xs font-bold text-center"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         style={{
                                             backgroundColor: hexToRgba(s3d.primaryColor, s3d.isBlackTheme ? 0.2 : 0.1),
                                             color: s3d.isBlackTheme ? '#FFFFFF' : s3d.primaryColor
@@ -1300,7 +1440,15 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                 {/* Segmented Tabs for 2-Tab Lists (Pillars/Obligations & Sunnahs/Prohibitions) */}
                                 {zoomedCard.sections && zoomedCard.sections.length > 1 && (
                                     <div
+<<<<<<< HEAD
                                         className={`border-0 w-full flex p-2 pb-2.5 rounded-2xl gap-2 mt-3 overflow-visible ${s3d.recessedInputClass}`}
+=======
+                                        className="w-full flex p-1.5 rounded-2xl gap-1.5 mt-3 border-0"
+                                        style={{
+                                            backgroundColor: tokens.capsuleBg,
+                                            boxShadow: tokens.cardShadow
+                                        }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         {zoomedCard.sections.map((sec, idx) => {
                                             const isActive = activeSectionIdx === idx;
@@ -1312,12 +1460,20 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                                         setActiveSectionIdx(idx);
                                                         if (zoomScrollRef.current) zoomScrollRef.current.scrollTop = 0;
                                                     }}
+<<<<<<< HEAD
                                                     className={`app-page-card border-0 flex-1 py-2 px-3 rounded-xl transition-all cursor-pointer text-xs sm:text-sm ${
                                                       isActive
                                                         ? 'font-black'
                                                         : `font-bold opacity-85 ${s3d.surfaceCardClass}`
                                                     }`}
                                                     style={isActive ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
+=======
+                                                    className={`flex-1 py-2 px-3 rounded-xl font-bold transition-all cursor-pointer text-xs sm:text-sm border-0 ${isActive ? 'shadow-sm' : 'opacity-60'}`}
+                                                    style={{
+                                                        backgroundColor: isActive ? tokens.primaryColor : 'transparent',
+                                                        color: isActive ? '#FFFFFF' : tokens.textColor
+                                                    }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 >
                                                     {sec.tabLabel}
                                                 </button>
@@ -1331,11 +1487,19 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                             <div ref={zoomScrollRef} className="overflow-y-auto flex-1 min-h-0 px-6 py-3 space-y-4 hide-scrollbar">
                                 {zoomedCard.title && !(zoomedCard.sections && zoomedCard.sections.length > 0) && (
                                     <div className="text-center space-y-1">
+<<<<<<< HEAD
                                         <h3 className="text-base sm:text-lg font-extrabold" style={{ color: s3d.primaryColor }}>
                                             {zoomedCard.title}
                                         </h3>
                                         {zoomedCard.subtitle && zoomedCard.category && (
                                             <p className="text-xs sm:text-sm font-medium" style={{ color: s3d.subtextColor }}>
+=======
+                                        <h3 className="text-base sm:text-lg font-bold" style={{ color: tokens.primaryColor }}>
+                                            {zoomedCard.title}
+                                        </h3>
+                                        {zoomedCard.subtitle && zoomedCard.category && (
+                                            <p className="text-xs sm:text-sm opacity-75 font-medium" style={{ color: tokens.subtextColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 {zoomedCard.subtitle}
                                             </p>
                                         )}
@@ -1348,7 +1512,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         {isEn ? (
                                             <div 
                                                 className="leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
+<<<<<<< HEAD
                                                 style={{ fontSize: `${zoomFontSize}px`, color: s3d.textColor }}
+=======
+                                                style={{ fontSize: `${zoomFontSize}px` }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 dir="ltr"
                                             >
                                                 {getDuaaEnglish(zoomedCard.duaaItems[currentDuaaIdx])}
@@ -1356,7 +1524,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         ) : (
                                             <div 
                                                 className="leading-[2.4] font-amiri text-center select-none py-2"
+<<<<<<< HEAD
                                                 style={{ fontSize: `${zoomFontSize + 4}px`, color: s3d.textColor }}
+=======
+                                                style={{ fontSize: `${zoomFontSize + 4}px` }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 dir="rtl"
                                             >
                                                 {zoomedCard.duaaItems[currentDuaaIdx]}
@@ -1369,22 +1541,38 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         {(zoomedCard.quranAyah || zoomedCard.evidence || (zoomedCard.quranEvidence && zoomedCard.quranEvidence.length > 0)) && (
                                             <div className="py-2 space-y-2 text-center">
                                                 {zoomedCard.title !== tHajj('quranEvidenceTitle', language) && (
+<<<<<<< HEAD
                                                     <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
+=======
+                                                    <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         <span>{tHajj('quranEvidenceSection', language)}</span>
                                                     </div>
                                                 )}
                                                 {zoomedCard.quranAyah && (
+<<<<<<< HEAD
                                                     <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: s3d.textColor, fontSize: `${zoomFontSize}px` }}>
+=======
+                                                    <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${zoomFontSize}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {zoomedCard.quranAyah}
                                                     </p>
                                                 )}
                                                 {zoomedCard.evidence && !zoomedCard.quranAyah && (
+<<<<<<< HEAD
                                                     <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: s3d.textColor, fontSize: `${zoomFontSize}px` }}>
+=======
+                                                    <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${zoomFontSize}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {zoomedCard.evidence}
                                                     </p>
                                                 )}
                                                 {zoomedCard.quranEvidence && zoomedCard.quranEvidence.map((ev: string, idx: number) => (
+<<<<<<< HEAD
                                                     <p key={idx} className={`leading-[2.2] mt-2 ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: s3d.textColor, fontSize: `${zoomFontSize}px` }}>
+=======
+                                                    <p key={idx} className={`leading-[2.2] mt-2 ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${zoomFontSize}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {ev}
                                                     </p>
                                                 ))}
@@ -1395,17 +1583,29 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         {(zoomedCard.hadith || (zoomedCard.sunnahEvidence && zoomedCard.sunnahEvidence.length > 0)) && (
                                             <div className="py-2 space-y-2 text-center">
                                                 {zoomedCard.title !== tHajj('sunnahEvidenceTitle', language) && (
+<<<<<<< HEAD
                                                     <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
+=======
+                                                    <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         <span>{tHajj('sunnahEvidenceSection', language)}</span>
                                                     </div>
                                                 )}
                                                 {zoomedCard.hadith && (
+<<<<<<< HEAD
                                                     <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: s3d.textColor, fontSize: `${Math.max(15, zoomFontSize - 1)}px` }}>
+=======
+                                                    <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(15, zoomFontSize - 1)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {zoomedCard.hadith}
                                                     </p>
                                                 )}
                                                 {zoomedCard.sunnahEvidence && zoomedCard.sunnahEvidence.map((ev: string, idx: number) => (
+<<<<<<< HEAD
                                                     <p key={idx} className={`leading-[2.2] mt-2 ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: s3d.textColor, fontSize: `${Math.max(15, zoomFontSize - 1)}px` }}>
+=======
+                                                    <p key={idx} className={`leading-[2.2] mt-2 ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(15, zoomFontSize - 1)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {ev}
                                                     </p>
                                                 ))}
@@ -1415,10 +1615,17 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         {/* Fiqh Definition / Summary / Hady Ruling / Who Is It For */}
                                         {(zoomedCard.definition || zoomedCard.description) && (
                                             <div className="py-2 space-y-1.5 text-center">
+<<<<<<< HEAD
                                                 <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
                                                     <span>{tHajj('fiqhDefSection', language)}</span>
                                                 </div>
                                                 <p className="leading-relaxed font-medium" style={{ color: s3d.textColor, fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+=======
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                    <span>{tHajj('fiqhDefSection', language)}</span>
+                                                </div>
+                                                <p className="leading-relaxed font-medium" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {zoomedCard.definition || zoomedCard.description}
                                                 </p>
                                             </div>
@@ -1426,10 +1633,17 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
                                         {zoomedCard.hadyRuling && (
                                             <div className="py-2 space-y-1.5 text-center">
+<<<<<<< HEAD
                                                 <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
                                                     <span>{isEn ? 'Hady (Sacrifice) Ruling' : 'حكم الهدي'}</span>
                                                 </div>
                                                 <p className="leading-relaxed font-medium" style={{ color: s3d.textColor, fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+=======
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                    <span>{isEn ? 'Hady (Sacrifice) Ruling' : 'حكم الهدي'}</span>
+                                                </div>
+                                                <p className="leading-relaxed font-medium" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {zoomedCard.hadyRuling}
                                                 </p>
                                             </div>
@@ -1437,10 +1651,17 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
                                         {zoomedCard.whoIsItFor && (
                                             <div className="py-2 space-y-1.5 text-center">
+<<<<<<< HEAD
                                                 <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
                                                     <span>{isEn ? 'Who Is It Recommended For?' : 'لمن يُشرع ويفضل؟'}</span>
                                                 </div>
                                                 <p className="leading-relaxed font-medium" style={{ color: s3d.textColor, fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+=======
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                    <span>{isEn ? 'Who Is It Recommended For?' : 'لمن يُشرع ويفضل؟'}</span>
+                                                </div>
+                                                <p className="leading-relaxed font-medium" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {zoomedCard.whoIsItFor}
                                                 </p>
                                             </div>
@@ -1450,8 +1671,13 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         {zoomedCard.text && (
                                             <div 
                                                 className="leading-[2.2] font-medium select-text text-center" 
+<<<<<<< HEAD
                                                 style={{ fontSize: `${zoomFontSize}px`, color: s3d.textColor }}
                                                 dangerouslySetInnerHTML={{ __html: zoomedCard.text.replaceAll('{{THEME_PALETTE_0}}', s3d.primaryColor) }}
+=======
+                                                style={{ fontSize: `${zoomFontSize}px`, color: tokens.isDark ? tokens.textColor : '#000000' }}
+                                                dangerouslySetInnerHTML={{ __html: zoomedCard.text.replaceAll('{{THEME_PALETTE_0}}', tokens.primaryColor) }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             />
                                         )}
 
@@ -1459,14 +1685,22 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         {(zoomedCard.points || zoomedCard.actions || zoomedCard.detailedSteps) && (
                                             <div className="space-y-3 text-center">
                                                 {(zoomedCard.quranAyah || zoomedCard.hadith || zoomedCard.evidence || zoomedCard.definition || zoomedCard.quranEvidence?.length) && (
+<<<<<<< HEAD
                                                     <h4 className="font-extrabold text-xs mb-1.5" style={{ color: s3d.primaryColor }}>
+=======
+                                                    <h4 className="font-bold text-xs mb-1.5" style={{ color: tokens.primaryColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {tHajj('practicalStepsSection', language)}
                                                     </h4>
                                                 )}
                                                 <ul className="space-y-3">
                                                     {(zoomedCard.points || zoomedCard.actions || zoomedCard.detailedSteps)!.map((point, i) => (
                                                         <li key={i} className="py-1.5 text-center space-y-1">
+<<<<<<< HEAD
                                                             <div className="leading-relaxed font-medium" style={{ fontSize: `${zoomFontSize}px`, color: s3d.textColor }} dangerouslySetInnerHTML={{ __html: point }} />
+=======
+                                                            <div className="leading-relaxed font-medium" style={{ fontSize: `${zoomFontSize}px`, color: tokens.isDark ? tokens.textColor : '#000000' }} dangerouslySetInnerHTML={{ __html: point }} />
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -1476,12 +1710,20 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         {/* Sunan (if present) */}
                                         {zoomedCard.sunan && zoomedCard.sunan.length > 0 && (
                                             <div className="py-2 space-y-2 text-center">
+<<<<<<< HEAD
                                                 <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
+=======
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     <span>{isEn ? 'Recommended Sunnahs' : 'السنن والآداب المستحبة'}</span>
                                                 </div>
                                                 <ul className="space-y-2">
                                                     {zoomedCard.sunan.map((s, idx) => (
+<<<<<<< HEAD
                                                         <li key={idx} className="leading-relaxed font-medium text-center" style={{ color: s3d.textColor, fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+=======
+                                                        <li key={idx} className="leading-relaxed font-medium text-center" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                             {s}
                                                         </li>
                                                     ))}
@@ -1492,12 +1734,20 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         {/* Common Mistakes (if present) */}
                                         {zoomedCard.mistakes && zoomedCard.mistakes.length > 0 && (
                                             <div className="py-2 space-y-2 text-center">
+<<<<<<< HEAD
                                                 <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
+=======
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     <span>{isEn ? 'Common Mistakes to Avoid' : 'أخطاء شائعة يُنبغي تجنبها'}</span>
                                                 </div>
                                                 <ul className="space-y-2">
                                                     {zoomedCard.mistakes.map((m, idx) => (
+<<<<<<< HEAD
                                                         <li key={idx} className="leading-relaxed font-medium text-center" style={{ color: s3d.textColor, fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+=======
+                                                        <li key={idx} className="leading-relaxed font-medium text-center" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                             {m}
                                                         </li>
                                                     ))}
@@ -1511,6 +1761,7 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                                 {zoomedCard.virtues.map((v, idx) => (
                                                     <div
                                                         key={idx}
+<<<<<<< HEAD
                                                         className={`text-center space-y-2 ${idx > 0 ? `pt-4 border-t ${s3d.dividerClass}` : ''}`}
                                                     >
                                                         <div className="space-y-0.5">
@@ -1518,6 +1769,15 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                                                 {v.title}
                                                             </h4>
                                                             <p className="text-[11px] font-mono" style={{ color: s3d.subtextColor }}>
+=======
+                                                        className={`text-center space-y-2 ${idx > 0 ? 'pt-4 border-t border-slate-100 dark:border-zinc-800' : ''}`}
+                                                    >
+                                                        <div className="space-y-0.5">
+                                                            <h4 className="font-bold text-sm sm:text-base" style={{ color: tokens.primaryColor }}>
+                                                                {v.title}
+                                                            </h4>
+                                                            <p className="text-[11px] opacity-65 font-mono" style={{ color: tokens.subtextColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                                 {v.source}
                                                             </p>
                                                         </div>
@@ -1529,7 +1789,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                                         </p>
                                                         <p
                                                             className="leading-relaxed font-medium opacity-90"
+<<<<<<< HEAD
                                                             style={{ color: s3d.textColor, fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}
+=======
+                                                            style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         >
                                                             {v.explanation}
                                                         </p>
@@ -1545,11 +1809,19 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                             return (
                                                 <div className="space-y-3 text-center">
                                                     <div className="space-y-1">
+<<<<<<< HEAD
                                                         <h4 className="font-extrabold text-sm sm:text-base" style={{ color: s3d.primaryColor }}>
                                                             {activeSec.title}
                                                         </h4>
                                                         {activeSec.subtitle && (
                                                             <p className="text-xs font-medium" style={{ color: s3d.subtextColor }}>
+=======
+                                                        <h4 className="font-bold text-sm sm:text-base" style={{ color: tokens.primaryColor }}>
+                                                            {activeSec.title}
+                                                        </h4>
+                                                        {activeSec.subtitle && (
+                                                            <p className="text-xs opacity-75 font-medium" style={{ color: tokens.subtextColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                                 {activeSec.subtitle}
                                                             </p>
                                                         )}
@@ -1557,10 +1829,17 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
                                                     {activeSec.quranAyah && (
                                                         <div className="py-1 space-y-1">
+<<<<<<< HEAD
                                                             <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
                                                                 <span>{tHajj('quranEvidenceSection', language)}</span>
                                                             </div>
                                                             <p className={`leading-[2.1] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: s3d.textColor, fontSize: `${Math.max(16, zoomFontSize - 1)}px` }}>
+=======
+                                                            <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                                <span>{tHajj('quranEvidenceSection', language)}</span>
+                                                            </div>
+                                                            <p className={`leading-[2.1] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(16, zoomFontSize - 1)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                                 {activeSec.quranAyah}
                                                             </p>
                                                         </div>
@@ -1568,10 +1847,17 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
                                                     {activeSec.hadith && (
                                                         <div className="py-1 space-y-1">
+<<<<<<< HEAD
                                                             <div className="font-extrabold text-xs" style={{ color: s3d.primaryColor }}>
                                                                 <span>{tHajj('sunnahEvidenceSection', language)}</span>
                                                             </div>
                                                             <p className={`leading-[2.1] ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: s3d.textColor, fontSize: `${Math.max(15, zoomFontSize - 2)}px` }}>
+=======
+                                                            <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                                <span>{tHajj('sunnahEvidenceSection', language)}</span>
+                                                            </div>
+                                                            <p className={`leading-[2.1] ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(15, zoomFontSize - 2)}px` }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                                 {activeSec.hadith}
                                                             </p>
                                                         </div>
@@ -1582,7 +1868,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                                             <li key={pi} className="py-1 text-center">
                                                                 <div
                                                                     className="leading-relaxed font-medium"
+<<<<<<< HEAD
                                                                     style={{ fontSize: `${zoomFontSize}px`, color: s3d.textColor }}
+=======
+                                                                    style={{ fontSize: `${zoomFontSize}px`, color: tokens.isDark ? tokens.textColor : '#000000' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                                     dangerouslySetInnerHTML={{ __html: point }}
                                                                 />
                                                             </li>
@@ -1601,9 +1891,18 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                 )}
                             </div>
 
+<<<<<<< HEAD
                             {/* Action Bar (Share, Copy, Zoom, ChevronDown to hide — without Audio button) */}
                             <div 
                                 className={`p-4 pt-3 modal-sheet-safe-bottom shrink-0 flex flex-col gap-3 border-t overflow-visible ${s3d.dividerClass} ${s3d.surfaceCardClass}`}
+=======
+                            {/* Action Bar (Share, Copy, Zoom, ChevronDown to hide — without Audio button) matching Duas & Adhkar ZoomModal */}
+                            <div 
+                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 flex flex-col gap-3 border-t border-slate-100 dark:border-white/5"
+                                style={{
+                                    backgroundColor: tokens.isDark ? tokens.cardBgColor : '#FFFFFF'
+                                }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 {zoomedCard.duaaItems && zoomedCard.duaaItems.length > 1 && (
                                     <div className="flex w-full justify-between items-center gap-2 overflow-visible pb-1">
@@ -1634,12 +1933,24 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                 )}
 
                                 {/* Action buttons row: Share, Copy, Zoom, ChevronDown to hide */}
+<<<<<<< HEAD
                                 <div className="flex justify-center items-center gap-3 sm:gap-4 overflow-visible pb-1">
+=======
+                                <div className="flex justify-center items-center gap-3 sm:gap-4">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     {/* Share Button */}
                                     <button
                                         type="button"
                                         onClick={handleShareZoomText}
+<<<<<<< HEAD
                                         className={`app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${s3d.surfaceCardClass}`}
+=======
+                                        className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                        style={{
+                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            color: tokens.textColor
+                                        }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         title={isEn ? "Share Image" : "مشاركة كصورة"}
                                     >
                                         <Share2 className="w-5 h-5" style={{ color: s3d.textColor }} />
@@ -1649,6 +1960,7 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                     <button
                                         type="button"
                                         onClick={handleCopyZoomText}
+<<<<<<< HEAD
                                         className={`app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                                           copySuccess ? '' : s3d.surfaceCardClass
                                         }`}
@@ -1659,13 +1971,31 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                         title={isEn ? "Copy text" : "نسخ النص"}
                                     >
                                         {copySuccess ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5" style={{ color: s3d.textColor }} />}
+=======
+                                        className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                        style={{
+                                            backgroundColor: copySuccess ? '#10B981' : (tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                                            color: copySuccess ? '#FFFFFF' : tokens.textColor
+                                        }}
+                                        title={isEn ? "Copy text" : "نسخ النص"}
+                                    >
+                                        {copySuccess ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5" />}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     </button>
 
                                     {/* Zoom Button */}
                                     <button
                                         type="button"
                                         onClick={handleToggleZoomFontSize}
+<<<<<<< HEAD
                                         className={`app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${s3d.surfaceCardClass}`}
+=======
+                                        className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                        style={{
+                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            color: tokens.textColor
+                                        }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         title={isEn ? "Enlarge font size" : "تكبير حجم الخط"}
                                     >
                                         <ZoomIn className="w-5 h-5" style={{ color: s3d.textColor }} />
@@ -1675,7 +2005,15 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                     <button
                                         type="button"
                                         onClick={closeZoomModal}
+<<<<<<< HEAD
                                         className={`app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${s3d.surfaceCardClass}`}
+=======
+                                        className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                        style={{
+                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            color: tokens.textColor
+                                        }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         title={isEn ? "Hide list" : "إخفاء القائمة"}
                                     >
                                         <ChevronDown className="w-5 h-5" style={{ color: s3d.textColor }} />

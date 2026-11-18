@@ -73,11 +73,19 @@ const ProgressRing = ({ progress, size = 100, strokeWidth = 8, color }: { progre
 
 const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   const showPageGuides = useShowPageGuides();
+<<<<<<< HEAD
   const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
   const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
   const { language } = useLanguage();
   const isEn = language === 'en';
   const hexColor = s3d.primaryColor;
+=======
+  const { theme, themeKey } = useTheme();
+  const tokens = getModernFlatTokens(theme, themeKey);
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const hexColor = tokens.primaryColor;
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   // Dynamic today string for habits & auto-update at 12:00 AM midnight
   const [todayStr, setTodayStr] = useState<string>(() => moment().format('YYYY-MM-DD'));
   const [selectedDate, setSelectedDate] = useState<string>(() => moment().format('YYYY-MM-DD'));
@@ -665,7 +673,11 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   }
 
   return (
+<<<<<<< HEAD
     <div className="h-[100dvh] flex flex-col relative overflow-hidden" style={{ backgroundColor: s3d.pageBgColor, color: s3d.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
+=======
+    <div className="h-[100dvh] flex flex-col relative overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       <header className="app-top-bar shrink-0">
           <div className="app-top-bar__inner">
               <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -1068,8 +1080,13 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         </div>
 
         {/* Footer Sentence */}
+<<<<<<< HEAD
         <div className={`text-center pt-4 px-6 border-t ${s3d.dividerClass}`}>
            <p className="text-sm font-semibold opacity-75 leading-relaxed font-amiri" style={{ color: s3d.subtextColor }}>
+=======
+        <div className="text-center pt-4 px-6 border-t border-slate-100 dark:border-zinc-800">
+           <p className="text-sm font-semibold opacity-70 leading-relaxed font-amiri" style={{ color: tokens.subtextColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {isEn ? "Your consistency in worship is the greatest gift to you and to the spirits of Ahmed and Laila." : "استمرارك في العبادة هو أعظم هدية لك ولروح أحمد وليلى"}
            </p>
         </div>

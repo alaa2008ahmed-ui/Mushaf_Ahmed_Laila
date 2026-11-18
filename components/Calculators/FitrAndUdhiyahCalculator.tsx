@@ -215,7 +215,11 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
 
     return (
         <div className="space-y-4 animate-fade-in" dir={isEn ? 'ltr' : 'rtl'}>
+<<<<<<< HEAD
             {/* 3D Sculpted Sub-Tabs Switcher */}
+=======
+            {/* Sub-Tabs Switcher (Zero Border Segmented Pill) */}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <div 
                 id="fitr-udhiyah-subtabs" 
                 className={`app-page-card border-0 flex gap-2 p-2 pb-2.5 rounded-2xl transition-all overflow-visible ${s3d.surfaceCardClass}`}

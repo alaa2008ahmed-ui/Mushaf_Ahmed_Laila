@@ -147,6 +147,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
     const { 
         primaryColor, 
         themeActiveTextColor, 
+<<<<<<< HEAD
         pageBgColor
     } = tokens;
     const themeHeadingColor = (tokens.isDeepBlack || (isEffectiveDark && (themeKey === 'deep_black' || theme.bgColor === '#000000'))) ? '#FFFFFF' : primaryColor;
@@ -158,6 +159,15 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
             ? '0 2.5px 0 #09090b, 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -1px 2px rgba(0, 0, 0, 0.35)'
             : '0 2.5px 0 rgba(0, 0, 0, 0.11), 0 4px 8px -1px rgba(0, 0, 0, 0.08), inset 0 1.5px 1px rgba(255, 255, 255, 0.98), inset 0 -1px 2px rgba(0, 0, 0, 0.05)',
     };
+=======
+        pageBgColor, 
+        cardBgColor, 
+        cardShadow, 
+        capsuleBg, 
+        actionBtnBg
+    } = tokens;
+    const themeHeadingColor = (tokens.isDeepBlack || (isEffectiveDark && (themeKey === 'deep_black' || theme.bgColor === '#000000'))) ? '#FFFFFF' : primaryColor;
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     // Scroll container refs
     const mainScrollRef = useRef<HTMLElement | null>(null);
@@ -641,6 +651,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
             {!selectedItem && (
                 <div 
                     id="divine-miracles-tabs-nav"
+<<<<<<< HEAD
                     className="shrink-0 z-10 px-3 sm:px-4 pt-2.5 pb-3 border-0"
                     style={{ backgroundColor: pageBgColor }}
                 >
@@ -673,6 +684,38 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                     );
                                 })}
                             </div>
+=======
+                    className="shrink-0 z-10 px-3 sm:px-4 pt-2.5 pb-2 border-0"
+                    style={{ backgroundColor: pageBgColor }}
+                >
+                    <div className="max-w-3xl mx-auto">
+                        <div 
+                            className="flex items-center gap-1.5 overflow-x-auto p-1.5 rounded-2xl border-0 shadow-xs hide-scrollbar"
+                            style={{ backgroundColor: capsuleBg }}
+                        >
+                            {DIVINE_MIRACLES_CATEGORIES.map((cat) => {
+                                const isSelected = activeTab === cat.id;
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => {
+                                            restoreScrollTargetRef.current = null;
+                                            setActiveTab(cat.id);
+                                        }}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                                            isSelected ? 'shadow-xs' : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100'
+                                        } ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                        style={{
+                                            backgroundColor: isSelected ? primaryColor : 'transparent',
+                                            color: isSelected ? themeActiveTextColor : (tokens.isDark ? '#CBD5E1' : '#475569')
+                                        }}
+                                    >
+                                        <span>{isEn ? cat.titleEn : cat.titleAr}</span>
+                                    </button>
+                                );
+                            })}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         </div>
                     </div>
                 </div>
@@ -688,15 +731,27 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                     <div className="space-y-4">
                         {/* Header Banner Card */}
                         <div 
+<<<<<<< HEAD
                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-5 sm:p-6 text-start relative overflow-visible"
                         >
                             <div className="flex items-center justify-end gap-2 mb-3 overflow-visible">
+=======
+                            className="rounded-[18px] p-5 sm:p-6 text-start relative border-0"
+                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                        >
+                            <div className="flex items-center justify-end gap-1.5 sm:gap-2 mb-3">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 <button
                                     type="button"
                                     onClick={(e) => handleShareItemImage(selectedItem, e)}
                                     disabled={isSharing}
+<<<<<<< HEAD
                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                     style={{ color: 'var(--text-color)' }}
+=======
+                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-85 hover:opacity-100 cursor-pointer shrink-0"
+                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#0F172A' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     title={isEn ? "Share as image card" : "مشاركة كبطاقة صورة"}
                                     aria-label={isEn ? "Share as image card" : "مشاركة كبطاقة صورة"}
                                 >
@@ -705,8 +760,13 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                 <button
                                     type="button"
                                     onClick={(e) => handleCopyItem(selectedItem, e)}
+<<<<<<< HEAD
                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                     style={{ color: 'var(--text-color)' }}
+=======
+                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-85 hover:opacity-100 cursor-pointer shrink-0"
+                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     title={isEn ? "Copy complete text" : "نسخ النص كاملاً"}
                                     aria-label={isEn ? "Copy complete text" : "نسخ النص كاملاً"}
                                 >
@@ -739,7 +799,15 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Quran Evidence Card */}
                         {selectedItem.quranEvidence && (
                             <div 
+<<<<<<< HEAD
                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-5 text-start relative overflow-visible"
+=======
+                                className="rounded-[18px] p-5 text-start relative border-0"
+                                style={{ 
+                                    backgroundColor: cardBgColor,
+                                    boxShadow: cardShadow
+                                }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <div className="mb-2">
                                     <AutoFitSingleLine
@@ -779,7 +847,15 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Hadith Evidence Card */}
                         {selectedItem.hadithEvidence && (
                             <div 
+<<<<<<< HEAD
                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-5 text-start relative overflow-visible"
+=======
+                                className="rounded-[18px] p-5 text-start relative border-0"
+                                style={{ 
+                                    backgroundColor: cardBgColor,
+                                    boxShadow: cardShadow
+                                }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <div className="mb-2">
                                     <AutoFitSingleLine
@@ -818,7 +894,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
                         {/* Detailed Explanation */}
                         <div 
+<<<<<<< HEAD
                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-5 sm:p-6 text-start relative overflow-visible"
+=======
+                            className="rounded-[18px] p-5 sm:p-6 text-start relative border-0"
+                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         >
                             <div className="mb-3">
                                 <AutoFitSingleLine
@@ -846,7 +927,15 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Scientific / Historical Fact Card */}
                         {(selectedItem.scientificOrHistoricalFactAr || selectedItem.scientificOrHistoricalFactEn) && (
                             <div 
+<<<<<<< HEAD
                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-5 text-start relative overflow-visible"
+=======
+                                className="rounded-[18px] p-5 text-start relative border-0"
+                                style={{ 
+                                    backgroundColor: cardBgColor,
+                                    boxShadow: cardShadow
+                                }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <div className="mb-2">
                                     <AutoFitSingleLine
@@ -872,7 +961,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Faith Reflections */}
                         {((isEn ? selectedItem.reflectionsEn : selectedItem.reflectionsAr) || []).length > 0 && (
                             <div 
+<<<<<<< HEAD
                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-5 text-start relative overflow-visible"
+=======
+                                className="rounded-[18px] p-5 text-start relative border-0"
+                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <div className="mb-3">
                                     <AutoFitSingleLine
@@ -895,7 +989,11 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                         >
                                             <span 
                                                 className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5"
+<<<<<<< HEAD
                                                 style={itemBadge3DStyle}
+=======
+                                                style={{ backgroundColor: hexToRgba(themeHeadingColor, 0.12), color: themeHeadingColor }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             >
                                                 {i + 1}
                                             </span>
@@ -908,7 +1006,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
                         {/* Sources & Citations */}
                         <div 
+<<<<<<< HEAD
                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-4 sm:p-5 text-start relative overflow-visible"
+=======
+                            className="rounded-[18px] p-4 sm:p-5 text-start relative border-0"
+                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         >
                             <div className="mb-2">
                                 <AutoFitSingleLine
@@ -921,12 +1024,24 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                     style={{ color: themeHeadingColor }}
                                 />
                             </div>
+<<<<<<< HEAD
                             <div className="flex flex-wrap gap-2 overflow-visible pb-1">
                                 {(isEn ? selectedItem.sourcesEn : selectedItem.sourcesAr).map((s, idx) => (
                                     <span 
                                         key={idx}
                                         className={`text-[11px] px-2.5 py-1 rounded-lg font-mono ${innerSubBoxClass}`}
                                         style={{ color: tokens.textColor }}
+=======
+                            <div className="flex flex-wrap gap-1.5">
+                                {(isEn ? selectedItem.sourcesEn : selectedItem.sourcesAr).map((s, idx) => (
+                                    <span 
+                                        key={idx}
+                                        className="text-[11px] px-2.5 py-1 rounded-lg font-mono"
+                                        style={{ 
+                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
+                                            color: tokens.textColor 
+                                        }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         {s}
                                     </span>
@@ -935,12 +1050,21 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         </div>
 
                         {/* Bottom Prev / Next Miracle Navigation */}
+<<<<<<< HEAD
                         <div className="grid grid-cols-2 gap-3 pt-2 pb-2">
+=======
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {prevItem ? (
                                 <button
                                     type="button"
                                     onClick={() => handleSelectItem(prevItem)}
+<<<<<<< HEAD
                                     className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[16px] flex items-center justify-center text-center transition-all cursor-pointer"
+=======
+                                    className="p-3.5 rounded-[16px] border-0 flex items-center justify-center text-center transition-opacity active:scale-95 hover:opacity-90 cursor-pointer"
+                                    style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 >
                                     <span className={`text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                         {isEn ? 'Previous Miracle' : 'المعجزة السابقة'}
@@ -954,7 +1078,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                 <button
                                     type="button"
                                     onClick={() => handleSelectItem(nextItem)}
+<<<<<<< HEAD
                                     className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[16px] flex items-center justify-center text-center transition-all cursor-pointer"
+=======
+                                    className="p-3.5 rounded-[16px] border-0 flex items-center justify-center text-center transition-opacity active:scale-95 hover:opacity-90 cursor-pointer"
+                                    style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 >
                                     <span className={`text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                         {isEn ? 'Next Miracle' : 'المعجزة التالية'}
@@ -970,7 +1099,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                     <div className="space-y-4 pb-2">
                         {filteredItems.length === 0 ? (
                             <div 
+<<<<<<< HEAD
                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-8 text-center"
+=======
+                                className="rounded-[18px] p-8 text-center border-0"
+                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <p className="text-sm font-bold opacity-75" style={{ color: tokens.textColor }}>
                                     {isEn ? 'No miracles found matching your search.' : 'لم يتم العثور على نتائج تطابق بحثك.'}
@@ -982,6 +1116,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                     key={item.id}
                                     id={`divine-miracle-card-${idx + 1}`}
                                     onClick={() => handleSelectItem(item)}
+<<<<<<< HEAD
                                     className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] rounded-[18px] p-4 sm:p-5 text-start relative cursor-pointer overflow-visible group"
                                 >
                                     {/* Action tools */}
@@ -991,6 +1126,21 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                             onClick={(e) => handleCopyItem(item, e)}
                                             className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center text-xs bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                    className="rounded-[18px] p-4 sm:p-5 text-start relative border-0 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99] group"
+                                    style={{ 
+                                        backgroundColor: cardBgColor, 
+                                        boxShadow: cardShadow 
+                                    }}
+                                >
+                                    {/* Action tools */}
+                                    <div className="flex items-center justify-end gap-1.5 sm:gap-2 mb-2.5">
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleCopyItem(item, e)}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-85 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             title={isEn ? "Copy" : "نسخ"}
                                             aria-label={isEn ? "Copy" : "نسخ"}
                                         >
@@ -1018,8 +1168,13 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                                     sources: isEn ? item.sourcesEn : item.sourcesAr
                                                 });
                                             }}
+<<<<<<< HEAD
                                             className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center text-xs bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             title={isEn ? "Open card modal" : "تكبير وقراءة البطاقة"}
                                             aria-label={isEn ? "Open card modal" : "تكبير وقراءة البطاقة"}
                                         >
@@ -1029,8 +1184,13 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                             type="button"
                                             onClick={(e) => handleShareItemImage(item, e)}
                                             disabled={isSharing}
+<<<<<<< HEAD
                                             className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center text-xs bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-85 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#0F172A' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             title={isEn ? "Share as image" : "مشاركة كبطاقة"}
                                             aria-label={isEn ? "Share as image" : "مشاركة كبطاقة"}
                                         >
@@ -1064,8 +1224,16 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                     {/* Quran preview snippet */}
                                     {item.quranEvidence && (
                                         <div 
+<<<<<<< HEAD
                                             className={`p-3 rounded-xl mb-2.5 text-center ${innerSubBoxClass}`}
                                             style={{ fontSize: `${13 * cardTextScale}px` }}
+=======
+                                            className="p-3 rounded-xl mb-2.5 border-0 text-center"
+                                            style={{ 
+                                                backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
+                                                fontSize: `${13 * cardTextScale}px`
+                                            }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         >
                                             <p 
                                                 className={`line-clamp-2 ${isEn ? 'font-sans font-semibold' : 'font-amiri font-bold'}`}
@@ -1077,7 +1245,11 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                     )}
 
                                     {/* Footer source line */}
+<<<<<<< HEAD
                                     <div className="pt-2 app-3d-divider-top opacity-75">
+=======
+                                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 opacity-75">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         <AutoFitSingleLine
                                             as="span"
                                             text={isEn ? (item.sourcesEn[0] || '') : (item.sourcesAr[0] || '')}
@@ -1108,7 +1280,11 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+<<<<<<< HEAD
                             className="app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative bg-white dark:bg-[#1E293B]"
+=======
+                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl border-t border-slate-100/40 dark:border-white/10"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             style={{ 
                                 color: 'var(--text-color)',
                                 fontFamily: isEn ? 'sans-serif' : theme.font 
@@ -1145,7 +1321,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                             <div ref={zoomScrollRef} className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4 space-y-4">
                                 {zoomedCard.quranEvidence && (
                                     <div 
+<<<<<<< HEAD
                                         className={`p-4 rounded-xl ${innerSubBoxClass}`}
+=======
+                                        className="p-4 rounded-xl border-0"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         <span className="text-xs font-bold block mb-1" style={{ color: themeHeadingColor }}>
                                             {isEn ? 'Holy Quran' : 'القرآن الكريم'}:
@@ -1164,7 +1345,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
                                 {zoomedCard.hadithEvidence && (
                                     <div 
+<<<<<<< HEAD
                                         className={`p-4 rounded-xl ${innerSubBoxClass}`}
+=======
+                                        className="p-4 rounded-xl border-0"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         <span className="text-xs font-bold block mb-1" style={{ color: themeHeadingColor }}>
                                             {isEn ? 'Prophetic Hadith' : 'الحديث النبوي الشريف'}:
@@ -1190,7 +1376,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
                                 {zoomedCard.fact && (
                                     <div 
+<<<<<<< HEAD
                                         className={`p-3.5 rounded-xl ${innerSubBoxClass}`}
+=======
+                                        className="p-3.5 rounded-xl border-0"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         <span className="text-xs font-bold block mb-1" style={{ color: themeHeadingColor }}>
                                             {isEn ? 'Scientific Fact' : 'الحقيقة العلمية'}:
@@ -1207,7 +1398,14 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
                             {/* Action Bar (Share, Copy, Zoom, ChevronDown to close) - Identical to PropheticSeerahPage */}
                             <div 
+<<<<<<< HEAD
                                 className="px-4 pt-3 pb-2 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 app-3d-divider-top overflow-visible" 
+=======
+                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
+                                style={{ 
+                                    backgroundColor: cardBgColor
+                                }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 {/* Share Button */}
                                 <button 

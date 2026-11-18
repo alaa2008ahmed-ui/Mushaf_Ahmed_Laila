@@ -60,13 +60,29 @@ const getLuminance = (hexColor: string): number => {
 };
 
 export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose }) => {
+<<<<<<< HEAD
   const { theme, themeKey, applyPresetTheme } = useTheme();
+=======
+  const { theme, themeKey, applyPresetTheme, setHomeThemeVariant } = useTheme();
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   const { language, isRTL } = useLanguage();
   const isEn = language === 'en';
   const asideRef = useRef<HTMLElement>(null);
 
   const handleThemeClick = (key: string) => {
     applyPresetTheme(key);
+<<<<<<< HEAD
+=======
+    if (key === 'sky_mode') {
+      setHomeThemeVariant('sky');
+    } else if (key === 'emerald_mode') {
+      setHomeThemeVariant('emerald');
+    } else if (key === 'burgundy_mode') {
+      setHomeThemeVariant('burgundy');
+    } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
+      setHomeThemeVariant('gold');
+    }
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     const themeName = presetThemes[key]?.name || key;
     showGlobalAppToast(isEn ? `Theme: ${themeName}` : `ثيم: ${themeName}`);
   };

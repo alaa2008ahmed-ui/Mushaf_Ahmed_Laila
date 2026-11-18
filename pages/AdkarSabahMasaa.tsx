@@ -287,7 +287,11 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
             />
 
             <main ref={mainRef} className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
+<<<<<<< HEAD
                 {/* Modern 3D Search bar */}
+=======
+                {/* Modern Borderless Search bar and View Mode Switch */}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
                     <div className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible"
                          style={{ 

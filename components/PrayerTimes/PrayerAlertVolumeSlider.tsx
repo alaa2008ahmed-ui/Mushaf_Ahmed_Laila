@@ -18,7 +18,10 @@ interface PrayerAlertVolumeSliderProps {
     className?: string;
     hideHeader?: boolean;
     showDescription?: boolean;
+<<<<<<< HEAD
     use3dAdiaStyle?: boolean;
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }
 
 export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = ({
@@ -34,8 +37,12 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
     subtextColor,
     className = '',
     hideHeader = false,
+<<<<<<< HEAD
     showDescription = false,
     use3dAdiaStyle = false
+=======
+    showDescription = false
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }) => {
     const { language, isRTL, dir } = useLanguage();
     const isEn = language === 'en';
@@ -90,15 +97,21 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
 
     const effectiveTextColor = textColor || (isBlackTheme ? '#ffffff' : '#0f172a');
     const effectiveSubtextColor = subtextColor || (isBlackTheme ? '#a1a1aa' : '#64748b');
+<<<<<<< HEAD
     const effectiveCardBg = cardBg || (isBlackTheme ? '#18181b' : '#ffffff');
     const effectiveBorderColor = cardBorderColor || (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)');
     const selectedTextColor = (isBlackTheme && primaryColor.toLowerCase() === '#ffffff') ? '#000000' : '#ffffff';
+=======
+    const effectiveCardBg = cardBg || (isBlackTheme ? '#1e1e24' : '#ffffff');
+    const effectiveBorderColor = cardBorderColor || (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)');
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     const VolumeIcon = volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2;
 
     return (
         <div 
             dir={dir}
+<<<<<<< HEAD
             className={use3dAdiaStyle
                 ? `p-3.5 rounded-2xl app-page-card border-0 transition-all space-y-2.5 overflow-visible ${className}`
                 : `p-3 rounded-2xl border transition-all space-y-2 shadow-2xs ${className}`
@@ -107,6 +120,13 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                 ? { backgroundColor: effectiveCardBg }
                 : { backgroundColor: effectiveCardBg, borderColor: effectiveBorderColor }
             }
+=======
+            className={`p-3 rounded-2xl border transition-all space-y-2 shadow-2xs ${className}`}
+            style={{ 
+                backgroundColor: effectiveCardBg, 
+                borderColor: effectiveBorderColor 
+            }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         >
             {/* Header: Icon + Title + Value Badge + Test Button (Optional) */}
             {!hideHeader && (
@@ -138,6 +158,7 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                     <button
                         type="button"
                         onClick={handleTogglePreview}
+<<<<<<< HEAD
                         className={use3dAdiaStyle
                             ? "px-2.5 py-1 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 app-page-card border-0"
                             : "px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0 shadow-2xs"
@@ -146,6 +167,10 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                             backgroundColor: isPlayingPreview ? '#ef4444' : (isBlackTheme ? '#27272a' : '#ffffff'),
                             color: isPlayingPreview ? '#ffffff' : primaryColor
                         } : {
+=======
+                        className="px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0 shadow-2xs"
+                        style={{
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             backgroundColor: isPlayingPreview ? '#ef4444' : `${primaryColor}18`,
                             color: isPlayingPreview ? '#ffffff' : primaryColor,
                             border: `1px solid ${isPlayingPreview ? '#ef4444' : `${primaryColor}35`}`
@@ -168,7 +193,11 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
             )}
 
             {/* Range Slider Track */}
+<<<<<<< HEAD
             <div className={`relative flex items-center ${use3dAdiaStyle ? 'py-1.5' : 'py-1'}`}>
+=======
+            <div className="relative flex items-center py-1">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <input
                     type="range"
                     min="0"
@@ -186,7 +215,11 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
             </div>
 
             {/* Preset 1-tap Buttons (كتم / 35% / 70% / 100%) */}
+<<<<<<< HEAD
             <div className={`flex items-center justify-between overflow-visible ${use3dAdiaStyle ? 'gap-2.5 pt-1 pb-1' : 'gap-1.5 pt-0.5'}`}>
+=======
+            <div className="flex items-center justify-between gap-1.5 pt-0.5">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 {presets.map((preset) => {
                     const isSelected = volume === preset.value;
                     return (
@@ -194,6 +227,7 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                             key={preset.value}
                             type="button"
                             onClick={() => handleVolumeChange(preset.value)}
+<<<<<<< HEAD
                             className={use3dAdiaStyle
                                 ? `flex-1 py-1.5 px-1 rounded-xl text-xs transition-all cursor-pointer text-center app-page-card border-0 ${isSelected ? 'font-extrabold' : 'font-bold'}`
                                 : `flex-1 py-1 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
@@ -206,6 +240,12 @@ export const PrayerAlertVolumeSlider: React.FC<PrayerAlertVolumeSliderProps> = (
                                     : (isBlackTheme ? '#27272a' : '#ffffff'),
                                 color: isSelected ? selectedTextColor : effectiveTextColor
                             } : {
+=======
+                            className={`flex-1 py-1 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+                                isSelected ? 'shadow-2xs scale-102 font-extrabold' : 'opacity-70 hover:opacity-100'
+                            }`}
+                            style={{
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 backgroundColor: isSelected 
                                     ? primaryColor 
                                     : (isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),

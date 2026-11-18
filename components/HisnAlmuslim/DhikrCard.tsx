@@ -149,7 +149,11 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
     return (
         <div 
             data-card-item="true"
+<<<<<<< HEAD
             className={`app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative overflow-visible group transition-all duration-300 flex flex-col justify-between ${
+=======
+            className={`app-page-card p-5 pb-3.5 rounded-[18px] relative overflow-hidden group transition-all duration-300 flex flex-col justify-between border-0 ${
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
             }`} 
             onClick={(e) => {
@@ -161,6 +165,11 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             }}
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
+<<<<<<< HEAD
+=======
+                backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
+                border: 'none',
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 color: 'var(--text-color)',
                 fontFamily: isEn ? 'sans-serif' : theme.font
             }}

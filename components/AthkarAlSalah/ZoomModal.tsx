@@ -118,7 +118,11 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: '100%', opacity: 0 }}
                     transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+<<<<<<< HEAD
                     className="app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative bg-white dark:bg-[#1E293B]"
+=======
+                    className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     style={{ 
                         color: 'var(--text-color)',
                         fontFamily: isEn ? 'sans-serif' : theme.font,
@@ -212,7 +216,14 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
 
                     {/* Action Bar (Audio, Share, Copy, Zoom, ChevronDown to hide) with safe-area bottom elevation */}
                     <div 
+<<<<<<< HEAD
                         className="px-4 pt-3 pb-2 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5 overflow-visible" 
+=======
+                        className="px-4 pt-3 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
+                        style={{ 
+                            backgroundColor: tokens.cardBgColor
+                        }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     >
                         {/* Audio Button */}
                         <button

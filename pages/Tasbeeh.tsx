@@ -391,11 +391,15 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
     };
 
     return (
+<<<<<<< HEAD
         <div
             className="h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors"
             dir={dir}
             style={{ backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) }}
         >
+=======
+        <div className="h-[100dvh] max-h-[100dvh] flex flex-col bg-transparent overflow-hidden" dir={dir}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <TasbeehHeader 
                 title={tTasbeeh('title', language)} 
                 subtitle={tTasbeeh('subtitle', language)} 
@@ -409,7 +413,11 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
             <main 
                 className="px-4 flex-1 min-h-0 relative overflow-y-auto overscroll-contain fade-in pt-1 app-scroll-safe"
             >
+<<<<<<< HEAD
                  <div className="w-full flex flex-col items-center pb-5">
+=======
+                 <div className="w-full flex flex-col items-center">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                  <TasbeehControls 
                     isBlackAndWhite={isBlackAndWhite}
                     theme={theme}
@@ -453,18 +461,32 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                     </div>
 
                     {/* Quick Chart Trigger Card */}
+<<<<<<< HEAD
                     <button
                         id="tasbeeh-chart-bottom-btn"
                         type="button"
                         onClick={() => setModals((p: any) => ({ ...p, stats: true }))}
                         className="app-page-card border-0 w-full mt-3.5 py-3.5 px-4 rounded-2xl bg-white dark:bg-[#1E293B] flex items-center justify-center text-xs transition-all group cursor-pointer"
+=======
+                    <motion.button
+                        id="tasbeeh-chart-bottom-btn"
+                        type="button"
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setModals((p: any) => ({ ...p, stats: true }))}
+                        className="w-full mt-3 py-3.5 px-4 rounded-2xl bg-white dark:bg-[#1E293B] shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] border-0 flex items-center justify-center text-xs transition-all hover:shadow-md active:scale-98 group cursor-pointer"
+                        style={{ border: 'none' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         title={tTasbeeh('chartTitle', language)}
                         aria-label={tTasbeeh('chartTitle', language)}
                     >
                         <span className="font-bold text-sm text-slate-800 dark:text-white">
                             {tTasbeeh('chartTitle', language)}
                         </span>
+<<<<<<< HEAD
                     </button>
+=======
+                    </motion.button>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 </div>
                  </div>
             </main>

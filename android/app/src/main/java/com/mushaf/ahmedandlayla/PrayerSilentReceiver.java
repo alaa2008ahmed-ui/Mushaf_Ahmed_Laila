@@ -560,6 +560,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                     return;
                 }
 
+<<<<<<< HEAD
                 // 1b. Ensure ringer icon & streams stay synced to muted state during an active window
                 if (audioManager != null && appliedRingerMute && audioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT
                     && (activeEnd <= 0L || now < activeEnd)) {
@@ -567,6 +568,9 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 }
 
                 // 1c. If active via DND fallback while screen was locked and Quick Settings ringer remained NORMAL,
+=======
+                // 1b. If active via DND fallback while screen was locked and Quick Settings ringer remained NORMAL,
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 //     attempt to sync RINGER_MODE_SILENT cleanly now (provided window hasn't expired)
                 if (audioManager != null && !appliedRingerMute && audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL
                     && (activeEnd <= 0L || now < activeEnd)) {
@@ -593,9 +597,14 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                             silentSet = forceRingerModeSilent(audioManager, prefs);
                         }
                         if (!silentSet && audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+<<<<<<< HEAD
                             muteAudioStreams(audioManager, true);
                             audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
                             waitForMutedState(audioManager, 6);
+=======
+                            audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
+                            waitForMutedState(audioManager, 5);
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         }
                         if (audioManager.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) {
                             boolean dndStillActive = false;
@@ -1440,6 +1449,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
         return audioManager.getRingerMode() != AudioManager.RINGER_MODE_NORMAL;
     }
 
+<<<<<<< HEAD
     private static void ensureRingerStreamMutedIfNeeded(AudioManager audioManager) {
         if (audioManager == null) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -1479,12 +1489,30 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
         // Attempt 2: Samsung One UI cycles NORMAL -> VIBRATE -> SILENT; stepping via VIBRATE updates Quick Settings Sound tile reliably
         try {
             if (prefs != null) {
+=======
+    private static boolean forceRingerModeSilent(AudioManager audioManager, SharedPreferences prefs) {
+        if (audioManager == null) return false;
+        if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+            return true;
+        }
+        try {
+            audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+            if (waitForRingerMode(audioManager, AudioManager.RINGER_MODE_SILENT, 6, true)) {
+                return true;
+            }
+        } catch (Exception ignored) {}
+
+        // Samsung One UI cycles NORMAL -> VIBRATE -> SILENT; stepping via VIBRATE updates Quick Settings Sound tile reliably
+        try {
+            if (prefs != null && prefs.getBoolean(KEY_IS_SILENT_ACTIVE, false)) {
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 prefs.edit().putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis()).apply();
             }
             audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
             Thread.sleep(120);
             audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
             if (waitForRingerMode(audioManager, AudioManager.RINGER_MODE_SILENT, 6, true)) {
+<<<<<<< HEAD
                 ensureRingerStreamMutedIfNeeded(audioManager);
                 return audioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
             }
@@ -1513,6 +1541,22 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             if (waitForRingerMode(audioManager, AudioManager.RINGER_MODE_SILENT, 6, true)) {
                 ensureRingerStreamMutedIfNeeded(audioManager);
                 return audioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
+=======
+                return true;
+            }
+        } catch (Exception ignored) {}
+
+        // Reset stuck OEM audio/DND interlock by briefly resetting to NORMAL before asserting SILENT
+        try {
+            if (prefs != null && prefs.getBoolean(KEY_IS_SILENT_ACTIVE, false)) {
+                prefs.edit().putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis()).apply();
+            }
+            audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            Thread.sleep(150);
+            audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+            if (waitForRingerMode(audioManager, AudioManager.RINGER_MODE_SILENT, 6, true)) {
+                return true;
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             }
         } catch (Exception ignored) {}
 
@@ -1525,9 +1569,12 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             ? context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             : null;
         saveOriginalAudioStateIfNeeded(context, audioManager);
+<<<<<<< HEAD
         if (prefs != null) {
             prefs.edit().putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis()).apply();
         }
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
         try {
             // Mute media stream only first; do NOT call ADJUST_MUTE/setStreamVolume(0) on ringer streams
@@ -1537,19 +1584,30 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             if (context != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                 if (nm != null && nm.isNotificationPolicyAccessGranted()) {
+<<<<<<< HEAD
                     // 1. Transition ringer mode cleanly to SILENT (direct, VIBRATE -> SILENT, or ADJUST_MUTE -> SILENT)
+=======
+                    // 1. Transition ringer mode cleanly to SILENT (direct, or VIBRATE -> SILENT for One UI)
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     if (forceRingerModeSilent(audioManager, prefs)) {
                         if (prefs != null) {
                             prefs.edit()
                                 .putBoolean(KEY_USED_DND_FILTER, false)
                                 .putBoolean(KEY_APPLIED_RINGER_MUTE, true)
+<<<<<<< HEAD
                                 .putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis())
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 .apply();
                         }
                         return true;
                     }
 
+<<<<<<< HEAD
                     // 2. If SILENT was blocked, apply DND filter and re-assert SILENT cleanly (without ever resetting to NORMAL)
+=======
+                    // 2. If SILENT was blocked, apply DND filter and re-assert SILENT cleanly
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     boolean dndSet = false;
                     try {
                         nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS);
@@ -1558,8 +1616,12 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                     } catch (Exception ignored) {}
 
                     if (!forceRingerModeSilent(audioManager, prefs)) {
+<<<<<<< HEAD
                         // Fallback to stream mute + VIBRATE if SILENT is still rejected by OEM policy
                         muteAudioStreams(audioManager, true);
+=======
+                        // Fallback to VIBRATE if SILENT is still rejected by OEM policy
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
                             try {
                                 audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
@@ -1568,13 +1630,24 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                         }
                     }
 
+<<<<<<< HEAD
+=======
+                    // Last-resort stream mute only if ringer mode still remained NORMAL
+                    if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+                        muteAudioStreams(audioManager, true);
+                    }
+
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     boolean ringerMuted = audioManager.getRingerMode() != AudioManager.RINGER_MODE_NORMAL;
                     boolean effectiveDnd = dndSet || (nm.getCurrentInterruptionFilter() != NotificationManager.INTERRUPTION_FILTER_ALL);
                     if (prefs != null) {
                         prefs.edit()
                             .putBoolean(KEY_USED_DND_FILTER, effectiveDnd)
                             .putBoolean(KEY_APPLIED_RINGER_MUTE, ringerMuted)
+<<<<<<< HEAD
                             .putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis())
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             .apply();
                     }
                     return ringerMuted || effectiveDnd;
@@ -1584,16 +1657,22 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                     boolean ringerMuted = waitForMutedState(audioManager, 6);
                     if (!ringerMuted) {
                         muteAudioStreams(audioManager, true);
+<<<<<<< HEAD
                         try {
                             audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
                             ringerMuted = waitForMutedState(audioManager, 4);
                         } catch (Exception ignored) {}
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     }
                     if (prefs != null) {
                         prefs.edit()
                             .putBoolean(KEY_USED_DND_FILTER, false)
                             .putBoolean(KEY_APPLIED_RINGER_MUTE, ringerMuted)
+<<<<<<< HEAD
                             .putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis())
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             .apply();
                     }
                     return ringerMuted;
@@ -1605,10 +1684,14 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                     muted = audioManager.getRingerMode() != AudioManager.RINGER_MODE_NORMAL;
                 }
                 if (prefs != null) {
+<<<<<<< HEAD
                     prefs.edit()
                         .putBoolean(KEY_APPLIED_RINGER_MUTE, muted)
                         .putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis())
                         .apply();
+=======
+                    prefs.edit().putBoolean(KEY_APPLIED_RINGER_MUTE, muted).apply();
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 }
                 return muted;
             }
@@ -1621,20 +1704,28 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                     muteAudioStreams(audioManager, true);
                 }
                 if (prefs != null) {
+<<<<<<< HEAD
                     prefs.edit()
                         .putBoolean(KEY_APPLIED_RINGER_MUTE, muted)
                         .putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis())
                         .apply();
+=======
+                    prefs.edit().putBoolean(KEY_APPLIED_RINGER_MUTE, muted).apply();
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 }
                 return muted;
             } catch (Exception ignored) {}
         } catch (Exception ignored) {}
         boolean fallbackMuted = audioManager.getRingerMode() != AudioManager.RINGER_MODE_NORMAL;
         if (prefs != null) {
+<<<<<<< HEAD
             prefs.edit()
                 .putBoolean(KEY_APPLIED_RINGER_MUTE, fallbackMuted)
                 .putLong(KEY_LAST_ACTIVATION_TIME, System.currentTimeMillis())
                 .apply();
+=======
+            prefs.edit().putBoolean(KEY_APPLIED_RINGER_MUTE, fallbackMuted).apply();
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         }
         return fallbackMuted;
     }

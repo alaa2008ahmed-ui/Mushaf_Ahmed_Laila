@@ -4,11 +4,14 @@ import { syncWidgetThemeColors } from '../utils/widgetUtils';
 import { getQuranThemeForLayout, THEMES as QURAN_THEMES, getLinkedQuranThemeForHomeVariant, applyQuranThemeForHomeVariant, isDarkQuranTheme } from '../components/QuranReader/constants';
 import { syncCurrentSplashImage } from '../utils/splashThemeHelper';
 import { syncSystemStatusBar } from '../utils/statusBar';
+<<<<<<< HEAD
 import {
     setSelectedShareDesign,
     getShareDesignForHomeVariant,
     getShareDesignForPresetTheme,
 } from '../utils/shareCardDesigns';
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
 // State to be saved to localStorage
 interface ThemeSettings {
@@ -228,6 +231,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }
     });
 
+<<<<<<< HEAD
     const applyHomeThemeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy', syncShareDesign = true) => {
         setHomeThemeVariantState(variant);
         try {
@@ -241,6 +245,15 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             if (syncShareDesign && !effectiveNight) {
                 setSelectedShareDesign(getShareDesignForHomeVariant(variant, false));
             }
+=======
+    const setHomeThemeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy') => {
+        setHomeThemeVariantState(variant);
+        try {
+            localStorage.setItem('modern_home_theme_variant', variant);
+            syncModernDOMClasses(isNightMode, variant);
+            syncCurrentSplashImage(isNightMode, variant);
+            applyQuranThemeForHomeVariant(variant);
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         } catch {}
         setTimeout(() => {
             window.dispatchEvent(new Event('themeChanged'));
@@ -249,10 +262,13 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }, 0);
     };
 
+<<<<<<< HEAD
     const setHomeThemeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy') => {
         applyHomeThemeVariant(variant, true);
     };
 
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     useEffect(() => {
         try {
             const syncedVariant = localStorage.getItem('quran_synced_home_theme_variant');
@@ -268,14 +284,18 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
 
     const setNightModeActive = (active: boolean) => {
         const layout = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
+<<<<<<< HEAD
         try {
             localStorage.setItem(`night_mode_active_${layout}`, String(active));
             localStorage.setItem('night_mode_active', String(active));
         } catch (e) {}
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         syncCurrentSplashImage(active, homeThemeVariant);
         if (layout === 'modern') {
             syncModernDOMClasses(active, homeThemeVariant);
         }
+<<<<<<< HEAD
         setSelectedShareDesign(
             active
                 ? 'obsidian_gold'
@@ -287,6 +307,18 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             ...prev,
             [layout]: active
         }));
+=======
+        setLayoutNightModes(prev => {
+            try {
+                localStorage.setItem(`night_mode_active_${layout}`, String(active));
+                localStorage.setItem('night_mode_active', String(active));
+            } catch (e) {}
+            return {
+                ...prev,
+                [layout]: active
+            };
+        });
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         setTimeout(() => {
             window.dispatchEvent(new Event('themeChanged'));
         }, 0);
@@ -294,6 +326,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
 
     const toggleNightMode = () => {
         const layout = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
+<<<<<<< HEAD
         const currentVal = Boolean(layoutNightModes[layout]);
         const nextVal = !currentVal;
         try {
@@ -316,6 +349,24 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             ...prev,
             [layout]: nextVal
         }));
+=======
+        
+        setLayoutNightModes(prev => {
+            const currentVal = Boolean(prev[layout]);
+            const nextVal = !currentVal;
+            syncCurrentSplashImage(nextVal, homeThemeVariant);
+            
+            try {
+                localStorage.setItem(`night_mode_active_${layout}`, String(nextVal));
+                localStorage.setItem('night_mode_active', String(nextVal));
+            } catch (e) {}
+            
+            return {
+                ...prev,
+                [layout]: nextVal
+            };
+        });
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
         setTimeout(() => {
             window.dispatchEvent(new Event('themeChanged'));
@@ -474,6 +525,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     
     const applyPresetTheme = (key: string) => {
         if (key === 'sky_mode') {
+<<<<<<< HEAD
             applyHomeThemeVariant('sky', false);
         } else if (key === 'emerald_mode') {
             applyHomeThemeVariant('emerald', false);
@@ -481,6 +533,15 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             applyHomeThemeVariant('burgundy', false);
         } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
             applyHomeThemeVariant('gold', false);
+=======
+            setHomeThemeVariant('sky');
+        } else if (key === 'emerald_mode') {
+            setHomeThemeVariant('emerald');
+        } else if (key === 'burgundy_mode') {
+            setHomeThemeVariant('burgundy');
+        } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
+            setHomeThemeVariant('gold');
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         }
 
         const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;

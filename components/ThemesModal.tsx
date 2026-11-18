@@ -41,7 +41,11 @@ const englishThemeNames: { [key: string]: string } = {
 };
 
 function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandscape?: boolean }) {
+<<<<<<< HEAD
     const { theme, themeKey, applyPresetTheme, setCustomBackground, resetBackground } = useTheme();
+=======
+    const { theme, themeKey, applyPresetTheme, setCustomBackground, resetBackground, setHomeThemeVariant } = useTheme();
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     const { language } = useLanguage();
     const isEn = language === 'en';
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +95,18 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
 
     const handleThemeSelect = (key: string) => {
         applyPresetTheme(key);
+<<<<<<< HEAD
+=======
+        if (key === 'sky_mode') {
+            setHomeThemeVariant('sky');
+        } else if (key === 'emerald_mode') {
+            setHomeThemeVariant('emerald');
+        } else if (key === 'burgundy_mode') {
+            setHomeThemeVariant('burgundy');
+        } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
+            setHomeThemeVariant('gold');
+        }
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         const themeName = isEn ? (englishThemeNames[key] || presetThemes[key]?.name || key) : (presetThemes[key]?.name || key);
         showGlobalAppToast(isEn ? `Theme: ${themeName}` : `ثيم: ${themeName}`);
         onClose();

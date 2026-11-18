@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+<<<<<<< HEAD
 import { READERS, ReaderItem, ReadingMode, getReadersForMode, isEnglishReader, THEMES, isDarkQuranTheme } from './constants';
+=======
+import { READERS, ReaderItem, ReadingMode, getReadersForMode, isEnglishReader } from './constants';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { Search } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -88,6 +92,7 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
         return unregister;
     }, [onClose]);
 
+<<<<<<< HEAD
     const themeColors = useMemo(() => {
         const modeSuffix = isLandscape ? '_h' : '_v';
         const activeQuranThemeId = getQuranThemeIdForLayout(modeSuffix, undefined, readingMode);
@@ -152,6 +157,15 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
 
         if (accent.toLowerCase() === '#000000' && isDark) {
             accent = '#ffffff';
+=======
+    const isBlackTheme = useMemo(() => {
+        try {
+            const bg = getComputedStyle(document.documentElement).getPropertyValue('--qr-bg').trim();
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--qr-accent').trim();
+            return bg === '#000000' || accent === '#ffffff' || accent === '#FFFFFF';
+        } catch {
+            return false;
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         }
 
         const accentText = isBlack
@@ -283,6 +297,7 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
     } as React.CSSProperties;
 
     return (
+<<<<<<< HEAD
         <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm ${zIndexClass} flex items-center justify-center ${isLandscape ? 'p-0' : 'p-3 sm:p-4'} animate-fadeIn font-cairo select-none`} onClick={handleClose}>
             <div 
                 dir={dir} 
@@ -290,6 +305,10 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                 style={modalVars}
                 onClick={e => e.stopPropagation()}
             >
+=======
+        <div className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-3 sm:p-4'} animate-fadeIn`} onClick={handleClose}>
+            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md sm:max-w-2xl rounded-2xl max-h-[88dvh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter relative`} onClick={e => e.stopPropagation()}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 {/* Header with Title and Search */}
                 {(!hideHeader || !isSingleReciterMode) && (
                     <div className="p-3.5 pb-2 flex flex-col gap-2.5 shrink-0 border-0">
@@ -299,10 +318,14 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                     <span className="text-sm font-black truncate" style={{ color: themeColors.cardText }}>
                                         {modalTitle}
                                     </span>
+<<<<<<< HEAD
                                     <span 
                                         className="text-[11px] px-2.5 py-0.5 rounded-full font-bold app-page-card border-0" 
                                         style={{ backgroundColor: themeColors.cardBg, color: themeColors.isBlack ? '#ffffff' : themeColors.accent }}
                                     >
+=======
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold opacity-75" style={{ backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : 'var(--qr-accent-10, rgba(16, 185, 129, 0.12))', color: isBlackTheme ? '#ffffff' : 'var(--qr-accent, #10b981)' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         {filteredReaders.length}
                                     </span>
                                 </div>
@@ -339,7 +362,11 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                     {/* Scrollable Reciters Area */}
                     <div 
                         ref={listContainerRef} 
+<<<<<<< HEAD
                         className={`overflow-y-auto overflow-x-hidden no-scrollbar flex-1 min-h-0 p-3.5 pt-2 pb-5 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} ${!isSingleReciterMode ? 'pr-10 sm:pr-11 pl-3.5' : ''}`}
+=======
+                        className={`overflow-y-auto flex-1 min-h-0 p-3 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} ${!isSingleReciterMode ? 'pr-8 sm:pr-9 pl-3' : ''}`}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     >
                         {isSingleReciterMode ? (
                             <div className="flex flex-col items-center justify-center h-full p-4">
@@ -353,8 +380,13 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                             onClick={() => handleSelect(r.id)}
                                             className="w-full max-w-md p-5 rounded-2xl border-0 transition-all font-bold flex flex-col items-center justify-center text-center cursor-pointer app-page-card quran-raised-btn quran-raised-btn-selected"
                                             style={{ 
+<<<<<<< HEAD
                                                 backgroundColor: themeColors.accent, 
                                                 color: themeColors.accentText
+=======
+                                                backgroundColor: 'var(--qr-accent)', 
+                                                color: 'var(--qr-accent-text, #ffffff)'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             }}
                                         >
                                             <div className="flex items-center justify-center w-full">
@@ -363,7 +395,11 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                                 </span>
                                             </div>
                                             {!isEnReader && (r.subTitle || r.subTitleEn) && (
+<<<<<<< HEAD
                                                 <span className="text-xs mt-1.5 opacity-90" style={{ color: themeColors.accentText }}>
+=======
+                                                <span className="text-xs mt-1.5 opacity-90 text-white/90">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {isEn ? (r.subTitleEn || r.subTitle) : r.subTitle}
                                                 </span>
                                             )}
@@ -391,8 +427,13 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                                     : 'quran-raised-btn'
                                             }`}
                                             style={{ 
+<<<<<<< HEAD
                                                 backgroundColor: isSelected ? themeColors.accent : themeColors.cardBg, 
                                                 color: isSelected ? themeColors.accentText : themeColors.cardText
+=======
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : 'var(--qr-card-bg)', 
+                                                color: isSelected ? 'var(--qr-accent-text, #ffffff)' : 'var(--qr-card-text)'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             }}
                                         >
                                             <div className="flex items-center justify-center w-full">
@@ -401,10 +442,14 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                                 </span>
                                             </div>
                                             {!isEnReader && subTitle && (
+<<<<<<< HEAD
                                                 <span 
                                                     className="text-[10px] mt-1 line-clamp-1 opacity-85"
                                                     style={{ color: isSelected ? themeColors.accentText : themeColors.subTextColor }}
                                                 >
+=======
+                                                <span className={`text-[10px] mt-0.5 line-clamp-1 opacity-80 ${isSelected ? 'text-white/90' : 'text-indigo-600 dark:text-indigo-300'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     {subTitle}
                                                 </span>
                                             )}

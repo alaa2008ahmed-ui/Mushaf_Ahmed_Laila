@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { BookOpen, BookMarked, Play } from 'lucide-react';
+=======
+import { X, BookOpen, BookMarked, Play, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { getAyahsInRange } from '../../utils/quranMemorizationUtils';
 import { SURAH_NAMES_AR } from '../QuranReader/constants';
 import { SURAH_NAMES_EN } from '../../pages/Memorization';
@@ -66,8 +70,11 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
     ? `${startSurahName} (${isEn ? 'Ayahs' : 'الآيات'} ${fromAyah} - ${toAyah})`
     : `${startSurahName} (${fromAyah}) - ${endSurahName} (${toAyah})`;
 
+<<<<<<< HEAD
   const isBlackTheme = btnTextColor === '#000000';
 
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   return (
     <div 
       className="fixed inset-0 z-[1500] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-md animate-fadeIn" 
@@ -75,12 +82,21 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
       dir={isEn ? 'ltr' : 'rtl'}
     >
       <div 
+<<<<<<< HEAD
         className={`settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} app-page-card border-0 w-full max-w-lg max-h-[88dvh] rounded-[2rem] flex flex-col overflow-hidden bg-white dark:bg-[#1E293B] text-slate-800 dark:text-zinc-100`} 
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-white/5 flex items-center justify-start">
           <div className="flex items-center gap-2.5 min-w-0">
+=======
+        className="w-full max-w-lg max-h-[88dvh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border-0 text-slate-800 dark:text-zinc-100" 
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <div 
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold"
               style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
@@ -94,6 +110,7 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
               </p>
             </div>
           </div>
+<<<<<<< HEAD
         </div>
 
         {/* Segmented Tab */}
@@ -108,11 +125,36 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
                   : 'bg-white dark:bg-[#0F172A] text-slate-600 dark:text-zinc-300'
               }`}
               style={activeTab === 'text' ? { backgroundColor: primaryColor, color: btnTextColor } : undefined}
+=======
+
+          <button 
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all cursor-pointer border-0"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Segmented Tab */}
+        <div className="px-5 pt-3">
+          <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 gap-1">
+            <button
+              onClick={() => setActiveTab('text')}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border-0 ${
+                activeTab === 'text' ? 'shadow-sm text-white' : 'text-slate-600 dark:text-zinc-400'
+              }`}
+              style={{
+                backgroundColor: activeTab === 'text' ? primaryColor : 'transparent',
+                color: activeTab === 'text' ? btnTextColor : undefined
+              }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             >
               <BookOpen size={14} />
               <span>{isEn ? 'Verses Text' : 'نص الآيات'}</span>
             </button>
             <button
+<<<<<<< HEAD
               type="button"
               onClick={() => setActiveTab('tafseer')}
               className={`app-page-card border-0 py-2.5 px-3 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
@@ -121,6 +163,16 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
                   : 'bg-white dark:bg-[#0F172A] text-slate-600 dark:text-zinc-300'
               }`}
               style={activeTab === 'tafseer' ? { backgroundColor: primaryColor, color: btnTextColor } : undefined}
+=======
+              onClick={() => setActiveTab('tafseer')}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border-0 ${
+                activeTab === 'tafseer' ? 'shadow-sm text-white' : 'text-slate-600 dark:text-zinc-400'
+              }`}
+              style={{
+                backgroundColor: activeTab === 'tafseer' ? primaryColor : 'transparent',
+                color: activeTab === 'tafseer' ? btnTextColor : undefined
+              }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             >
               <BookMarked size={14} />
               <span>{isEn ? 'Tafseer & Meaning' : 'التفسير والمعنى'}</span>
@@ -131,7 +183,11 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
         {/* Content Body */}
         <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
           {activeTab === 'text' ? (
+<<<<<<< HEAD
             <div className="wird-inner-raised p-4 rounded-2xl bg-amber-50/60 dark:bg-[#0F172A]/70 space-y-3">
+=======
+            <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-zinc-800/40 border border-amber-200/40 dark:border-zinc-700/50 space-y-3">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
               <div 
                 className="text-lg leading-[2.6] text-right font-serif select-none" 
                 style={{ fontFamily: "'Amiri', 'Traditional Arabic', serif" }}
@@ -169,7 +225,11 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
                   return (
                     <div 
                       key={key}
+<<<<<<< HEAD
                       className="app-page-card border-0 p-3.5 rounded-2xl bg-white dark:bg-[#0F172A] space-y-1.5"
+=======
+                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 space-y-1.5"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     >
                       <div className="flex items-center justify-between text-xs font-bold" style={{ color: primaryColor }}>
                         <span>
@@ -194,23 +254,37 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
         </div>
 
         {/* Footer Actions */}
+<<<<<<< HEAD
         <div className="px-4 pt-4 pb-5 border-t border-slate-100 dark:border-white/5 flex items-center gap-3 bg-slate-50/50 dark:bg-[#0F172A]/60 overflow-visible">
           <button
             type="button"
+=======
+        <div className="p-4 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-2.5 bg-slate-50/50 dark:bg-zinc-900/80">
+          <button
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             onClick={() => {
               onClose();
               onStartSession();
             }}
+<<<<<<< HEAD
             className="app-page-card border-0 flex-1 py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+=======
+            className="flex-1 py-3.5 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer border-0"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             style={{ backgroundColor: primaryColor, color: btnTextColor }}
           >
             <Play size={16} fill="currentColor" />
             <span>{isEn ? 'Start Memorization Now' : 'ابدأ جلسة التحفيظ الآن'}</span>
           </button>
           <button
+<<<<<<< HEAD
             type="button"
             onClick={onClose}
             className="app-page-card border-0 px-5 py-3.5 rounded-2xl font-bold text-xs bg-white dark:bg-[#1E293B] text-slate-700 dark:text-zinc-200 transition-all cursor-pointer"
+=======
+            onClick={onClose}
+            className="px-5 py-3.5 rounded-2xl font-bold text-xs bg-slate-200/80 dark:bg-zinc-800 hover:bg-slate-300 dark:hover:bg-zinc-700 active:scale-95 transition-all cursor-pointer border-0"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           >
             {isEn ? 'Close' : 'إغلاق'}
           </button>

@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "Remix Remix Remix Remix Remix Remix Remix Remix Remix Remix Remix Quran 1.65",
+=======
+  "name": "Remix Remix Remix Remix Remix Remix  Quran 1.63",
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   "description": "تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي.",
   "requestFramePermissions": [
     "geolocation",

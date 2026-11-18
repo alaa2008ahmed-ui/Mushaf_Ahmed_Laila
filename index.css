@@ -505,7 +505,10 @@ body:not(.quran-context) div[id^="mawarith-card-"]:not(button):not(input):not(se
 }
 
 /* في الوضع الليلي والداكن: تجسيم بارز بدون إطارات نهائياً ومطابق للصفحة الرئيسية */
+<<<<<<< HEAD
 html.dark body:not(.quran-context) .app-page-card,
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 body:not(.quran-context).dark .app-page-card,
 body:not(.quran-context).dark [data-card-item="true"]:not(button):not(input):not(select):not(.btn),
 body:not(.quran-context).dark .seerah-card:not(button):not(input):not(select):not(.btn),
@@ -574,7 +577,10 @@ body:not(.quran-context).theme-black div[id^="mawarith-card-"]:not(button):not(i
   box-shadow: 0 6.5px 0 #0d0d10, 0 14px 28px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.22), inset 0 -2.5px 5px rgba(0, 0, 0, 0.65) !important;
 }
 
+<<<<<<< HEAD
 html.dark body:not(.quran-context) .app-page-card:hover,
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 body:not(.quran-context).dark .app-page-card:hover,
 body:not(.quran-context).dark [data-card-item="true"]:not(button):not(input):not(select):not(.btn):hover,
 body:not(.quran-context).dark .seerah-card:not(button):not(input):not(select):not(.btn):hover,
@@ -616,12 +622,17 @@ body:not(.quran-context).theme-black-gold div[id^="habit-card-"]:not(button):not
 body:not(.quran-context).theme-black-gold div[id^="fitr-card-"]:not(button):not(input):not(select):not(.btn):hover,
 body:not(.quran-context).theme-black-gold div[id^="zakat-card-"]:not(button):not(input):not(select):not(.btn):hover,
 body:not(.quran-context).theme-black-gold div[id^="kaffarat-card-"]:not(button):not(input):not(select):not(.btn):hover,
+<<<<<<< HEAD
 body:not(.quran-context).theme-black-gold div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn):hover,
 body:not(.quran-context).theme-black .app-page-card:hover {
+=======
+body:not(.quran-context).theme-black-gold div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn):hover {
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   transform: translateY(-2px);
   box-shadow: 0 8.5px 0 #0d0d10, 0 16px 30px -3px rgba(0, 0, 0, 0.8), inset 0 2px 2px rgba(255, 255, 255, 0.28), inset 0 -2.5px 5px rgba(0, 0, 0, 0.5) !important;
 }
 
+<<<<<<< HEAD
 /* تأثير الضغط ثلاثي الأبعاد للأزرار والبطاقات التفاعلية المجسمة */
 html.dark body:not(.quran-context) button.app-page-card:disabled:hover,
 body:not(.quran-context) button.app-page-card:disabled,
@@ -831,6 +842,8 @@ body.theme-black .quran-raised-card {
   cursor: pointer;
 }
 
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 /* تجسيم وإبراز أزرار ورد اليوم وموضع القراءة الحالي بشكل لطيف ومتناسق */
 body:not(.quran-context) .wird-inner-raised {
   border: none !important;
@@ -843,14 +856,20 @@ body:not(.quran-context) .wird-inner-raised:active {
   box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.09), 0 3px 6px -2px rgba(0, 0, 0, 0.06), inset 0 1.5px 1px rgba(255, 255, 255, 0.9) !important;
 }
 
+<<<<<<< HEAD
 html.dark body:not(.quran-context) .wird-inner-raised,
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 body:not(.quran-context).dark .wird-inner-raised,
 body:not(.quran-context).theme-black-gold .wird-inner-raised,
 body:not(.quran-context).theme-black .wird-inner-raised {
   box-shadow: 0 3.5px 0 #09090b, 0 7px 14px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.14), inset 0 -1.5px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
+<<<<<<< HEAD
 html.dark body:not(.quran-context) .wird-inner-raised:active,
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 body:not(.quran-context).dark .wird-inner-raised:active,
 body:not(.quran-context).theme-black-gold .wird-inner-raised:active,
 body:not(.quran-context).theme-black .wird-inner-raised:active {
@@ -858,6 +877,7 @@ body:not(.quran-context).theme-black .wird-inner-raised:active {
   box-shadow: 0 1.5px 0 #09090b, 0 3px 8px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.12) !important;
 }
 
+<<<<<<< HEAD
 /* الصناديق الفرعية الداخلية المجسمة الثابتة والفواصل المنحوتة داخل البطاقات */
 body:not(.quran-context) .app-inner-3d-box {
   border: none !important;
@@ -898,6 +918,8 @@ body:not(.quran-context).theme-black .app-3d-divider-top {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 /* قاعدة حازمة: استثناء الأزرار تماماً من تجسيم وبروز البطاقات */
 body:not(.quran-context) button,
 body:not(.quran-context) input[type="button"],

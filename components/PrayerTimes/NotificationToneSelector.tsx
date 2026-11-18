@@ -22,8 +22,11 @@ interface NotificationToneSelectorProps {
     isBlackTheme?: boolean;
     hideLabel?: boolean;
     hidePreviewButton?: boolean;
+<<<<<<< HEAD
     use3dAdiaStyle?: boolean;
     cardBg?: string;
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }
 
 const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
@@ -35,9 +38,13 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
     isDefaultTheme,
     isBlackTheme,
     hideLabel = false,
+<<<<<<< HEAD
     hidePreviewButton = false,
     use3dAdiaStyle = false,
     cardBg
+=======
+    hidePreviewButton = false
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }) => {
     const { language, dir } = useLanguage();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -180,7 +187,11 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
             )}
             
             {/* Notification Tone Row: Modal Trigger Button + Live Audition/Preview Button */}
+<<<<<<< HEAD
             <div className="flex items-center gap-2.5 overflow-visible">
+=======
+            <div className="flex items-center gap-2">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <button
                     type="button"
                     onClick={() => {
@@ -188,6 +199,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                         setPlayingTone(null);
                         setIsModalOpen(true);
                     }}
+<<<<<<< HEAD
                     className={use3dAdiaStyle
                         ? "flex-1 flex items-center justify-between p-3.5 rounded-2xl transition-all cursor-pointer font-bold text-xs sm:text-sm app-page-card border-0"
                         : "flex-1 flex items-center justify-between themed-bg-alt p-3 rounded-2xl shadow-xs transition-all cursor-pointer font-bold text-xs sm:text-sm hover:opacity-90"
@@ -196,6 +208,10 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                         backgroundColor: cardBg || (isBlackTheme ? '#18181b' : '#ffffff'),
                         color: isBlackTheme ? '#FFFFFF' : primaryColor
                     } : { 
+=======
+                    className="flex-1 flex items-center justify-between themed-bg-alt p-3 rounded-2xl shadow-xs transition-all cursor-pointer font-bold text-xs sm:text-sm hover:opacity-90"
+                    style={{ 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         border: `2px solid ${itemBorderColor}`,
                         color: isBlackTheme ? '#FFFFFF' : primaryColor
                     }}
@@ -216,6 +232,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                     <button
                         type="button"
                         onClick={(e) => handleTogglePreview(currentPlayableSource, e)}
+<<<<<<< HEAD
                         className={use3dAdiaStyle
                             ? "p-3.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer transition-all app-page-card border-0"
                             : "p-3 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-xs"
@@ -228,6 +245,10 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                 ? (isBlackTheme ? '#000000' : '#ffffff')
                                 : (isBlackTheme ? '#ffffff' : primaryColor)
                         } : {
+=======
+                        className="p-3 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-xs"
+                        style={{
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             border: `2px solid ${itemBorderColor}`,
                             backgroundColor: playingTone === currentPlayableSource
                                 ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor))
@@ -272,6 +293,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                     dir={dir}
                 >
                     <div 
+<<<<<<< HEAD
                         className={use3dAdiaStyle
                             ? `settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150`
                             : "rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
@@ -280,6 +302,10 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                             backgroundColor: isBlackTheme ? '#09090b' : 'var(--modal-bg, #ffffff)',
                             color: isBlackTheme ? '#ffffff' : 'var(--modal-text, #000000)'
                         } : { 
+=======
+                        className="rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+                        style={{ 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             backgroundColor: isBlackTheme ? '#000000' : 'var(--modal-bg, #ffffff)', 
                             color: isBlackTheme ? '#ffffff' : 'var(--modal-text, #000000)',
                             border: `2px solid ${itemBorderColor}`
@@ -310,7 +336,11 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                         </div>
 
                         {/* Tone List as Rounded Framed Items with Direct Audition */}
+<<<<<<< HEAD
                         <div className={`${use3dAdiaStyle ? 'space-y-3 py-2 px-1.5' : 'space-y-2 py-1 px-1'} overflow-y-auto flex-1 min-h-0 max-h-[62dvh] no-scrollbar`}>
+=======
+                        <div className="space-y-2 overflow-y-auto flex-1 min-h-0 max-h-[62dvh] py-1 px-1 no-scrollbar">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {optionsList.map((option) => {
                                 const isSelected = selectedId === option.id;
                                 const isPlayable = option.id !== 'none' && !!option.path;
@@ -319,11 +349,16 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                 return (
                                     <div
                                         key={option.id}
+<<<<<<< HEAD
                                         className="w-full flex items-center gap-2.5 overflow-visible"
+=======
+                                        className="w-full flex items-center gap-2"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         <button
                                             type="button"
                                             onClick={() => handleSelectOption(option)}
+<<<<<<< HEAD
                                             className={use3dAdiaStyle
                                                 ? "flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-all flex items-center justify-between relative cursor-pointer app-page-card border-0"
                                                 : "flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-transform active:scale-95 flex items-center justify-between relative cursor-pointer"
@@ -336,6 +371,10 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                                     ? (isBlackTheme ? '#000000' : '#ffffff')
                                                     : (isBlackTheme ? '#ffffff' : '#0f172a')
                                             } : {
+=======
+                                            className="flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-transform active:scale-95 flex items-center justify-between relative cursor-pointer"
+                                            style={{
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 border: `2px solid ${itemBorderColor}`,
                                                 backgroundColor: isSelected 
                                                     ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor)) 
@@ -348,9 +387,13 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                             <span className="font-bold truncate">{getToneDisplayName(option.name, language)}</span>
                                             {isSelected && (
                                                 <Check className={`w-4 h-4 shrink-0 ${
+<<<<<<< HEAD
                                                     use3dAdiaStyle
                                                         ? (isBlackTheme ? 'text-black' : 'text-white')
                                                         : (isDefaultTheme ? 'text-white' : (isBlackTheme ? 'text-black' : 'text-white'))
+=======
+                                                    isDefaultTheme ? 'text-white' : (isBlackTheme ? 'text-black' : 'text-white')
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 }`} />
                                             )}
                                         </button>
@@ -359,6 +402,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                             <button
                                                 type="button"
                                                 onClick={(e) => handleTogglePreview(option.path!, e)}
+<<<<<<< HEAD
                                                 className={use3dAdiaStyle
                                                     ? "p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer transition-all app-page-card border-0"
                                                     : "p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-90 transition-all shadow-xs"
@@ -371,6 +415,10 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                                         ? (isBlackTheme ? '#000000' : '#ffffff')
                                                         : (isBlackTheme ? '#ffffff' : primaryColor)
                                                 } : {
+=======
+                                                className="p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-90 transition-all shadow-xs"
+                                                style={{
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     border: `2px solid ${itemBorderColor}`,
                                                     backgroundColor: isTonePlaying
                                                         ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor))

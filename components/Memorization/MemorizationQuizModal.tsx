@@ -4,12 +4,16 @@ import {
   ArrowRight, ArrowLeft, Volume2, Sparkles, Brain, Check, 
   HelpCircle, AlertTriangle, RotateCcw, Award, CheckCircle
 } from 'lucide-react';
+<<<<<<< HEAD
 import { getAyahsInRange, normalizeForSpeechMatch } from '../../utils/quranMemorizationUtils';
 import {
   QuranVoiceAudioMonitor,
   evaluateVoiceRecitationCandidates,
   stripQuranTajweedTags
 } from '../../utils/quranVoiceEngine';
+=======
+import { getAyahsInRange, normalizeForSpeechMatch, calculateAyahMatchScore } from '../../utils/quranMemorizationUtils';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { memorizationService, MasteryLevel } from '../../services/memorizationService';
 import { SURAH_NAMES_AR } from '../QuranReader/constants';
 import { SURAH_NAMES_EN } from '../../pages/Memorization';
@@ -87,6 +91,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>('idle');
   const [spokenText, setSpokenText] = useState('');
+<<<<<<< HEAD
   const [audioLevel, setAudioLevel] = useState(0);
   const [voiceMatchResult, setVoiceMatchResult] = useState<{ score: number; matchedWords: boolean[]; ayahWords: string[] } | null>(null);
 
@@ -100,6 +105,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
   const latestTranscriptRef = useRef<string>('');
   const candidateTranscriptsRef = useRef<string[]>([]);
   const accumulatedPrefixRef = useRef<string>('');
+=======
+  const [voiceMatchResult, setVoiceMatchResult] = useState<{ score: number; matchedWords: boolean[]; ayahWords: string[] } | null>(null);
+
+  // Refs for speech recognition lifecycle and silence detection
+  const isListeningRef = useRef(false);
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<any>(null);
+  const maxTimerRef = useRef<any>(null);
+  const latestTranscriptRef = useRef<string>('');
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
   const ayahs = React.useMemo(() => {
     if (!isOpen) return [];
@@ -135,11 +150,18 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
     }
   };
 
+<<<<<<< HEAD
   // Stop recognition & audio filter monitor cleanly without evaluation
   const stopVoiceRecognition = useCallback(async () => {
     isListeningRef.current = false;
     setIsListening(false);
     setAudioLevel(0);
+=======
+  // Stop recognition helper without evaluation
+  const stopVoiceRecognition = useCallback(async () => {
+    isListeningRef.current = false;
+    setIsListening(false);
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     releaseListenInterruption('mem-quiz-mic');
 
     if (silenceTimerRef.current) {
@@ -150,6 +172,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
       clearTimeout(maxTimerRef.current);
       maxTimerRef.current = null;
     }
+<<<<<<< HEAD
     if (restartTimerRef.current) {
       clearTimeout(restartTimerRef.current);
       restartTimerRef.current = null;
@@ -159,6 +182,8 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
       audioMonitorRef.current.stop();
       audioMonitorRef.current = null;
     }
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     try {
       if (Capacitor.isNativePlatform()) {
@@ -166,17 +191,22 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
         await SpeechRecognition.stop().catch(() => {});
         await SpeechRecognition.removeAllListeners().catch(() => {});
       } else if (recognitionRef.current) {
+<<<<<<< HEAD
         try {
           recognitionRef.current.onend = null;
           recognitionRef.current.onerror = null;
           recognitionRef.current.onresult = null;
           recognitionRef.current.stop();
         } catch {}
+=======
+        recognitionRef.current.stop();
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         recognitionRef.current = null;
       }
     } catch (e) {}
   }, []);
 
+<<<<<<< HEAD
   // Stop voice recording and perform Uthmani-aware multi-hypothesis evaluation
   const stopAndEvaluateVoice = useCallback(async (textToEvaluate?: string) => {
     const candidatesSnapshot = [...candidateTranscriptsRef.current];
@@ -194,11 +224,25 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
     if (candidatesSnapshot.filter(Boolean).length === 0) {
       setVoiceStatus('wrong');
       setVoiceMatchResult({ score: 0, matchedWords: ayahWords.map(() => false), ayahWords });
+=======
+  // Stop voice recording and perform evaluation (Correct vs Wrong)
+  const stopAndEvaluateVoice = useCallback(async (textToEvaluate?: string) => {
+    await stopVoiceRecognition();
+
+    const rawTranscript = (textToEvaluate !== undefined ? textToEvaluate : latestTranscriptRef.current).trim();
+    const currentAyah = ayahs[currentStep];
+    if (!currentAyah) return;
+
+    if (!rawTranscript) {
+      setVoiceStatus('wrong');
+      setVoiceMatchResult({ score: 0, matchedWords: [], ayahWords: [] });
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       playSound('wrong');
       return;
     }
 
     setVoiceStatus('evaluating');
+<<<<<<< HEAD
     const res = evaluateVoiceRecitationCandidates(cleanAyahText, candidatesSnapshot);
     setSpokenText(res.bestTranscript);
     setVoiceMatchResult({
@@ -208,6 +252,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
     });
 
     if (res.passed) {
+=======
+    const cleanAyahText = stripTajweed(currentAyah.text);
+    const res = calculateAyahMatchScore(cleanAyahText, rawTranscript);
+    setVoiceMatchResult(res);
+
+    // 70% threshold for Quranic speech recognition match
+    const isCorrect = res.score >= 70;
+
+    if (isCorrect) {
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       setVoiceStatus('correct');
       playSound('correct');
     } else {
@@ -233,11 +287,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
     stopVoiceRecognition();
     setVoiceStatus('idle');
     setSpokenText('');
+<<<<<<< HEAD
     setAudioLevel(0);
     setVoiceMatchResult(null);
     latestTranscriptRef.current = '';
     candidateTranscriptsRef.current = [];
     accumulatedPrefixRef.current = '';
+=======
+    setVoiceMatchResult(null);
+    latestTranscriptRef.current = '';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     // Setup scramble words
     const words = cleanText.split(' ').filter(Boolean).map((w, idx) => ({
@@ -269,7 +328,11 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
     setChoiceStatus('idle');
   }, [isOpen, currentStep, ayahs, stopVoiceRecognition]);
 
+<<<<<<< HEAD
   // Start Dedicated Audio-Filtered Voice Recognition with VAD & multi-hypothesis matching
+=======
+  // Start Voice Recognition with silence detection
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   const startVoiceRecognition = async () => {
     if (isListeningRef.current) {
       // Manual tap while recording -> stop and evaluate immediately
@@ -279,22 +342,35 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
 
     try {
       setSpokenText('');
+<<<<<<< HEAD
       setAudioLevel(0);
       setVoiceMatchResult(null);
       latestTranscriptRef.current = '';
       candidateTranscriptsRef.current = [];
       accumulatedPrefixRef.current = '';
+=======
+      setVoiceMatchResult(null);
+      latestTranscriptRef.current = '';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       setVoiceStatus('listening');
       isListeningRef.current = true;
       setIsListening(true);
       acquireListenInterruption('mem-quiz-mic');
 
+<<<<<<< HEAD
       // Max recording safety timer (25 seconds for longer ayahs)
+=======
+      // Max recording safety timer (15 seconds)
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       maxTimerRef.current = setTimeout(() => {
         if (isListeningRef.current) {
           stopAndEvaluateVoice();
         }
+<<<<<<< HEAD
       }, 25000);
+=======
+      }, 15000);
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
       if (Capacitor.isNativePlatform()) {
         const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
@@ -318,25 +394,42 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
             const heard = data.matches[0];
             setSpokenText(heard);
             latestTranscriptRef.current = heard;
+<<<<<<< HEAD
             candidateTranscriptsRef.current = data.matches.filter(Boolean);
 
             // Real-time silence debounce timer: 1650ms after last recognized speech
+=======
+
+            // Real-time silence debounce timer: 1800ms of silence stops and evaluates automatically
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
             silenceTimerRef.current = setTimeout(() => {
               if (isListeningRef.current) {
                 stopAndEvaluateVoice(heard);
               }
+<<<<<<< HEAD
             }, 1650);
+=======
+            }, 1800);
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           }
         });
 
         await SpeechRecognition.start({
           language: 'ar-SA',
+<<<<<<< HEAD
           maxResults: 5,
+=======
+          maxResults: 3,
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           prompt: isEn ? 'Recite the verse clearly' : 'اتلُ الآية الكريمة بصوت واضح',
           partialResults: true
         });
       } else {
+<<<<<<< HEAD
+=======
+        // Web Speech API fallback
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognitionAPI) {
           setIsListening(false);
@@ -347,6 +440,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
           return;
         }
 
+<<<<<<< HEAD
         // 1. Start Dedicated Web Audio DSP Filtering & VAD Monitor (High-Pass + Low-Pass + Presence EQ + Compressor)
         const monitor = new QuranVoiceAudioMonitor();
         audioMonitorRef.current = monitor;
@@ -434,12 +528,51 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
               // Keep waiting gently while mic is active
               return;
             }
+=======
+        const recognition = new SpeechRecognitionAPI();
+        recognition.lang = 'ar-SA';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event: any) => {
+          if (!isListeningRef.current) return;
+          let transcript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript + ' ';
+          }
+          const cleaned = transcript.trim();
+          setSpokenText(cleaned);
+          latestTranscriptRef.current = cleaned;
+
+          // Automatic stop after 1.8 seconds of pause / silence
+          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = setTimeout(() => {
+            if (isListeningRef.current) {
+              stopAndEvaluateVoice(cleaned);
+            }
+          }, 1800);
+        };
+
+        recognition.onerror = (e: any) => {
+          console.warn('Speech recognition event error:', e);
+          if (isListeningRef.current && latestTranscriptRef.current.trim().length > 0) {
+            stopAndEvaluateVoice();
+          } else {
+            stopVoiceRecognition();
+            setVoiceStatus('idle');
+          }
+        };
+
+        recognition.onend = () => {
+          if (isListeningRef.current) {
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             if (latestTranscriptRef.current.trim().length > 0) {
               stopAndEvaluateVoice();
             } else {
               stopVoiceRecognition();
               setVoiceStatus('idle');
             }
+<<<<<<< HEAD
           };
 
           recognition.onend = () => {
@@ -475,6 +608,13 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
         };
 
         spawnWebRecognizer();
+=======
+          }
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       }
     } catch (e) {
       console.warn('Speech recognition error:', e);
@@ -488,11 +628,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
     stopVoiceRecognition();
     setVoiceStatus('idle');
     setSpokenText('');
+<<<<<<< HEAD
     setAudioLevel(0);
     setVoiceMatchResult(null);
     latestTranscriptRef.current = '';
     candidateTranscriptsRef.current = [];
     accumulatedPrefixRef.current = '';
+=======
+    setVoiceMatchResult(null);
+    latestTranscriptRef.current = '';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     // Automatically trigger mic on retry for seamless UX
     setTimeout(() => {
       startVoiceRecognition();
@@ -698,6 +843,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
   const overallPercentage = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
   const isAllCorrect = errorCount === 0;
 
+<<<<<<< HEAD
   const isBlackTheme = btnTextColor === '#000000';
   const primary3DStyle: React.CSSProperties = {
     backgroundColor: primaryColor,
@@ -707,6 +853,8 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
       : '0 5px 0 rgba(0, 0, 0, 0.22), 0 10px 18px -2px rgba(0, 0, 0, 0.16), inset 0 2px 2px rgba(255, 255, 255, 0.35)'
   };
 
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   return (
     <div 
       className="fixed inset-0 z-[1500] flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-md animate-fadeIn" 
@@ -714,11 +862,19 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
       dir={isEn ? 'ltr' : 'rtl'}
     >
       <div 
+<<<<<<< HEAD
         className="app-page-card border-0 w-full max-w-lg max-h-[92dvh] rounded-[2rem] flex flex-col overflow-hidden bg-white dark:bg-[#1E293B] text-slate-800 dark:text-zinc-100" 
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-5 pt-4 pb-3 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+=======
+        className="w-full max-w-lg max-h-[92dvh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800 text-slate-800 dark:text-zinc-100" 
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-5 pt-4 pb-3 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           <div className="flex items-center gap-2.5">
             <div 
               className="w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-sm"
@@ -739,12 +895,20 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
           </div>
 
           <button 
+<<<<<<< HEAD
             type="button"
             onClick={onClose}
             className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#0F172A] text-slate-500 dark:text-zinc-300 transition-all cursor-pointer"
             aria-label="Close"
           >
             <X size={16} />
+=======
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all cursor-pointer border-0"
+            aria-label="Close"
+          >
+            <X size={18} />
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           </button>
         </div>
 
@@ -752,49 +916,81 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
           <>
             {/* Mode Selector Tabs - Multiple Choice default on Right, Voice Recitation on Left in RTL */}
             <div className="px-5 pt-3">
+<<<<<<< HEAD
               <div className="grid grid-cols-3 gap-2 text-[11px] font-bold">
                 <button
                   type="button"
+=======
+              <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 gap-1 text-[11px] font-bold">
+                <button
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   onClick={() => {
                     stopVoiceRecognition();
                     setQuizType('next_ayah');
                   }}
+<<<<<<< HEAD
                   className={`py-2.5 px-2 rounded-2xl transition-all border-0 cursor-pointer flex items-center justify-center ${
                     quizType === 'next_ayah'
                       ? 'active:translate-y-[2px]'
                       : 'app-page-card bg-white dark:bg-[#0F172A] text-slate-600 dark:text-zinc-300'
                   }`}
                   style={quizType === 'next_ayah' ? primary3DStyle : undefined}
+=======
+                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer flex items-center justify-center ${
+                    quizType === 'next_ayah' ? 'bg-white dark:bg-zinc-700 shadow-sm text-slate-900 dark:text-white' : 'opacity-60'
+                  }`}
+                  style={{ color: quizType === 'next_ayah' ? primaryColor : undefined }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                   <span>{isEn ? 'Multiple Choice' : 'اختيار الآية'}</span>
                 </button>
                 <button
+<<<<<<< HEAD
                   type="button"
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   onClick={() => {
                     stopVoiceRecognition();
                     setQuizType('scramble');
                   }}
+<<<<<<< HEAD
                   className={`py-2.5 px-2 rounded-2xl transition-all border-0 cursor-pointer flex items-center justify-center ${
                     quizType === 'scramble'
                       ? 'active:translate-y-[2px]'
                       : 'app-page-card bg-white dark:bg-[#0F172A] text-slate-600 dark:text-zinc-300'
                   }`}
                   style={quizType === 'scramble' ? primary3DStyle : undefined}
+=======
+                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer flex items-center justify-center ${
+                    quizType === 'scramble' ? 'bg-white dark:bg-zinc-700 shadow-sm text-slate-900 dark:text-white' : 'opacity-60'
+                  }`}
+                  style={{ color: quizType === 'scramble' ? primaryColor : undefined }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                   <span>{isEn ? 'Word Order' : 'ترتيب الكلمات'}</span>
                 </button>
                 <button
+<<<<<<< HEAD
                   type="button"
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   onClick={() => {
                     stopVoiceRecognition();
                     setQuizType('voice');
                   }}
+<<<<<<< HEAD
                   className={`py-2.5 px-2 rounded-2xl transition-all border-0 cursor-pointer flex items-center justify-center ${
                     quizType === 'voice'
                       ? 'active:translate-y-[2px]'
                       : 'app-page-card bg-white dark:bg-[#0F172A] text-slate-600 dark:text-zinc-300'
                   }`}
                   style={quizType === 'voice' ? primary3DStyle : undefined}
+=======
+                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer flex items-center justify-center ${
+                    quizType === 'voice' ? 'bg-white dark:bg-zinc-700 shadow-sm text-slate-900 dark:text-white' : 'opacity-60'
+                  }`}
+                  style={{ color: quizType === 'voice' ? primaryColor : undefined }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                   <span>{isEn ? 'Voice Recitation' : 'التسميع الصوتي'}</span>
                 </button>
@@ -838,6 +1034,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                       : 'اضغط على المايكروفون ثم اتلُ الآية غيباً من حفظك. يتوقف التسجيل تلقائياً بعد الاستماع:'}
                   </div>
 
+<<<<<<< HEAD
                   {/* Mic Button & Filtered Acoustic Ring */}
                   <div className="flex flex-col items-center justify-center py-3">
                     <div className="relative flex items-center justify-center">
@@ -876,10 +1073,34 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                         )}
                       </button>
                     </div>
+=======
+                  {/* Mic Button & States */}
+                  <div className="flex flex-col items-center justify-center py-3">
+                    <button
+                      onClick={startVoiceRecognition}
+                      className={`relative w-24 h-24 rounded-full flex items-center justify-center shadow-xl transition-all active:scale-95 cursor-pointer border-0 ${
+                        isListening 
+                          ? 'animate-pulse ring-8 ring-red-400/40 bg-red-500 text-white' 
+                          : 'hover:scale-105'
+                      }`}
+                      style={{
+                        backgroundColor: isListening ? '#EF4444' : primaryColor,
+                        color: '#FFFFFF'
+                      }}
+                      aria-label="Toggle Mic"
+                    >
+                      {isListening ? (
+                        <MicOff size={38} className="animate-bounce" />
+                      ) : (
+                        <Mic size={38} />
+                      )}
+                    </button>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
                     <div className="mt-3.5 space-y-1">
                       <span className="text-xs font-bold block" style={{ color: isListening ? '#EF4444' : primaryColor }}>
                         {isListening 
+<<<<<<< HEAD
                           ? (isEn ? 'Listening with noise filtering... Recite clearly' : 'جارٍ الاستماع وتنقية الصوت... اتلُ الآية الآن') 
                           : voiceStatus === 'evaluating'
                           ? (isEn ? 'Matching recitation with Quranic text...' : 'جارٍ فحص التلاوة ومطابقتها مع الآية...')
@@ -892,6 +1113,19 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                           className="text-[11px] text-red-500 hover:text-red-600 underline font-semibold cursor-pointer border-0 bg-transparent block mx-auto"
                         >
                           {isEn ? 'Tap here to stop & evaluate now' : 'انقر هنا للإنهاء والمطابقة فوراً'}
+=======
+                          ? (isEn ? 'Listening... Speak clearly (will stop on pause)' : 'جارٍ الاستماع... اتلُ الآن (يتوقف تلقائياً)') 
+                          : voiceStatus === 'evaluating'
+                          ? (isEn ? 'Checking recitation...' : 'جارٍ فحص التلاوة ومطابقتها...')
+                          : (isEn ? 'Tap to start reciting' : 'اضغط على المايكروفون للبدء بالتسميع')}
+                      </span>
+                      {isListening && (
+                        <button
+                          onClick={() => stopAndEvaluateVoice()}
+                          className="text-[11px] text-red-500 hover:text-red-600 underline font-semibold cursor-pointer border-0 bg-transparent block mx-auto"
+                        >
+                          {isEn ? 'Tap here to stop & check immediately' : 'أو انقر هنا للإيقاف والتحقق الفوري'}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         </button>
                       )}
                     </div>
@@ -899,9 +1133,15 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
 
                   {/* Live Spoken Text Feedback */}
                   {spokenText && (
+<<<<<<< HEAD
                     <div className="wird-inner-raised p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0F172A] text-xs leading-relaxed opacity-95" dir="rtl">
                       <span className="font-bold opacity-60 ml-1 text-slate-500 dark:text-zinc-400">
                         {isEn ? 'Heard:' : 'النص المسموع:'}
+=======
+                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/80 text-xs leading-relaxed opacity-95 border border-slate-200/80 dark:border-zinc-700 shadow-sm" dir="rtl">
+                      <span className="font-bold opacity-60 ml-1 text-slate-500 dark:text-zinc-400">
+                        {isEn ? 'Heard:' : 'ما تم سماعه في التسجيل:'}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                       </span>
                       <span className="font-serif text-sm font-semibold text-slate-800 dark:text-zinc-200">
                         {spokenText}
@@ -909,6 +1149,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                     </div>
                   )}
 
+<<<<<<< HEAD
                   {/* Feedback State 1: Recitation MATCHES the Ayah — Compact Notice + Continue Button */}
                   {voiceStatus === 'correct' && (
                     <div className="space-y-3 animate-fadeIn text-right" dir={isEn ? 'ltr' : 'rtl'}>
@@ -921,10 +1162,22 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                           </span>
                         </div>
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-black shrink-0">
+=======
+                  {/* Feedback State 1: Recitation is CORRECT */}
+                  {voiceStatus === 'correct' && (
+                    <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-500 dark:border-emerald-700 space-y-3 animate-fadeIn text-right" dir={isEn ? 'ltr' : 'rtl'}>
+                      <div className="flex items-center gap-2.5 text-emerald-700 dark:text-emerald-300 font-bold text-sm">
+                        <CheckCircle2 size={22} className="text-emerald-500 shrink-0" />
+                        <span className="flex-1">
+                          {isEn ? 'Excellent! Recitation is correct' : 'ما شاء الله! قراءة صحيحة ومتقنة'}
+                        </span>
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-200/70 dark:bg-emerald-800/60 text-emerald-800 dark:text-emerald-200 font-black">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                           {voiceMatchResult?.score}%
                         </span>
                       </div>
 
+<<<<<<< HEAD
                       {/* Continue Button to proceed through all selected verses */}
                       <button
                         type="button"
@@ -939,11 +1192,26 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                             ? (isEn ? 'Continue to Next Verse' : 'تكملة للآية التالية')
                             : (isEn ? 'Continue & Finish Test' : 'تكملة وإنهاء الاختبار')}
                         </span>
+=======
+                      <p className="text-xs text-emerald-800/90 dark:text-emerald-200/90 leading-relaxed font-medium">
+                        {isEn 
+                          ? 'Well done! The verse was recited accurately. Proceed to the next verse.' 
+                          : 'أحسنت حفظ هذه الآية! تم التثبت من صحة تلاوتك، اضغط أدناه للانتقال إلى الآية التالية:'}
+                      </p>
+
+                      {/* Prominent Next Ayah Button as requested */}
+                      <button
+                        onClick={handleProceedVoiceCorrect}
+                        className="w-full py-3.5 px-4 rounded-xl font-bold text-sm shadow-md border-0 cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        <span>{isEn ? 'Move to Next Verse' : 'الانتقال إلى الآية التالية'}</span>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         {isEn ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
                       </button>
                     </div>
                   )}
 
+<<<<<<< HEAD
                   {/* Feedback State 2: Recitation does NOT match — Word check + Retry Reading Again Button */}
                   {voiceStatus === 'wrong' && (
                     <div className="app-page-card border-0 p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 ring-2 ring-red-400/80 space-y-3 animate-fadeIn text-right" dir={isEn ? 'ltr' : 'rtl'}>
@@ -951,12 +1219,22 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                         <AlertTriangle size={19} className="text-red-500 shrink-0" />
                         <span className="flex-1">
                           {isEn ? 'Recitation did not match the verse' : 'القراءة غير مطابقة للآية المطلوبة'}
+=======
+                  {/* Feedback State 2: Recitation is WRONG (Alert + 2 Options: Retry or Next Ayah) */}
+                  {voiceStatus === 'wrong' && (
+                    <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border-2 border-red-400 dark:border-red-800 space-y-3 animate-fadeIn text-right" dir={isEn ? 'ltr' : 'rtl'}>
+                      <div className="flex items-center gap-2.5 text-red-700 dark:text-red-300 font-bold text-sm">
+                        <AlertTriangle size={22} className="text-red-500 shrink-0" />
+                        <span className="flex-1">
+                          {isEn ? 'Attention: Mistakes in recitation' : 'تنبيه: توجد أخطاء في التلاوة أو لم تكتمل الآية'}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         </span>
                         <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-200/70 dark:bg-red-800/60 text-red-800 dark:text-red-200 font-black">
                           {voiceMatchResult?.score || 0}%
                         </span>
                       </div>
 
+<<<<<<< HEAD
                       {/* Word-by-word clarity when ayah words are available */}
                       {voiceMatchResult && voiceMatchResult.ayahWords.length > 0 && (
                         <div
@@ -1006,6 +1284,29 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                               ? (isEn ? 'Next Verse' : 'الآية التالية')
                               : (isEn ? 'Finish Test' : 'إنهاء الاختبار')}
                           </span>
+=======
+                      <p className="text-xs text-red-800/90 dark:text-red-200/90 leading-relaxed font-medium">
+                        {isEn 
+                          ? 'Recitation was not completely matched. Choose to retry reciting now, or continue to the next verse:' 
+                          : 'لم تتطابق التلاوة بالشكل المطلوب. يمكنك إعادة التسميع الآن لتصحيح الخطأ، أو الانتقال للآية التالية:'}
+                      </p>
+
+                      {/* The Two Choices Required by User */}
+                      <div className="grid grid-cols-2 gap-2.5 pt-1">
+                        <button
+                          onClick={handleRetryVoice}
+                          className="py-3 px-3 rounded-xl font-bold text-xs shadow-sm border border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-800 dark:text-white cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <RotateCcw size={15} />
+                          <span>{isEn ? 'Retry Recitation' : 'إعادة التسميع'}</span>
+                        </button>
+
+                        <button
+                          onClick={handleProceedVoiceWithMistake}
+                          className="py-3 px-3 rounded-xl font-bold text-xs shadow-md border-0 bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <span>{isEn ? 'Next Verse' : 'الانتقال للآية التالية'}</span>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                           {isEn ? <ArrowRight size={15} /> : <ArrowLeft size={15} />}
                         </button>
                       </div>
@@ -1014,10 +1315,17 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
 
                   {/* Target verse display when idle (for preview/reference) */}
                   {voiceStatus === 'idle' && (
+<<<<<<< HEAD
                     <div className="wird-inner-raised p-3 rounded-2xl bg-slate-50 dark:bg-[#0F172A]/70 text-[11px] opacity-80">
                       {isEn 
                         ? 'Recite the full verse clearly; background noise is filtered automatically.' 
                         : 'اتلُ الآية كاملة بوضوح، يقوم المحرك بتنقية الصوت ومقارنته مع الآية تلقائياً.'}
+=======
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-700/60 text-[11px] opacity-75">
+                      {isEn 
+                        ? 'Recite the full verse clearly without rushing.' 
+                        : 'اتلُ الآية كاملة بخشوع وتأنٍ، وسيتعرف النظام على صوتك تلقائياً.'}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     </div>
                   )}
                 </div>
@@ -1032,12 +1340,21 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
 
                   {/* Construct Box */}
                   <div 
+<<<<<<< HEAD
                     className={`wird-inner-raised min-h-[90px] p-4 rounded-2xl transition-all flex flex-wrap gap-2 items-center justify-center text-right font-serif text-lg leading-relaxed ${
                       scrambleStatus === 'correct' 
                         ? 'ring-2 ring-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30' 
                         : scrambleStatus === 'wrong'
                         ? 'ring-2 ring-red-500 bg-red-50/70 dark:bg-red-950/30'
                         : 'bg-slate-50 dark:bg-[#0F172A]/80'
+=======
+                    className={`min-h-[90px] p-4 rounded-2xl border-2 transition-all flex flex-wrap gap-2 items-center justify-center text-right font-serif text-lg leading-relaxed ${
+                      scrambleStatus === 'correct' 
+                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' 
+                        : scrambleStatus === 'wrong'
+                        ? 'border-red-500 bg-red-50/50 dark:bg-red-950/20'
+                        : 'border-dashed border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/40'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     }`}
                     style={{ fontFamily: "'Amiri', serif" }}
                     dir="rtl"
@@ -1049,10 +1366,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                     ) : (
                       selectedWords.map((w, idx) => (
                         <button
+<<<<<<< HEAD
                           type="button"
                           key={w.id}
                           onClick={() => handleWordDeselect(idx)}
                           className="app-page-card border-0 px-3 py-1.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all cursor-pointer"
+=======
+                          key={w.id}
+                          onClick={() => handleWordDeselect(idx)}
+                          className="px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-700 shadow-sm border border-slate-200/60 dark:border-zinc-600 text-sm font-bold active:scale-95 transition-all cursor-pointer"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         >
                           {w.text}
                         </button>
@@ -1061,6 +1384,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                   </div>
 
                   {/* Scrambled Chips */}
+<<<<<<< HEAD
                   <div className="flex flex-wrap gap-2.5 justify-center pt-2" dir="rtl">
                     {scrambledWords.map(w => (
                       <button
@@ -1072,6 +1396,18 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                           w.used 
                             ? 'opacity-20 scale-90 pointer-events-none bg-slate-200 dark:bg-zinc-800' 
                             : 'app-page-card bg-white dark:bg-[#0F172A]'
+=======
+                  <div className="flex flex-wrap gap-2 justify-center pt-2" dir="rtl">
+                    {scrambledWords.map(w => (
+                      <button
+                        key={w.id}
+                        disabled={w.used || scrambleStatus !== 'idle'}
+                        onClick={() => handleWordSelect(w)}
+                        className={`px-3 py-2 rounded-xl text-sm font-serif font-bold transition-all border-0 cursor-pointer ${
+                          w.used 
+                            ? 'opacity-20 scale-90 pointer-events-none' 
+                            : 'bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 shadow-sm active:scale-95'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         }`}
                         style={{ fontFamily: "'Amiri', serif" }}
                       >
@@ -1089,11 +1425,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                     {isEn ? 'Choose the correct verse:' : 'اختر الآية الكريمة المطابقة للموضع المطلوب:'}
                   </div>
 
+<<<<<<< HEAD
                   <div className="space-y-3">
+=======
+                  <div className="space-y-2.5">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     {choices.map((text, idx) => {
                       const isSelected = selectedChoice === idx;
                       const currentAyahClean = stripTajweed(currentAyah.text);
                       const isTarget = normalizeForSpeechMatch(text) === normalizeForSpeechMatch(currentAyahClean);
+<<<<<<< HEAD
                       let styleClass = 'app-page-card border-0 bg-white dark:bg-[#0F172A]';
                       let customStyle: React.CSSProperties = { fontFamily: "'Amiri', serif" };
 
@@ -1110,17 +1451,34 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                             ...customStyle,
                             boxShadow: '0 5px 0 #b91c1c, inset 0 1.5px 2px rgba(255,255,255,0.35)'
                           };
+=======
+                      let styleClass = 'bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700';
+
+                      if (selectedChoice !== null) {
+                        if (isTarget) {
+                          styleClass = 'bg-emerald-500 text-white border-emerald-600 shadow-md';
+                        } else if (isSelected) {
+                          styleClass = 'bg-red-500 text-white border-red-600 shadow-md';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         }
                       }
 
                       return (
                         <button
+<<<<<<< HEAD
                           type="button"
                           key={idx}
                           disabled={selectedChoice !== null}
                           onClick={() => handleChoiceClick(text, idx)}
                           className={`w-full p-4 rounded-2xl text-right font-serif text-base leading-relaxed transition-all cursor-pointer ${styleClass}`}
                           style={customStyle}
+=======
+                          key={idx}
+                          disabled={selectedChoice !== null}
+                          onClick={() => handleChoiceClick(text, idx)}
+                          className={`w-full p-4 rounded-2xl text-right font-serif text-base leading-relaxed transition-all active:scale-[0.99] cursor-pointer ${styleClass}`}
+                          style={{ fontFamily: "'Amiri', serif" }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                           dir="rtl"
                         >
                           <div className="flex items-start gap-2.5">
@@ -1141,10 +1499,17 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
             <div className="py-2 px-1 space-y-5">
               {/* Overall Score Card as requested */}
               <div 
+<<<<<<< HEAD
                 className={`app-page-card border-0 p-5 rounded-3xl text-center space-y-3 relative overflow-hidden ${
                   isAllCorrect 
                     ? 'bg-gradient-to-br from-emerald-50 via-teal-50 to-amber-50 dark:from-emerald-950/40 dark:via-[#0F172A] dark:to-[#0F172A] ring-2 ring-emerald-400/70' 
                     : 'bg-gradient-to-br from-amber-50 via-orange-50 to-slate-50 dark:from-amber-950/30 dark:via-[#0F172A] dark:to-[#0F172A] ring-2 ring-amber-300/70'
+=======
+                className={`p-5 rounded-3xl border text-center space-y-3 shadow-lg relative overflow-hidden ${
+                  isAllCorrect 
+                    ? 'bg-gradient-to-br from-emerald-50 via-teal-50 to-amber-50 dark:from-emerald-950/40 dark:via-zinc-900 dark:to-zinc-900 border-emerald-400 dark:border-emerald-700' 
+                    : 'bg-gradient-to-br from-amber-50 via-orange-50 to-slate-50 dark:from-amber-950/30 dark:via-zinc-900 dark:to-zinc-900 border-amber-300 dark:border-amber-800'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 }`}
               >
                 <div 
@@ -1200,6 +1565,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                   </span>
                 </div>
 
+<<<<<<< HEAD
                 <div className="space-y-2.5 max-h-56 overflow-y-auto px-0.5 py-1">
                   {allResults.map((res, idx) => (
                     <div 
@@ -1208,6 +1574,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                         res.passed 
                           ? 'bg-emerald-50/70 dark:bg-emerald-950/25' 
                           : 'bg-red-50/70 dark:bg-red-950/25'
+=======
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {allResults.map((res, idx) => (
+                    <div 
+                      key={idx}
+                      className={`p-3.5 rounded-2xl border text-right transition-all ${
+                        res.passed 
+                          ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60' 
+                          : 'bg-red-50/60 dark:bg-red-950/20 border-red-200 dark:border-red-800/60'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                       }`}
                       dir="rtl"
                     >
@@ -1248,9 +1624,14 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
               {/* Action 1: Retry Full Quiz */}
               <div className="pt-1">
                 <button
+<<<<<<< HEAD
                   type="button"
                   onClick={handleRestartFullQuiz}
                   className="app-page-card border-0 w-full py-3 px-4 rounded-2xl bg-white dark:bg-[#0F172A] text-slate-800 dark:text-zinc-200 font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-2"
+=======
+                  onClick={handleRestartFullQuiz}
+                  className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                   <RotateCcw size={15} />
                   <span>{isEn ? 'Retest All Verses from Start' : 'إعادة الاختبار كاملاً من البداية'}</span>
@@ -1258,17 +1639,29 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
               </div>
 
               {/* Action 2: SM-2 Mastery Grade Buttons */}
+<<<<<<< HEAD
               <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-white/5">
+=======
+              <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-zinc-800">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className="text-xs font-bold text-slate-700 dark:text-zinc-300 text-center">
                   {isEn ? 'Record Rating for Spaced Review:' : 'اعتماد التقييم لجدول المراجعة الذكي:'}
                 </div>
 
+<<<<<<< HEAD
                 <div className="space-y-2.5">
                   <button
                     type="button"
                     onClick={() => handleGradeMastery('perfect')}
                     className={`app-page-card border-0 w-full p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 transition-all flex items-center justify-between text-right cursor-pointer ${
                       isAllCorrect ? 'ring-2 ring-emerald-500' : ''
+=======
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleGradeMastery('perfect')}
+                    className={`w-full p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border transition-all flex items-center justify-between text-right active:scale-[0.98] cursor-pointer ${
+                      isAllCorrect ? 'border-2 border-emerald-500 shadow-sm ring-2 ring-emerald-400/20' : 'border-emerald-300 dark:border-emerald-800'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -1293,10 +1686,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                   </button>
 
                   <button
+<<<<<<< HEAD
                     type="button"
                     onClick={() => handleGradeMastery('good')}
                     className={`app-page-card border-0 w-full p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 transition-all flex items-center justify-between text-right cursor-pointer ${
                       !isAllCorrect && errorCount === 1 ? 'ring-2 ring-amber-500' : ''
+=======
+                    onClick={() => handleGradeMastery('good')}
+                    className={`w-full p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border transition-all flex items-center justify-between text-right active:scale-[0.98] cursor-pointer ${
+                      !isAllCorrect && errorCount === 1 ? 'border-2 border-amber-500 shadow-sm ring-2 ring-amber-400/20' : 'border-amber-300 dark:border-amber-800'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -1321,10 +1720,16 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
                   </button>
 
                   <button
+<<<<<<< HEAD
                     type="button"
                     onClick={() => handleGradeMastery('needs_work')}
                     className={`app-page-card border-0 w-full p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 transition-all flex items-center justify-between text-right cursor-pointer ${
                       errorCount >= 2 ? 'ring-2 ring-red-500' : ''
+=======
+                    onClick={() => handleGradeMastery('needs_work')}
+                    className={`w-full p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border transition-all flex items-center justify-between text-right active:scale-[0.98] cursor-pointer ${
+                      errorCount >= 2 ? 'border-2 border-red-500 shadow-sm ring-2 ring-red-400/20' : 'border-red-300 dark:border-red-800'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     }`}
                   >
                     <div className="flex items-center gap-3">

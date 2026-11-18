@@ -236,7 +236,11 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
     return (
         <div 
             className="h-[100dvh] max-h-[100dvh] flex flex-col relative overflow-hidden" 
+<<<<<<< HEAD
             style={{ backgroundColor: s3d.pageBgColor, color: s3d.textColor, fontFamily: theme.font }}
+=======
+            style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             dir={isEn ? 'ltr' : 'rtl'}
         >
             <header className="app-top-bar shrink-0">
@@ -341,7 +345,11 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
                     )}
                 </div>
 
+<<<<<<< HEAD
                 <div className="space-y-3 pb-4">
+=======
+                <div className="space-y-3">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     {allDates.length === 0 && (
                         <div 
                             className={`app-page-card border-0 text-center p-8 text-sm font-bold rounded-3xl ${s3d.surfaceCardClass}`}

@@ -321,7 +321,11 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 </div>
 
                                 <div 
+<<<<<<< HEAD
                                     className={`leading-[2.2] text-sm sm:text-base p-4 rounded-[14px] ${innerSubBoxClass} ${isEn ? 'text-left' : 'text-right'} whitespace-pre-line`}
+=======
+                                    className={`leading-[2.2] text-sm sm:text-base p-4 rounded-[14px] border-0 ${isEn ? 'text-left' : 'text-right'} whitespace-pre-line`}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     style={{ 
                                         color: 'var(--text-color)'
                                     }}

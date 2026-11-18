@@ -194,6 +194,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
 
                 {/* Main Scrollable Content */}
                 <main 
+<<<<<<< HEAD
                     className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pt-3 pb-5 max-w-lg mx-auto w-full space-y-4 overscroll-contain app-scroll-safe"
                 >
                     {/* Period Switcher (Weekly / Monthly) */}
@@ -229,6 +230,45 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                         >
                             <span>{tTasbeeh('monthlyTab', language)}</span>
                         </button>
+=======
+                    className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pt-3 max-w-lg mx-auto w-full space-y-3.5 overscroll-contain app-scroll-safe"
+                >
+                    {/* Period Switcher (Weekly / Monthly) */}
+                    <div className="shrink-0">
+                        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-gray-200/70 dark:bg-gray-800" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPeriod('weekly');
+                                    setSelectedDayIndex(null);
+                                }}
+                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
+                                    period === 'weekly' 
+                                        ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' 
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                                style={period === 'weekly' ? { color: primaryColor } : {}}
+                            >
+                                <span>{tTasbeeh('weeklyTab', language)}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPeriod('monthly');
+                                    setSelectedDayIndex(null);
+                                }}
+                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
+                                    period === 'monthly' 
+                                        ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' 
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                                style={period === 'monthly' ? { color: primaryColor } : {}}
+                            >
+                                <span>{tTasbeeh('monthlyTab', language)}</span>
+                            </button>
+                        </div>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     </div>
 
                     {/* Quick Stats Summary Grid */}
@@ -455,7 +495,11 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                             </span>
                         </div>
 
+<<<<<<< HEAD
                         <div className="space-y-2.5 pb-2">
+=======
+                        <div className="space-y-1.5">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             {chartData.filter(d => !d.isFuture).reverse().map((item, idx) => {
                                 const percentOfMax = statsSummary.max > 0 ? (item.count / statsSummary.max) * 100 : 0;
                                 const isSelected = activeSelectedDay?.date === item.date;

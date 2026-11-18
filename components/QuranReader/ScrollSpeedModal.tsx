@@ -1,7 +1,13 @@
+<<<<<<< HEAD
 import React, { FC, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
+=======
+import React, { FC } from 'react';
+import { X } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
 interface ScrollSpeedModalProps {
     isOpen: boolean;
@@ -10,7 +16,10 @@ interface ScrollSpeedModalProps {
     currentMinutes: number;
     isLandscape?: boolean;
     currentTheme?: any;
+<<<<<<< HEAD
     zIndexClass?: string;
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 }
 
 const extractModalAccentColor = (val?: string, fallback = '#3b82f6'): string => {
@@ -22,6 +31,7 @@ const extractModalAccentColor = (val?: string, fallback = '#3b82f6'): string => 
     return val;
 };
 
+<<<<<<< HEAD
 const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect, currentMinutes, isLandscape, currentTheme, zIndexClass = 'z-[1250]' }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
@@ -35,6 +45,11 @@ const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
     }, [isOpen, onClose]);
+=======
+const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect, currentMinutes, isLandscape, currentTheme }) => {
+    const { language } = useLanguage();
+    const isEn = language === 'en';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     if (!isOpen) return null;
     const options = Array.from({length: 56}, (_, i) => i + 5);
@@ -47,7 +62,11 @@ const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect
         );
 
     return (
+<<<<<<< HEAD
         <div className={`fixed inset-0 ${zIndexClass} bg-black/30 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
+=======
+        <div className={`fixed inset-0 z-[1200] bg-black/30 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <div 
                 className={`modal-skinned w-full ${isLandscape ? 'max-w-xl max-h-[90dvh] rounded-3xl' : 'max-w-sm sm:max-w-2xl rounded-3xl max-h-[88dvh]'} shadow-2xl flex flex-col border-none animate-modal-enter overflow-hidden`} 
                 style={{

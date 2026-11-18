@@ -142,6 +142,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
     const { 
         primaryColor, 
         themeActiveTextColor, 
+<<<<<<< HEAD
         pageBgColor
     } = tokens;
     const themeHeadingColor = (tokens.isDeepBlack || isEffectiveDark && (themeKey === 'deep_black' || theme.bgColor === '#000000')) ? '#FFFFFF' : primaryColor;
@@ -160,6 +161,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
             ? '0 2.5px 0 #09090b, 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -1px 2px rgba(0, 0, 0, 0.35)'
             : '0 2.5px 0 rgba(0, 0, 0, 0.11), 0 4px 8px -1px rgba(0, 0, 0, 0.08), inset 0 1.5px 1px rgba(255, 255, 255, 0.98), inset 0 -1px 2px rgba(0, 0, 0, 0.05)',
     };
+=======
+        pageBgColor, 
+        cardBgColor, 
+        cardShadow, 
+        capsuleBg, 
+        chipInactiveBg, 
+        actionBtnBg 
+    } = tokens;
+    const themeHeadingColor = (tokens.isDeepBlack || isEffectiveDark && (themeKey === 'deep_black' || theme.bgColor === '#000000')) ? '#FFFFFF' : primaryColor;
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
     // Scroll container refs
     const mainScrollRef = useRef<HTMLElement | null>(null);
@@ -517,12 +528,17 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
             {/* Top Fixed Tabs Bar - Mounted outside <main> directly beneath top bar, completely blocking any scrolling cards from appearing above or behind */}
             {selectedCompanion && (
                 <div 
+<<<<<<< HEAD
                     className="shrink-0 z-20 px-3 sm:px-4 pt-1.5 pb-3 border-0"
+=======
+                    className="shrink-0 z-20 px-3 sm:px-4 pt-1.5 pb-2 border-0"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     style={{ 
                         backgroundColor: pageBgColor
                     }}
                 >
                     <div className="max-w-3xl mx-auto">
+<<<<<<< HEAD
                         <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-2xl p-1 overflow-visible">
                             <div 
                                 className="companion-tabs-nav flex items-center gap-1.5 overflow-x-auto p-0.5 hide-scrollbar"
@@ -560,6 +576,43 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     </button>
                                 ))}
                             </div>
+=======
+                        <div 
+                            className="companion-tabs-nav flex items-center gap-1.5 overflow-x-auto p-1 rounded-2xl border-0 shadow-xs hide-scrollbar"
+                            style={{ 
+                                backgroundColor: capsuleBg
+                            }}
+                        >
+                            {[
+                                { id: 'profile', label: ui.tabProfile },
+                                { id: 'stances', label: ui.tabStances },
+                                { id: 'traits', label: ui.tabTraits },
+                                { id: 'sayings', label: ui.tabSayings },
+                                { id: 'virtues', label: ui.tabVirtues },
+                                { id: 'conversion', label: ui.tabConversion },
+                                { id: 'preIslam', label: ui.tabPreIslam },
+                                { id: 'legacy', label: ui.tabLegacy },
+                                { id: 'lessons', label: ui.tabLessons }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => {
+                                        setDetailTab(tab.id as any);
+                                        scrollToTop();
+                                    }}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                                        detailTab === tab.id ? 'shadow-xs' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                                    } ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                    style={{
+                                        backgroundColor: detailTab === tab.id ? primaryColor : 'transparent',
+                                        color: detailTab === tab.id ? themeActiveTextColor : (tokens.isDark ? '#94A3B8' : '#64748B')
+                                    }}
+                                >
+                                    <span>{tab.label}</span>
+                                </button>
+                            ))}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                         </div>
                     </div>
                 </div>
@@ -665,12 +718,17 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 <p className="text-sm font-bold opacity-80">{ui.noResults}</p>
                                 <button
                                     onClick={() => setActiveFilter('all')}
+<<<<<<< HEAD
                                     className="px-4 py-2 rounded-xl text-xs font-bold border-0 cursor-pointer transition-all active:translate-y-[2px]"
                                     style={{
                                         backgroundColor: primaryColor,
                                         color: themeActiveTextColor,
                                         boxShadow: '0 4px 0 rgba(0, 0, 0, 0.2), 0 8px 16px -2px rgba(0, 0, 0, 0.14), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35)'
                                     }}
+=======
+                                    className="px-4 py-2 rounded-xl text-xs font-bold border-0 cursor-pointer transition-colors"
+                                    style={{ backgroundColor: primaryColor, color: themeActiveTextColor }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 >
                                     {ui.clearSearch}
                                 </button>
@@ -686,7 +744,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             key={companion.id}
                                             id={`ten-promised-card-${companion.order}`}
                                             onClick={() => handleSelectCompanion(companion)}
+<<<<<<< HEAD
                                             className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] cursor-pointer flex flex-col justify-between group relative overflow-visible space-y-3"
+=======
+                                            className="p-4 sm:p-5 rounded-[18px] border-0 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99] flex flex-col justify-between group relative overflow-hidden space-y-3"
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         >
                                             <div className="space-y-2">
                                                 {/* Order Circle */}
@@ -733,21 +796,37 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-5 sm:p-7 rounded-[18px] relative overflow-visible space-y-4"
                                 >
                                     {/* Top row: Order badge, Share & Copy buttons */}
+<<<<<<< HEAD
                                     <div className="flex items-center justify-between overflow-visible">
                                         <span 
                                             className="w-8 h-8 rounded-full text-sm font-black flex items-center justify-center border-0"
                                             style={primaryBadge3DStyle}
+=======
+                                    <div className="flex items-center justify-between">
+                                        <span 
+                                            className="w-8 h-8 rounded-full text-sm font-black flex items-center justify-center shadow-md"
+                                            style={{ backgroundColor: primaryColor, color: themeActiveTextColor }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         >
                                             {selectedCompanion.order}
                                         </span>
 
+<<<<<<< HEAD
                                         <div className="flex items-center gap-2 overflow-visible">
+=======
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <button
                                                 type="button"
                                                 onClick={() => handleShareCompanionImage(selectedCompanion)}
                                                 disabled={isSharing}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                                 style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-85 hover:opacity-100 cursor-pointer active:scale-90"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#0F172A' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.shareImage}
                                                 aria-label={ui.shareImage}
                                             >
@@ -756,8 +835,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             <button
                                                 type="button"
                                                 onClick={() => handleCopyFullBio(selectedCompanion)}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                                 style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-85 hover:opacity-100 cursor-pointer active:scale-90"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.copyBiography}
                                                 aria-label={ui.copyBiography}
                                             >
@@ -785,7 +869,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Key Quote Box */}
                                     <div 
+<<<<<<< HEAD
                                         className={`p-3.5 sm:p-4 rounded-[16px] relative ${innerSubBoxClass}`}
+=======
+                                        className="p-3.5 sm:p-4 rounded-[16px] border-0 relative"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         <div className="text-[11px] font-bold mb-1" style={{ color: themeHeadingColor }}>
                                             <span>{ui.quoteTitle}</span>
@@ -797,7 +886,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Glad Tidings Hadith Card with Card Zoom */}
                                     <div 
+<<<<<<< HEAD
                                         className={`p-4 rounded-[16px] relative ${innerSubBoxClass}`}
+=======
+                                        className="p-4 rounded-[16px] border-0 relative"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     >
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="text-[11px] font-bold" style={{ color: themeHeadingColor }}>
@@ -833,10 +927,18 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             {/* TAB 1: PROFILE */}
                             {detailTab === 'profile' && (
                                 <div className="space-y-3">
+<<<<<<< HEAD
                                             <div 
                                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all" 
                                             >
                                         <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                    <div 
+                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 transition-all" 
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                    >
+                                        <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                 <AutoFitSingleLine as="span" text={ui.tabProfile} baseFontSize={14} minFontSize={9.5} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
@@ -891,7 +993,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         <div 
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
+<<<<<<< HEAD
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={isEn ? 'Lineage, Clan & Prophetic Kinship' : 'شجرة النسب والمكانة والقرابة النبوية'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -922,7 +1028,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         <div 
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
+<<<<<<< HEAD
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={isEn ? 'Key Geographical Stations & Milestones' : 'المحطات الجغرافية ومسار الدعوة والفتوحات'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -935,8 +1045,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-map-location-dot',
                                                         content: extraSections.geographicalStations.map(s => `📍 ${isEn ? s.placeEn : s.placeAr} (${isEn ? s.periodEn : s.periodAr})\n${isEn ? s.detailsEn : s.detailsAr}`)
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -944,7 +1059,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                                 {extraSections.geographicalStations.map((station, sIdx) => (
+<<<<<<< HEAD
                                                     <div key={sIdx} className={`p-3 rounded-[14px] space-y-1 ${innerSubBoxClass}`}>
+=======
+                                                    <div key={sIdx} className="p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0 space-y-1">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         <div className="flex items-center justify-between gap-2">
                                                             <AutoFitSingleLine
                                                                 as="span"
@@ -976,7 +1095,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 return (
                                     <div className="space-y-3.5">
                                         <div 
+<<<<<<< HEAD
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[16px] flex items-center justify-between gap-2 overflow-visible"
+=======
+                                            className="p-3.5 rounded-[16px] border-0 flex items-center justify-between gap-2"
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         >
                                             <AutoFitSingleLine
                                                 as="span"
@@ -995,7 +1119,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible group transition-all"
                                             >
                                                 {/* Stance Header: Period text + Zoom button */}
+<<<<<<< HEAD
                                                 <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                                <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     <span className="text-xs font-bold opacity-70 truncate">
                                                         {isEn ? stance.periodEn : stance.periodAr}
                                                     </span>
@@ -1009,8 +1137,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                             icon: 'fa-solid fa-fire-flame-curved',
                                                             content: `${isEn ? stance.storyEn : stance.storyAr}${stance.quoteAr ? `\n\n«${isEn ? (stance.quoteEn || stance.quoteAr) : stance.quoteAr}»` : ''}\n\n🌟 ${ui.impactLabel}\n${isEn ? stance.impactEn : stance.impactAr}`
                                                         })}
+<<<<<<< HEAD
                                                         className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                        className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         title={ui.zoom}
                                                     >
                                                         <ZoomIn size={14} />
@@ -1037,7 +1170,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                 {/* Quote box if present */}
                                                 {(stance.quoteAr || stance.quoteEn) && (
                                                     <div 
+<<<<<<< HEAD
                                                         className={`p-3 rounded-[14px] text-center ${innerSubBoxClass}`}
+=======
+                                                        className="p-3 rounded-[14px] border-0 text-center"
+                                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     >
                                                         <p className={`text-xs sm:text-sm font-bold italic ${isEn ? 'font-sans' : 'font-amiri'}`} style={{ color: themeHeadingColor }}>
                                                             «{isEn ? (stance.quoteEn || stance.quoteAr) : stance.quoteAr}»
@@ -1047,7 +1185,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                                 {/* Stance Impact & Enduring Lesson */}
                                                 <div 
+<<<<<<< HEAD
                                                     className={`p-3 rounded-[14px] space-y-1 ${innerSubBoxClass}`}
+=======
+                                                    className="p-3 rounded-[14px] border-0 space-y-1"
+                                                    style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 >
                                                     <span className="text-[10px] sm:text-[11px] font-bold block" style={{ color: themeHeadingColor }}>
                                                         {ui.impactLabel}
@@ -1072,7 +1215,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         <div 
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
+<<<<<<< HEAD
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={ui.physicalAppearanceLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -1085,8 +1232,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-user-check',
                                                         content: isEn ? traits.physicalAppearanceEn : traits.physicalAppearanceAr
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1101,7 +1253,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         <div 
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
+<<<<<<< HEAD
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={ui.worshipLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -1114,8 +1270,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-heart',
                                                         content: isEn ? traits.worshipAndDevotionEn : traits.worshipAndDevotionAr
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1130,7 +1291,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         <div 
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
+<<<<<<< HEAD
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={ui.familyLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -1143,8 +1308,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-people-roof',
                                                         content: isEn ? traits.familyAndLineageEn : traits.familyAndLineageAr
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1164,7 +1334,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             </h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                                 {(isEn ? traits.specialSkillsEn : traits.specialSkillsAr).map((skill, idx) => (
+<<<<<<< HEAD
                                                     <div key={idx} className={`p-3 rounded-[14px] flex items-center gap-2 text-xs sm:text-sm font-semibold ${innerSubBoxClass}`}>
+=======
+                                                    <div key={idx} className="p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0 flex items-center gap-2 text-xs sm:text-sm font-semibold">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         <span>{skill}</span>
                                                     </div>
                                                 ))}
@@ -1176,7 +1350,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             <div 
                                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                             >
+<<<<<<< HEAD
                                                 <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                                <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                         <AutoFitSingleLine as="span" text={isEn ? 'A Day in His Life & Prayer Sanctuary' : 'يوم في حياة الصحابي ومحراب عبادته'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                     </h4>
@@ -1189,8 +1367,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                             icon: 'fa-solid fa-sun',
                                                             content: isEn ? extraSections.dailyRoutineEn : extraSections.dailyRoutineAr
                                                         })}
+<<<<<<< HEAD
                                                         className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                        className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         title={ui.zoom}
                                                     >
                                                         <ZoomIn size={14} />
@@ -1207,7 +1390,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             <div 
                                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                             >
+<<<<<<< HEAD
                                                 <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                                <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                         <AutoFitSingleLine as="span" text={isEn ? 'Unique Distinctions & Special Merits' : 'فرائد ومناقب انفرد بها في تاريخ الإسلام'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                     </h4>
@@ -1220,8 +1407,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                             icon: 'fa-solid fa-award',
                                                             content: (isEn ? extraSections.uniqueDistinctionsEn : extraSections.uniqueDistinctionsAr).map((u, i) => `⭐ ${i + 1}. ${u}`)
                                                         })}
+<<<<<<< HEAD
                                                         className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                        className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         title={ui.zoom}
                                                     >
                                                         <ZoomIn size={14} />
@@ -1229,8 +1421,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                 </div>
                                                 <div className="space-y-2.5">
                                                     {(isEn ? extraSections.uniqueDistinctionsEn : extraSections.uniqueDistinctionsAr).map((dist, idx) => (
+<<<<<<< HEAD
                                                         <div key={idx} className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                             <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+=======
+                                                        <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                            <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5" style={{ backgroundColor: hexToRgba(themeHeadingColor, 0.12), color: themeHeadingColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                                 {idx + 1}
                                                             </span>
                                                             <p className={`text-xs sm:text-sm leading-relaxed font-semibold ${isEn ? 'font-sans' : 'font-amiri'}`}>
@@ -1251,7 +1448,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 return (
                                     <div className="space-y-3.5">
                                         <div 
+<<<<<<< HEAD
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-[18px] text-center space-y-1 overflow-visible"
+=======
+                                            className="p-4 rounded-[18px] border-0 text-center space-y-1"
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         >
                                             <span className="text-[11px] font-bold block" style={{ color: themeHeadingColor }}>
                                                 {ui.quoteTitle}
@@ -1268,8 +1470,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             >
                                                 <div className="flex items-center justify-between pb-2.5 app-3d-divider">
                                                     <span 
+<<<<<<< HEAD
                                                         className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center border-0"
                                                         style={itemBadge3DStyle}
+=======
+                                                        className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center"
+                                                        style={{ backgroundColor: hexToRgba(themeHeadingColor, 0.12), color: themeHeadingColor }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     >
                                                         {idx + 1}
                                                     </span>
@@ -1320,7 +1527,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             <div 
                                                 className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                             >
+<<<<<<< HEAD
                                                 <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                                <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                         <AutoFitSingleLine as="span" text={isEn ? 'Spiritual Discipline & Heart Reform' : 'منهج الصحابي في تزكية النفس وإصلاح القلوب'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                     </h4>
@@ -1382,8 +1593,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? 'Before Islam' : 'قبل الإسلام',
                                                     content: isEn ? selectedCompanion.preIslamicLife.statusInQurayshEn : selectedCompanion.preIslamicLife.statusInQurayshAr
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1410,8 +1626,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? 'Before Islam' : 'قبل الإسلام',
                                                     content: isEn ? selectedCompanion.preIslamicLife.moralsAndNatureEn : selectedCompanion.preIslamicLife.moralsAndNatureAr
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1440,8 +1661,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-shield-halved',
                                                         content: isEn ? extraSections.idolatryStanceEn : extraSections.idolatryStanceAr
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1469,8 +1695,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? 'Before Islam' : 'قبل الإسلام',
                                                     content: isEn ? selectedCompanion.preIslamicLife.tradeAndKnowledgeEn : selectedCompanion.preIslamicLife.tradeAndKnowledgeAr
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1499,8 +1730,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-scale-balanced',
                                                         content: isEn ? extraSections.wisdomAndPreIslamRoleEn : extraSections.wisdomAndPreIslamRoleAr
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1533,8 +1769,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? 'Faith & Conversion' : 'قصة الإسلام',
                                                     content: isEn ? selectedCompanion.embracingIslam.storyEn : selectedCompanion.embracingIslam.storyAr
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1560,8 +1801,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: isEn ? 'Precedence & Sacrifices' : 'سبقه وتضحياته',
                                                     content: `${isEn ? selectedCompanion.embracingIslam.earlyPrecedenceEn : selectedCompanion.embracingIslam.earlyPrecedenceAr}\n\n${isEn ? selectedCompanion.embracingIslam.advocacyAndSacrificesEn : selectedCompanion.embracingIslam.advocacyAndSacrificesAr}`
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1590,8 +1836,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: ui.majorBattlesLabel,
                                                     content: isEn ? selectedCompanion.migrationAndJihad.majorBattlesEn : selectedCompanion.migrationAndJihad.majorBattlesAr
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1632,8 +1883,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-compass',
                                                         content: isEn ? extraSections.hijrahAndBrotherhoodEn : extraSections.hijrahAndBrotherhoodAr
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1663,8 +1919,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-shield-halved',
                                                         content: isEn ? extraSections.prophetSacrificeEn : extraSections.prophetSacrificeAr
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1685,7 +1946,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     <div 
                                         className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                     >
+<<<<<<< HEAD
                                         <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                        <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                 <AutoFitSingleLine as="span" text={ui.hadithsAndQuotesLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
@@ -1697,8 +1962,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     content: (isEn ? selectedCompanion.virtuesAndMerits.hadithsAndQuotesEn : selectedCompanion.virtuesAndMerits.hadithsAndQuotesAr).map(h => `${h.hadith}\n[${h.source}]`),
                                                     isVerseOrProof: true
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1708,7 +1978,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             {(isEn ? selectedCompanion.virtuesAndMerits.hadithsAndQuotesEn : selectedCompanion.virtuesAndMerits.hadithsAndQuotesAr).map((item, idx) => (
                                                 <div 
                                                     key={idx} 
+<<<<<<< HEAD
                                                     className={`p-3.5 rounded-[14px] space-y-1.5 ${innerSubBoxClass}`}
+=======
+                                                    className="p-3.5 rounded-[14px] border-0 space-y-1.5"
+                                                    style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 >
                                                     <p 
                                                         className={`text-xs sm:text-sm font-bold leading-relaxed ${isEn ? 'font-sans' : 'font-amiri'}`}
@@ -1731,20 +2006,35 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Titles & Honors */}
                                     <div 
+<<<<<<< HEAD
                                         className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
                                         <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                    >
+                                        <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                 <AutoFitSingleLine as="span" text={ui.titlesAndHonorsLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                         </div>
                                         <ul className="space-y-2.5 pt-1">
                                             {(isEn ? selectedCompanion.virtuesAndMerits.titlesAndHonorsEn : selectedCompanion.virtuesAndMerits.titlesAndHonorsAr).map((titleItem, idx) => (
+<<<<<<< HEAD
                                                 <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm font-semibold opacity-95">
                                                     <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
                                                         {idx + 1}
                                                     </span>
                                                     <span className="pt-0.5">{titleItem}</span>
+=======
+                                                <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm font-semibold opacity-90">
+                                                    <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5" style={{ backgroundColor: hexToRgba(themeHeadingColor, 0.12), color: themeHeadingColor }}>
+                                                        {idx + 1}
+                                                    </span>
+                                                    <span>{titleItem}</span>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 </li>
                                             ))}
                                         </ul>
@@ -1752,9 +2042,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Testimonies of Companions */}
                                     <div 
+<<<<<<< HEAD
                                         className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
                                         <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                    >
+                                        <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                 <AutoFitSingleLine as="span" text={ui.testimoniesLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
@@ -1771,9 +2068,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Quranic Verses Associated with Him Card */}
                                     {extraSections && extraSections.quranicVerses && extraSections.quranicVerses.length > 0 && (
                                         <div 
+<<<<<<< HEAD
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        >
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={isEn ? 'Noble Quranic Verses in His Honor & Context' : 'آيات قرآنية كريمة نزلت فيه أو ارتبطت بسيرته'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -1787,8 +2091,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         content: extraSections.quranicVerses.map(v => `📖 ${isEn ? v.surahEn : v.surahAr}\n«${isEn ? v.verseEn : v.verseAr}»\n\n📜 ${isEn ? v.contextEn : v.contextAr}`),
                                                         isVerseOrProof: true
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1798,7 +2107,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                 {extraSections.quranicVerses.map((verseItem, vIdx) => (
                                                     <div 
                                                         key={vIdx} 
+<<<<<<< HEAD
                                                         className={`p-3.5 rounded-[14px] space-y-2 ${innerSubBoxClass}`}
+=======
+                                                        className="p-3.5 rounded-[14px] border-0 space-y-2"
+                                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     >
                                                         <span className="text-[11px] font-bold block opacity-75" style={{ color: themeHeadingColor }}>
                                                             {isEn ? verseItem.surahEn : verseItem.surahAr}
@@ -1824,9 +2138,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Additional Testimonies of Companions & Mothers of Believers */}
                                     {extraSections && extraSections.extraTestimonies && extraSections.extraTestimonies.length > 0 && (
                                         <div 
+<<<<<<< HEAD
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        >
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={isEn ? 'Testimonies of Companions & Mothers of Believers' : 'شهادات كبار الصحابة وأمهات المؤمنين في حقه'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -1839,8 +2160,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-comments',
                                                         content: extraSections.extraTestimonies.map(t => `💬 ${isEn ? t.speakerEn : t.speakerAr}:\n«${isEn ? t.quoteEn : t.quoteAr}»`)
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1848,7 +2174,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             </div>
                                             <div className="space-y-2.5">
                                                 {extraSections.extraTestimonies.map((testItem, tIdx) => (
+<<<<<<< HEAD
                                                     <div key={tIdx} className={`p-3 rounded-[14px] space-y-1.5 ${innerSubBoxClass}`}>
+=======
+                                                    <div key={tIdx} className="p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0 space-y-1.5">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         <div className="text-xs font-bold" style={{ color: themeHeadingColor }}>
                                                             <span>{isEn ? testItem.speakerEn : testItem.speakerAr}</span>
                                                         </div>
@@ -1868,9 +2198,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 <div className="space-y-3">
                                     {/* Stance at Prophet's Death & Post-Prophet Role */}
                                     <div 
+<<<<<<< HEAD
                                         className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
                                         <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                    >
+                                        <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                 <AutoFitSingleLine as="span" text={isEn ? 'Stance at the Prophet\'s Demise' : 'موقفه عند وفاة النبي ﷺ ودوره'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
@@ -1881,8 +2218,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: isEn ? 'Stance at Prophet\'s Passing' : 'موقفه بعد وفاة النبي',
                                                     content: `${isEn ? selectedCompanion.postProphetEraAndLegacy.stanceAtProphetsDeathEn : selectedCompanion.postProphetEraAndLegacy.stanceAtProphetsDeathAr}\n\n${isEn ? selectedCompanion.postProphetEraAndLegacy.roleOrCaliphateEn : selectedCompanion.postProphetEraAndLegacy.roleOrCaliphateAr}`
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1898,17 +2240,29 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Major Achievements */}
                                     <div 
+<<<<<<< HEAD
                                         className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                     >
                                         <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                    >
+                                        <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                 <AutoFitSingleLine as="span" text={ui.majorAchievementsLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                         </div>
                                         <div className="space-y-2.5 pt-1">
                                             {(isEn ? selectedCompanion.postProphetEraAndLegacy.majorAchievementsEn : selectedCompanion.postProphetEraAndLegacy.majorAchievementsAr).map((achieve, idx) => (
+<<<<<<< HEAD
                                                 <div key={idx} className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                     <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+=======
+                                                <div key={idx} className="flex items-start gap-2.5 p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                    <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5" style={{ backgroundColor: hexToRgba(themeHeadingColor, 0.12), color: themeHeadingColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                         {idx + 1}
                                                     </span>
                                                     <p className={`text-xs sm:text-sm leading-relaxed font-medium ${isEn ? 'font-sans' : 'font-amiri'}`}>
@@ -1921,9 +2275,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Passing & Final Testament */}
                                     <div 
+<<<<<<< HEAD
                                         className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                     >
                                         <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                    >
+                                        <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                 <AutoFitSingleLine as="span" text={isEn ? 'Passing & Final Will' : 'وفاته واستشهاده ووصيته'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
@@ -1934,8 +2295,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: isEn ? 'Passing & Will' : 'وفاته ووصيته الأخيرة',
                                                     content: `${isEn ? selectedCompanion.passingAndTributes.deathDetailsEn : selectedCompanion.passingAndTributes.deathDetailsAr}\n\n• ${ui.lastWordsLabel}\n"${isEn ? selectedCompanion.passingAndTributes.lastWordsEn : selectedCompanion.passingAndTributes.lastWordsAr}"\n\n• ${ui.burialLabel}\n${isEn ? selectedCompanion.passingAndTributes.restingPlaceEn : selectedCompanion.passingAndTributes.restingPlaceAr}`
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1945,7 +2311,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             {isEn ? selectedCompanion.passingAndTributes.deathDetailsEn : selectedCompanion.passingAndTributes.deathDetailsAr}
                                         </p>
                                         <div 
+<<<<<<< HEAD
                                             className={`p-3 rounded-[14px] ${innerSubBoxClass}`}
+=======
+                                            className="p-3 rounded-[14px] border-0"
+                                            style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         >
                                             <span className="text-[11px] font-bold block mb-1" style={{ color: themeHeadingColor }}>
                                                 {ui.lastWordsLabel}
@@ -1959,9 +2330,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Civilizational & Institutional Impact Card */}
                                     {extraSections && extraSections.civilizationalImpactAr && extraSections.civilizationalImpactAr.length > 0 && (
                                         <div 
+<<<<<<< HEAD
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        >
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={isEn ? 'Civilizational & Institutional Legacy' : 'الأثر الحضاري والتأسيسي الممتد للأمة'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -1974,8 +2352,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-landmark',
                                                         content: (isEn ? extraSections.civilizationalImpactEn : extraSections.civilizationalImpactAr).map((c, i) => `🏛️ ${i + 1}. ${c}`)
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1983,8 +2366,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             </div>
                                             <div className="space-y-2.5">
                                                 {(isEn ? extraSections.civilizationalImpactEn : extraSections.civilizationalImpactAr).map((impact, idx) => (
+<<<<<<< HEAD
                                                     <div key={idx} className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                         <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+=======
+                                                    <div key={idx} className="flex items-start gap-2.5 p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                        <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5" style={{ backgroundColor: hexToRgba(themeHeadingColor, 0.12), color: themeHeadingColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                             {idx + 1}
                                                         </span>
                                                         <p className={`text-xs sm:text-sm leading-relaxed font-medium ${isEn ? 'font-sans' : 'font-amiri'}`}>
@@ -2004,9 +2392,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Spiritual & Faith Lessons Card */}
                                     {extraSections && extraSections.spiritualLessonsAr && extraSections.spiritualLessonsAr.length > 0 && (
                                         <div 
+<<<<<<< HEAD
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        >
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={isEn ? 'Spiritual & Faith Lessons' : 'الدروس الإيمانية والروحية العميقة'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -2019,8 +2414,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-heart',
                                                         content: (isEn ? extraSections.spiritualLessonsEn : extraSections.spiritualLessonsAr).map((l, i) => `✨ ${i + 1}. ${l}`)
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -2047,9 +2447,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Leadership & Character Lessons Card */}
                                     {extraSections && extraSections.leadershipLessonsAr && extraSections.leadershipLessonsAr.length > 0 && (
                                         <div 
+<<<<<<< HEAD
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        >
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={isEn ? 'Leadership, Management & Character' : 'الدروس القيادية والإدارية وبناء الشخصية'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -2062,8 +2469,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-chess-knight',
                                                         content: (isEn ? extraSections.leadershipLessonsEn : extraSections.leadershipLessonsAr).map((l, i) => `🛡️ ${i + 1}. ${l}`)
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -2089,9 +2501,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* General Inspirational Lessons */}
                                     <div 
+<<<<<<< HEAD
                                         className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                     >
                                         <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                    >
+                                        <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                 <AutoFitSingleLine as="span" text={ui.tabLessons} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
@@ -2102,8 +2521,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: ui.tabLessons,
                                                     content: isEn ? selectedCompanion.inspirationalLessonsEn : selectedCompanion.inspirationalLessonsAr
                                                 })}
+<<<<<<< HEAD
                                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -2129,9 +2553,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Modern Application & Daily Emulation Plan Card */}
                                     {extraSections && extraSections.modernApplicationAr && extraSections.modernApplicationAr.length > 0 && (
                                         <div 
+<<<<<<< HEAD
                                             className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
                                             <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+=======
+                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
+                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        >
+                                            <div className={`flex items-center justify-between gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                 <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
                                                     <AutoFitSingleLine as="span" text={isEn ? 'Modern Action Plan: Emulating Him Today' : 'خطة عمل وتطبيق معاصر: كيف نقتدي به اليوم في حياتنا؟'} baseFontSize={14} minFontSize={8.5} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
@@ -2144,8 +2575,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-sparkles',
                                                         content: (isEn ? extraSections.modernApplicationEn : extraSections.modernApplicationAr).map((m, i) => `🎯 ${i + 1}. ${m}`)
                                                     })}
+<<<<<<< HEAD
                                                     className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                             style={{ color: 'var(--text-color)' }}
+=======
+                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -2155,9 +2591,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                 {(isEn ? extraSections.modernApplicationEn : extraSections.modernApplicationAr).map((app, idx) => (
                                                     <div 
                                                         key={idx} 
+<<<<<<< HEAD
                                                         className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}
                                                     >
                                                         <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+=======
+                                                        className="flex items-start gap-2.5 p-3 rounded-[14px] border-0"
+                                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+                                                    >
+                                                        <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5" style={{ backgroundColor: hexToRgba(themeHeadingColor, 0.12), color: themeHeadingColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                                             {idx + 1}
                                                         </span>
                                                         <p 
@@ -2176,12 +2619,23 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                         </div>
 
                         {/* Bottom Pagination & Navigation (Next / Prev Companion) */}
+<<<<<<< HEAD
                         <div className="pt-4 pb-2 grid grid-cols-2 gap-3">
                             {prevCompanion ? (
                                 <button
                                     onClick={() => handleSelectCompanion(prevCompanion)}
                                     className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[16px] flex items-center justify-center text-center transition-all cursor-pointer"
                                     style={{ 
+=======
+                        <div className="pt-4 grid grid-cols-2 gap-3">
+                            {prevCompanion ? (
+                                <button
+                                    onClick={() => handleSelectCompanion(prevCompanion)}
+                                    className="p-3.5 rounded-[16px] border-0 flex items-center justify-center text-center transition-all active:scale-95 hover:opacity-90 cursor-pointer"
+                                    style={{ 
+                                        backgroundColor: cardBgColor, 
+                                        boxShadow: cardShadow,
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         color: themeHeadingColor
                                     }}
                                 >
@@ -2192,8 +2646,15 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             {nextCompanion ? (
                                 <button
                                     onClick={() => handleSelectCompanion(nextCompanion)}
+<<<<<<< HEAD
                                     className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[16px] flex items-center justify-center text-center transition-all cursor-pointer"
                                     style={{ 
+=======
+                                    className="p-3.5 rounded-[16px] border-0 flex items-center justify-center text-center transition-all active:scale-95 hover:opacity-90 cursor-pointer"
+                                    style={{ 
+                                        backgroundColor: cardBgColor, 
+                                        boxShadow: cardShadow,
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         color: themeHeadingColor
                                     }}
                                 >
@@ -2219,7 +2680,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+<<<<<<< HEAD
                             className="app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative bg-white dark:bg-[#1E293B]"
+=======
+                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             style={{ 
                                 fontFamily: isEn ? 'sans-serif' : theme.font,
                                 color: 'var(--text-color)',
@@ -2286,7 +2751,14 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                             {/* Action Bar (Share, Copy, Zoom, ChevronDown to hide) without Audio button & with safe-area bottom elevation */}
                             <div 
+<<<<<<< HEAD
                                 className="px-4 pt-3 pb-2 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5 overflow-visible" 
+=======
+                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
+                                style={{ 
+                                    backgroundColor: cardBgColor
+                                }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 {/* Share Button */}
                                 <button 

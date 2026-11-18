@@ -546,9 +546,14 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
+<<<<<<< HEAD
         className={`app-page-card border-0 w-full max-w-lg rounded-3xl overflow-hidden flex flex-col max-h-[92dvh] ${s3d.surfaceCardClass}`}
         style={{ fontFamily: ctxTheme?.font }}
         onClick={(e) => e.stopPropagation()}
+=======
+        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[92dvh]"
+        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       >
         {/* Modal Top Bar */}
         <div className={`flex items-center justify-between px-5 py-4 border-b ${s3d.dividerClass} shrink-0 overflow-visible`}>

@@ -341,7 +341,11 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
             </div>
 
             <main className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 z-10">
+<<<<<<< HEAD
                 <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar pt-1.5 app-scroll-safe">
+=======
+                <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar pt-1 app-scroll-safe">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     {filteredNames.length === 0 ? (
                         <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] py-16 px-6 text-center max-w-xl mx-auto opacity-80 font-bold">
                             <Search className="w-10 h-10 mb-3 mx-auto opacity-40" />
@@ -479,7 +483,11 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+<<<<<<< HEAD
                             className="app-page-card border-0 rounded-t-[28px] sm:rounded-[24px] w-full max-w-xl text-center relative flex flex-col max-h-[88dvh] overflow-hidden bg-white dark:bg-[#1E293B]" 
+=======
+                            className="rounded-t-[28px] sm:rounded-[24px] w-full max-w-xl text-center relative shadow-2xl flex flex-col max-h-[88dvh] overflow-hidden border-0" 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             style={{ 
                                 color: 'var(--text-color)',
                                 fontFamily: theme.font 
@@ -561,7 +569,11 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
 
                             {/* Footer Actions with dynamic safe-area bottom elevation */}
                             <div 
+<<<<<<< HEAD
                                 className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 app-3d-divider-top flex justify-center items-center gap-3 sm:gap-4 overflow-visible"
+=======
+                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex justify-center items-center gap-3 sm:gap-4"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 {/* Audio */}
                                 <button 

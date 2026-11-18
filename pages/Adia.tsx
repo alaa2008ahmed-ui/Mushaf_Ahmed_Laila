@@ -350,7 +350,11 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
             </header>
 
             <main ref={mainRef} className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
+<<<<<<< HEAD
                 {/* Modern 3D Search bar */}
+=======
+                {/* Modern Borderless Search bar and View Mode Switch */}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
                     <div className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible"
                          style={{ 
@@ -405,7 +409,11 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     id={`adia-card-${duaa.id}`}
                                     key={duaa.id} 
                                     data-card-item="true"
+<<<<<<< HEAD
                                     className={`app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative transition-all duration-300 overflow-visible group flex flex-col justify-between ${
+=======
+                                    className={`app-page-card border-0 p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group flex flex-col justify-between ${
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                         isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
                                     }`} 
                                     onClick={(e) => {
@@ -417,7 +425,13 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     }}
                                     style={{ 
                                         fontFamily: isEn ? 'sans-serif' : theme.font,
+<<<<<<< HEAD
                                         color: 'var(--text-color)',
+=======
+                                        backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
+                                        color: 'var(--text-color)',
+                                        border: 'none'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     }}
                                 >
                                     {/* Top Bar with repetition badge and count badge */}

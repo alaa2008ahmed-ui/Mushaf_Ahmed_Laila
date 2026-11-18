@@ -469,13 +469,26 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
             {/* Table */}
             <main 
+<<<<<<< HEAD
                 className="flex-1 min-h-0 flex flex-col overflow-hidden px-3 pt-1 app-scroll-safe" 
+=======
+                className="flex-1 min-h-0 flex flex-col overflow-hidden px-2 pt-1 app-scroll-safe" 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 dir={dir}
             >
                 <div 
                     id="monthly-table-container"
+<<<<<<< HEAD
                     className="app-page-card border-0 max-w-4xl w-full min-h-0 mx-auto overflow-auto rounded-2xl bg-white" 
                     style={{ backgroundColor: '#FFFFFF' }}
+=======
+                    className="max-w-4xl w-full min-h-0 mx-auto overflow-auto rounded-xl shadow-sm bg-white" 
+                    style={{ 
+                        border: `2px solid ${tableBorderColor}`, 
+                        borderColor: tableBorderColor,
+                        backgroundColor: '#FFFFFF' 
+                    }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                     <table 
                         className="w-full text-center text-[11px] xs:text-xs border-collapse bg-white" 

@@ -584,7 +584,12 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   // 3D Sculpted Settings Screen (Matching Tasbeeh & Memorization)
   const renderSettings = () => (
     <div 
+<<<<<<< HEAD
       className={`app-page-card border-0 p-5 rounded-3xl ${surfaceCardClass} ${isEn ? 'text-left' : 'text-right'}`}
+=======
+      className={`app-page-card p-5 rounded-3xl bg-white dark:bg-zinc-900 border-0 ${isEn ? 'text-left' : 'text-right'}`} 
+      style={{ color: 'var(--text-color)', border: 'none' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
     >
       <h2 className="text-xl font-black mb-4 text-center font-kufi" style={{ color: primaryColor }}>
         {settings ? (isEn ? 'Edit Khatma Plan' : 'تعديل خطة الختمة') : (isEn ? 'New Khatma Setup' : 'إعداد ختمة جديدة')}
@@ -593,7 +598,11 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       <div className="space-y-4">
         {/* Profile Name */}
         <div id="wird-name-container" className="space-y-1.5">
+<<<<<<< HEAD
           <label className="block text-xs font-bold opacity-80 px-1">
+=======
+          <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 px-1">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {isEn ? 'Khatma / User Name:' : 'اسم الختمة / المستخدم:'} <span className="text-red-500 font-bold">*</span>
           </label>
           <input 
@@ -602,6 +611,15 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             onChange={(e) => {
               setTempName(e.target.value);
               if (e.target.value.trim()) setNameError(false);
+<<<<<<< HEAD
+=======
+            }}
+            className={`w-full bg-slate-100 dark:bg-zinc-800/80 rounded-2xl p-3.5 ${isEn ? 'text-left' : 'text-right'} font-semibold text-sm border-0 focus:outline-none focus:ring-2 transition-all ${
+              nameError ? 'ring-2 ring-red-500 bg-red-50/50 dark:bg-red-950/20' : ''
+            }`}
+            style={{ 
+              color: 'var(--text-color)'
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             }}
             className={`border-0 w-full rounded-2xl p-3.5 ${isEn ? 'text-left' : 'text-right'} font-bold text-sm focus:outline-none focus:ring-2 transition-all ${
               nameError
@@ -805,12 +823,18 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         {/* Progress Card */}
         <div 
           id="wird-progress-container" 
+<<<<<<< HEAD
           className={`app-page-card border-0 rounded-3xl p-5 space-y-3 ${surfaceCardClass}`}
+=======
+          className="app-page-card rounded-3xl p-5 bg-white dark:bg-zinc-900 border-0 space-y-3"
+          style={{ color: 'var(--text-color)', border: 'none' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         >
           <div className="flex justify-between items-center">
             <span className="font-black text-sm">
               {isEn ? 'Completion Rate' : 'نسبة الإنجاز'}
             </span>
+<<<<<<< HEAD
             <span 
               className="border-0 px-3 py-1 rounded-full font-black text-sm tabular-nums"
               style={{
@@ -818,6 +842,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                 color: primaryColor
               }}
             >
+=======
+            <span className="font-black text-base" style={{ color: primaryColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
               {formatNum(progress.toFixed(1))}%
             </span>
           </div>
@@ -832,7 +859,11 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             />
           </div>
 
+<<<<<<< HEAD
           <div className="flex justify-between items-center text-xs opacity-75 font-bold pt-0.5">
+=======
+          <div className="flex justify-between items-center text-xs opacity-70 font-semibold pt-0.5">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <span>{isEn ? `Day ${settings.currentDay} of ${totalDays}` : `اليوم ${toArabic(settings.currentDay)} من ${toArabic(totalDays)}`}</span>
             <span>{isEn ? `${settings.completedDays.length} days done` : `${toArabic(settings.completedDays.length)} يوم مكتمل`}</span>
           </div>
@@ -841,11 +872,20 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         {/* Current Day's Reading Card */}
         <div 
           id="wird-today-card" 
+<<<<<<< HEAD
           className={`app-page-card border-0 rounded-3xl p-4 sm:p-5 text-center space-y-3.5 ${surfaceCardClass}`}
         >
           <div id="wird-today-container" className={`p-3.5 rounded-2xl border-0 ${recessedWellClass}`}>
             <div className="flex items-center justify-center mb-2.5">
               <h3 className="text-sm font-black" style={{ color: primaryColor }}>
+=======
+          className="app-page-card rounded-3xl p-4 sm:p-5 bg-white dark:bg-zinc-900 border-0 text-center space-y-3"
+          style={{ color: 'var(--text-color)', border: 'none' }}
+        >
+          <div id="wird-today-container" className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border-0">
+            <div className="flex items-center justify-center mb-2.5">
+              <h3 className="text-sm font-bold" style={{ color: primaryColor }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 {isEn
                   ? `Today's Wird ${getEnglishOrdinal(settings.currentDay)} - ${settings.currentDay}`
                   : `ورد اليوم ${getArabicDayOrdinal(settings.currentDay)} - ${toArabic(settings.currentDay)}`}
@@ -853,7 +893,11 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             </div>
             
             {hasPages ? (
+<<<<<<< HEAD
               <div className="grid grid-cols-2 gap-2.5 w-full overflow-visible pb-1">
+=======
+              <div className="grid grid-cols-2 gap-2.5 w-full">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <button
                   type="button"
                   onClick={() => {
@@ -863,9 +907,118 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                       { s: startDetails.surahNumber, a: startDetails.ayahNumber },
                       isEn ? 'translation' : 'mushaf'
                     );
+<<<<<<< HEAD
+=======
+                  }}
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center gap-1.5 text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0 cursor-pointer"
+                >
+                  <span className="text-xs font-bold opacity-80">{isEn ? 'From Page' : 'من صفحة'}</span>
+                  <span className="text-sm font-black" style={{ color: primaryColor }}>{formatNum(startPage)}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const endDetails = getAyahDetails(endPage);
+                    handleOpenQuran(
+                      endPage,
+                      { s: endDetails.surahNumber, a: endDetails.ayahNumber },
+                      isEn ? 'translation' : 'mushaf'
+                    );
+                  }}
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center gap-1.5 text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0 cursor-pointer"
+                >
+                  <span className="text-xs font-bold opacity-80">{isEn ? 'To Page' : 'إلى صفحة'}</span>
+                  <span className="text-sm font-black" style={{ color: primaryColor }}>{formatNum(endPage)}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 rounded-2xl bg-white dark:bg-zinc-900 border-0">
+                <p className="text-sm font-bold" style={{ color: primaryColor }}>
+                  {isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات بارك الله فيك!'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Current Reading Position Card (4 Details Grid) */}
+          {hasPages && (
+            <div 
+              onClick={() => {
+                handleOpenQuran(
+                  ayahDetails.pageNumber, 
+                  { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
+                  isEn ? 'translation' : 'mushaf'
+                );
+              }}
+              className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border-0 cursor-pointer transition-all hover:opacity-95"
+            >
+              <div className="text-xs font-bold opacity-60 mb-2 text-center">
+                {isEn ? 'Current Reading Position' : 'موضع القراءة الحالي'}
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 w-full">
+                {/* اسم السورة */}
+                <div 
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
+                >
+                  <span className="font-extrabold text-sm truncate max-w-full">
+                    {isEn ? ayahDetails.surahNameEn : `سورة ${ayahDetails.surahNameAr}`}
+                  </span>
+                </div>
+
+                {/* رقم الآية */}
+                <div 
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
+                >
+                  <span className="font-extrabold text-sm">
+                    {isEn ? `Ayah ${ayahDetails.ayahNumber}` : `الآية ${toArabic(ayahDetails.ayahNumber)}`}
+                  </span>
+                </div>
+
+                {/* رقم الجزء */}
+                <div 
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
+                >
+                  <span className="font-extrabold text-sm">
+                    {isEn ? `Juz ${ayahDetails.juzNumber}` : `الجزء ${toArabic(ayahDetails.juzNumber)}`}
+                  </span>
+                </div>
+
+                {/* رقم الصفحة */}
+                <div 
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
+                >
+                  <span className="font-extrabold text-sm">
+                    {isEn ? `Page ${ayahDetails.pageNumber}` : `الصفحة ${toArabic(ayahDetails.pageNumber)}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Compact Action Button replacing full width button */}
+          <div className="flex flex-col gap-2.5 pt-1 items-center justify-center" id="wird-actions-container">
+            {hasPages ? (
+              !isCompleted ? (
+                <button 
+                  id="btn-wird-start-now"
+                  type="button"
+                  onClick={() => {
+                    handleOpenQuran(
+                      ayahDetails.pageNumber, 
+                      { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
+                      isEn ? 'translation' : 'mushaf'
+                    );
+                  }}
+                  className="px-8 py-3.5 rounded-2xl font-bold flex items-center justify-center transition-all active:scale-[0.98] shadow-md border-0 cursor-pointer mx-auto"
+                  style={{ 
+                    backgroundColor: primaryColor, 
+                    color: btnTextColor,
+                    boxShadow: `0 8px 20px -4px ${hexToRgba(primaryColor, 0.35)}`
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                   }}
                   className={`app-page-card border-0 rounded-2xl py-2.5 px-3 flex items-center justify-center gap-1.5 text-center cursor-pointer ${surfaceCardClass}`}
                 >
+<<<<<<< HEAD
                   <span className="text-xs font-bold opacity-80">{isEn ? 'From Page' : 'من صفحة'}</span>
                   <span className="text-sm font-black" style={{ color: primaryColor }}>{formatNum(startPage)}</span>
                 </button>
@@ -892,6 +1045,52 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                 </p>
               </div>
             )}
+=======
+                  <span className="text-base font-black tracking-wide font-kufi">
+                    {canContinue 
+                      ? (isEn ? 'Continue Reading' : 'متابعة القراءة') 
+                      : (isEn ? 'Start Now' : 'ابدأ الآن')}
+                  </span>
+                </button>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div 
+                    className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm border-0"
+                    style={{ 
+                      backgroundColor: hexToRgba(primaryColor, 0.14), 
+                      color: primaryColor
+                    }}
+                  >
+                    <CheckCircle size={18} />
+                    <span>{isEn ? 'Completed Today\'s Wird' : 'أنجزت الورد كاملاً لهذا اليوم'}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      type="button"
+                      onClick={handleStartNewWird}
+                      className="flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs shadow-md border-0 cursor-pointer"
+                      style={{ 
+                        backgroundColor: primaryColor, 
+                        color: btnTextColor 
+                      }}
+                    >
+                      <Plus size={16} />
+                      <span>{isEn ? 'Start New Wird' : 'بداية ورد جديد'}</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => onNavigate('home')}
+                      className="flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 border-0 cursor-pointer"
+                      style={{ color: 'var(--text-color)' }}
+                    >
+                      <Home size={16} />
+                      <span>{isEn ? 'Home' : 'الرئيسية'}</span>
+                    </button>
+                  </div>
+                </div>
+              )
+            ) : null}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           </div>
 
           {/* Current Reading Position Card (4 Details Grid) */}

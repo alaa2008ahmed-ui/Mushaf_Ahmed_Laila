@@ -6,7 +6,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { CommunitySpotlightGuide, getGuideSeen } from './Community/CommunitySpotlightGuide';
 import { CUSTOM_HABIT_MODAL_STEPS } from './Community/communityTourSteps';
+<<<<<<< HEAD
 import { getCalculator3DStyles } from '../utils/calculator3DStyles';
+=======
+import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { useShowPageGuides } from '../utils/guideManager';
 
 interface CustomHabitModalProps {
@@ -27,8 +31,13 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   onNavigate
 }) => {
   const showPageGuides = useShowPageGuides();
+<<<<<<< HEAD
   const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
   const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
+=======
+  const { theme, themeKey } = useTheme();
+  const tokens = getModernFlatTokens(theme, themeKey);
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   const { language } = useLanguage();
   const isEn = language === 'en';
   const [showGuide, setShowGuide] = useState(false);
@@ -109,8 +118,17 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+<<<<<<< HEAD
         className={`app-page-card border-0 w-full max-w-lg rounded-t-[28px] sm:rounded-3xl overflow-hidden flex flex-col max-h-[90dvh] ${s3d.surfaceCardClass}`}
         style={{ fontFamily: theme.font }}
+=======
+        className="w-full max-w-lg rounded-t-[28px] sm:rounded-[24px] overflow-hidden flex flex-col max-h-[90dvh] shadow-2xl border-0"
+        style={{ 
+          backgroundColor: tokens.cardBgColor, 
+          color: tokens.textColor,
+          fontFamily: theme.font
+        }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Drag Handle */}
@@ -124,15 +142,26 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
             {isEn ? 'Add Custom Worship' : 'إضافة عبادة أو طاعة'}
           </h2>
 
+<<<<<<< HEAD
           <div className="flex items-center gap-2 overflow-visible pb-1">
+=======
+          <div className="flex items-center gap-1">
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {showPageGuides && (
               <button
                 type="button"
                 onClick={() => setShowGuide(true)}
+<<<<<<< HEAD
                 className={`app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${s3d.surfaceCardClass}`}
                 title={isEn ? "Guide" : "دليل الإضافة"}
               >
                 <HelpCircle size={18} style={{ color: s3d.textColor }} />
+=======
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
+                title={isEn ? "Guide" : "دليل الإضافة"}
+              >
+                <HelpCircle size={18} style={{ color: tokens.textColor }} />
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
               </button>
             )}
             <button
@@ -301,27 +330,57 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
 
         {/* Action Buttons Footer elevated clearly above phone bottom navigation bar */}
         <div
+<<<<<<< HEAD
           className={`px-5 pt-3.5 modal-sheet-safe-bottom shrink-0 border-t ${s3d.dividerClass} flex gap-2.5 overflow-visible ${s3d.surfaceCardClass}`}
+=======
+          className="px-5 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex gap-2.5"
+          style={{
+            backgroundColor: tokens.cardBgColor
+          }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         >
           <motion.button
             id="custom-habit-save-btn"
             whileTap={{ scale: 0.98 }}
             type="submit"
             form="custom-habit-form"
+<<<<<<< HEAD
             className="app-page-card border-0 flex-1 py-3.5 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
             style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
           >
             <Plus className="w-4 h-4 stroke-[2.75]" />
+=======
+            className="flex-1 py-3.5 px-4 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 text-white cursor-pointer border-0"
+            style={{ backgroundColor: tokens.primaryColor }}
+          >
+            <Plus className="w-4 h-4" />
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             <span>{isEn ? 'Add Habit' : 'إضافة العبادة للطاعات 🌿'}</span>
           </motion.button>
           <button
             type="button"
             onClick={onClose}
+<<<<<<< HEAD
             className={`app-page-card border-0 py-3.5 px-5 rounded-2xl font-bold text-sm transition-all cursor-pointer ${s3d.surfaceCardClass}`}
+=======
+            className="py-3.5 px-5 rounded-xl font-bold text-sm bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 transition-colors cursor-pointer border-0"
+            style={{ color: tokens.textColor }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
           >
             {isEn ? 'Cancel' : 'إلغاء'}
           </button>
         </div>
+<<<<<<< HEAD
+=======
+
+        <CommunitySpotlightGuide
+          guideKey="custom_habit_modal_spotlight"
+          steps={CUSTOM_HABIT_MODAL_STEPS}
+          isOpen={showGuide}
+          onClose={() => setShowGuide(false)}
+          isEn={isEn}
+        />
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       </motion.div>
 
       <CommunitySpotlightGuide

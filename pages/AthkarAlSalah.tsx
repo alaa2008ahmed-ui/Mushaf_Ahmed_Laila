@@ -139,7 +139,11 @@ const SalahZikrCard = ({
     return (
         <div 
             data-card-item="true"
+<<<<<<< HEAD
             className={`app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-5 pb-4 rounded-2xl relative overflow-visible group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60 cursor-pointer' : 'cursor-pointer'}`} 
+=======
+            className={`app-page-card border-0 bg-white dark:bg-[#1E293B] p-5 pb-3 rounded-2xl relative overflow-hidden group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60 cursor-pointer' : 'cursor-pointer'}`} 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             onClick={(e) => {
                 onDecrement();
                 if (zikr.currentCount <= 1 || isFinished) {
@@ -519,8 +523,13 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
             </header>
 
             <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 app-scroll-safe-fab">
+<<<<<<< HEAD
                 {/* Controls Bar: Search and View Mode Switch - Matches Tasbeeh 3D */}
                 <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
+=======
+                {/* Controls Bar: Search and View Mode Switch - Matches Adia/OthersPage */}
+                <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                     {/* Search Input */}
                     <div 
                         className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible focus-within:ring-2 transition-all" 
@@ -621,7 +630,11 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                           `أذكار ${prayer.title}`, 
                                           `${prayer.titleEn} Adhkar`
                                       )} 
+<<<<<<< HEAD
                                       className={`app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-2xl flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer transition-all group overflow-visible`}
+=======
+                                      className={`app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-2xl flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer active:scale-98 transition-all group`}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                  >
                                     <div className={`flex ${activeTab === 'grid' ? 'flex-col items-center gap-3' : 'items-center gap-4'}`}>
                                         <div 

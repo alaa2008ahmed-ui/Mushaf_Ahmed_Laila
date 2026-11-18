@@ -10,9 +10,13 @@ import FontSelectModal from '../QuranReader/FontSelectModal';
 import ReciterSelectModal from '../QuranReader/ReciterSelectModal';
 import TafseerSelectionModal from '../QuranReader/TafseerSelectionModal';
 import SurahDesignPickerModal from '../QuranReader/SurahDesignPickerModal';
+<<<<<<< HEAD
 import ScrollSpeedModal from '../QuranReader/ScrollSpeedModal';
 import ApprovedSourcesModal from './ApprovedSourcesModal';
 import ShareDesignSelectorSection from './ShareDesignSelectorSection';
+=======
+import ApprovedSourcesModal from './ApprovedSourcesModal';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 import { READERS, ARABIC_READERS, MEMORIZATION_READERS, SURAH_INFO, THEMES, DEFAULT_SETTINGS, getValidReaderForMode } from '../QuranReader/constants';
 import { QuranDownloadModal, TafsirDownloadModal } from '../QuranReader/DownloadModals';
 import { quranData as rawQuranData } from '../../utils/quranData';
@@ -318,6 +322,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     setActiveQuranSubModal(null);
   };
 
+<<<<<<< HEAD
   const handleSelectScrollSpeed = (minutes: number) => {
     try {
       const saved = localStorage.getItem('quran_settings');
@@ -329,6 +334,8 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     setActiveQuranSubModal(null);
   };
 
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
   // Hardware/System Back Button Interceptor for Settings Page & All its Sub-views
   const backStateRef = useRef({
     activeQuranSubModal,
@@ -517,6 +524,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
               </h4>
             </button>
 
+<<<<<<< HEAD
             {/* Share Card Designs Picker Section */}
             <ShareDesignSelectorSection
               isEn={isEn}
@@ -524,6 +532,8 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
               themeAccentColor={themeAccentColor}
             />
 
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {/* Grouped Large Card: Downloads */}
             <div className="p-4 sm:p-5 rounded-3xl transition-all white-3d-container-card space-y-3">
               <div className="pb-2 border-b border-amber-500/20 dark:border-zinc-800">
@@ -662,6 +672,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                   </button>
                 </div>
 
+<<<<<<< HEAD
               </div>
             </div>
 
@@ -678,6 +689,9 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
 
               <div className="space-y-2.5 pt-1">
                 {/* Toggle: Floating Audio Button */}
+=======
+                {/* Toggle 4: Floating Audio Button */}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 <div className="p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0">
                   <h4 className="text-base sm:text-lg font-black truncate min-w-0 flex-1">
                     {isEn ? 'Floating Audio Button' : 'زر الصوت العائم'}
@@ -705,6 +719,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                     />
                   </button>
                 </div>
+<<<<<<< HEAD
 
                 {/* Toggle: Show Page Guides Button */}
                 <div className="p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn shadow-xs border-0">
@@ -737,6 +752,40 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
               </div>
             </div>
 
+=======
+              </div>
+            </div>
+
+            {/* Toggle 4: Show Page Guides Button */}
+            <div className="p-4 sm:p-5 rounded-2xl transition-all flex items-center justify-between gap-4 white-3d-card-btn">
+              <h4 className="text-base sm:text-lg font-black truncate min-w-0 flex-1">
+                {isEn ? 'Guides Button' : 'زر الإرشادات'}
+              </h4>
+
+              <button
+                type="button"
+                onClick={handleTogglePageGuides}
+                className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out shrink-0 p-0.5 cursor-pointer border-none outline-none ${
+                  !showPageGuides ? (isNightMode ? 'bg-zinc-700' : 'bg-slate-300') : ''
+                }`}
+                style={{
+                  backgroundColor: showPageGuides ? themeAccentColor : undefined
+                }}
+                role="switch"
+                aria-checked={showPageGuides}
+                title={showPageGuides ? (isEn ? 'Disable' : 'تعطيل') : (isEn ? 'Enable' : 'تفعيل')}
+              >
+                <motion.div
+                  layout
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className={`w-6 h-6 rounded-full bg-white shadow-md transform ${
+                    showPageGuides ? (isEn ? 'translate-x-6' : '-translate-x-6') : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             {/* Approved Sources & References Button */}
             <button
               type="button"
@@ -822,7 +871,10 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
             readersList={READERS}
             readingMode="mushaf"
             hideHeader={true}
+<<<<<<< HEAD
             zIndexClass="z-[99999999]"
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             onSelect={handleSelectReciter}
           />
         )}
@@ -849,6 +901,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
           />
         )}
 
+<<<<<<< HEAD
         {activeQuranSubModal === 'scroll-speed-modal' && (
           <ScrollSpeedModal
             isOpen={true}
@@ -888,6 +941,8 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
           />
         )}
 
+=======
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
         {/* Full-Screen Child Page 4: Download Holy Quran (3 Options) */}
         {showQuranDownloadMenu && (
           <div

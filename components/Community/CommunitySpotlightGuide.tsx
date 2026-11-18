@@ -475,6 +475,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         width: cardWidth,
         maxHeight: minCardMaxHeight
       };
+<<<<<<< HEAD
     } else if (step.preferredPlacement === 'top' && spaceAbove >= 200) {
       // Requested top and has ample room above — anchor by bottom so card never overlaps target
       pointerPlacement = 'bottom';
@@ -510,6 +511,34 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         left: computedLeft,
         width: cardWidth,
         maxHeight: Math.max(160, screenHeight - targetRect.bottom - margin - 16)
+=======
+    } else if (step.preferredPlacement === 'top' && spaceAbove >= cardHeight + margin + 10 && targetRect.top >= 200) {
+      // Requested top and has ample room above
+      pointerPlacement = 'bottom';
+      cardPositionStyle = {
+        top: Math.max(24, targetRect.top - cardHeight - margin),
+        left: computedLeft,
+        width: cardWidth,
+        maxHeight: Math.max(200, targetRect.top - margin - 24)
+      };
+    } else if (spaceBelow >= Math.min(200, cardHeight + margin) || targetRect.top <= 160) {
+      // Target is in top half of screen or has good room below: place below target
+      pointerPlacement = 'top';
+      cardPositionStyle = {
+        top: Math.min(Math.max(24, targetRect.bottom + margin), screenHeight - 240),
+        left: computedLeft,
+        width: cardWidth,
+        maxHeight: Math.max(200, screenHeight - targetRect.bottom - margin - 24)
+      };
+    } else if (spaceAbove >= cardHeight + margin + 10 && targetRect.top >= 200) {
+      // Ample space above
+      pointerPlacement = 'bottom';
+      cardPositionStyle = {
+        top: Math.max(24, targetRect.top - cardHeight - margin),
+        left: computedLeft,
+        width: cardWidth,
+        maxHeight: Math.max(200, targetRect.top - margin - 24)
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
       };
     } else {
       // Safe fallback: center on screen
@@ -549,6 +578,11 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   } else if (homeThemeVariant === 'gold') {
     themeAccent = '#D97706'; // Golden Amber
   }
+<<<<<<< HEAD
+=======
+
+  const currentAccent = themeAccent || step?.accentColor || '#10b981';
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
 
   const currentAccent = themeAccent || step?.accentColor || '#10b981';
 

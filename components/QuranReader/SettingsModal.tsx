@@ -192,6 +192,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const resolvedPageBg = (!modeSuffix || !currentTheme.bg || currentTheme.bg.toLowerCase() === '#ffffff')
         ? pageBgColor
         : currentTheme.bg;
+<<<<<<< HEAD
 
     const cardSurfaceBg = isDarkTheme
         ? (currentTheme?.cardBg && !currentTheme.cardBg.startsWith('rgba') ? currentTheme.cardBg : '#1E293B')
@@ -204,6 +205,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     return (
         <div 
             className={`fixed inset-0 z-[1200] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDarkTheme ? 'settings-3d-dark' : ''}`} 
+=======
+
+    return (
+        <div 
+            className="fixed inset-0 z-[1200] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn" 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
             dir={isEn ? "ltr" : "rtl"} 
             style={{ backgroundColor: resolvedPageBg }}
         >
@@ -249,7 +256,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <div className="flex-1 min-h-0 w-full flex flex-col overflow-hidden max-w-2xl mx-auto" style={{ color: isBlackTheme ? '#ffffff' : (currentTheme.text || '#000000') }}>
                 <div 
+<<<<<<< HEAD
                     className={`p-3.5 sm:p-4 overflow-y-auto text-center flex-1 min-h-0 app-scroll-safe scrollbar-hide ${isLandscape ? 'grid grid-cols-2 gap-x-6 gap-y-4' : 'space-y-4'}`}
+=======
+                    className={`p-3 sm:p-4 overflow-y-auto text-center flex-1 min-h-0 app-scroll-safe scrollbar-hide ${isLandscape ? 'grid grid-cols-2 gap-x-6 gap-y-3' : 'space-y-3'}`}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                 >
                     {/* حجم الخط: صف كامل مستقل */}
                     <div id="font-size-row" className={`${isLandscape ? 'col-span-2' : ''} p-3.5 rounded-2xl app-page-card border-0 overflow-visible`} style={{ backgroundColor: cardSurfaceBg }}>
@@ -269,7 +280,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     updateSetting('fontSize', val);
                                     showToast(isEn ? `Font size: ${val}` : `حجم الخط: ${val}`);
                                 }} 
+<<<<<<< HEAD
                                 className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer" 
+=======
+                                className="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer" 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 style={{ accentColor: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || 'var(--qr-accent)') }} 
                             />
                         </div>
@@ -290,7 +305,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         updateSetting('isBold', nextBold);
                                         showToast(nextBold ? (isEn ? 'Bold font enabled' : 'تم تفعيل سماكة الخط') : (isEn ? 'Bold font disabled' : 'تم إيقاف سماكة الخط'));
                                     }} 
+<<<<<<< HEAD
                                     className={`col-span-4 p-1.5 text-xs h-10 rounded-xl app-page-card border-0 flex justify-center items-center font-bold transition-all cursor-pointer ${settings.isBold ? 'text-white' : ''}`} 
+=======
+                                    className={`col-span-4 p-1.5 text-xs h-9 rounded-xl flex justify-center items-center font-bold transition-all border-0 cursor-pointer ${settings.isBold ? 'quran-raised-btn-selected text-white' : 'quran-raised-btn'}`} 
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     style={{ 
                                         backgroundColor: settings.isBold ? (currentTheme?.accent || '#10b981') : btnSurfaceBg,
                                         color: settings.isBold ? '#ffffff' : (isDarkTheme ? '#ffffff' : currentTheme?.text),
@@ -303,7 +322,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     type="button"
                                     id="font-family-btn" 
                                     onClick={() => onOpenModal('font-modal')} 
+<<<<<<< HEAD
                                     className="col-span-8 p-1.5 text-xs h-10 rounded-xl app-page-card border-0 flex justify-center items-center px-3 font-bold cursor-pointer"
+=======
+                                    className="col-span-8 p-1.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-center items-center px-3 font-bold border-0 cursor-pointer"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     style={{ 
                                         backgroundColor: btnSurfaceBg,
                                         color: isDarkTheme ? '#ffffff' : currentTheme?.text,
@@ -389,8 +412,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 const fieldName = isEn ? fieldEn[activeColorField] : fieldAr[activeColorField];
                                                 showToast(isEn ? `${fieldName} updated` : `تم تغيير ${fieldName}`);
                                             }}
+<<<<<<< HEAD
                                             className={`h-8 rounded-xl app-page-card border-0 transition-transform cursor-pointer ${settings[activeColorField] === c ? 'ring-2 ring-emerald-500 scale-110' : ''}`}
                                             style={{ ...renderCheckerboard(c) }}
+=======
+                                            className={`h-7 rounded-xl quran-raised-btn border-0 transition-transform ${settings[activeColorField] === c ? 'ring-2 ring-emerald-500 scale-110' : ''}`}
+                                            style={{ ...renderCheckerboard(c), border: 'none' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             title={c}
                                         />
                                     ))}
@@ -406,7 +434,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             <button 
                                 type="button"
                                 onClick={() => onOpenModal('reciter-modal')} 
+<<<<<<< HEAD
                                 className="w-full p-2.5 text-xs h-10 rounded-2xl app-page-card border-0 flex justify-center items-center px-3 font-bold cursor-pointer"
+=======
+                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-center items-center px-3 font-bold border-0"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 style={{ 
                                     backgroundColor: btnSurfaceBg, 
                                     color: isDarkTheme ? (currentTheme?.btnText || currentTheme?.text || '#ffffff') : currentTheme?.text, 
@@ -420,7 +452,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             <button 
                                 type="button"
                                 onClick={() => onOpenModal('tafseer-selection-modal')} 
+<<<<<<< HEAD
                                 className="w-full p-2.5 text-xs h-10 rounded-2xl app-page-card border-0 flex justify-center items-center px-3 font-bold cursor-pointer"
+=======
+                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-center items-center px-3 font-bold border-0"
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 style={{ 
                                     backgroundColor: btnSurfaceBg, 
                                     color: isDarkTheme ? (currentTheme?.btnText || currentTheme?.text || '#ffffff') : currentTheme?.text, 
@@ -432,11 +468,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
 
                     {/* بطاقة تكرار الآية بعرض كامل الصف */}
+<<<<<<< HEAD
                     <div id="repeat-and-notifications-row" className={`${isLandscape ? 'col-span-2' : ''} py-0.5 overflow-visible`}>
                         {/* تكرار الآية */}
                         <div id="ayah-repeat-section" className={`flex flex-col ${isEn ? 'text-left' : 'text-right'} w-full overflow-visible`}>
                             <label className="text-xs font-bold opacity-85 mb-1.5 truncate">{isEn ? "Ayah Repeat" : "تكرار الآية"}</label>
                             <div className="py-2.5 pb-3 flex items-center justify-around px-3 rounded-2xl app-page-card border-0 w-full overflow-visible" style={{ backgroundColor: cardSurfaceBg }}>
+=======
+                    <div id="repeat-and-notifications-row" className={`${isLandscape ? 'col-span-2' : ''} py-0.5`}>
+                        {/* تكرار الآية */}
+                        <div id="ayah-repeat-section" className={`flex flex-col ${isEn ? 'text-left' : 'text-right'} w-full`}>
+                            <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Ayah Repeat" : "تكرار الآية"}</label>
+                            <div className="h-10 flex items-center justify-around px-3 rounded-xl quran-raised-card border-0 w-full" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 {[1, 2, 3, 4, 5].map(num => (
                                     <button
                                         key={num}
@@ -447,7 +491,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                             updateSetting('ayahRepeatCount', num);
                                             showToast(isEn ? `Ayah repeat: ${num}` : `تكرار الآية: ${toArabic(num)} ${num === 1 ? 'مرة' : 'مرات'}`);
                                         }}
+<<<<<<< HEAD
                                         className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all app-page-card border-0 cursor-pointer ${
+=======
+                                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border-0 ${
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                             settings.ayahRepeatCount === num 
                                             ? 'text-white font-black' 
                                             : 'opacity-90 hover:opacity-100'
@@ -498,14 +546,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             <button 
                                 type="button"
                                 onClick={() => onOpenModal('scroll-speed-modal')} 
+<<<<<<< HEAD
                                 className="w-full p-2.5 text-xs h-10 rounded-2xl app-page-card border-0 flex justify-center items-center px-3 font-bold cursor-pointer"
                                 style={{ backgroundColor: btnSurfaceBg, color: isDarkTheme ? '#ffffff' : currentTheme?.text }}
+=======
+                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-center items-center px-3 font-bold border-0"
+                                style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                             >
                                 <span className="truncate text-center">{settings.scrollMinutes} {isEn ? "min" : "دقيقة"}</span>
                             </button>
                         </div>
 
                         {/* إخفاء الأشرطة */}
+<<<<<<< HEAD
                         <div id="hide-toolbars-section" className="flex flex-col text-right overflow-visible">
                             <label className="text-xs font-bold opacity-85 mb-1.5">{isEn ? "Hide Toolbars" : "إخفاء الأشرطة"}</label>
                             <div
@@ -709,15 +763,196 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     className="text-xs h-10 w-full text-center px-3 flex items-center justify-center rounded-2xl app-page-card border-0 font-bold cursor-pointer"
                                     style={{ backgroundColor: btnSurfaceBg, color: isDarkTheme ? '#ffffff' : currentTheme?.text }}
                                 >
+=======
+                        <div id="hide-toolbars-section" className="flex flex-col text-right">
+                            <label className="text-xs font-bold opacity-80 mb-1.5">{isEn ? "Hide Toolbars" : "إخفاء الأشرطة"}</label>
+                            <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
+                                <span className="text-[11px] opacity-70 font-bold">{isHideToolbarsEnabled ? (isEn ? "Enabled" : "مفعّل") : (isEn ? "Disabled" : "معطّل")}</span>
+                                <div className="relative inline-block w-8 align-middle select-none">
+                                    <input 
+                                        type="checkbox" 
+                                        id="hide-toolbars" 
+                                        checked={isHideToolbarsEnabled} 
+                                        onChange={(e) => handleHideToolbarsToggle(e.target.checked)} 
+                                        className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer"
+                                    />
+                                    <label 
+                                        htmlFor="hide-toolbars" 
+                                        className="toggle-label block overflow-hidden h-4 rounded-full cursor-pointer" 
+                                        style={{ backgroundColor: isHideToolbarsEnabled ? (currentTheme?.accent || 'var(--qr-accent)') : '#d1d5db' }}
+                                    ></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <div id="toggles-section">
+                            <div id="sajdah-row" className="grid grid-cols-2 gap-2.5 py-0.5">
+                                {/* بطاقة السجدة */}
+                                <div id="sajdah-section" className="flex flex-col text-right">
+                                    <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Show Sajdah Card" : "إظهار بطاقة السجدة"}</label>
+                                    <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
+                                        <span className="text-[11px] opacity-70 font-bold">{showSajdahCard ? (isEn ? "Enabled" : "مفعّل") : (isEn ? "Disabled" : "معطّل")}</span>
+                                        <div className="relative inline-block w-8 align-middle select-none">
+                                            <input 
+                                                type="checkbox" 
+                                                id="show-sajdah-card" 
+                                                checked={showSajdahCard} 
+                                                onChange={(e) => handleSajdahCardToggle(e.target.checked)} 
+                                                className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer"
+                                            />
+                                            <label 
+                                                htmlFor="show-sajdah-card" 
+                                                className="toggle-label block overflow-hidden h-4 rounded-full cursor-pointer" 
+                                                style={{ backgroundColor: showSajdahCard ? (currentTheme?.accent || 'var(--qr-accent)') : '#d1d5db' }}
+                                            ></label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* تظليل كلمة بكلمة */}
+                                <div id="word-highlight-section" className="flex flex-col text-right">
+                                    <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Word Sync Audio" : "تظليل كلمة بكلمة"}</label>
+                                    <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
+                                        <span className="text-[11px] opacity-70 font-bold">{settings.wordHighlightEnabled ? (isEn ? "Enabled" : "مفعّل") : (isEn ? "Disabled" : "معطّل")}</span>
+                                        <div className="relative inline-block w-8 align-middle select-none">
+                                            <input 
+                                                type="checkbox" 
+                                                id="word-highlight-toggle" 
+                                                checked={!!settings.wordHighlightEnabled} 
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    updateSetting('wordHighlightEnabled', checked);
+                                                    showToast(checked ? (isEn ? 'Word highlight enabled' : 'تم تفعيل تظليل كلمة بكلمة') : (isEn ? 'Word highlight disabled' : 'تم تعطيل تظليل كلمة بكلمة'));
+                                                }} 
+                                                className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer"
+                                            />
+                                            <label 
+                                                htmlFor="word-highlight-toggle" 
+                                                className="toggle-label block overflow-hidden h-4 rounded-full cursor-pointer" 
+                                                style={{ backgroundColor: settings.wordHighlightEnabled ? (currentTheme?.accent || 'var(--qr-accent)') : '#d1d5db' }}
+                                            ></label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* اختيار لون تظليل الكلمة المستقل مع المعاينة الحية */}
+                                {settings.wordHighlightEnabled && (
+                                    <div className="col-span-2 mt-1 p-2.5 rounded-xl space-y-2 border transition-all" style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', borderColor: isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}>
+                                            <div className="flex items-center justify-between text-[11px] font-bold">
+                                                <span style={{ color: currentTheme?.text }}>{isEn ? "Spoken Word Color" : "لون الكلمة المنطوقة"}</span>
+                                                <span className="text-[10px] opacity-70" style={{ color: currentTheme?.accent || 'var(--qr-accent)' }}>
+                                                    {WORD_HIGHLIGHT_COLOR_OPTIONS.find(o => o.id === (settings.wordHighlightColor || 'auto'))?.[isEn ? 'nameEn' : 'nameAr'] || (isEn ? "Custom" : "مخصص")}
+                                                </span>
+                                            </div>
+
+                                            {/* دوائر الألوان المتباينة */}
+                                            <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                                {WORD_HIGHLIGHT_COLOR_OPTIONS.map((opt) => {
+                                                    const isSelected = (settings.wordHighlightColor || 'auto') === opt.id;
+                                                    const displayColor = opt.id === 'auto' 
+                                                        ? getEffectiveWordHighlightColor(settings.highlightTextColor || currentTheme?.highlightText || currentTheme?.accent, 'auto', currentTheme?.id).bg 
+                                                        : opt.color;
+
+                                                    return (
+                                                        <button
+                                                            key={opt.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                updateSetting('wordHighlightColor', opt.id);
+                                                                showToast(isEn ? 'Spoken word color updated' : 'تم تغيير لون الكلمة المنطوقة');
+                                                            }}
+                                                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                                                                isSelected ? 'scale-110 shadow-md ring-2 ring-offset-2 ring-emerald-500' : 'opacity-85 hover:opacity-100 hover:scale-105'
+                                                            }`}
+                                                            style={{
+                                                                backgroundColor: displayColor,
+                                                                border: opt.id === 'auto' ? '2px dashed #ffffff' : '1px solid rgba(0,0,0,0.15)'
+                                                            }}
+                                                            title={isEn ? opt.nameEn : opt.nameAr}
+                                                        >
+                                                            {isSelected && (
+                                                                <i className="fa-solid fa-check text-[10px] text-white drop-shadow-xs"></i>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* بطاقة المعاينة البصرية لمظهر تظليل الآية مع الكلمة المستقلة */}
+                                            {(() => {
+                                                const ayahColor = settings.highlightTextColor || currentTheme?.highlightText || currentTheme?.accent || '#d97706';
+                                                const wordCol = getEffectiveWordHighlightColor(ayahColor, settings.wordHighlightColor, currentTheme?.id);
+
+                                                return (
+                                                    <div 
+                                                        className="p-2 rounded-lg text-center text-xs font-bold leading-relaxed border"
+                                                        style={{ 
+                                                            backgroundColor: isDarkTheme ? '#141414' : '#f9fafb',
+                                                            borderColor: isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                                                            fontFamily: settings.fontFamily || 'var(--font-amiri)'
+                                                        }}
+                                                    >
+                                                        <span style={{ color: ayahColor, opacity: 0.9 }}>
+                                                            بِسْمِ اللَّهِ{' '}
+                                                        </span>
+                                                        <span 
+                                                            style={{
+                                                                backgroundColor: 'transparent',
+                                                                color: wordCol.bg || '#dc2626',
+                                                                borderRadius: '0',
+                                                                padding: '0',
+                                                                margin: '0',
+                                                                display: 'inline'
+                                                            }}
+                                                        >
+                                                            الرَّحْمَٰنِ
+                                                        </span>
+                                                        <span style={{ color: ayahColor, opacity: 0.9 }}>
+                                                            {' '}الرَّحِيمِ
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                    <div id="downloads-section" className="space-y-2 py-0.5">
+                        {/* وضع بطاقة تحميل القرآن الكريم وبطاقة تحميل التفسير في صف واحد */}
+                        <div id="downloads-only-section">
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <button 
+                                    id="quran-download-btn" 
+                                    onClick={() => { 
+                                        onOpenModal('quran-download-modal'); 
+                                        showToast(isEn ? 'Quran downloads page' : 'تحميل القرآن الكريم');
+                                    }} 
+                                    className="text-xs h-9 w-full text-center px-3 flex items-center justify-center rounded-xl quran-raised-btn font-bold border-0"
+                                    style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
+                                >
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                     <span className="truncate text-center">{isEn ? "Download Quran" : "تحميل القرآن الكريم"}</span>
                                 </button>
                                 
                                 <button 
                                     type="button"
                                     id="tafseer-download-btn" 
+<<<<<<< HEAD
                                     onClick={() => onOpenModal('tafsir-download-modal')} 
                                     className="text-xs h-10 w-full text-center px-3 flex items-center justify-center rounded-2xl app-page-card border-0 font-bold cursor-pointer"
                                     style={{ backgroundColor: btnSurfaceBg, color: isDarkTheme ? '#ffffff' : currentTheme?.text }}
+=======
+                                    onClick={() => { 
+                                        onOpenModal('tafsir-download-modal'); 
+                                        showToast(isEn ? 'Tafseer downloads page' : 'تحميل التفسير');
+                                    }} 
+                                    className="text-xs h-9 w-full text-center px-3 flex items-center justify-center rounded-xl quran-raised-btn font-bold border-0"
+                                    style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
+>>>>>>> 590412898dc80b59e51feb5ab916e5ce21e97682
                                 >
                                     <span className="truncate text-center">{isEn ? "Download Tafseer" : "تحميل التفسير"}</span>
                                 </button>
