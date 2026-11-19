@@ -6,6 +6,7 @@ import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { Volume2, VolumeX, Copy, Check, Share2, ZoomIn, ChevronDown } from 'lucide-react';
 import { hexToRgba, getModernFlatTokens } from '../../utils/flatDesignTokens';
 import { RuqyahItem } from '../../data/ruqyahData';
+import QuranFormattedText, { getThemeQuranAccentColor } from '../Common/QuranFormattedText';
 
 interface ZoomModalProps {
     zoomedDuaa: RuqyahItem | null;
@@ -19,6 +20,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDuaa, onClose, setToastMess
     const { theme, themeKey } = useTheme();
     const { language, dir } = useLanguage();
     const tokens = getModernFlatTokens(theme, themeKey);
+    const quranAccentColor = getThemeQuranAccentColor(theme, themeKey);
     const isEn = language === 'en';
 
     const [copied, setCopied] = useState(false);
@@ -43,9 +45,9 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDuaa, onClose, setToastMess
         ? (zoomedDuaa.titleEn || zoomedDuaa.sourceEn || 'Al-Ruqyah') 
         : (zoomedDuaa.title || zoomedDuaa.source || 'الرقية الشرعية');
 
-    const displaySubtitle = isEn
-        ? (zoomedDuaa.sourceEn || zoomedDuaa.source)
-        : zoomedDuaa.source;
+    const displaySubtitle = zoomedDuaa.type === 'quran'
+        ? (isEn ? (zoomedDuaa.sourceEn || zoomedDuaa.source) : zoomedDuaa.source)
+        : (isEn ? `Prophetic Sunnah • ${zoomedDuaa.sourceEn || zoomedDuaa.source}` : `السنة النبوية • ${zoomedDuaa.source}`);
 
     const displayText = isEn ? (zoomedDuaa.textEn || zoomedDuaa.text) : zoomedDuaa.text;
     const cleanPlainText = displayText.replace(/<[^>]*>/g, '').trim();
@@ -118,8 +120,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDuaa, onClose, setToastMess
                             <span 
                                 className="app-3d-badge px-3.5 py-1 rounded-full text-xs font-bold"
                                 style={{
-                                    backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
-                                    color: tokens.primaryColor
+                                    backgroundColor: hexToRgba(quranAccentColor, 0.1),
+                                    color: quranAccentColor
                                 }}
                             >
                                 {isEn ? "Al-Ruqyah Al-Shar'iyyah" : "الرقية الشرعية"}
@@ -129,28 +131,23 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDuaa, onClose, setToastMess
 
                     {/* Scrollable Content Area */}
                     <div className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4">
-                        {isEn ? (
-                            <div 
-                                className="leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
-                                style={{ fontSize: `${fontSize}px` }}
-                                dir="ltr"
-                            >
-                                {displayText}
-                            </div>
-                        ) : (
-                            <div 
-                                className="leading-loose font-medium font-cairo text-center select-none py-2"
-                                style={{ fontSize: `${fontSize + 4}px` }}
-                                dir="rtl"
-                            >
-                                {displayText}
-                            </div>
-                        )}
+                        <QuranFormattedText
+                            text={displayText}
+                            source={isEn ? (zoomedDuaa.sourceEn || zoomedDuaa.source) : zoomedDuaa.source}
+                            title={isEn ? (zoomedDuaa.titleEn || zoomedDuaa.title) : zoomedDuaa.title}
+                            isEn={isEn}
+                            isQuran={zoomedDuaa.type === 'quran'}
+                            showSurahHeader={false}
+                            accentColor={quranAccentColor}
+                            fontSize={isEn ? fontSize : fontSize + 4}
+                            className={isEn ? 'leading-relaxed font-sans font-medium my-4' : 'leading-loose font-medium font-cairo py-2'}
+                            nonQuranClassName={isEn ? 'leading-relaxed font-sans font-medium text-center my-4 select-none text-balance' : 'leading-loose font-medium font-cairo text-center select-none py-2'}
+                        />
 
                         {displaySubtitle && (
                             <p 
                                 className="text-sm sm:text-base mt-4 font-bold font-cairo text-center" 
-                                style={{ color: tokens.primaryColor }} 
+                                style={{ color: quranAccentColor }} 
                                 dir={isEn ? 'ltr' : 'rtl'}
                             >
                                 {displaySubtitle}
@@ -162,8 +159,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDuaa, onClose, setToastMess
                                 <span 
                                     className="app-3d-badge px-3.5 py-1 rounded-full text-xs font-bold"
                                     style={{
-                                        backgroundColor: hexToRgba(tokens.primaryColor, 0.08),
-                                        color: tokens.primaryColor
+                                        backgroundColor: hexToRgba(quranAccentColor, 0.08),
+                                        color: quranAccentColor
                                     }}
                                 >
                                     {isEn 

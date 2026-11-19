@@ -74,6 +74,8 @@ interface AutoSilentPluginInterface {
   setAlertVolume?(options: { volume: number }): Promise<{ success: boolean; volume: number }>;
   playTone(options: { path: string; volume?: number }): Promise<{ success: boolean; fallbackNeeded?: boolean; error?: string; volume?: number }>;
   stopTone(): Promise<{ success: boolean }>;
+  pickPhoneNotificationTone?(options?: { currentUri?: string; title?: string }): Promise<{ cancelled?: boolean; silent?: boolean; uri?: string; name?: string; channelId?: string }>;
+  ensureCustomNotificationChannel?(options: { uri: string; name?: string }): Promise<{ channelId?: string }>;
   setQuranPlaybackActive?(options: { active: boolean; title?: string; subtitle?: string; isArabic?: boolean }): Promise<{ success: boolean; active: boolean }>;
   setAppLanguage?(options: { language: string }): Promise<{ success: boolean; language: string }>;
   getPendingShortcut?(): Promise<{ target?: string; seq?: number }>;
@@ -512,4 +514,57 @@ export const addNativeAdhanStateListener = async (
   }
 };
 
+export interface PhoneRingtonePickResult {
+  cancelled: boolean;
+  silent?: boolean;
+  uri?: string;
+  name?: string;
+  channelId?: string;
+}
 
+/**
+ * Opens Android's official RingtoneManager picker for short notification tones.
+ */
+export const pickNativePhoneNotificationTone = async (
+  currentUri?: string,
+  title?: string
+): Promise<PhoneRingtonePickResult> => {
+  if (Capacitor.getPlatform() !== 'android' || !AutoSilentMode.pickPhoneNotificationTone) {
+    return { cancelled: true };
+  }
+  try {
+    const res = await AutoSilentMode.pickPhoneNotificationTone({
+      currentUri: currentUri || '',
+      title: title || 'نغمات الهاتف',
+    });
+    return {
+      cancelled: !!res?.cancelled,
+      silent: !!res?.silent,
+      uri: res?.uri,
+      name: res?.name,
+      channelId: res?.channelId,
+    };
+  } catch (e) {
+    console.warn('pickNativePhoneNotificationTone error:', e);
+    return { cancelled: true };
+  }
+};
+
+/**
+ * Ensures an Android NotificationChannel exists for a picked phone content:// or file:// tone URI.
+ */
+export const ensureNativeCustomNotificationChannel = async (
+  uri: string,
+  name?: string
+): Promise<string> => {
+  if (Capacitor.getPlatform() !== 'android' || !uri || !AutoSilentMode.ensureCustomNotificationChannel) {
+    return 'athkar_channel_v4_chime';
+  }
+  try {
+    const res = await AutoSilentMode.ensureCustomNotificationChannel({ uri, name });
+    return res?.channelId || 'athkar_channel_v4_chime';
+  } catch (e) {
+    console.warn('ensureNativeCustomNotificationChannel error:', e);
+    return 'athkar_channel_v4_chime';
+  }
+};

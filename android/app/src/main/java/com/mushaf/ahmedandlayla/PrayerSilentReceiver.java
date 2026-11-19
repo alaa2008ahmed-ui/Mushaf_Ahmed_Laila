@@ -341,12 +341,12 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
         if (notifTitle == null || notifTitle.trim().isEmpty()) {
             notifTitle = isArabic
-                ? ("تم تفعيل وضع الصامت (صلاة " + prayerName + ")")
+                ? ("وضع الخشوع مُفعّل — " + prayerName)
                 : ("Silent mode activated (" + prayerName + " Prayer)");
         }
         if (notifBody == null || notifBody.trim().isEmpty()) {
             notifBody = isArabic
-                ? ("تم كتم صوت الهاتف تلقائياً لمدة " + durationMinutes + " دقيقة لأداء صلاة " + prayerName)
+                ? ("كُتِم صوت الهاتف تلقائياً لمدة " + durationMinutes + " دقيقة لتنعم بخشوعك.")
                 : ("Device muted automatically for " + durationMinutes + " minutes for " + prayerName + " prayer.");
         }
 
@@ -410,13 +410,12 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             .putLong(KEY_ACTIVE_SILENT_END_MILLIS, 0L)
             .apply();
 
-        if (windowId > 0) {
-            cancelNotificationById(context, windowId);
-        }
-
         // If user already manually restored sound or device is already unmuted,
         // DO NOT play chime and DO NOT post end-of-silent notification.
         if (restoredThisWindow || !isSilentActive || (!deviceStillMuted && !usedDndFilter)) {
+            if (restoredThisWindow && windowId > 0) {
+                cancelNotificationById(context, windowId);
+            }
             PersistentPrayerNotification.update(context);
             AutoSilentPlugin.notifySilentStateChanged(context);
             return;
@@ -430,10 +429,10 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             : 8001;
         String safePrayerName = (prayerName != null && !prayerName.isEmpty()) ? prayerName : "الصلاة";
         String notifTitle = isArabic
-            ? ("تم إنهاء وضع الصامت (صلاة " + safePrayerName + ")")
+            ? ("تقبّل الله صلاتكم — " + safePrayerName)
             : ("Silent mode ended (" + safePrayerName + " Prayer)");
         String notifBody = isArabic
-            ? ("تم إعادة تفعيل صوت الهاتف والوسائط بعد انتهاء صلاة " + safePrayerName + " تقبل الله منا ومنكم")
+            ? "أُعيد صوت الهاتف تلقائياً.. لا تنسَ أذكار ما بعد الصلاة."
             : ("Device sound and media restored after " + safePrayerName + " prayer. May Allah accept our prayers.");
 
         showNotification(context, endNotifId, notifTitle, notifBody, true, isArabic);
@@ -1123,11 +1122,11 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             boolean isArabic = intent.getBooleanExtra(EXTRA_IS_ARABIC, getAppIsArabic(context));
 
             if (title == null || title.trim().isEmpty()) {
-                title = isArabic ? "حان الآن موعد إقامة الصلاة" : "It is now time for Iqama";
+                title = isArabic ? "أُقيمت الصلاة" : "It is now time for Iqama";
             }
             if (body == null || body.trim().isEmpty()) {
                 body = isArabic
-                    ? "أقيمت الصلاة.. استووا وتراصوا واعتدلوا أثابكم الله"
+                    ? "استووا واعتدلوا، وأقبلوا بقلوبكم على الله."
                     : "Salah has begun. Straighten and close your ranks, may Allah reward you.";
             }
 

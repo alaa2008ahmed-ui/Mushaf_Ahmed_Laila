@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { prayerNamesAr, internetTones } from '../data/prayerTimesData';
-import { usePrayerTimes, usePrayerCountdown, copyAssetToDevice, getEffectiveIqamaMinutes } from '../context/PrayerTimesContext';
+import { usePrayerTimes, usePrayerCountdown, copyAssetToDevice, getEffectiveIqamaMinutes, SunriseAlertsConfig, DEFAULT_SUNRISE_ALERTS } from '../context/PrayerTimesContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import PrayerTimesSettingsModal from '../components/PrayerTimes/PrayerTimesSettingsModal';
+import SunriseSettingsModal from '../components/PrayerTimes/SunriseSettingsModal';
 import PrayerCard from '../components/PrayerTimes/PrayerCard';
 import PrayerTimesHeader from '../components/PrayerTimes/PrayerTimesHeader';
 import PrayerTimesDateSearch from '../components/PrayerTimes/PrayerTimesDateSearch';
@@ -108,6 +109,7 @@ function PrayerTimes({ onBack, onNavigate }) {
     }, [language]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSunriseModalOpen, setIsSunriseModalOpen] = useState(false);
     const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
     const [currentEditingKey, setCurrentEditingKey] = useState(null);
     const [tempOffset, setTempOffset] = useState(0);
@@ -175,6 +177,10 @@ function PrayerTimes({ onBack, onNavigate }) {
                 setShowWeatherModal(false);
                 return true;
             }
+            if (isSunriseModalOpen) {
+                setIsSunriseModalOpen(false);
+                return true;
+            }
             if (isModalOpen) {
                 closeModal();
                 return true;
@@ -187,10 +193,12 @@ function PrayerTimes({ onBack, onNavigate }) {
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [isModalOpen, isNotifModalOpen, showWeatherModal]);
+    }, [isModalOpen, isSunriseModalOpen, isNotifModalOpen, showWeatherModal]);
 
     const handleBack = () => {
-        if (isModalOpen) {
+        if (isSunriseModalOpen) {
+            setIsSunriseModalOpen(false);
+        } else if (isModalOpen) {
             closeModal();
         } else if (isNotifModalOpen) {
             setIsNotifModalOpen(false);
@@ -200,6 +208,7 @@ function PrayerTimes({ onBack, onNavigate }) {
     };
 
     const handleGoHome = () => {
+        if (isSunriseModalOpen) setIsSunriseModalOpen(false);
         if (isModalOpen) closeModal();
         if (isNotifModalOpen) setIsNotifModalOpen(false);
         onNavigate('home');
@@ -278,6 +287,11 @@ function PrayerTimes({ onBack, onNavigate }) {
     };
     
     const openSettings = (key) => {
+        if (key === 'Sunrise') {
+            setCurrentEditingKey('Sunrise');
+            setIsSunriseModalOpen(true);
+            return;
+        }
         setCurrentEditingKey(key);
         setTempOffset(config.prayerOffsets[key] || 0);
         setTempIqama(config.iqamaOffsets[key] || 0);
@@ -359,9 +373,27 @@ function PrayerTimes({ onBack, onNavigate }) {
         if (willBeMuted) {
             stopNotificationSound();
         }
-        updateConfig({
-            mutedPrayers: {...config.mutedPrayers, [key]: willBeMuted }
-        });
+
+        if (key === 'Sunrise' && !willBeMuted) {
+            const currentSr = { ...DEFAULT_SUNRISE_ALERTS, ...(config.sunriseAlerts || {}) };
+            const hasAnyAlert = currentSr.preSunriseEnabled || currentSr.atSunriseEnabled || currentSr.duhaEnabled;
+            updateConfig({
+                mutedPrayers: { ...config.mutedPrayers, Sunrise: false },
+                ...(!hasAnyAlert ? {
+                    sunriseAlerts: {
+                        ...currentSr,
+                        preSunriseEnabled: true,
+                        atSunriseEnabled: true,
+                        duhaEnabled: true
+                    }
+                } : {})
+            });
+        } else {
+            updateConfig({
+                mutedPrayers: {...config.mutedPrayers, [key]: willBeMuted }
+            });
+        }
+
         const pName = getPrayerDisplayName(key, language);
         showToast(
             willBeMuted 
@@ -665,6 +697,8 @@ function PrayerTimes({ onBack, onNavigate }) {
                              const displayTimeStr = applyOffset(times[key], totalOffset);
                              const effectiveIqamaMins = getEffectiveIqamaMinutes(config, key);
                              const iqamaTime = applyOffset(displayTimeStr, effectiveIqamaMins);
+                             const duhaMins = config.sunriseAlerts?.duhaMinutes || 15;
+                             const duhaTimeStr = key === 'Sunrise' ? applyOffset(displayTimeStr, duhaMins) : undefined;
                              const isMuted = config.mutedPrayers[key] || isAudioMuted;
                              
                             return (
@@ -674,6 +708,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         idx={idx}
                                         displayTimeStr={displayTimeStr}
                                         iqamaTime={iqamaTime}
+                                        duhaTimeStr={duhaTimeStr}
                                         isMuted={isMuted}
                                         isNextPrayer={nextPrayer?.key === key}
                                         prayerNameAr={prayerNamesAr[key]}
@@ -768,6 +803,39 @@ function PrayerTimes({ onBack, onNavigate }) {
                     setTempAutoSilentEnabled={setTempAutoSilentEnabled}
                     tempAutoSilentDuration={tempAutoSilentDuration}
                     setTempAutoSilentDuration={setTempAutoSilentDuration}
+                />
+            </ModalErrorBoundary>
+
+            <ModalErrorBoundary onClose={() => setIsSunriseModalOpen(false)}>
+                <SunriseSettingsModal
+                    isOpen={isSunriseModalOpen}
+                    closeModal={() => setIsSunriseModalOpen(false)}
+                    sunriseTimeStr={times?.Sunrise || '--:--'}
+                    currentSunriseOffset={config.prayerOffsets.Sunrise || 0}
+                    isSummerTime={isSummerTimeActive}
+                    currentSettings={config.sunriseAlerts}
+                    isSunriseMuted={!!config.mutedPrayers?.Sunrise}
+                    isBlackAndWhite={isBlackAndWhite}
+                    isBlackTheme={isBlackTheme}
+                    onSave={(newSunriseSettings: SunriseAlertsConfig, newSunriseOffset: number) => {
+                        const hasAnyEnabled =
+                            newSunriseSettings.preSunriseEnabled ||
+                            newSunriseSettings.atSunriseEnabled ||
+                            newSunriseSettings.duhaEnabled;
+                        updateConfig({
+                            prayerOffsets: {
+                                ...config.prayerOffsets,
+                                Sunrise: newSunriseOffset
+                            },
+                            sunriseAlerts: newSunriseSettings,
+                            mutedPrayers: {
+                                ...config.mutedPrayers,
+                                Sunrise: !hasAnyEnabled
+                            }
+                        });
+                        showToast(tPrayer('toastSunriseSettingsSaved', language));
+                        setIsSunriseModalOpen(false);
+                    }}
                 />
             </ModalErrorBoundary>
 

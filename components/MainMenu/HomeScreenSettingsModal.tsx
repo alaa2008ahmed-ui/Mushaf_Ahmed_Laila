@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { BookCheck } from 'lucide-react';
+import { BookCheck, Sparkles } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getTawafCounterState, saveTawafCounterState, subscribeTawafCounter, TawafCounterState } from '../../utils/tawafCounterStorage';
@@ -12,6 +12,7 @@ import TafseerSelectionModal from '../QuranReader/TafseerSelectionModal';
 import SurahDesignPickerModal from '../QuranReader/SurahDesignPickerModal';
 import ScrollSpeedModal from '../QuranReader/ScrollSpeedModal';
 import ApprovedSourcesModal from './ApprovedSourcesModal';
+import WhatsNewModal from './WhatsNewModal';
 import ShareDesignSelectorSection from './ShareDesignSelectorSection';
 import { READERS, ARABIC_READERS, MEMORIZATION_READERS, SURAH_INFO, THEMES, DEFAULT_SETTINGS, getValidReaderForMode } from '../QuranReader/constants';
 import { QuranDownloadModal, TafsirDownloadModal } from '../QuranReader/DownloadModals';
@@ -92,6 +93,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
   const [showQuranDownloadMenu, setShowQuranDownloadMenu] = useState<boolean>(false);
   const [showTafsirDownloadModal, setShowTafsirDownloadModal] = useState<boolean>(false);
   const [showApprovedSourcesModal, setShowApprovedSourcesModal] = useState<boolean>(false);
+  const [showWhatsNewModal, setShowWhatsNewModal] = useState<boolean>(false);
   const [activeDownloadType, setActiveDownloadType] = useState<'mushaf' | 'listen' | 'memorization' | null>(null);
   const [activeQuranSubModal, setActiveQuranSubModal] = useState<string | null>(null);
 
@@ -339,6 +341,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     showAppNotificationModal,
     showPhoneNotificationModal,
     showApprovedSourcesModal,
+    showWhatsNewModal,
     onClose
   });
   backStateRef.current = {
@@ -350,6 +353,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     showAppNotificationModal,
     showPhoneNotificationModal,
     showApprovedSourcesModal,
+    showWhatsNewModal,
     onClose
   };
 
@@ -398,7 +402,12 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
         setShowApprovedSourcesModal(false);
         return true;
       }
-      // 9. If on the main settings screen, close settings modal
+      // 9. If What's New modal is open
+      if (s.showWhatsNewModal) {
+        setShowWhatsNewModal(false);
+        return true;
+      }
+      // 10. If on the main settings screen, close settings modal
       s.onClose();
       return true;
     };
@@ -427,7 +436,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                   title={isEn ? "Go Back" : "رجوع للخلف"}
                   aria-label={isEn ? "Go Back" : "رجوع للخلف"}
                 >
@@ -447,7 +456,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                   title={isEn ? "Home" : "الصفحة الرئيسية"}
                   aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                 >
@@ -751,6 +760,26 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
               </div>
             </div>
 
+            {/* Latest App Updates / What's New Button */}
+            <button
+              type="button"
+              id="btn-whats-new-updates"
+              onClick={() => setShowWhatsNewModal(true)}
+              className="w-full text-start p-4 sm:p-5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between gap-3 white-3d-card-btn"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Sparkles
+                  size={20}
+                  strokeWidth={2.2}
+                  className="shrink-0"
+                  style={{ color: isBlackTheme ? '#000000' : themeAccentColor }}
+                />
+                <h4 className="text-base sm:text-lg font-black truncate">
+                  {isEn ? "What's New & App Updates" : 'أحدث التحديثات والإضافات'}
+                </h4>
+              </div>
+            </button>
+
             {/* Approved Sources & References Button */}
             <button
               type="button"
@@ -916,7 +945,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                     <button
                       type="button"
                       onClick={() => setShowQuranDownloadMenu(false)}
-                      className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                       title={isEn ? 'Go Back' : 'رجوع للخلف'}
                       aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
                     >
@@ -937,7 +966,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
                         setShowQuranDownloadMenu(false);
                         onClose();
                       }}
-                      className="unified-3d-btn w-10 h-10 rounded-full flex items-center justify-center bg-black/10 dark:bg-white/10 shadow-[0_2.5px_0_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.28)] cursor-pointer"
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                       title={isEn ? 'Home' : 'الصفحة الرئيسية'}
                       aria-label={isEn ? 'Home' : 'الصفحة الرئيسية'}
                     >
@@ -1050,6 +1079,12 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
             setShowApprovedSourcesModal(false);
             onClose();
           }}
+        />
+
+        {/* Compact What's New & Updates Modal */}
+        <WhatsNewModal
+          isOpen={showWhatsNewModal}
+          onClose={() => setShowWhatsNewModal(false)}
         />
       </div>
   );

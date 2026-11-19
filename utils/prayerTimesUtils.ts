@@ -460,6 +460,7 @@ export interface ActiveNotificationTone {
     name: string;
     data: string;
     fileName?: string;
+    channelId?: string;
 }
 
 export const getActiveNotificationTone = (): ActiveNotificationTone => {
@@ -498,6 +499,14 @@ export const getActiveNotificationSoundPath = (): string => {
 export const getActiveNotificationSoundFileName = (): string | undefined => {
     const tone = getActiveNotificationTone();
     if (tone.id === 'none' || tone.data === 'none') return undefined;
+    if (
+        tone.id === 'phone_ringtone' ||
+        tone.id === 'custom' ||
+        tone.data?.startsWith('content://') ||
+        tone.data?.startsWith('data:') ||
+        tone.data?.startsWith('file://')
+    ) {
+        return 'chime.mp3';
+    }
     return tone.fileName || 'chime.mp3';
 };
-

@@ -784,6 +784,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     hidePreviewButton={true}
                                     use3dAdiaStyle={true}
                                     cardBg={cardSurfaceBg}
+                                    modalBg={isBlackTheme ? '#121214' : notifPageBg}
                                 />
                             </div>
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ZoomIn, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
+import { Check, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   renderCardToPureCanvas,
   SHARE_CARD_DESIGNS,
@@ -12,6 +11,7 @@ import {
 import { SHARE_DESIGN_CHANGE_EVENT, ShareDesignMeta } from '../../utils/shareCardDesigns';
 import { showGlobalAppToast } from '../../utils/appNotificationSettings';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ShareDesignSelectorSectionProps {
   isEn: boolean;
@@ -188,10 +188,37 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
   isNightMode,
   themeAccentColor,
 }) => {
+  const { theme, themeKey, isNightMode: ctxNightMode, homeThemeVariant } = useTheme();
   const [selectedId, setSelectedId] = useState<ShareDesignId>(() => getSelectedShareDesign());
   const [thumbs, setThumbs] = useState<Record<string, string>>(() => getCachedThumbsSnapshot(isEn));
   const [zoomedIndex, setZoomedIndex] = useState<number | null>(null);
   const [fullPreviews, setFullPreviews] = useState<Record<string, string>>({});
+
+  const isNightActive = Boolean(isNightMode || ctxNightMode);
+  const isBlackTheme =
+    isNightActive ||
+    themeKey === 'black_gold' ||
+    themeKey === 'deep_black' ||
+    theme?.bgColor === '#000000' ||
+    theme?.name === 'اسود' ||
+    theme?.name === 'black';
+
+  const surfaceBg = isBlackTheme ? '#141418' : '#FFFFFF';
+  const dividerColor = isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.08)';
+  const textPrimary = isBlackTheme ? '#FFFFFF' : '#0F172A';
+  const applyTextColor = isBlackTheme
+    ? '#FBBF24'
+    : homeThemeVariant === 'sky' || themeKey === 'sky_mode'
+      ? '#0284C7'
+      : homeThemeVariant === 'emerald' || themeKey === 'emerald_mode'
+        ? '#047857'
+        : homeThemeVariant === 'burgundy' || themeKey === 'burgundy_mode'
+          ? '#881337'
+          : '#B45309';
+
+  const tactileNeutralShadow = isBlackTheme
+    ? '0 3.5px 0 #050507, 0 8px 16px rgba(0,0,0,0.65), inset 0 1.5px 1px rgba(255,255,255,0.16), inset 0 -1.5px 2px rgba(0,0,0,0.45)'
+    : '0 3.5px 0 rgba(148,163,184,0.34), 0 8px 16px -3px rgba(15,23,42,0.09), inset 0 1.5px 1px rgba(255,255,255,0.95), inset 0 -1.5px 2px rgba(15,23,42,0.04)';
 
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -201,6 +228,7 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
   const userTouchedStripRef = useRef(false);
   const scrollRafRef = useRef<number | null>(null);
   const mouseDragStartXRef = useRef<number | null>(null);
+  const tapStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const didInitScrollRef = useRef(false);
   const programmaticScrollUntilRef = useRef(0);
 
@@ -438,16 +466,6 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
     [isEn]
   );
 
-  const showDesktopSideArrows =
-    !Capacitor.isNativePlatform() &&
-    typeof window !== 'undefined' &&
-    !(
-      (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) ||
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent || ''
-      )
-    );
-
   const zoomedPortal =
     zoomedDesign && zoomedIndex !== null && typeof document !== 'undefined'
       ? createPortal(
@@ -492,7 +510,19 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
                     ref={(el) => {
                       slideRefs.current[idx] = el;
                     }}
-                    className="w-screen h-full shrink-0 snap-center flex items-center justify-center p-0"
+                    onPointerDown={(e) => {
+                      tapStartPosRef.current = { x: e.clientX, y: e.clientY };
+                    }}
+                    onClick={(e) => {
+                      const start = tapStartPosRef.current;
+                      tapStartPosRef.current = null;
+                      if (start) {
+                        const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+                        if (moved > 10) return;
+                      }
+                      setZoomedIndex(null);
+                    }}
+                    className="w-screen h-full shrink-0 snap-center flex items-center justify-center p-0 cursor-zoom-out"
                   >
                     {shouldRenderImg && previewSrc ? (
                       <img
@@ -500,6 +530,19 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
                         alt={isEn ? design.nameEn : design.nameAr}
                         referrerPolicy="no-referrer"
                         draggable={false}
+                        onPointerDown={(e) => {
+                          tapStartPosRef.current = { x: e.clientX, y: e.clientY };
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const start = tapStartPosRef.current;
+                          tapStartPosRef.current = null;
+                          if (start) {
+                            const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+                            if (moved > 10) return;
+                          }
+                          setZoomedIndex(null);
+                        }}
                         className="w-full h-full object-contain select-none"
                       />
                     ) : (
@@ -512,43 +555,53 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
               })}
             </div>
 
-            {/* Side Previous / Next Arrows (Visible Only in Desktop / Web Browser, Hidden on Phone) */}
-            {showDesktopSideArrows && zoomedIndex > 0 && (
+            {/* Side Previous / Next Arrows (Compact Share-Page White 3D Style) */}
+            {zoomedIndex > 0 && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   scrollToSlide(zoomedIndex - 1);
                 }}
-                className={`unified-3d-btn fixed top-1/2 -translate-y-1/2 ${
-                  isEn ? 'left-3' : 'right-3'
-                } w-10 h-10 rounded-full bg-black/80 text-white border border-white/25 flex items-center justify-center cursor-pointer`}
-                style={{ boxShadow: '0 4px 0 rgba(0,0,0,0.6), 0 8px 18px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.28)' }}
+                className={`fixed top-1/2 -translate-y-1/2 z-20 ${
+                  isEn ? 'left-2' : 'right-2'
+                } w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-0 cursor-pointer transition-transform active:scale-90`}
+                style={{
+                  backgroundColor: surfaceBg,
+                  color: textPrimary,
+                  border: `1px solid ${dividerColor}`,
+                  boxShadow: tactileNeutralShadow,
+                }}
                 aria-label={isEn ? 'Previous design' : 'التصميم السابق'}
               >
-                {isEn ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+                {isEn ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
               </button>
             )}
 
-            {showDesktopSideArrows && zoomedIndex < SHARE_CARD_DESIGNS.length - 1 && (
+            {zoomedIndex < SHARE_CARD_DESIGNS.length - 1 && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   scrollToSlide(zoomedIndex + 1);
                 }}
-                className={`unified-3d-btn fixed top-1/2 -translate-y-1/2 ${
-                  isEn ? 'right-3' : 'left-3'
-                } w-10 h-10 rounded-full bg-black/80 text-white border border-white/25 flex items-center justify-center cursor-pointer`}
-                style={{ boxShadow: '0 4px 0 rgba(0,0,0,0.6), 0 8px 18px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.28)' }}
+                className={`fixed top-1/2 -translate-y-1/2 z-20 ${
+                  isEn ? 'right-2' : 'left-2'
+                } w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-0 cursor-pointer transition-transform active:scale-90`}
+                style={{
+                  backgroundColor: surfaceBg,
+                  color: textPrimary,
+                  border: `1px solid ${dividerColor}`,
+                  boxShadow: tactileNeutralShadow,
+                }}
                 aria-label={isEn ? 'Next design' : 'التصميم التالي'}
               >
-                {isEn ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+                {isEn ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
             )}
 
-            {/* Bottom Ultra-Compact Bilingual Apply & Cancel Pills */}
-            <div className="fixed bottom-[max(env(safe-area-inset-bottom,0px),12px)] inset-x-0 flex items-center justify-center gap-2.5 pointer-events-none">
+            {/* Bottom Raised Apply & Cancel Buttons (Matched to Share-Page Tactile 3D Button Colors) */}
+            <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+34px)] inset-x-0 z-20 flex items-center justify-center gap-4 pointer-events-none">
               <button
                 type="button"
                 onClick={(e) => {
@@ -556,10 +609,16 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
                   handleSelectDesign(zoomedDesign);
                   setZoomedIndex(null);
                 }}
-                className="unified-3d-btn pointer-events-auto !min-h-0 !min-w-0 w-fit px-4 py-2 rounded-full font-bold text-xs leading-none cursor-pointer bg-gradient-to-b from-amber-400 to-amber-500 text-zinc-950 border border-amber-200/80 whitespace-nowrap"
-                style={{ boxShadow: '0 3.5px 0 #b45309, 0 8px 16px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.75)' }}
+                className="pointer-events-auto !min-h-0 !min-w-0 w-fit px-7 py-3 rounded-full font-extrabold text-sm leading-none cursor-pointer whitespace-nowrap active:scale-95 transition-transform flex items-center gap-1.5"
+                style={{
+                  backgroundColor: surfaceBg,
+                  color: applyTextColor,
+                  border: `1px solid ${dividerColor}`,
+                  boxShadow: tactileNeutralShadow,
+                }}
               >
-                {isEn ? 'Apply' : 'تطبيق'}
+                <Check size={15} strokeWidth={3} />
+                <span>{isEn ? 'Apply' : 'تطبيق'}</span>
               </button>
 
               <button
@@ -568,8 +627,13 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
                   e.stopPropagation();
                   setZoomedIndex(null);
                 }}
-                className="unified-3d-btn pointer-events-auto !min-h-0 !min-w-0 w-fit px-4 py-2 rounded-full font-bold text-xs leading-none cursor-pointer bg-zinc-800/95 text-white border border-white/25 whitespace-nowrap"
-                style={{ boxShadow: '0 3.5px 0 #09090d, 0 8px 16px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.25)' }}
+                className="pointer-events-auto !min-h-0 !min-w-0 w-fit px-7 py-3 rounded-full font-extrabold text-sm leading-none cursor-pointer whitespace-nowrap active:scale-95 transition-transform"
+                style={{
+                  backgroundColor: surfaceBg,
+                  color: textPrimary,
+                  border: `1px solid ${dividerColor}`,
+                  boxShadow: tactileNeutralShadow,
+                }}
               >
                 {isEn ? 'Cancel' : 'إلغاء'}
               </button>
@@ -623,11 +687,15 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
                   <div
                     role="button"
                     tabIndex={0}
-                    onClick={() => handleSelectDesign(design)}
+                    onClick={() => {
+                      didInitScrollRef.current = false;
+                      setZoomedIndex(idx);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        handleSelectDesign(design);
+                        didInitScrollRef.current = false;
+                        setZoomedIndex(idx);
                       }
                     }}
                     className={`relative w-full p-1 rounded-xl transition-all cursor-pointer white-3d-card-btn ${
@@ -677,28 +745,6 @@ export const ShareDesignSelectorSection: React.FC<ShareDesignSelectorSectionProp
                           <Check size={11} strokeWidth={3} />
                         </span>
                       )}
-
-                      {/* Full-Page Zoom Preview Trigger */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          didInitScrollRef.current = false;
-                          setZoomedIndex(idx);
-                        }}
-                        className={`absolute bottom-0.5 ${
-                          isEn ? 'right-0.5' : 'left-0.5'
-                        } w-7 h-7 flex items-center justify-center cursor-pointer border-0 bg-transparent`}
-                        title={isEn ? 'Full screen preview' : 'معاينة بملء الشاشة'}
-                        aria-label={isEn ? 'Full screen preview' : 'معاينة بملء الشاشة'}
-                      >
-                        <span
-                          className="unified-3d-btn w-5 h-5 rounded-full bg-zinc-900/90 text-white flex items-center justify-center border border-white/30"
-                          style={{ boxShadow: '0 2px 0 rgba(0,0,0,0.75), inset 0 1px 1px rgba(255,255,255,0.35)' }}
-                        >
-                          <ZoomIn size={11} />
-                        </span>
-                      </button>
                     </div>
                   </div>
                 </div>

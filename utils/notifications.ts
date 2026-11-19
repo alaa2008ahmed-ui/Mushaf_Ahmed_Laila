@@ -6,7 +6,7 @@ import { ALL_DUAA } from '../data/adiaData';
 import { ADIA_EN_MAP } from '../data/adiaTranslationsEn';
 import { PhoneNotificationSettings } from '../hooks/useNotificationSettings';
 import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dailyWirdNotificationService';
-import { updateNativeAlertsGroupSummary } from './silentMode';
+import { updateNativeAlertsGroupSummary, ensureNativeCustomNotificationChannel } from './silentMode';
 import { getActiveNotificationTone, getActiveNotificationSoundPath } from './prayerTimesUtils';
 import { ensureNotificationPermission } from './permissionHelper';
 
@@ -135,10 +135,22 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
     const notificationsToSchedule: any[] = [];
     const activeTone = getActiveNotificationTone();
     const isSoundMuted = activeTone.id === 'none' || activeTone.data === 'none';
+    const isPhoneRingtone = !isSoundMuted && (
+        activeTone.id === 'phone_ringtone' ||
+        activeTone.data?.startsWith('content://') ||
+        activeTone.data?.startsWith('file://')
+    );
     const notifSoundPath = getActiveNotificationSoundPath();
     const cleanToneId = (activeTone.id || 'chime').replace(/[^a-zA-Z0-9_]/g, '');
-    const athkarChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
-    const soundFileNameForCapacitor = isSoundMuted ? undefined : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
+    let athkarChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
+    let soundFileNameForCapacitor: string | undefined = isSoundMuted
+        ? undefined
+        : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
+
+    if (isPhoneRingtone && activeTone.data) {
+        athkarChannelId = await ensureNativeCustomNotificationChannel(activeTone.data, activeTone.name);
+        soundFileNameForCapacitor = undefined;
+    }
 
     // Helper to parse time string HH:mm
     const parseTime = (timeStr: string) => {

@@ -5,6 +5,7 @@ import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { Volume2, VolumeX, Copy, Check, Share2, ZoomIn, ChevronDown } from 'lucide-react';
 import { hexToRgba, getModernFlatTokens } from '../../utils/flatDesignTokens';
+import QuranFormattedText, { getThemeQuranAccentColor, isQuranicContent } from '../Common/QuranFormattedText';
 
 interface ZoomModalProps {
     zoomedZikr: {
@@ -14,6 +15,10 @@ interface ZoomModalProps {
         textEn?: string;
         note?: string;
         noteEn?: string;
+        category?: string;
+        categoryEn?: string;
+        isHtml?: boolean;
+        isQuran?: boolean;
         count?: number;
     } | null;
     currentPrayer?: { id: string; title: string; titleEn?: string } | null;
@@ -27,6 +32,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
     const { theme, themeKey } = useTheme();
     const { language, dir } = useLanguage();
     const tokens = getModernFlatTokens(theme, themeKey);
+    const quranAccentColor = getThemeQuranAccentColor(theme, themeKey);
     const isEn = language === 'en';
 
     const [copied, setCopied] = useState(false);
@@ -49,13 +55,26 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
         : (zoomedZikr.title || (currentPrayer ? `أذكار صلاة ${currentPrayer.title}` : fallbackTitle));
 
     const itemCategory = isEn 
-        ? (currentPrayer ? `${currentPrayer.titleEn} Adhkar` : 'Prayer Remembrances') 
-        : (currentPrayer ? `أذكار صلاة ${currentPrayer.title}` : 'أذكار الصلاة');
+        ? (zoomedZikr.categoryEn || (currentPrayer ? `${currentPrayer.titleEn} Adhkar` : 'Prayer Remembrances')) 
+        : (zoomedZikr.category || (currentPrayer ? `أذكار صلاة ${currentPrayer.title}` : 'أذكار الصلاة'));
 
     const itemNote = isEn ? (zoomedZikr.noteEn || zoomedZikr.note) : zoomedZikr.note;
+    const rawItemTitle = isEn ? zoomedZikr.titleEn : zoomedZikr.title;
 
     const displayText = isEn ? (zoomedZikr.textEn || zoomedZikr.text) : zoomedZikr.text;
-    const cleanPlainText = displayText.replace(/<[^>]*>/g, '').trim();
+    const hasHtmlMarkup = Boolean(
+        zoomedZikr.isHtml ||
+        /<(?:div|p|h[1-6]|ul|ol|li|span|b|strong)\b/i.test(displayText)
+    );
+    const isQuranItem = !hasHtmlMarkup && Boolean(
+        zoomedZikr.isQuran || isQuranicContent(displayText, itemNote, rawItemTitle)
+    );
+    const cleanPlainText = displayText
+        .replace(/<(br|\/div|\/p|\/li|\/h[1-6])\b[^>]*>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
 
     const isPlaying = playingText === cleanPlainText || playingText === displayText;
 
@@ -104,6 +123,12 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
     };
 
     const baseFontSize = isEn ? fontSize : fontSize + 4;
+    const scalableFontSize = hasHtmlMarkup
+        ? Math.max(16, baseFontSize - (isEn ? 6 : 8))
+        : baseFontSize;
+    const scalableLineHeight = hasHtmlMarkup
+        ? (isEn ? '1.65' : '1.95')
+        : (isEn ? '1.75' : '2.2');
 
     return (
         <div 
@@ -122,7 +147,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
                     {/* Scoped font-size scaling for zoom button to work across all content including HTML cards */}
                     <style>{`
                         .zoom-scalable-content {
-                            --zoom-fs: ${baseFontSize}px;
+                            --zoom-fs: ${scalableFontSize}px;
                         }
                         .zoom-scalable-content,
                         .zoom-scalable-content p,
@@ -133,18 +158,18 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
                         .zoom-scalable-content li,
                         .zoom-scalable-content i {
                             font-size: var(--zoom-fs) !important;
-                            line-height: ${isEn ? '1.75' : '2.2'} !important;
+                            line-height: ${scalableLineHeight} !important;
                         }
                         .zoom-scalable-content h3,
                         .zoom-scalable-content h4 {
-                            font-size: calc(var(--zoom-fs) * 1.15) !important;
-                            line-height: 1.4 !important;
+                            font-size: calc(var(--zoom-fs) * 1.08) !important;
+                            line-height: 1.45 !important;
                         }
                         .zoom-scalable-content .text-xs,
                         .zoom-scalable-content .text-sm,
                         .zoom-scalable-content .text-\\[11px\\],
                         .zoom-scalable-content small {
-                            font-size: calc(var(--zoom-fs) * 0.76) !important;
+                            font-size: calc(var(--zoom-fs) * 0.85) !important;
                         }
                     `}</style>
 
@@ -155,8 +180,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
                             <span 
                                 className="app-3d-badge px-3.5 py-1 rounded-full text-xs font-bold"
                                 style={{
-                                    backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
-                                    color: tokens.primaryColor
+                                    backgroundColor: hexToRgba(quranAccentColor, 0.1),
+                                    color: quranAccentColor
                                 }}
                             >
                                 {itemCategory}
@@ -166,16 +191,27 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
 
                     {/* Scrollable Content Area */}
                     <div className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4">
-                        {itemTitle && (
+                        {!isQuranItem && itemTitle && (
                             <h3 
                                 className="text-base sm:text-lg font-bold mb-3 text-center" 
-                                style={{ color: tokens.primaryColor }}
+                                style={{ color: quranAccentColor }}
                             >
                                 {itemTitle}
                             </h3>
                         )}
 
-                        {isEn ? (
+                        {isQuranItem ? (
+                            <QuranFormattedText
+                                text={displayText}
+                                title={rawItemTitle}
+                                source={itemNote}
+                                isEn={isEn}
+                                isQuran={true}
+                                accentColor={quranAccentColor}
+                                fontSize={baseFontSize}
+                                className={isEn ? 'leading-relaxed font-sans font-medium my-4' : 'leading-loose font-medium font-cairo py-2'}
+                            />
+                        ) : isEn ? (
                             <div 
                                 className="zoom-scalable-content leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
                                 style={{ fontSize: `${fontSize}px` }}
@@ -197,8 +233,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
                                     <span
                                         className="app-3d-badge px-3.5 py-1 rounded-full text-xs font-bold"
                                         style={{
-                                            backgroundColor: hexToRgba(tokens.primaryColor, 0.08),
-                                            color: tokens.primaryColor
+                                            backgroundColor: hexToRgba(quranAccentColor, 0.08),
+                                            color: quranAccentColor
                                         }}
                                         dir={isEn ? 'ltr' : 'rtl'}
                                     >
@@ -208,7 +244,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
                             ) : (
                                 <p 
                                     className="text-sm sm:text-base mt-4 font-bold font-cairo text-center" 
-                                    style={{ color: tokens.primaryColor }} 
+                                    style={{ color: quranAccentColor }} 
                                     dir={isEn ? 'ltr' : 'rtl'}
                                 >
                                     {itemNote}

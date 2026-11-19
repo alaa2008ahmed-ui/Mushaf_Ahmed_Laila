@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Bell, ChevronDown, Check, X, Play, Square } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import { tPrayer, getToneDisplayName } from '../../utils/prayerTimesTranslations';
 import { playNotificationSound, stopNotificationSound } from '../../utils/prayerTimesUtils';
+import { pickNativePhoneNotificationTone } from '../../utils/silentMode';
 import { shortNotificationTones, DEFAULT_NOTIFICATION_TONE } from '../../data/prayerTimesData';
 
 export interface NotificationToneState {
@@ -10,6 +13,7 @@ export interface NotificationToneState {
     name: string;
     data: string;
     fileName?: string;
+    channelId?: string;
 }
 
 interface NotificationToneSelectorProps {
@@ -24,6 +28,7 @@ interface NotificationToneSelectorProps {
     hidePreviewButton?: boolean;
     use3dAdiaStyle?: boolean;
     cardBg?: string;
+    modalBg?: string;
 }
 
 const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
@@ -37,9 +42,11 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
     hideLabel = false,
     hidePreviewButton = false,
     use3dAdiaStyle = false,
-    cardBg
+    cardBg,
+    modalBg: propModalBg
 }) => {
     const { language, dir } = useLanguage();
+    const { theme, themeKey, homeThemeVariant, isNightMode } = useTheme();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [playingTone, setPlayingTone] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -59,6 +66,10 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
         selectedId = 'none';
         selectedName = 'بدون صوت';
         selectedSource = 'none';
+    } else if (currentTone?.id === 'phone_ringtone' || (currentTone?.data && currentTone.data.startsWith('content://'))) {
+        selectedId = 'phone_ringtone';
+        selectedName = currentTone.name || (language === 'en' ? 'Phone Tone' : 'نغمة من الهاتف');
+        selectedSource = currentTone.data;
     } else if (currentTone?.id === 'custom' || (currentTone?.data && currentTone.data.startsWith('data:'))) {
         selectedId = 'custom';
         selectedName = currentTone.name || 'نغمة مخصصة';
@@ -93,7 +104,44 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
         }
     };
 
-    const handleSelectOption = (option: { id: string; name: string; path?: string; fileName?: string }) => {
+    const handleSelectOption = async (option: { id: string; name: string; path?: string; fileName?: string }) => {
+        if (option.id === 'phone_ringtone') {
+            stopNotificationSound();
+            setPlayingTone(null);
+            if (Capacitor.getPlatform() === 'android') {
+                const picked = await pickNativePhoneNotificationTone(
+                    selectedId === 'phone_ringtone' ? selectedSource : undefined,
+                    language === 'en' ? 'Phone Tones' : 'نغمات الهاتف'
+                );
+                if (picked.cancelled) {
+                    return;
+                }
+                if (picked.silent || !picked.uri) {
+                    onToneChange({
+                        id: 'none',
+                        name: 'بدون صوت',
+                        data: 'none',
+                        fileName: ''
+                    });
+                    setIsModalOpen(false);
+                    return;
+                }
+                const toneName = picked.name || (language === 'en' ? 'Phone Tone' : 'نغمة من الهاتف');
+                onToneChange({
+                    id: 'phone_ringtone',
+                    name: toneName,
+                    data: picked.uri,
+                    fileName: toneName,
+                    channelId: picked.channelId
+                });
+                playNotificationSound(picked.uri, true);
+                setIsModalOpen(false);
+                return;
+            }
+            fileInputRef.current?.click();
+            return;
+        }
+
         if (option.id === 'custom') {
             stopNotificationSound();
             setPlayingTone(null);
@@ -156,17 +204,58 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
         setIsModalOpen(false);
     };
 
-    const itemBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor));
-    const lipShadow = isBlackTheme ? '#09090b' : 'rgba(0,0,0,0.14)';
-    const insetBevel = isBlackTheme ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.95)';
-    const surfaceBg = cardBg || (isBlackTheme ? '#18181b' : '#ffffff');
+    const effectiveBlack = Boolean(
+        isBlackTheme ||
+        isNightMode ||
+        theme?.isDark ||
+        themeKey === 'deep_black' ||
+        theme?.bgColor === '#000000'
+    );
+    const fallbackAccent = themeKey === 'sky_mode' || homeThemeVariant === 'sky'
+        ? '#0284c7'
+        : (themeKey === 'emerald_mode' || homeThemeVariant === 'emerald'
+            ? '#059669'
+            : (themeKey === 'burgundy_mode' || homeThemeVariant === 'burgundy'
+                ? '#be123c'
+                : '#ca8a04'));
+    const resolvedAccent = effectiveBlack ? '#FFFFFF' : (primaryColor || fallbackAccent);
+    const defaultModalBg = effectiveBlack
+        ? '#121214'
+        : (theme?.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
+            ? theme.bgColor
+            : (themeKey === 'sky_mode' || homeThemeVariant === 'sky'
+                ? '#F0F9FF'
+                : (themeKey === 'emerald_mode' || homeThemeVariant === 'emerald'
+                    ? '#F0FDF4'
+                    : (themeKey === 'burgundy_mode' || homeThemeVariant === 'burgundy'
+                        ? '#FFF1F2'
+                        : '#FEF9C3'))));
+    const modalSurfaceBg = propModalBg || defaultModalBg;
+    const modalShadow = effectiveBlack
+        ? '0 8px 0 #050507, 0 24px 50px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.14)'
+        : '0 8px 0 rgba(0, 0, 0, 0.16), 0 24px 48px rgba(0, 0, 0, 0.30), inset 0 2px 2px rgba(255, 255, 255, 0.92)';
+    const lipShadow = effectiveBlack ? '#09090b' : 'rgba(0,0,0,0.14)';
+    const insetBevel = effectiveBlack ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.95)';
+    const surfaceBg = cardBg || (effectiveBlack ? '#18181b' : '#ffffff');
+    const badgeBg = effectiveBlack ? '#27272a' : '#ffffff';
+    const closeTextColor = effectiveBlack ? '#e4e4e7' : '#475569';
+    const activeAccentBg = effectiveBlack ? '#FFFFFF' : resolvedAccent;
+    const activeAccentText = effectiveBlack ? '#000000' : '#ffffff';
+
+    const phoneToneLabel = language === 'en' ? 'Phone Tones' : 'نغمات الهاتف';
+    const selectToneLabel = language === 'en' ? 'Select tone' : 'اختيار نغمة';
 
     const optionsList: Array<{ id: string; name: string; path?: string; fileName?: string }> = [
         { id: 'none', name: 'بدون صوت' },
         ...shortNotificationTones,
+        {
+            id: 'phone_ringtone',
+            name: selectedId === 'phone_ringtone' && selectedName ? `${phoneToneLabel} (${selectedName})` : phoneToneLabel,
+            path: selectedId === 'phone_ringtone' && selectedSource && selectedSource !== 'none' ? selectedSource : undefined
+        },
         { 
             id: 'custom', 
-            name: selectedId === 'custom' && selectedName ? `اختيار نغمة (${selectedName})` : 'اختيار نغمة',
+            name: selectedId === 'custom' && selectedName ? `${selectToneLabel} (${selectedName})` : selectToneLabel,
             path: selectedId === 'custom' && selectedSource && selectedSource !== 'none' ? selectedSource : undefined
         }
     ];
@@ -176,7 +265,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
             {!hideLabel && (
                 <label 
                     className="block text-[10px] font-black mb-2 uppercase tracking-widest text-center" 
-                    style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}
+                    style={{ color: effectiveBlack ? '#FFFFFF' : secondaryColor }}
                 >
                     {tPrayer('notificationToneLabel', language)}
                 </label>
@@ -197,10 +286,10 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                     }
                     style={use3dAdiaStyle ? {
                         backgroundColor: surfaceBg,
-                        color: isBlackTheme ? '#FFFFFF' : primaryColor
+                        color: resolvedAccent
                     } : { 
                         backgroundColor: surfaceBg,
-                        color: isBlackTheme ? '#FFFFFF' : primaryColor,
+                        color: resolvedAccent,
                         boxShadow: `0 4.5px 0 ${lipShadow}, 0 8px 16px -3px rgba(0,0,0,0.12), inset 0 2px 1.5px ${insetBevel}`
                     }}
                 >
@@ -208,10 +297,10 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                         <span className="truncate">{getToneDisplayName(selectedName, language)}</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 opacity-75">
-                        <span className="text-[10px] font-medium hidden sm:inline" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>
+                        <span className="text-[10px] font-medium hidden sm:inline" style={{ color: effectiveBlack ? '#FFFFFF' : undefined }}>
                             {tPrayer('changeTone', language)}
                         </span>
-                        <ChevronDown className="w-4 h-4" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }} />
+                        <ChevronDown className="w-4 h-4" style={{ color: effectiveBlack ? '#FFFFFF' : undefined }} />
                     </div>
                 </button>
 
@@ -226,18 +315,18 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                         }
                         style={use3dAdiaStyle ? {
                             backgroundColor: playingTone === currentPlayableSource
-                                ? (isBlackTheme ? '#FFFFFF' : primaryColor)
+                                ? activeAccentBg
                                 : surfaceBg,
                             color: playingTone === currentPlayableSource
-                                ? (isBlackTheme ? '#000000' : '#ffffff')
-                                : (isBlackTheme ? '#ffffff' : primaryColor)
+                                ? activeAccentText
+                                : resolvedAccent
                         } : {
                             backgroundColor: playingTone === currentPlayableSource
-                                ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor))
+                                ? (isDefaultTheme ? '#000000' : activeAccentBg)
                                 : surfaceBg,
                             color: playingTone === currentPlayableSource
-                                ? (isDefaultTheme ? '#ffffff' : (isBlackTheme ? '#000000' : '#ffffff'))
-                                : (isBlackTheme ? '#ffffff' : primaryColor),
+                                ? (isDefaultTheme ? '#ffffff' : activeAccentText)
+                                : resolvedAccent,
                             boxShadow: `0 4.5px 0 ${lipShadow}, 0 8px 16px -3px rgba(0,0,0,0.12), inset 0 2px 1.5px ${insetBevel}`
                         }}
                         title={playingTone === currentPlayableSource ? (language === 'ar' ? 'إيقاف المعاينة' : 'Stop Preview') : (language === 'ar' ? 'معاينة النغمة' : 'Preview Tone')}
@@ -263,7 +352,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
             />
 
             {selectedId === 'custom' && (
-                <p className="text-center text-[10px] mt-1 truncate" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}>
+                <p className="text-center text-[10px] mt-1 truncate" style={{ color: effectiveBlack ? '#a1a1aa' : secondaryColor }}>
                     {tPrayer('currentToneFile', language)} {selectedName}
                 </p>
             )}
@@ -276,30 +365,32 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                     dir={dir}
                 >
                     <div 
-                        className={`settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6`}
+                        className={`settings-3d-adia-scope ${effectiveBlack ? 'settings-3d-dark' : ''} rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 border-0`}
                         style={{
-                            backgroundColor: isBlackTheme ? '#121216' : 'var(--modal-bg, #ffffff)',
-                            color: isBlackTheme ? '#ffffff' : 'var(--modal-text, #000000)',
-                            border: 'none',
-                            boxShadow: isBlackTheme
-                                ? '0 8px 0 #09090b, 0 24px 50px rgba(0,0,0,0.85), inset 0 2px 2px rgba(255,255,255,0.14)'
-                                : '0 8px 0 rgba(0,0,0,0.14), 0 24px 48px rgba(0,0,0,0.28), inset 0 2px 2px rgba(255,255,255,0.96)'
+                            backgroundColor: modalSurfaceBg,
+                            color: effectiveBlack ? '#ffffff' : '#0f172a',
+                            boxShadow: modalShadow
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
                         <div 
                             className="flex justify-between items-center mb-4 pb-2.5 border-b shrink-0"
-                            style={{ borderColor: isBlackTheme ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.1)' }}
+                            style={{ borderColor: effectiveBlack ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)' }}
                         >
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
                                 <span
                                     className="app-3d-badge w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                                    style={{ backgroundColor: isBlackTheme ? '#27272a' : '#f8fafc' }}
+                                    style={{
+                                        backgroundColor: badgeBg,
+                                        boxShadow: effectiveBlack
+                                            ? '0 2.5px 0 #09090b, inset 0 1px 1px rgba(255,255,255,0.14)'
+                                            : '0 2.5px 0 rgba(0,0,0,0.12), inset 0 1.5px 1px rgba(255,255,255,0.95)'
+                                    }}
                                 >
-                                    <Bell className="w-4 h-4" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
+                                    <Bell className="w-4 h-4" style={{ color: resolvedAccent }} />
                                 </span>
-                                <h3 className="font-black text-sm sm:text-base font-kufi" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }}>
+                                <h3 className="font-black text-sm sm:text-base font-cairo truncate" style={{ color: resolvedAccent }}>
                                     {tPrayer('selectNotificationToneModalTitle', language)}
                                 </h3>
                             </div>
@@ -308,8 +399,8 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                 onClick={handleCloseModal} 
                                 className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 transition-colors cursor-pointer shrink-0"
                                 style={{
-                                    backgroundColor: isBlackTheme ? '#27272a' : '#ffffff',
-                                    color: isBlackTheme ? '#FFFFFF' : secondaryColor
+                                    backgroundColor: badgeBg,
+                                    color: closeTextColor
                                 }}
                                 title={tPrayer('close', language)}
                                 aria-label={tPrayer('close', language)}
@@ -333,20 +424,22 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                         <button
                                             type="button"
                                             onClick={() => handleSelectOption(option)}
-                                            className="flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-all flex items-center justify-between relative cursor-pointer app-page-card border-0"
-                                            style={{
-                                                backgroundColor: isSelected
-                                                    ? (isBlackTheme ? '#FFFFFF' : primaryColor)
-                                                    : surfaceBg,
-                                                color: isSelected
-                                                    ? (isBlackTheme ? '#000000' : '#ffffff')
-                                                    : (isBlackTheme ? '#ffffff' : '#0f172a')
+                                            className={`flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-all flex items-center justify-between relative cursor-pointer app-page-card border-0 ${
+                                                isSelected ? 'quran-raised-btn-selected' : ''
+                                            }`}
+                                            style={isSelected ? {
+                                                backgroundColor: activeAccentBg,
+                                                backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.08) 100%)',
+                                                color: activeAccentText
+                                            } : {
+                                                backgroundColor: surfaceBg,
+                                                color: effectiveBlack ? '#ffffff' : '#0f172a'
                                             }}
                                         >
                                             <span className="font-bold truncate">{getToneDisplayName(option.name, language)}</span>
                                             {isSelected && (
                                                 <Check className={`w-4 h-4 shrink-0 ${
-                                                    isBlackTheme ? 'text-black' : 'text-white'
+                                                    effectiveBlack ? 'text-black' : 'text-white'
                                                 }`} />
                                             )}
                                         </button>
@@ -355,14 +448,16 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                                             <button
                                                 type="button"
                                                 onClick={(e) => handleTogglePreview(option.path!, e)}
-                                                className="p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer transition-all app-page-card border-0"
-                                                style={{
-                                                    backgroundColor: isTonePlaying
-                                                        ? (isBlackTheme ? '#FFFFFF' : primaryColor)
-                                                        : surfaceBg,
-                                                    color: isTonePlaying
-                                                        ? (isBlackTheme ? '#000000' : '#ffffff')
-                                                        : (isBlackTheme ? '#ffffff' : primaryColor)
+                                                className={`p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer transition-all app-page-card border-0 ${
+                                                    isTonePlaying ? 'quran-raised-btn-selected' : ''
+                                                }`}
+                                                style={isTonePlaying ? {
+                                                    backgroundColor: activeAccentBg,
+                                                    backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.08) 100%)',
+                                                    color: activeAccentText
+                                                } : {
+                                                    backgroundColor: surfaceBg,
+                                                    color: resolvedAccent
                                                 }}
                                                 title={isTonePlaying ? (language === 'ar' ? 'إيقاف' : 'Stop') : (language === 'ar' ? 'معاينة' : 'Preview')}
                                                 aria-label={isTonePlaying ? 'Stop' : 'Preview'}

@@ -15,6 +15,9 @@ import { ATHKAR_SALAH_PAGE_STEPS } from '../components/Community/communityTourSt
 import { markPageAsSeen } from '../utils/badgeManager';
 import { useShowPageGuides } from '../utils/guideManager';
 import { getToast3DStyles } from '../utils/toast3DStyles';
+import QuranFormattedText, { getThemeQuranAccentColor, isQuranicContent } from '../components/Common/QuranFormattedText';
+import OtherPrayersView, { OtherPrayerDetailView, getCategoryLabel } from '../components/AthkarAlSalah/OtherPrayersView';
+import { OTHER_PRAYERS_DATA, OtherPrayerCategory, OtherPrayerItem } from '../data/otherPrayersData';
 
 const SalahZikrCard = ({ 
     zikr, 
@@ -42,7 +45,7 @@ const SalahZikrCard = ({
     const [isFav, setIsFav] = useState(false);
     const [playingText, setPlayingText] = useState<string | null>(null);
     const isFinished = zikr.currentCount === 0;
-    const textClass = zikr.isQuran ? 'font-amiri text-2xl text-center leading-relaxed' : 'text-lg leading-loose font-medium text-center';
+    const textClass = 'text-lg leading-loose font-medium font-cairo text-center';
 
     useEffect(() => {
         const favs = JSON.parse(localStorage.getItem('favorite_dhikr') || '[]');
@@ -134,6 +137,8 @@ const SalahZikrCard = ({
     const displayNote = isEn ? (zikr.noteEn || zikr.note) : zikr.note;
 
     const accentHex = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    const quranAccentColor = getThemeQuranAccentColor(theme, themeKey);
+    const isQuranItem = isQuranicContent(currentText, displayNote, displayTitle, zikr.isQuran);
 
     return (
         <div 
@@ -163,14 +168,24 @@ const SalahZikrCard = ({
                 </div>
             </div>
 
-            {displayTitle && (
+            {!isQuranItem && displayTitle && (
                 <h3 className="text-center font-bold mb-2 text-sm" style={{color: theme.palette[1]}}>
                     {displayTitle}
                 </h3>
             )}
 
             {/* When in English mode, display ONLY the English text. Never display Arabic text. */}
-            {isEn ? (
+            {isQuranItem ? (
+                <QuranFormattedText
+                    text={currentText}
+                    title={displayTitle}
+                    source={displayNote}
+                    isEn={isEn}
+                    isQuran={true}
+                    accentColor={quranAccentColor}
+                    className={isEn ? 'text-base sm:text-lg leading-relaxed font-medium font-sans my-3' : 'text-lg leading-loose font-medium font-cairo my-2'}
+                />
+            ) : isEn ? (
                 <div 
                     className="text-base sm:text-lg leading-relaxed text-center font-medium font-sans select-none my-3 text-balance" 
                     dir="ltr" 
@@ -257,6 +272,9 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
     const [zoomedZikr, setZoomedZikr] = useState<any>(null);
     const [toastMessage, setToastMessage] = useState('');
     const [isFavoritesView, setIsFavoritesView] = useState(false);
+    const [isOtherPrayersView, setIsOtherPrayersView] = useState(false);
+    const [selectedOtherPrayer, setSelectedOtherPrayer] = useState<OtherPrayerItem | null>(null);
+    const [selectedOtherCategory, setSelectedOtherCategory] = useState<OtherPrayerCategory | 'all'>('all');
     const [favorites, setFavorites] = useState<string[]>([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
@@ -272,6 +290,48 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const fabRef = useRef<HTMLButtonElement>(null);
     const fabContainerRef = useRef<HTMLDivElement>(null);
+    const mainRef = useRef<HTMLElement>(null);
+    const mainScrollPosRef = useRef<number>(0);
+    const wasOtherPrayersViewRef = useRef<boolean>(false);
+    const lastSelectedOtherPrayerIdRef = useRef<string | null>(null);
+    const wasOtherPrayerDetailRef = useRef<boolean>(false);
+
+    useEffect(() => {
+        if (isOtherPrayersView && selectedOtherPrayer) {
+            requestAnimationFrame(() => {
+                if (mainRef.current) {
+                    mainRef.current.scrollTop = 0;
+                }
+            });
+        } else if (isOtherPrayersView && !selectedOtherPrayer) {
+            if (wasOtherPrayerDetailRef.current && lastSelectedOtherPrayerIdRef.current) {
+                const targetId = lastSelectedOtherPrayerIdRef.current;
+                requestAnimationFrame(() => {
+                    const cardEl = document.getElementById(`other-prayer-card-${targetId}`);
+                    if (cardEl) {
+                        cardEl.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    }
+                });
+            } else if (!wasOtherPrayersViewRef.current) {
+                requestAnimationFrame(() => {
+                    if (mainRef.current) {
+                        mainRef.current.scrollTop = 0;
+                    }
+                });
+            }
+        } else if (wasOtherPrayersViewRef.current && !isOtherPrayersView && !currentPrayer && !isFavoritesView) {
+            requestAnimationFrame(() => {
+                const entryEl = document.getElementById('compendium-prayers-entry');
+                if (entryEl) {
+                    entryEl.scrollIntoView({ behavior: 'auto', block: 'center' });
+                } else if (mainRef.current) {
+                    mainRef.current.scrollTop = mainScrollPosRef.current;
+                }
+            });
+        }
+        wasOtherPrayersViewRef.current = isOtherPrayersView;
+        wasOtherPrayerDetailRef.current = Boolean(selectedOtherPrayer);
+    }, [isOtherPrayersView, selectedOtherPrayer, currentPrayer, isFavoritesView]);
 
     useEffect(() => {
         const loadFavs = () => {
@@ -314,6 +374,14 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 setIsMenuOpen(false);
                 return true;
             }
+            if (selectedOtherPrayer) {
+                setSelectedOtherPrayer(null);
+                return true;
+            }
+            if (isOtherPrayersView) {
+                setIsOtherPrayersView(false);
+                return true;
+            }
             if (isFavoritesView) {
                 setIsFavoritesView(false);
                 return true;
@@ -326,7 +394,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [zoomedZikr, currentPrayer, isFavoritesView, isMenuOpen]);
+    }, [zoomedZikr, currentPrayer, isFavoritesView, isOtherPrayersView, selectedOtherPrayer, isMenuOpen]);
 
     const handleFabClick = () => {
         if (!isMenuOpen && fabRef.current) {
@@ -342,6 +410,9 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
 
     const openPrayer = (prayerId: string, titleText: string, titleEnText?: string) => {
         setSearchQuery('');
+        setSelectedOtherPrayer(null);
+        setIsOtherPrayersView(false);
+        setIsFavoritesView(false);
         let currentAthkarData: SalahDhikrItem[] = JSON.parse(JSON.stringify(baseAthkar));
 
         // Handle common Fajr/Maghrib changes
@@ -379,6 +450,11 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
         const listWithCounts = currentAthkarData.map(z => ({ ...z, currentCount: z.count }));
         setAthkarList(listWithCounts);
         setCurrentPrayer({ id: prayerId, title: titleText, titleEn: titleEnText });
+        requestAnimationFrame(() => {
+            if (mainRef.current) {
+                mainRef.current.scrollTop = 0;
+            }
+        });
         useHabitTracker.getState().recordAdhkarRead('salah');
     };
 
@@ -393,13 +469,40 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
         );
     };
 
-    const handleBack = () => {
+    const openOtherPrayers = () => {
+        if (!isOtherPrayersView && mainRef.current) {
+            mainScrollPosRef.current = mainRef.current.scrollTop;
+        }
         setSearchQuery('');
+        setCurrentPrayer(null);
+        setIsFavoritesView(false);
+        setSelectedOtherPrayer(null);
+        setIsOtherPrayersView(true);
+        setIsMenuOpen(false);
+    };
+
+    const openOtherPrayerDetail = (prayer: OtherPrayerItem) => {
+        lastSelectedOtherPrayerIdRef.current = prayer.id;
+        setCurrentPrayer(null);
+        setIsFavoritesView(false);
+        setIsOtherPrayersView(true);
+        setSelectedOtherPrayer(prayer);
+        setIsMenuOpen(false);
+    };
+
+    const handleBack = () => {
         if (zoomedZikr) {
             setZoomedZikr(null);
+        } else if (selectedOtherPrayer) {
+            setSelectedOtherPrayer(null);
+        } else if (isOtherPrayersView) {
+            setSearchQuery('');
+            setIsOtherPrayersView(false);
         } else if (isFavoritesView) {
+            setSearchQuery('');
             setIsFavoritesView(false);
         } else if (currentPrayer) {
+            setSearchQuery('');
             setCurrentPrayer(null);
         } else {
             onBack();
@@ -409,6 +512,8 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
     const handleGoHome = () => {
         setSearchQuery('');
         if (zoomedZikr) setZoomedZikr(null);
+        if (selectedOtherPrayer) setSelectedOtherPrayer(null);
+        if (isOtherPrayersView) setIsOtherPrayersView(false);
         if (isFavoritesView) setIsFavoritesView(false);
         if (currentPrayer) setCurrentPrayer(null);
         onNavigate('home');
@@ -448,11 +553,27 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
         (zikr.titleEn && zikr.titleEn.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
+    const matchingOtherPrayersOnMain = searchQuery.trim()
+        ? OTHER_PRAYERS_DATA.filter((p) => {
+              const q = searchQuery.trim().toLowerCase();
+              return (
+                  p.title.toLowerCase().includes(q) ||
+                  p.titleEn.toLowerCase().includes(q) ||
+                  p.summary.toLowerCase().includes(q) ||
+                  p.summaryEn.toLowerCase().includes(q)
+              );
+          })
+        : [];
+
     const pageTitle = currentPrayer 
         ? (isEn ? (currentPrayer.titleEn || currentPrayer.title) : currentPrayer.title) 
-        : (isFavoritesView 
-            ? (isEn ? "Favorite Adhkar" : "الأذكار المفضلة") 
-            : (isEn ? "Prayer Adhkar" : "أذكار الصلوات"));
+        : isOtherPrayersView
+            ? (selectedOtherPrayer
+                ? (isEn ? selectedOtherPrayer.titleEn : selectedOtherPrayer.title)
+                : (isEn ? "Compendium of Prayers" : "جوامع الصلوات"))
+            : (isFavoritesView 
+                ? (isEn ? "Favorite Adhkar" : "الأذكار المفضلة") 
+                : (isEn ? "Prayer Adhkar" : "أذكار الصلوات"));
 
     const isLongTitle = pageTitle.length > 24;
     const isVeryLongTitle = pageTitle.length > 36;
@@ -492,7 +613,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
 
                         {/* زر الهوم والدليل: يظهر الدليل فقط في الصفحة الأولى */}
                         <div className="flex items-center gap-1 shrink-0 justify-end min-w-[40px]">
-                            {!currentPrayer && !isFavoritesView && showPageGuides && (
+                            {!currentPrayer && !isFavoritesView && !isOtherPrayersView && showPageGuides && (
                                 <button
                                     type="button"
                                     onClick={() => setShowGuide(true)}
@@ -517,8 +638,9 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 </div>
             </header>
 
-            <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 app-scroll-safe-fab">
-                {/* Controls Bar: Search and View Mode Switch - Matches Tasbeeh 3D */}
+            <main ref={mainRef} className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 app-scroll-safe-fab">
+                {/* Controls Bar: Search and View Mode Switch - Matches Tasbeeh 3D (hidden inside single prayer detail page) */}
+                {!(isOtherPrayersView && selectedOtherPrayer) && (
                 <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                     {/* Search Input */}
                     <div 
@@ -529,7 +651,11 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                     >
                         <input 
                             type="text" 
-                            placeholder={isEn ? "Search prayer remembrances..." : "ابحث في أذكار الصلاة..."} 
+                            placeholder={
+                                isOtherPrayersView
+                                    ? (isEn ? "Search prayers..." : "ابحث عن صلاة...")
+                                    : (isEn ? "Search prayer remembrances..." : "ابحث في أذكار الصلاة...")
+                            } 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className={`w-full bg-transparent py-3 ${isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-cairo'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
@@ -587,6 +713,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                         </button>
                     </div>
                 </div>
+                )}
 
                 {isFavoritesView ? (
                     <div className={activeTab === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-4"}>
@@ -615,6 +742,30 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                             </div>
                         )}
                     </div>
+                ) : isOtherPrayersView ? (
+                    selectedOtherPrayer ? (
+                        <OtherPrayerDetailView
+                            prayer={selectedOtherPrayer}
+                            theme={theme}
+                            isBlackTheme={isBlackTheme}
+                            isEn={isEn}
+                            onZoom={setZoomedZikr}
+                            setToastMessage={setToastMessage}
+                        />
+                    ) : (
+                        <OtherPrayersView
+                            theme={theme}
+                            themeKey={themeKey}
+                            isBlackTheme={isBlackTheme}
+                            isDefaultTheme={isDefaultTheme}
+                            isEn={isEn}
+                            activeTab={activeTab}
+                            searchQuery={searchQuery}
+                            selectedCategory={selectedOtherCategory}
+                            onSelectCategory={setSelectedOtherCategory}
+                            onSelectPrayer={openOtherPrayerDetail}
+                        />
+                    )
                 ) : !currentPrayer ? (
                     <>
                         <div id="prayersMenu" className={activeTab === 'grid' ? "grid grid-cols-2 gap-3.5" : "space-y-3.5"}>
@@ -657,7 +808,88 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                     )}
                                 </div>
                             ))}
+
+                            {(!searchQuery ||
+                                'جوامع الصلوات'.includes(searchQuery.trim()) ||
+                                'compendium of prayers'.includes(searchQuery.trim().toLowerCase())) && (
+                                <div
+                                    id="compendium-prayers-entry"
+                                    onClick={openOtherPrayers}
+                                    className={`app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-2xl flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer transition-all group overflow-visible`}
+                                >
+                                    <div className={`flex ${activeTab === 'grid' ? 'flex-col items-center gap-3' : 'items-center gap-4'}`}>
+                                        <div
+                                            className="app-3d-badge w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105 shrink-0"
+                                            style={{
+                                                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : `${primaryColor}14`,
+                                                color: primaryColor
+                                            }}
+                                        >
+                                            <i className="fa-solid fa-person-praying text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h2 className="font-bold text-base sm:text-lg text-slate-800 dark:text-white">
+                                                {isEn ? 'Compendium of Prayers' : 'جوامع الصلوات'}
+                                            </h2>
+                                        </div>
+                                    </div>
+                                    {activeTab === 'list' && (
+                                        <div
+                                            className="app-3d-badge border-0 w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                                            style={{
+                                                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : `${primaryColor}14`,
+                                                color: primaryColor
+                                            }}
+                                        >
+                                            <i className={`fa-solid ${isEn ? 'fa-chevron-right' : 'fa-chevron-left'} text-xs`}></i>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
+
+                        {matchingOtherPrayersOnMain.length > 0 && (
+                            <div className="mt-5 space-y-2.5">
+                                <div className="flex items-center gap-3 px-1">
+                                    <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+                                    <span className="text-xs font-bold uppercase tracking-wider opacity-60">
+                                        {isEn ? 'Compendium of Prayers' : 'جوامع الصلوات'}
+                                    </span>
+                                    <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+                                </div>
+                                <div className={activeTab === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "space-y-2.5"}>
+                                    {matchingOtherPrayersOnMain.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => openOtherPrayerDetail(item)}
+                                            className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-2xl flex items-center justify-between gap-3 cursor-pointer"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div
+                                                    className="app-3d-badge w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                                    style={{
+                                                        backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`,
+                                                        color: primaryColor
+                                                    }}
+                                                >
+                                                    <i className={`fa-solid ${item.icon} text-sm`}></i>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <span className="text-[10px] font-bold opacity-65 block">
+                                                        {getCategoryLabel(item.category, isEn)}
+                                                    </span>
+                                                    <h3 className="font-bold text-sm truncate" style={{ color: primaryColor }}>
+                                                        {isEn ? item.titleEn : item.title}
+                                                    </h3>
+                                                </div>
+                                            </div>
+                                            <i className="fa-solid fa-magnifying-glass-plus text-xs opacity-70" style={{ color: primaryColor }}></i>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <BottomSalahGuides 
                             theme={theme}
                             themeKey={themeKey}
@@ -713,7 +945,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                     >
                             <button 
                                 type="button"
-                                onClick={() => { setIsFavoritesView(true); setCurrentPrayer(null); setIsMenuOpen(false); }}
+                                onClick={() => { setIsFavoritesView(true); setSelectedOtherPrayer(null); setIsOtherPrayersView(false); setCurrentPrayer(null); setIsMenuOpen(false); }}
                                 className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer`}
                                 style={isFavoritesView ? { backgroundColor: primaryColor, color: isBlackTheme ? '#000000' : '#FFFFFF' } : undefined}
                             >
@@ -739,6 +971,16 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                             {isEn ? prayer.titleEn : prayer.title}
                         </button>
                     ))}
+                            <div className="app-3d-divider my-0.5 mx-1" />
+                            <button
+                                type="button"
+                                onClick={openOtherPrayers}
+                                className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer`}
+                                style={isOtherPrayersView ? { backgroundColor: primaryColor, color: isBlackTheme ? '#000000' : '#FFFFFF' } : undefined}
+                            >
+                                <span>{isEn ? 'Compendium of Prayers' : 'جوامع الصلوات'}</span>
+                                <i className="fa-solid fa-person-praying text-xs opacity-75"></i>
+                            </button>
                 </div>
             )}
 

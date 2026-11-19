@@ -8,6 +8,7 @@ import FloatingNeonTicker from '../components/FloatingNeonTicker';
 import { Palette, Check, HelpCircle, RotateCcw, Settings } from 'lucide-react';
 import ModernHomeView from '../components/MainMenu/ModernHomeView';
 import HomeScreenSettingsModal from '../components/MainMenu/HomeScreenSettingsModal';
+import WhatsNewModal, { WHATS_NEW_RELEASE_KEY, hasSeenWhatsNew, markWhatsNewAsSeen } from '../components/MainMenu/WhatsNewModal';
 import { prewarmShareDesignThumbs } from '../components/MainMenu/ShareDesignSelectorSection';
 import { CommunitySpotlightGuide } from '../components/Community/CommunitySpotlightGuide';
 import { getDynamicSmartHomeSteps } from '../components/Community/communityTourSteps';
@@ -126,6 +127,7 @@ function MainMenu({ onNavigate }: { onNavigate: (pageId: string, params?: any) =
 
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showWhatsNewModal, setShowWhatsNewModal] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; right: number; left: number } | null>(null);
   const themeMenuRef = useRef<HTMLDivElement>(null);
 
@@ -757,6 +759,7 @@ function MainMenu({ onNavigate }: { onNavigate: (pageId: string, params?: any) =
 
   const mainMenuBackStateRef = useRef({
       showSettingsModal,
+      showWhatsNewModal,
       showSmartHomeGuide,
       showExpandedHistoryMemoryModal,
       showExpandedEventsModal,
@@ -766,6 +769,7 @@ function MainMenu({ onNavigate }: { onNavigate: (pageId: string, params?: any) =
   });
   mainMenuBackStateRef.current = {
       showSettingsModal,
+      showWhatsNewModal,
       showSmartHomeGuide,
       showExpandedHistoryMemoryModal,
       showExpandedEventsModal,
@@ -774,9 +778,44 @@ function MainMenu({ onNavigate }: { onNavigate: (pageId: string, params?: any) =
       handleCancelEdit,
   };
 
+  // Show the compact What's New guide automatically once on first run or after an update
+  useEffect(() => {
+      let cancelled = false;
+      let timerId: number | undefined;
+
+      try {
+          if (localStorage.getItem(WHATS_NEW_RELEASE_KEY) === 'true') {
+              return;
+          }
+      } catch {}
+
+      hasSeenWhatsNew().then((seen) => {
+          if (cancelled || seen) return;
+          timerId = window.setTimeout(() => {
+              if (cancelled) return;
+              if (!mainMenuBackStateRef.current.showSettingsModal) {
+                  markWhatsNewAsSeen();
+                  setShowWhatsNewModal(true);
+              }
+          }, 550);
+      });
+
+      return () => {
+          cancelled = true;
+          if (timerId !== undefined) {
+              window.clearTimeout(timerId);
+          }
+      };
+  }, []);
+
   useEffect(() => {
       const interceptor = () => {
           const s = mainMenuBackStateRef.current;
+          if (s.showWhatsNewModal) {
+              markWhatsNewAsSeen();
+              setShowWhatsNewModal(false);
+              return true;
+          }
           if (s.showSettingsModal) {
               setShowSettingsModal(false);
               return true;
@@ -1435,6 +1474,11 @@ function MainMenu({ onNavigate }: { onNavigate: (pageId: string, params?: any) =
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         onNavigate={onNavigate}
+      />
+
+      <WhatsNewModal
+        isOpen={showWhatsNewModal}
+        onClose={() => setShowWhatsNewModal(false)}
       />
 
       {toastMessage && (

@@ -9,7 +9,7 @@ import { prayerNamesAr, ADHAN_CHANNELS_CONFIG, CALCULATION_METHOD_OPTIONS, ASR_M
 import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound, getActiveNotificationTone, setActiveNotificationTone, getActiveNotificationSoundPath, setStoredAlertVolume } from '../utils/prayerTimesUtils';
 import { updateAndroidWidget } from '../utils/widgetUtils';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, updateNativeAlertsGroupSummary, manualRestoreDeviceSound, getNativeSilentStatus, addNativeSilentStateListener, SilentStatus, scheduleNativeAdhanAlarms, cancelNativeAdhanAlarms, ScheduledAdhanAlarm, scheduleNativeIqamaAlarms, cancelNativeIqamaAlarms, ScheduledIqamaAlarm } from '../utils/silentMode';
+import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, updateNativeAlertsGroupSummary, manualRestoreDeviceSound, getNativeSilentStatus, addNativeSilentStateListener, SilentStatus, scheduleNativeAdhanAlarms, cancelNativeAdhanAlarms, ScheduledAdhanAlarm, scheduleNativeIqamaAlarms, cancelNativeIqamaAlarms, ScheduledIqamaAlarm, ensureNativeCustomNotificationChannel } from '../utils/silentMode';
 import { useTheme } from './ThemeContext';
 import { useLanguage } from './LanguageContext';
 import { PRAYER_NAMES_EN, getLocalizedLocationName } from '../utils/prayerTimesTranslations';
@@ -17,6 +17,22 @@ import { ensureNotificationPermission, isMainAppEntered } from '../utils/permiss
 import { getCountryInfo, LocationSearchSuggestion } from '../utils/locationSearchService';
 
 // --- Types ---
+export interface SunriseAlertsConfig {
+    preSunriseEnabled: boolean;
+    preSunriseMinutes: number;
+    atSunriseEnabled: boolean;
+    duhaEnabled: boolean;
+    duhaMinutes: number;
+}
+
+export const DEFAULT_SUNRISE_ALERTS: SunriseAlertsConfig = {
+    preSunriseEnabled: true,
+    preSunriseMinutes: 15,
+    atSunriseEnabled: true,
+    duhaEnabled: true,
+    duhaMinutes: 15
+};
+
 interface PrayerConfig {
     iqamaOffsets: Record<string, number>;
     prayerOffsets: Record<string, number>;
@@ -56,6 +72,8 @@ interface PrayerConfig {
         minutes?: number;
     };
     prayerIqamaReminders?: Record<string, { enabled: boolean; minutes?: number }>;
+    // Sunrise & Duha alert settings
+    sunriseAlerts?: SunriseAlertsConfig;
     notificationTone?: { id: string; name: string; data: string; fileName?: string };
     // In-app prayer alerts volume (0 - 100%)
     alertVolume?: number;
@@ -94,7 +112,7 @@ const DEFAULT_CONFIG: PrayerConfig = {
     iqamaOffsets: { Fajr: 20, Dhuhr: 15, Asr: 15, Maghrib: 10, Isha: 15 },
     prayerOffsets: { Fajr: 0, Sunrise: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 },
     tones: {},
-    mutedPrayers: { Sunrise: true },
+    mutedPrayers: {},
     location: { 
         cityGov: "الدمام - الشرقية", 
         fullCountry: "المملكة العربية السعودية", 
@@ -113,6 +131,7 @@ const DEFAULT_CONFIG: PrayerConfig = {
     autoSilent: false,
     autoSilentDuration: 15,
     iqamaReminder: { enabled: true, minutes: 15 },
+    sunriseAlerts: DEFAULT_SUNRISE_ALERTS,
     notificationTone: {
         id: 'chime',
         name: 'رنين هادئ',
@@ -390,12 +409,24 @@ const PrayerCountdownContext = createContext<string>("00:00:00");
 export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     const [config, setConfig] = useState<PrayerConfig>(() => {
         try {
+            let savedSunriseAlerts: Partial<SunriseAlertsConfig> | null = null;
+            try {
+                const rawSr = localStorage.getItem('sunrise_alerts_settings_v1');
+                if (rawSr) savedSunriseAlerts = JSON.parse(rawSr);
+            } catch (e) {}
+
             const saved = localStorage.getItem('prayerFinal_v34');
             if (saved) {
                 const parsed = JSON.parse(saved);
+                const hasMigratedSunrise = Boolean(parsed.sunriseAlerts);
+                const mergedMuted = hasMigratedSunrise
+                    ? (parsed.mutedPrayers || {})
+                    : { ...(parsed.mutedPrayers || {}), Sunrise: false };
+
                 return { 
                     ...DEFAULT_CONFIG, 
                     ...parsed,
+                    mutedPrayers: mergedMuted,
                     prayerOffsets: {
                         ...DEFAULT_CONFIG.prayerOffsets,
                         ...(parsed.prayerOffsets || {})
@@ -403,6 +434,11 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     iqamaReminder: {
                         enabled: parsed.iqamaReminder?.enabled !== undefined ? parsed.iqamaReminder.enabled : true,
                         minutes: parsed.iqamaReminder?.minutes || 15
+                    },
+                    sunriseAlerts: {
+                        ...DEFAULT_SUNRISE_ALERTS,
+                        ...(savedSunriseAlerts || {}),
+                        ...(parsed.sunriseAlerts || {})
                     },
                     notificationTone: parsed.notificationTone || getActiveNotificationTone()
                 };
@@ -414,16 +450,27 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 return {
                     ...DEFAULT_CONFIG,
                     ...parsed,
+                    mutedPrayers: { ...(parsed.mutedPrayers || {}), Sunrise: false },
                     prayerOffsets: {
                         ...DEFAULT_CONFIG.prayerOffsets,
                         ...(parsed.prayerOffsets || {})
                     },
                     preAthanReminder: { enabled: false, minutes: parsed.preAthanReminder?.minutes || 15 },
                     autoSilent: false,
-                    iqamaReminder: { enabled: true, minutes: parsed.iqamaReminder?.minutes || 15 }
+                    iqamaReminder: { enabled: true, minutes: parsed.iqamaReminder?.minutes || 15 },
+                    sunriseAlerts: {
+                        ...DEFAULT_SUNRISE_ALERTS,
+                        ...(savedSunriseAlerts || {})
+                    }
                 };
             }
-            return DEFAULT_CONFIG;
+            return {
+                ...DEFAULT_CONFIG,
+                sunriseAlerts: {
+                    ...DEFAULT_SUNRISE_ALERTS,
+                    ...(savedSunriseAlerts || {})
+                }
+            };
         } catch (e) {
             return DEFAULT_CONFIG;
         }
@@ -1055,6 +1102,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             const updated = { ...prev, ...newConfig };
             try {
                 localStorage.setItem('prayerFinal_v34', JSON.stringify(updated));
+                if (newConfig.sunriseAlerts) {
+                    localStorage.setItem('sunrise_alerts_settings_v1', JSON.stringify(updated.sunriseAlerts));
+                }
             } catch (e) {}
             return updated;
         });
@@ -1190,6 +1240,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         sound: 'chime.mp3'
                     },
                     { 
+                        id: 'sunrise_duha_v1_chime_channel', 
+                        name: isEn ? 'Sunrise & Duha Alerts' : 'تنبيهات الشروق وصلاة الضحى', 
+                        desc: isEn ? 'Calm reminder alerts for sunrise and Duha prayer' : 'نغمة تنبيه هادئة لأوقات الشروق وصلاة الضحى',
+                        sound: 'chime.mp3'
+                    },
+                    { 
                         id: 'athkar_v3_chime_channel', 
                         name: isEn ? 'Adhkar & Reminders' : 'أذكار وتنبيهات عامة', 
                         desc: isEn ? 'Reminders for morning, evening, and daily prayers' : 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية',
@@ -1226,6 +1282,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
             const dayTimings: any = {
                 Fajr: prayerTimes.fajr,
+                Sunrise: prayerTimes.sunrise,
                 Dhuhr: prayerTimes.dhuhr,
                 Asr: prayerTimes.asr,
                 Maghrib: prayerTimes.maghrib,
@@ -1344,7 +1401,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         const adhanTitle = isEn ? `It is now time for ${prayerNameLocal} Adhan` : `حان الآن موعد أذان ${prayerNameLocal}`;
                         const adhanBody = isEn
                             ? 'Remember Allah. The Prophet ﷺ said: "O Bilal, call the Adhan so we may find comfort in prayer."'
-                            : 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"';
+                            : 'حيَّ على الصلاة، حيَّ على الفلاح.. «أرحنا بها يا بلال» ﷺ.';
 
                         if (isAndroidNative) {
                             const customSoundUri =
@@ -1405,10 +1462,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             id: preNotifId,
                             title: isEn 
                                 ? `${prayerNameLocal} Adhan is approaching (${reminderMinutes} minutes left)`
-                                : `اقترب موعد أذان ${prayerNameLocal} (بقي ${reminderMinutes} دقيقة)`,
+                                : `اقترب موعد صلاة ${prayerNameLocal}`,
                             body: isEn 
                                 ? `Time for wudu, preparation, and proceeding to prayer for ${prayerNameLocal}.`
-                                : `حان وقت الوضوء والاستعداد والذهاب إلى المسجد لأداء صلاة ${prayerNameLocal}`,
+                                : `بقي ${reminderMinutes} دقيقة على الأذان.. تهيّأ بالوضوء وأقبل على الله.`,
                             schedule: { at: prePrayerDate, allowWhileIdle: true },
                             channelId: 'pre_adhan_v4_droplet_channel',
                             sound: 'notif_droplet.wav',
@@ -1428,10 +1485,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         const iqamaNotifId = 6000 + (day * 10) + prayerKeys.indexOf(key) + 1;
                         const iqamaTitle = isEn 
                             ? `It is now time for ${prayerNameLocal} Iqama`
-                            : `حان الآن موعد إقامة صلاة ${prayerNameLocal}`;
+                            : `أُقيمت صلاة ${prayerNameLocal}`;
                         const iqamaBody = isEn 
                             ? 'Salah has begun. Straighten and close your ranks, may Allah reward you.'
-                            : 'أقيمت الصلاة.. استووا وتراصوا واعتدلوا أثابكم الله';
+                            : 'استووا واعتدلوا، وأقبلوا بقلوبكم على الله.';
 
                         if (isAndroidNative) {
                             iqamaAlarmsToSchedule.push({
@@ -1481,10 +1538,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     const shouldPlaySilentChime = !isIqamaAlertingBefore;
                     const silentStartTitle = isEn
                         ? `Silent mode activated (${prayerNameLocal} Prayer)`
-                        : `تم تفعيل وضع الصامت (صلاة ${prayerNameLocal})`;
+                        : `وضع الخشوع مُفعّل — ${prayerNameLocal}`;
                     const silentStartBody = isEn
                         ? `Device muted automatically for ${silentDuration} minutes for ${prayerNameLocal} prayer.`
-                        : `تم كتم صوت الهاتف تلقائياً لمدة ${silentDuration} دقيقة لأداء صلاة ${prayerNameLocal}`;
+                        : `كُتِم صوت الهاتف تلقائياً لمدة ${silentDuration} دقيقة لتنعم بخشوعك.`;
 
                     // On Android native, PrayerSilentReceiver handles Start (ACTION_START_SILENT) & End (ACTION_END_SILENT)
                     // directly via AlarmManager.setAlarmClock so there is zero Doze throttling and zero duplicate scheduling.
@@ -1508,10 +1565,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 id: silentEndNotifId,
                                 title: isEn 
                                     ? `Silent mode ended (${prayerNameLocal} Prayer)`
-                                    : `تم إنهاء وضع الصامت (صلاة ${prayerNameLocal})`,
+                                    : `تقبّل الله صلاتكم — ${prayerNameLocal}`,
                                 body: isEn 
                                     ? `Device sound and media restored after ${prayerNameLocal} prayer. May Allah accept our prayers.`
-                                    : `تم إعادة تفعيل صوت الهاتف والوسائط بعد انتهاء صلاة ${prayerNameLocal} تقبل الله منا ومنكم`,
+                                    : 'أُعيد صوت الهاتف تلقائياً.. لا تنسَ أذكار ما بعد الصلاة.',
                                 schedule: { at: silentEnd, allowWhileIdle: true },
                                 channelId: 'prayer_silent_v5_droplet_channel',
                                 sound: 'notif_droplet.wav',
@@ -1533,6 +1590,93 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             body: silentStartBody,
                             shouldPlayChime: shouldPlaySilentChime,
                             isArabic: !isEn
+                        });
+                    }
+                }
+            }
+
+            // Sunrise & Duha Notifications (تنبيهات الشروق وصلاة الضحى)
+            if (!config.mutedPrayers?.Sunrise && dayTimings.Sunrise) {
+                const supportsDST = checkSupportsDST(config.location.combinedCode, config.location.fullCountry);
+                const sunriseOffset = (config.prayerOffsets.Sunrise || 0) + ((config.isSummerTime && supportsDST) ? 60 : 0);
+                const sunriseDate = new Date(dayTimings.Sunrise);
+                sunriseDate.setMinutes(sunriseDate.getMinutes() + sunriseOffset);
+
+                const sunriseCfg: SunriseAlertsConfig = {
+                    ...DEFAULT_SUNRISE_ALERTS,
+                    ...(config.sunriseAlerts || {})
+                };
+
+                // 1. Pre-Sunrise Reminder (قرب الشروق)
+                if (sunriseCfg.preSunriseEnabled) {
+                    const preMins = sunriseCfg.preSunriseMinutes || 15;
+                    const preSunriseDate = new Date(sunriseDate.getTime() - preMins * 60000);
+                    if (preSunriseDate > new Date()) {
+                        const isAudioPaused = Boolean(config.audioMutedUntil && preSunriseDate.getTime() < config.audioMutedUntil);
+                        notificationsToSchedule.push({
+                            id: 3000 + (day * 10) + 1,
+                            title: isEn ? 'Sunrise is Approaching' : 'اقترب وقت الشروق',
+                            body: isEn
+                                ? `${preMins} mins left until sunrise.. Hurry to perform Fajr prayer.`
+                                : `بقي ${preMins} دقيقة على شروق الشمس.. بادر بأداء صلاة الفجر.`,
+                            schedule: { at: preSunriseDate, allowWhileIdle: true },
+                            channelId: isAudioPaused ? 'adhan_v5_silent' : 'pre_adhan_v4_droplet_channel',
+                            sound: isAudioPaused ? undefined : 'notif_droplet.wav',
+                            smallIcon: 'ic_stat_name',
+                            extra: {
+                                type: 'pre_sunrise',
+                                prayer: 'Sunrise',
+                                playSound: !isAudioPaused,
+                                soundFile: !isAudioPaused ? '/assets/audio/notif_droplet.wav' : undefined
+                            }
+                        });
+                    }
+                }
+
+                // 2. At-Sunrise Reminder (لحظة الشروق - نغمة هادئة وليست أذاناً)
+                if (sunriseCfg.atSunriseEnabled && sunriseDate > new Date()) {
+                    const isAudioPaused = Boolean(config.audioMutedUntil && sunriseDate.getTime() < config.audioMutedUntil);
+                    notificationsToSchedule.push({
+                        id: 3000 + (day * 10) + 2,
+                        title: isEn ? 'The Sun Has Risen' : 'أشرقت الشمس الآن',
+                        body: isEn
+                            ? 'Fajr time has ended, and the 15-minute prohibited prayer time has begun.'
+                            : 'انتهى وقت صلاة الفجر، وبدأ وقت النهي عن النافلة لـ ١٥ دقيقة.',
+                        schedule: { at: sunriseDate, allowWhileIdle: true },
+                        channelId: isAudioPaused ? 'adhan_v5_silent' : 'sunrise_duha_v1_chime_channel',
+                        sound: isAudioPaused ? undefined : 'chime.mp3',
+                        smallIcon: 'ic_stat_name',
+                        extra: {
+                            type: 'sunrise',
+                            prayer: 'Sunrise',
+                            playSound: !isAudioPaused,
+                            soundFile: !isAudioPaused ? '/assets/audio/chime.mp3' : undefined
+                        }
+                    });
+                }
+
+                // 3. Duha / Ishraq Prayer Reminder (صلاة الضحى / الإشراق)
+                if (sunriseCfg.duhaEnabled) {
+                    const duhaMins = sunriseCfg.duhaMinutes || 15;
+                    const duhaDate = new Date(sunriseDate.getTime() + duhaMins * 60000);
+                    if (duhaDate > new Date()) {
+                        const isAudioPaused = Boolean(config.audioMutedUntil && duhaDate.getTime() < config.audioMutedUntil);
+                        notificationsToSchedule.push({
+                            id: 3000 + (day * 10) + 3,
+                            title: isEn ? 'Duha Prayer Time' : 'حان وقت صلاة الضحى',
+                            body: isEn
+                                ? "The sun has risen high.. Don't forget two rak'ahs of Duha prayer."
+                                : 'ارتفعت الشمس وزال وقت النهي.. لا تنسَ ركعتي الضحى صدقة عن مفاصلك.',
+                            schedule: { at: duhaDate, allowWhileIdle: true },
+                            channelId: isAudioPaused ? 'adhan_v5_silent' : 'sunrise_duha_v1_chime_channel',
+                            sound: isAudioPaused ? undefined : 'chime.mp3',
+                            smallIcon: 'ic_stat_name',
+                            extra: {
+                                type: 'duha',
+                                prayer: 'Sunrise',
+                                playSound: !isAudioPaused,
+                                soundFile: !isAudioPaused ? '/assets/audio/chime.mp3' : undefined
+                            }
                         });
                     }
                 }
@@ -1564,10 +1708,24 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
             const activeTone = getActiveNotificationTone();
             const isSoundMuted = activeTone.id === 'none' || activeTone.data === 'none';
+            const isPhoneRingtone = !isSoundMuted && (
+                activeTone.id === 'phone_ringtone' ||
+                activeTone.data?.startsWith('content://') ||
+                activeTone.data?.startsWith('file://')
+            );
             const notifSoundPath = getActiveNotificationSoundPath();
             const cleanToneId = (activeTone.id || 'chime').replace(/[^a-zA-Z0-9_]/g, '');
-            const nightChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
-            const nightSoundFile = isSoundMuted ? undefined : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
+            let nightChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
+            let nightSoundFile: string | undefined = isSoundMuted
+                ? undefined
+                : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
+
+            if (isPhoneRingtone && activeTone.data) {
+                nightChannelId = isAndroidNative
+                    ? await ensureNativeCustomNotificationChannel(activeTone.data, activeTone.name)
+                    : (activeTone.channelId || 'athkar_channel_v4_chime');
+                nightSoundFile = undefined;
+            }
 
             if (nightNotifs.firstThird && firstThirdDate > new Date()) {
                 notificationsToSchedule.push({
@@ -2122,7 +2280,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                         new Notification(isEn ? `It is now time for ${prayerNameLocal} Adhan` : `حان الآن موعد أذان ${prayerNameLocal}`, {
                                             body: isEn 
                                                 ? 'Remember Allah. The Prophet ﷺ said: "O Bilal, call the Adhan so we may find comfort in prayer."' 
-                                                : 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
+                                                : 'حيَّ على الصلاة، حيَّ على الفلاح.. «أرحنا بها يا بلال» ﷺ.',
                                             icon: '/icon.png',
                                             tag: `standalone_web_adhan_${key}_${Date.now()}`,
                                             requireInteraction: true
@@ -2239,11 +2397,96 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         }
                     }
                 }
+
+                // Live Sunrise & Duha foreground alerts (Web fallback)
+                const isSunriseMuted = !!config.mutedPrayers?.Sunrise;
+                const isGlobalAudioPaused = Boolean(config.audioMutedUntil && Date.now() < config.audioMutedUntil);
+                if (!isSunriseMuted && !isNative && times.Sunrise && !times.Sunrise.includes('--')) {
+                    const sunriseOffset = (config.prayerOffsets.Sunrise || 0) + (isSummerTimeActive ? 60 : 0);
+                    const adjustedSunrise = applyOffset(times.Sunrise, sunriseOffset);
+                    if (adjustedSunrise && !adjustedSunrise.includes('--')) {
+                        const [sH, sM] = adjustedSunrise.split(':').map(Number);
+                        const sunriseTimeObj = new Date(now);
+                        sunriseTimeObj.setHours(sH, sM, 0, 0);
+
+                        const srCfg: SunriseAlertsConfig = {
+                            ...DEFAULT_SUNRISE_ALERTS,
+                            ...(config.sunriseAlerts || {})
+                        };
+
+                        // 1. Pre-Sunrise
+                        if (srCfg.preSunriseEnabled) {
+                            const preMins = srCfg.preSunriseMinutes || 15;
+                            const preObj = new Date(sunriseTimeObj.getTime() - preMins * 60000);
+                            const preDiff = now.getTime() - preObj.getTime();
+                            const preKey = `${dayStr}_pre_sunrise`;
+                            if (preDiff >= 0 && preDiff <= 45000 && !triggeredAlertsRef.current.has(preKey)) {
+                                triggeredAlertsRef.current.add(preKey);
+                                if (!isGlobalAudioPaused) playNotificationSound('/assets/audio/notif_droplet.wav');
+                                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                                    try {
+                                        new Notification(isEn ? 'Sunrise is Approaching' : 'اقترب وقت الشروق', {
+                                            body: isEn
+                                                ? `${preMins} mins left until sunrise.. Hurry to perform Fajr prayer.`
+                                                : `بقي ${preMins} دقيقة على شروق الشمس.. بادر بأداء صلاة الفجر.`,
+                                            icon: '/icon.png',
+                                            tag: `standalone_web_pre_sunrise_${dayStr}`
+                                        });
+                                    } catch (e) {}
+                                }
+                            }
+                        }
+
+                        // 2. At-Sunrise
+                        if (srCfg.atSunriseEnabled) {
+                            const srDiff = now.getTime() - sunriseTimeObj.getTime();
+                            const srKey = `${dayStr}_at_sunrise`;
+                            if (srDiff >= 0 && srDiff <= 45000 && !triggeredAlertsRef.current.has(srKey)) {
+                                triggeredAlertsRef.current.add(srKey);
+                                if (!isGlobalAudioPaused) playNotificationSound('/assets/audio/chime.mp3');
+                                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                                    try {
+                                        new Notification(isEn ? 'The Sun Has Risen' : 'أشرقت الشمس الآن', {
+                                            body: isEn
+                                                ? 'Fajr time has ended, and the 15-minute prohibited prayer time has begun.'
+                                                : 'انتهى وقت صلاة الفجر، وبدأ وقت النهي عن النافلة لـ ١٥ دقيقة.',
+                                            icon: '/icon.png',
+                                            tag: `standalone_web_at_sunrise_${dayStr}`
+                                        });
+                                    } catch (e) {}
+                                }
+                            }
+                        }
+
+                        // 3. Duha Prayer
+                        if (srCfg.duhaEnabled) {
+                            const duhaMins = srCfg.duhaMinutes || 15;
+                            const duhaObj = new Date(sunriseTimeObj.getTime() + duhaMins * 60000);
+                            const duhaDiff = now.getTime() - duhaObj.getTime();
+                            const duhaKey = `${dayStr}_duha_prayer`;
+                            if (duhaDiff >= 0 && duhaDiff <= 45000 && !triggeredAlertsRef.current.has(duhaKey)) {
+                                triggeredAlertsRef.current.add(duhaKey);
+                                if (!isGlobalAudioPaused) playNotificationSound('/assets/audio/chime.mp3');
+                                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                                    try {
+                                        new Notification(isEn ? 'Duha Prayer Time' : 'حان وقت صلاة الضحى', {
+                                            body: isEn
+                                                ? "The sun has risen high.. Don't forget two rak'ahs of Duha prayer."
+                                                : 'ارتفعت الشمس وزال وقت النهي.. لا تنسَ ركعتي الضحى صدقة عن مفاصلك.',
+                                            icon: '/icon.png',
+                                            tag: `standalone_web_duha_${dayStr}`
+                                        });
+                                    } catch (e) {}
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [times, config.prayerOffsets, config.isSummerTime, config.tones, config.mutedPrayers, config.audioMutedUntil, config.preAthanReminder, config.prayerPreReminders, config.iqamaReminder, config.prayerIqamaReminders, config.autoSilent, config.prayerAutoSilent, config.autoSilentDuration, config.location, isEn]);
+    }, [times, config.prayerOffsets, config.isSummerTime, config.tones, config.mutedPrayers, config.audioMutedUntil, config.preAthanReminder, config.prayerPreReminders, config.iqamaReminder, config.prayerIqamaReminders, config.autoSilent, config.prayerAutoSilent, config.autoSilentDuration, config.sunriseAlerts, config.location, isEn]);
 
     // Update widget when times or next prayer changes (not every second)
     useEffect(() => {

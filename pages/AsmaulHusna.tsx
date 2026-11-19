@@ -452,14 +452,6 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                         {isEn ? item.meaningEn : item.meaning}
                                     </p>
 
-                                    {(item.evidence || item.evidenceEn) && (
-                                        <div 
-                                            className={`text-center py-2.5 px-3.5 rounded-[14px] mb-3 leading-relaxed ${innerSubBoxClass} ${isEn ? 'font-sans text-sm sm:text-base' : 'font-cairo text-xs sm:text-sm'}`}
-                                        >
-                                            {renderEvidence(item.evidence, item.evidenceEn)}
-                                        </div>
-                                    )}
-
                                     <div className="flex justify-between items-center mt-3 pt-3 app-3d-divider-top overflow-visible">
                                         <span className="text-xs font-bold opacity-70" style={{ color: tokens.primaryColor }}>
                                             {isEn ? 'Beautiful Names of Allah' : 'من أسماء الله الحسنى'}

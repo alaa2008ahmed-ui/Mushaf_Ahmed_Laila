@@ -14,6 +14,7 @@ import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/C
 import { ADIA_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { getToast3DStyles } from '../utils/toast3DStyles';
+import { QuranFormattedText, getThemeQuranAccentColor } from '../components/Common/QuranFormattedText';
 
 const ADIA_STATUS_KEY = 'adia_status_v1';
 const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
@@ -47,6 +48,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
     // Dynamic theme colors
     const isBlackTheme = theme.bgColor === '#000000' || themeKey === 'deep_black' || theme.name === 'اسود' || theme.name === 'أبيض وأسود';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    const quranAccentColor = getThemeQuranAccentColor(theme, themeKey);
     const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
 
     const [zoomedDuaa, setZoomedDuaa] = useState<DuaaItem | null>(null);
@@ -400,9 +402,6 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                             const repetitionText = getRepetitionText(initialCount, isEn);
 
                             const displayText = isEn ? (duaa.textEn || duaa.text) : duaa.text;
-                            const displaySource = isEn ? (duaa.sourceEn || duaa.source) : duaa.source;
-                            const cat = categoryForDuaa(duaa.categoryId);
-                            const categoryTitle = isEn ? (cat?.titleEn || '') : (cat?.title || '');
                             const isCurrentlyPlaying = playingText === displayText || playingText === duaa.text;
 
                             return (
@@ -460,35 +459,16 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     </div>
 
                                     {/* Duaa Text with generous line height */}
-                                    {isEn ? (
-                                        <p 
-                                            className="text-base sm:text-lg leading-relaxed text-center font-sans font-medium mb-4 select-none text-balance" 
-                                            dir="ltr" 
-                                            style={{ color: 'var(--text-color)' }}
-                                        >
-                                            {displayText}
-                                        </p>
-                                    ) : (
-                                        <p 
-                                            className="text-lg leading-loose font-medium font-cairo text-center mb-4 select-none text-balance" 
-                                            style={{ color: 'var(--text-color)' }}
-                                        >
-                                            {displayText}
-                                        </p>
-                                    )}
-
-                                    {/* Source and Category */}
-                                    {(categoryTitle || displaySource) && (
-                                        <div className="flex justify-center mb-3">
-                                            <span 
-                                                className="app-3d-badge text-xs sm:text-sm text-center opacity-85 font-bold bg-slate-100 dark:bg-zinc-800/70 px-3.5 py-1 rounded-full" 
-                                                dir={isEn ? 'ltr' : 'rtl'}
-                                                style={{ color: 'var(--text-color)' }}
-                                            >
-                                                {categoryTitle ? `${categoryTitle} • ` : ''}{displaySource}
-                                            </span>
-                                        </div>
-                                    )}
+                                    <QuranFormattedText
+                                        text={displayText}
+                                        source={isEn ? (duaa.sourceEn || duaa.source) : duaa.source}
+                                        isEn={isEn}
+                                        isQuran={duaa.categoryId === 'quran'}
+                                        accentColor={quranAccentColor}
+                                        className={isEn ? 'text-base sm:text-lg leading-relaxed font-sans font-medium mb-4' : 'text-lg leading-loose font-medium font-cairo mb-4'}
+                                        nonQuranClassName={isEn ? 'text-base sm:text-lg leading-relaxed text-center font-sans font-medium mb-4 select-none text-balance' : 'text-lg leading-loose font-medium font-cairo text-center mb-4 select-none text-balance'}
+                                        style={{ color: 'var(--text-color)' }}
+                                    />
                                     
                                     {/* Action Buttons Row */}
                                     <div className="flex justify-between items-center mt-auto pt-3 pb-1 border-t border-slate-100/90 dark:border-white/5 overflow-visible">

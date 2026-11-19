@@ -224,7 +224,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       )}
       <div
         ref={floatingMenuRef}
-        className={`fixed ${isLandscape ? "top-[calc(0.5rem+var(--logical-safe-top))] bottom-[calc(0.5rem+var(--logical-safe-bottom))]" : "top-[calc(3.5rem+var(--logical-safe-top))] bottom-[calc(3.5rem+var(--logical-safe-bottom))]"} ${isRTL ? (isLandscape ? "right-2" : "right-0") : (isLandscape ? "left-2" : "left-0")} z-[1060] flex items-start gap-4 pointer-events-none`}
+        className={`fixed ${isLandscape ? "top-[calc(0.5rem+var(--logical-safe-top))] bottom-[calc(0.5rem+var(--logical-safe-bottom))]" : "top-[calc(3.5rem+var(--logical-safe-top))] bottom-[calc(3.5rem+var(--logical-safe-bottom))]"} ${isRTL ? (isLandscape ? "right-[calc(1rem+var(--logical-safe-right))]" : "right-0") : (isLandscape ? "left-[calc(1rem+var(--logical-safe-left))]" : "left-0")} z-[1060] flex items-start gap-4 pointer-events-none`}
         dir={isRTL ? "rtl" : "ltr"}
       >
         {/* The Main Menu Container */}

@@ -27,6 +27,10 @@ export const HISN_CATEGORIES_EN: Record<string, HisnCategoryInfo> = {
         "title": "Supplication When Wearing New Clothes",
         "subtitle": "Supplications and invocations for supplication when wearing new clothes"
     },
+    "hisn_4": {
+        "title": "Supplication Said to Someone Wearing New Clothes",
+        "subtitle": "Supplications and invocations said to someone wearing new clothes"
+    },
     "hisn_5": {
         "title": "What to Say Before Undressing",
         "subtitle": "Supplications and invocations for what to say before undressing"
@@ -584,32 +588,32 @@ export const HISN_ITEMS_EN: Record<string, HisnItemTranslation> = {
     "hisn_3_0": {
         "title": "Supplication 1",
         "text": "O Allah, for You is all praise, You have clothed me with it (i.e. the garment), I ask You for the good of it and the good for which it was made, and I seek refuge with You from the evil of it and the evil for which it was made.",
-        "source": "Abu Dawud وAt-Tirmidhi والبغوي وsee مختصر شمائل At-Tirmidhi للألباني ص 47"
+        "source": "Abu Dawud, At-Tirmidhi, and Al-Baghawi; see Mukhtasar Shama'il At-Tirmidhi by Al-Albani, p. 47"
     },
     "hisn_3_1": {
         "title": "Supplication 2",
-        "text": "May you wear it out and Allah تعالى replace it (with another).’ The intended meaning: A supplication for long life.",
-        "source": "Narrated by Abu Dawud no. (4020) and authenticated by Al-Albani في Sahih Abu Dawud"
+        "text": "Whoever puts on a garment and says: 'All praise is due to Allah Who clothed me with this garment and provided it for me without any might or power on my part,' will be forgiven his previous sins.",
+        "source": "Narrated by Abu Dawud no. (4023) and At-Tirmidhi no. (3458); graded Hasan by Al-Albani"
     },
     "hisn_3_2": {
         "title": "Supplication 3",
-        "text": "Wear anew, live commendably and die a shaheed.)(shaheed:One who dies fighting the kuffar in order to make the word of Allah superior or in defense of Islam. It also has other meanings found in the Sunnah such as: the one who dies defending his life, wealth or family; the woman who passes away due to childbirth; one who drowns…etc.",
-        "source": "Narrated by Ibn Majah no. (3558) وAhmad no. (5620) and authenticated by Al-Albani"
+        "text": "Wear white from among your garments, for indeed they are the best of your garments, and shroud your dead in them.",
+        "source": "Narrated by Abu Dawud no. (3878) and At-Tirmidhi no. (994); authenticated by Al-Albani"
     },
     "hisn_4_0": {
         "title": "Supplication 1",
-        "text": "Wear anew, live commendably and die a shaheed.)(shaheed:One who dies fighting the kuffar in order to make the word of Allah superior or in defense of Islam. It also has other meanings found in the Sunnah such as: the one who dies defending his life, wealth or family; the woman who passes away due to childbirth; one who drowns…etc.",
-        "source": "Ibn Majah 2/ 1178 والبغوي 12/ 41 وsee Sahih Ibn Majah 2/ 275"
+        "text": "May you wear it out and Allah Almighty replace it (with another).",
+        "source": "Narrated by Abu Dawud 4/ 41; see Sahih Abi Dawud 2/ 760"
     },
     "hisn_4_1": {
         "title": "Supplication 2",
-        "text": "May you wear it out and Allah تعالى replace it (with another).’ The intended meaning: A supplication for long life.",
-        "source": "Narrated by Abu Dawud 4/ 41، وsee Sahih Abu Dawud 2/ 760"
+        "text": "Put on new clothes, live praiseworthily, die as a martyr, and may Allah grant you coolness of the eyes in this world and the Hereafter.",
+        "source": "Narrated by Ibn Majah 2/ 1178, Al-Baghawi 12/ 41, and Ahmad no. (5620); authenticated by Al-Albani in Sahih Ibn Majah 2/ 275"
     },
     "hisn_4_2": {
         "title": "Supplication 3",
-        "text": "When evening descends, bring your children indoors for the devils scatter out at this hour. Then after the passing of an hour (i.e. the first hour) of the night, (you may) let them (the children) go. Close your doors while mentioning the Name of Allah, for the devil may not open a closed door. Fasten your waterskins mentioning the Name of Allah. Cover your eating vessels mentioning the Name of Allah even if you just put something over it, and extinguish your lamps. Peace and blessing be upon our Prophet, Muhammad, and upon his family and his Companions, all of them.",
-        "source": "Narrated by Al-Bukhari في Sahihه no. (5845) من حديث أم خالد رضي الله عنها"
+        "text": "Wear it out and replace it, then wear it out and replace it, then wear it out and replace it.",
+        "source": "Narrated by Al-Bukhari in his Sahih no. (5845) from the hadith of Umm Khalid (may Allah be pleased with her)"
     },
     "hisn_5_0": {
         "title": "Supplication 1",

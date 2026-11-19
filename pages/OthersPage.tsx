@@ -12,6 +12,7 @@ import { RUQYAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import ZoomModal from '../components/Ruqyah/ZoomModal';
 import { scrollToNextCard } from '../utils/cardScrollHelper';
 import { getToast3DStyles } from '../utils/toast3DStyles';
+import QuranFormattedText, { getThemeQuranAccentColor } from '../components/Common/QuranFormattedText';
 
 function hexToRgba(hex?: string, alpha: number = 1): string {
     if (!hex) return `rgba(46, 125, 94, ${alpha})`;
@@ -41,6 +42,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, navParams }
 
   const isBlackTheme = theme.bgColor === '#000000' || themeKey === 'deep_black' || theme.name === 'اسود' || theme.name === 'أبيض وأسود';
   const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+  const quranAccentColor = getThemeQuranAccentColor(theme, themeKey);
   const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
       
   const [activeTab, setActiveTab] = useState<'all' | 'quran' | 'sunnah' | 'favorites' | 'guide'>('all');
@@ -366,26 +368,21 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, navParams }
                         }}
                       >
                         {/* Text: generous line-height to prevent tashkeel overlap */}
-                        <p 
-                          className={`text-center mb-4 select-none text-balance ${
+                        <QuranFormattedText
+                          text={currentItemText}
+                          source={isEn ? (item.sourceEn || item.source) : item.source}
+                          title={isEn ? (item.titleEn || item.title) : item.title}
+                          isEn={isEn}
+                          isQuran={item.type === 'quran'}
+                          accentColor={quranAccentColor}
+                          className={`mb-4 ${
                             isEn ? 'text-base md:text-lg font-medium leading-relaxed' : 'text-lg font-medium font-cairo leading-loose'
-                          }`} 
+                          }`}
+                          nonQuranClassName={`text-center mb-4 select-none text-balance ${
+                            isEn ? 'text-base md:text-lg font-medium leading-relaxed' : 'text-lg font-medium font-cairo leading-loose'
+                          }`}
                           style={{ color: 'var(--text-color)' }}
-                        >
-                          {currentItemText}
-                        </p>
-
-                        {/* Metadata Pill */}
-                        <div className="flex justify-center mb-3">
-                          <span 
-                            className="app-3d-badge text-xs sm:text-sm text-center opacity-85 font-bold bg-slate-100 dark:bg-zinc-800/70 px-3.5 py-1 rounded-full" 
-                            style={{ color: 'var(--text-color)' }}
-                          >
-                            {item.type === 'quran' 
-                              ? (isEn ? (item.sourceEn || item.source) : item.source)
-                              : (isEn ? `Prophetic Sunnah • ${item.sourceEn || item.source}` : `السنة النبوية • ${item.source}`)}
-                          </span>
-                        </div>
+                        />
                         
                         {/* Action buttons bar */}
                         <div className="flex justify-between items-center mt-auto pt-3 pb-1 border-t border-slate-100/90 dark:border-white/5 overflow-visible">

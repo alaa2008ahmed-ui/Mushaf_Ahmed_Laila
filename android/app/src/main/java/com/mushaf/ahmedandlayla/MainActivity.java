@@ -683,6 +683,7 @@ public class MainActivity extends BridgeActivity {
                 {"iqama_v5_droplet_channel", isArabic ? "تنبيه إقامة الصلاة" : "Prayer Iqama Alert", "notif_droplet"},
                 {"prayer_silent_v5_droplet_channel", isArabic ? "الصامت التلقائي للصلاة" : "Auto Silent Mode", "notif_droplet"},
                 {"night_times_v3_chime_channel", isArabic ? "تنبيهات أوقات الليل" : "Night Times Reminders", "chime"},
+                {"sunrise_duha_v1_chime_channel", isArabic ? "تنبيهات الشروق وصلاة الضحى" : "Sunrise & Duha Alerts", "chime"},
                 {"athkar_v3_chime_channel", isArabic ? "أذكار وتنبيهات عامة" : "General Adhkar & Reminders", "chime"},
                 {"daily_wird_reminders_channel", isArabic ? "تنبيهات الورد القرآني" : "Daily Wird Reminders", "chime"},
                 {"daily_wird_reminder_channel", isArabic ? "تنبيهات الورد اليومي" : "Daily Wird Reminders", "chime"},

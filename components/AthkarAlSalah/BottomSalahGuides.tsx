@@ -425,7 +425,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     </button>
                                 </div>
 
-                                <div className={`space-y-2 text-sm ${isEn ? 'font-sans' : 'font-amiri'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
+                                <div className={`space-y-2 text-sm ${isEn ? 'font-sans' : 'font-cairo'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
                                     <div className="flex justify-between border-b border-card-border pb-1.5">
                                         <span>{isEn ? 'Fajr Prayer:' : 'صلاة الفجر:'}</span>
                                         <span className="font-bold">{isEn ? "2 Rak'ahs Before" : "٢ ركعة قبلية"}</span>
@@ -554,7 +554,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     </button>
                                 </div>
 
-                                <div className={`space-y-4 pb-2 text-sm ${isEn ? 'font-sans' : 'font-amiri'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
+                                <div className={`space-y-4 pb-2 text-sm ${isEn ? 'font-sans' : 'font-cairo'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
                                     <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-2xl">
                                         <p className="leading-relaxed">
                                             {isEn ? (

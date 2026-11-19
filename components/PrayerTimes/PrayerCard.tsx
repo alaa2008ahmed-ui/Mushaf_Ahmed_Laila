@@ -47,6 +47,7 @@ interface PrayerCardProps {
     supportsDST?: boolean;
     weatherInfo?: PrayerWeatherInfo | null;
     onOpenWeather?: () => void;
+    duhaTimeStr?: string;
 }
 
 const parseHexRgb = (hexColor: string): [number, number, number] => {
@@ -102,7 +103,8 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     toggleSummerTime,
     supportsDST,
     weatherInfo,
-    onOpenWeather
+    onOpenWeather,
+    duhaTimeStr
 }) => {
     const { language, dir, formatNumber } = useLanguage();
     const isEn = language === 'en';
@@ -225,68 +227,46 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                 {/* 2. Right Side: Bell and Settings stacked vertically */}
                 <div className="flex flex-col items-center gap-1.5 shrink-0">
                     {/* Bell / Mute Toggle Button */}
-                    {prayerKey !== 'Sunrise' ? (
-                        <button 
-                            id={idx === 0 ? "prayer-sound-toggle-btn" : undefined}
-                            type="button"
-                            onClick={() => togglePrayerSound(prayerKey)} 
-                            className={`${inlineBtnClass} w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer`}
-                            style={{
-                                ...inlineBtnSurfaceStyle,
-                                color: isMuted 
-                                    ? '#EF4444' 
-                                    : (isNextPrayer 
-                                        ? nextTextColor 
-                                        : (isBlackTheme ? '#FFFFFF' : '#000000'))
-                            }}
-                            title={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
-                            aria-label={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
-                        >
-                            {isMuted ? (
-                                <BellOff className="w-4 h-4" />
-                            ) : (
-                                <Bell className="w-4 h-4" />
-                            )}
-                        </button>
-                    ) : (
-                        supportsDST && (
-                            <button 
-                                type="button"
-                                onClick={toggleSummerTime}
-                                className={`${inlineBtnClass} w-7 h-7 rounded-xl flex items-center justify-center text-xs cursor-pointer`}
-                                style={{
-                                    ...inlineBtnSurfaceStyle,
-                                    color: isNextPrayer 
-                                        ? nextTextColor 
-                                        : (isBlackTheme ? '#FFFFFF' : '#000000')
-                                }}
-                                title={tPrayer('dstTooltip', language)}
-                                aria-label={tPrayer('dstTooltip', language)}
-                            >
-                                <Clock className="w-4 h-4" />
-                            </button>
-                        )
-                    )}
+                    <button 
+                        id={idx === 0 ? "prayer-sound-toggle-btn" : undefined}
+                        type="button"
+                        onClick={() => togglePrayerSound(prayerKey)} 
+                        className={`${inlineBtnClass} w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer`}
+                        style={{
+                            ...inlineBtnSurfaceStyle,
+                            color: isMuted 
+                                ? '#EF4444' 
+                                : (isNextPrayer 
+                                    ? nextTextColor 
+                                    : (isBlackTheme ? '#FFFFFF' : '#000000'))
+                        }}
+                        title={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
+                        aria-label={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
+                    >
+                        {isMuted ? (
+                            <BellOff className="w-5 h-5" />
+                        ) : (
+                            <Bell className="w-5 h-5" />
+                        )}
+                    </button>
 
                     {/* Settings Button (stacked under Bell) */}
-                    {prayerKey !== 'Sunrise' && (
-                        <button 
-                            id={idx === 0 ? "prayer-settings-btn" : undefined}
-                            type="button"
-                            onClick={() => openSettings(prayerKey)} 
-                            className={`${inlineBtnClass} w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer`}
-                            style={{
-                                ...inlineBtnSurfaceStyle,
-                                color: isNextPrayer 
-                                    ? nextTextColor 
-                                    : (isBlackTheme ? '#FFFFFF' : '#000000')
-                            }}
-                            title={tPrayer('customize', language)}
-                            aria-label={tPrayer('customize', language)}
-                        >
-                            <SlidersHorizontal className="w-4 h-4" />
-                        </button>
-                    )}
+                    <button 
+                        id={idx === 0 ? "prayer-settings-btn" : undefined}
+                        type="button"
+                        onClick={() => openSettings(prayerKey)} 
+                        className={`${inlineBtnClass} w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer`}
+                        style={{
+                            ...inlineBtnSurfaceStyle,
+                            color: isNextPrayer 
+                                ? nextTextColor 
+                                : (isBlackTheme ? '#FFFFFF' : '#000000')
+                        }}
+                        title={tPrayer('customize', language)}
+                        aria-label={tPrayer('customize', language)}
+                    >
+                        <SlidersHorizontal className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
 
@@ -315,9 +295,36 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                 />
             </div>
 
-            {/* Bottom: Iqama Chip */}
-            <div className="w-full flex justify-center items-center z-10 relative -mt-2 pb-1.5 min-h-[22px]">
-                {prayerKey !== 'Sunrise' && iqamaTime && !iqamaTime.includes('--') ? (
+            {/* Bottom: Iqama Chip (or Duha Chip for Sunrise) */}
+            <div className="w-full flex justify-center items-center z-10 relative -mt-2 pb-3 min-h-[22px]">
+                {prayerKey === 'Sunrise' && duhaTimeStr && !duhaTimeStr.includes('--') ? (() => {
+                    const [hh, mm] = duhaTimeStr.split(':');
+                    const hInt = parseInt(hh, 10);
+                    const isPm = !isNaN(hInt) && hInt >= 12;
+                    const h12 = !isNaN(hInt) ? (hInt % 12 || 12) : 0;
+                    const period = isEn ? (isPm ? 'PM' : 'AM') : (isPm ? 'م' : 'ص');
+                    const formattedDuha = !isNaN(hInt)
+                        ? (isEn ? `${h12}:${mm.padStart(2, '0')} ${period}` : `${formatNumber(`${h12}:${mm.padStart(2, '0')}`)} ${period}`)
+                        : '--:--';
+                    return (
+                        <button 
+                            type="button"
+                            onClick={() => openSettings('Sunrise')}
+                            className={`${inlineBtnClass} text-[11px] font-extrabold px-2.5 py-0.5 rounded-xl whitespace-nowrap leading-tight cursor-pointer flex items-center gap-1`} 
+                            style={{
+                                ...inlineBtnSurfaceStyle,
+                                color: isNextPrayer 
+                                    ? nextTextColor 
+                                    : (isBlackTheme ? '#FFFFFF' : '#000000'),
+                            }}
+                            title={tPrayer('duhaButtonTooltip', language)}
+                            aria-label={tPrayer('duhaButtonTooltip', language)}
+                        >
+                            <span style={{ color: isNextPrayer ? nextTextColor : (isBlackTheme ? '#FFFFFF' : '#000000') }}>{tPrayer('duha', language)}:</span>
+                            <span className="font-mono tabular-nums font-extrabold" style={{ color: isNextPrayer ? nextTextColor : (isBlackTheme ? '#FFFFFF' : '#000000') }} dir={language === 'ar' ? 'rtl' : 'ltr'}>{formattedDuha}</span>
+                        </button>
+                    );
+                })() : prayerKey !== 'Sunrise' && iqamaTime && !iqamaTime.includes('--') ? (
                     <button 
                         type="button"
                         onClick={() => openSettings(prayerKey)}

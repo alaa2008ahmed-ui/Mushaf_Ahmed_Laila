@@ -1,5 +1,8 @@
 package com.mushaf.ahmedandlayla;
 
+import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,22 +13,28 @@ import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
+import androidx.activity.result.ActivityResult;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.lang.ref.WeakReference;
+import java.util.List;
 
 @CapacitorPlugin(name = "AutoSilentMode")
 public class AutoSilentPlugin extends Plugin {
@@ -782,49 +791,52 @@ public class AutoSilentPlugin extends Plugin {
                 .setFlags(android.media.AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
                 .build();
 
-            String soundName = path.toLowerCase().trim();
-            if (soundName.contains("/")) {
-                soundName = soundName.substring(soundName.lastIndexOf("/") + 1);
-            }
-            if (soundName.contains(".")) {
-                soundName = soundName.substring(0, soundName.lastIndexOf("."));
-            }
-            soundName = soundName.replaceAll("[^a-z0-9_]", "");
-
             Context ctx = getContext();
-            int resId = ctx.getResources().getIdentifier(soundName, "raw", ctx.getPackageName());
-            if (resId != 0) {
-                MediaPlayer mp = new MediaPlayer();
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    mp.setAudioAttributes(alarmAttrs);
-                } else {
-                    mp.setAudioStreamType(AudioManager.STREAM_ALARM);
+            boolean isExternalUri = path.startsWith("file://") || path.startsWith("content://");
+            if (!isExternalUri) {
+                String soundName = path.toLowerCase().trim();
+                if (soundName.contains("/")) {
+                    soundName = soundName.substring(soundName.lastIndexOf("/") + 1);
                 }
-                android.content.res.AssetFileDescriptor afd = ctx.getResources().openRawResourceFd(resId);
-                if (afd != null) {
-                    mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-                    afd.close();
-                    mp.prepare();
-                    previewMediaPlayer = mp;
-                    previewMediaPlayer.setVolume(vol, vol);
-                    previewMediaPlayer.setOnCompletionListener(p -> {
-                        stopToneInternal();
-                        notifyTonePlaybackEnded();
-                    });
-                    previewMediaPlayer.start();
-                    JSObject ret = new JSObject();
-                    ret.put("success", true);
-                    ret.put("source", "raw");
-                    ret.put("name", soundName);
-                    ret.put("volume", volPercent);
-                    call.resolve(ret);
-                    return;
-                } else {
-                    mp.release();
+                if (soundName.contains(".")) {
+                    soundName = soundName.substring(0, soundName.lastIndexOf("."));
+                }
+                soundName = soundName.replaceAll("[^a-z0-9_]", "");
+
+                int resId = ctx.getResources().getIdentifier(soundName, "raw", ctx.getPackageName());
+                if (resId != 0) {
+                    MediaPlayer mp = new MediaPlayer();
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        mp.setAudioAttributes(alarmAttrs);
+                    } else {
+                        mp.setAudioStreamType(AudioManager.STREAM_ALARM);
+                    }
+                    android.content.res.AssetFileDescriptor afd = ctx.getResources().openRawResourceFd(resId);
+                    if (afd != null) {
+                        mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                        afd.close();
+                        mp.prepare();
+                        previewMediaPlayer = mp;
+                        previewMediaPlayer.setVolume(vol, vol);
+                        previewMediaPlayer.setOnCompletionListener(p -> {
+                            stopToneInternal();
+                            notifyTonePlaybackEnded();
+                        });
+                        previewMediaPlayer.start();
+                        JSObject ret = new JSObject();
+                        ret.put("success", true);
+                        ret.put("source", "raw");
+                        ret.put("name", soundName);
+                        ret.put("volume", volPercent);
+                        call.resolve(ret);
+                        return;
+                    } else {
+                        mp.release();
+                    }
                 }
             }
 
-            if (path.startsWith("file://") || path.startsWith("content://")) {
+            if (isExternalUri) {
                 MediaPlayer mp = new MediaPlayer();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mp.setAudioAttributes(alarmAttrs);
@@ -880,6 +892,205 @@ public class AutoSilentPlugin extends Plugin {
                 previewMediaPlayer.release();
             } catch (Exception ignored) {}
             previewMediaPlayer = null;
+        }
+    }
+
+    private static final String CUSTOM_PHONE_CHANNEL_PREFIX = "athkar_channel_phone_";
+
+    private String ensureCustomPhoneNotificationChannelInternal(Context context, Uri soundUri, String toneTitle) {
+        if (context == null || soundUri == null) return "athkar_channel_v4_chime";
+
+        String uriString = soundUri.toString();
+        String hashHex = Integer.toHexString(uriString.hashCode() & 0x7fffffff);
+        String channelId = CUSTOM_PHONE_CHANNEL_PREFIX + hashHex;
+
+        try {
+            context.grantUriPermission("com.android.systemui", soundUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } catch (Exception ignored) {}
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm != null) {
+                    try {
+                        List<NotificationChannel> existingChannels = nm.getNotificationChannels();
+                        if (existingChannels != null) {
+                            for (NotificationChannel existing : existingChannels) {
+                                String existingId = existing.getId();
+                                if (existingId != null && existingId.startsWith(CUSTOM_PHONE_CHANNEL_PREFIX) && !existingId.equals(channelId)) {
+                                    nm.deleteNotificationChannel(existingId);
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+
+                    if (nm.getNotificationChannel(channelId) == null) {
+                        SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+                        boolean isArabic = !"en".equalsIgnoreCase(storage.getString("app_language", "ar"));
+
+                        String safeTitle = (toneTitle != null && !toneTitle.trim().isEmpty())
+                            ? toneTitle.trim()
+                            : (isArabic ? "نغمة من الهاتف" : "Phone Tone");
+                        String channelName = isArabic
+                            ? ("تنبيهات وأذكار (" + safeTitle + ")")
+                            : ("Reminders (" + safeTitle + ")");
+
+                        AudioAttributes alarmAudioAttributes = new AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
+                            .build();
+
+                        NotificationChannel channel = new NotificationChannel(
+                            channelId,
+                            channelName,
+                            NotificationManager.IMPORTANCE_HIGH
+                        );
+                        channel.setDescription(isArabic
+                            ? "قناة تنبيهات الأذكار والتنبيهات بنغمة الهاتف المختارة"
+                            : "Reminders and adhkar notifications with selected phone tone");
+                        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                        channel.setBypassDnd(true);
+                        channel.enableVibration(true);
+                        channel.enableLights(true);
+                        channel.setShowBadge(false);
+                        channel.setSound(soundUri, alarmAudioAttributes);
+                        nm.createNotificationChannel(channel);
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        try {
+            SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+            storage.edit()
+                .putString("custom_phone_notif_uri", uriString)
+                .putString("custom_phone_notif_channel_id", channelId)
+                .apply();
+        } catch (Exception ignored) {}
+
+        return channelId;
+    }
+
+    @PluginMethod
+    public void pickPhoneNotificationTone(PluginCall call) {
+        Context context = getContext();
+        if (context == null) {
+            call.reject("Context unavailable");
+            return;
+        }
+        try {
+            String currentUri = call.getString("currentUri", "");
+            String pickerTitle = call.getString("title", "نغمات الهاتف");
+
+            Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+            intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
+            intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+            intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false);
+            intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, pickerTitle);
+
+            if (currentUri != null && (currentUri.startsWith("content://") || currentUri.startsWith("file://"))) {
+                try {
+                    intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(currentUri));
+                } catch (Exception ignored) {}
+            } else {
+                try {
+                    Uri defaultUri = RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_NOTIFICATION);
+                    if (defaultUri != null) {
+                        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, defaultUri);
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            startActivityForResult(call, intent, "onRingtonePickerResult");
+        } catch (Exception e) {
+            call.reject("Could not open phone ringtone picker: " + e.getMessage());
+        }
+    }
+
+    @ActivityCallback
+    @SuppressWarnings("deprecation")
+    private void onRingtonePickerResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        try {
+            if (result == null || result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
+                JSObject ret = new JSObject();
+                ret.put("cancelled", true);
+                call.resolve(ret);
+                return;
+            }
+
+            Intent data = result.getData();
+            Uri pickedUri = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri.class)
+                : data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
+
+            if (pickedUri == null) {
+                JSObject ret = new JSObject();
+                ret.put("cancelled", false);
+                ret.put("silent", true);
+                ret.put("uri", "");
+                ret.put("name", "بدون صوت");
+                call.resolve(ret);
+                return;
+            }
+
+            Context context = getContext();
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    context.getContentResolver().takePersistableUriPermission(pickedUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
+            } catch (Exception ignored) {}
+
+            String toneName = "";
+            try {
+                Ringtone ringtone = RingtoneManager.getRingtone(context, pickedUri);
+                if (ringtone != null) {
+                    toneName = ringtone.getTitle(context);
+                }
+            } catch (Exception ignored) {}
+
+            if (toneName == null || toneName.trim().isEmpty()) {
+                SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+                boolean isArabic = !"en".equalsIgnoreCase(storage.getString("app_language", "ar"));
+                toneName = isArabic ? "نغمة من الهاتف" : "Phone Tone";
+            }
+
+            String channelId = ensureCustomPhoneNotificationChannelInternal(context, pickedUri, toneName);
+
+            JSObject ret = new JSObject();
+            ret.put("cancelled", false);
+            ret.put("silent", false);
+            ret.put("uri", pickedUri.toString());
+            ret.put("name", toneName.trim());
+            ret.put("channelId", channelId);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("Failed to read picked ringtone: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void ensureCustomNotificationChannel(PluginCall call) {
+        Context context = getContext();
+        String uriStr = call.getString("uri", "");
+        String name = call.getString("name", "");
+        if (context == null || uriStr == null || uriStr.trim().isEmpty()) {
+            JSObject ret = new JSObject();
+            ret.put("channelId", "athkar_channel_v4_chime");
+            call.resolve(ret);
+            return;
+        }
+        try {
+            Uri soundUri = Uri.parse(uriStr.trim());
+            String channelId = ensureCustomPhoneNotificationChannelInternal(context, soundUri, name);
+            JSObject ret = new JSObject();
+            ret.put("channelId", channelId);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("channelId", "athkar_channel_v4_chime");
+            call.resolve(ret);
         }
     }
 

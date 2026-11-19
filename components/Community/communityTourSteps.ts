@@ -1395,6 +1395,75 @@ export const PRAYER_SETTINGS_MODAL_STEPS: SpotlightStep[] = [
   }
 ];
 
+// 15ب. خطوات إرشاد قائمة إعدادات الشروق وصلاة الضحى
+export const SUNRISE_SETTINGS_MODAL_STEPS: SpotlightStep[] = [
+  {
+    id: 'sunrise_time_adjustment',
+    targetSelector: '#sunrise-setting-time-adjustment',
+    titleAr: 'تعديل وقت الشروق بالدقائق',
+    titleEn: 'Adjust Sunrise Timing',
+    descAr: 'يمكنك تقديم أو تأخير موعد الشروق بالدقائق باستخدام زري (+ / -) أو كتابة الفارق يدوياً أو اختيار الوقت مباشرة من أيقونة الساعة؛ وسيتحدث موعد الضحى والتنبيهات تلقائياً.',
+    descEn: 'Increase or decrease sunrise time in minutes using (+ / -), type the offset manually, or tap the clock icon to pick the exact time; Duha and alerts update automatically.',
+    badgeAr: 'ضبط الشروق',
+    badgeEn: 'Sunrise Timing',
+    iconName: 'clock',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'sunrise_pre_alert',
+    targetSelector: '#sunrise-setting-pre-alert',
+    titleAr: 'تنبيه قرب الشروق (لإدراك الفجر)',
+    titleEn: 'Pre-Sunrise Alert (Catch Fajr)',
+    descAr: 'يذكّرك قبل شروق الشمس بـ 10 أو 15 أو 20 أو 30 دقيقة (أو أي مدة تختارها بأزرار + / -) للمبادرة بأداء صلاة الفجر قبل خروج وقتها.',
+    descEn: 'Reminds you 10, 15, 20, or 30 minutes before sunrise (or any custom minutes via + / -) to perform Fajr prayer before its time ends.',
+    badgeAr: 'قرب الشروق',
+    badgeEn: 'Pre-Sunrise',
+    iconName: 'bell',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'sunrise_at_alert',
+    targetSelector: '#sunrise-setting-at-alert',
+    titleAr: 'تنبيه لحظة الشروق ووقت النهي',
+    titleEn: 'At Sunrise & Prohibited Time Alert',
+    descAr: 'يرسل إشعاراً بنغمة هادئة (وليست أذاناً) فور شروق الشمس لإعلامك بانتهاء وقت الفجر وبداية وقت النهي عن صلاة النافلة لمدة 15 دقيقة.',
+    descEn: 'Sends a calm chime notification (not Adhan) right at sunrise indicating Fajr has ended and the 15-minute prohibited voluntary prayer window has begun.',
+    badgeAr: 'لحظة الشروق',
+    badgeEn: 'At Sunrise',
+    iconName: 'bell',
+    accentColor: '#eab308',
+    gradient: 'from-yellow-500 to-amber-600'
+  },
+  {
+    id: 'sunrise_duha_alert',
+    targetSelector: '#sunrise-setting-duha-alert',
+    titleAr: 'تنبيه وموعد صلاة الضحى / الإشراق',
+    titleEn: 'Duha / Ishraq Prayer Alert',
+    descAr: 'حدد الموعد بعد الشروق (15 دقيقة لبداية الإشراق، 30، 60، 120 دقيقة أو أي مدة بأزرار + / -) ليصلك إشعار بصلاة الضحى ويتحدث الوقت الظاهر أسفل بطاقة الشروق تلقائياً.',
+    descEn: 'Choose when after sunrise to be reminded for Duha (15m for Ishraq start, 30m, 60m, 120m, or custom via + / -). The time badge on the Sunrise card updates automatically.',
+    badgeAr: 'صلاة الضحى',
+    badgeEn: 'Duha Prayer',
+    iconName: 'clock',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'sunrise_save_btn',
+    targetSelector: '#sunrise-setting-save-btn',
+    titleAr: 'حفظ التغييرات وجدولة الإشعارات',
+    titleEn: 'Save & Schedule Notifications',
+    descAr: 'اضغط هنا لحفظ تفضيلاتك في الهاتف وتحديث وقت صلاة الضحى على البطاقة وجدولة جميع إشعارات الشروق والضحى تلقائياً.',
+    descEn: 'Tap here to save your preferences, update the Duha time on the Sunrise card, and schedule all sunrise and Duha phone notifications.',
+    badgeAr: 'حفظ الإعدادات',
+    badgeEn: 'Save Changes',
+    iconName: 'action',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
+  }
+];
+
 export const ASMAUL_HUSNA_PAGE_STEPS: SpotlightStep[] = [
   {
     id: 'asmaul_husna_page_intro',

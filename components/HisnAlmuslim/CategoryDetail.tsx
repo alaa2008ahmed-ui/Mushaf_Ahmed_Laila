@@ -7,6 +7,7 @@ import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { HISN_ITEMS_EN, HISN_CATEGORIES_EN, HisnItemTranslation } from '../../data/hisnAlmuslimTranslationsEn';
 import { getModernFlatTokens, hexToRgba } from '../../utils/flatDesignTokens';
 import { scrollToNextCard } from '../../utils/cardScrollHelper';
+import QuranFormattedText, { getThemeQuranAccentColor } from '../Common/QuranFormattedText';
 
 interface CategoryDetailProps {
     selectedCategory: any;
@@ -61,6 +62,7 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const tokens = getModernFlatTokens(theme, themeKey);
+    const quranAccentColor = getThemeQuranAccentColor(theme, themeKey);
     const isEn = language === 'en';
     const [isFav, setIsFav] = useState(false);
     const [playingText, setPlayingText] = useState<string | null>(null);
@@ -212,9 +214,14 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                 </h3>
             )}
 
-            <p className={`select-none mb-3 ${isEn ? 'leading-[2.2] text-base sm:text-lg text-left font-sans font-medium' : 'text-lg leading-loose font-medium text-center font-cairo'}`}>
-                {displayText}
-            </p>
+            <QuranFormattedText
+                text={displayText}
+                source={displaySource}
+                isEn={isEn}
+                accentColor={quranAccentColor}
+                className={`mb-3 ${isEn ? 'leading-[2.2] text-base sm:text-lg font-sans font-medium' : 'text-lg leading-loose font-medium font-cairo'}`}
+                nonQuranClassName={`select-none mb-3 ${isEn ? 'leading-[2.2] text-base sm:text-lg text-left font-sans font-medium' : 'text-lg leading-loose font-medium text-center font-cairo'}`}
+            />
             
             {/* Actions Bar */}
             <div className="flex justify-between items-center mt-3 pt-3 pb-1 border-t border-slate-100 dark:border-white/5 overflow-visible">

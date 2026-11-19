@@ -5,6 +5,7 @@ import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { getAdhkarTranslation } from '../../data/adkarTranslationsEn';
 import { scrollToNextCard } from '../../utils/cardScrollHelper';
+import { QuranFormattedText, getThemeQuranAccentColor } from '../Common/QuranFormattedText';
 
 interface DhikrCardProps {
     dhikr: {
@@ -58,6 +59,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
     // Dynamic color resolution
     const isBlackTheme = theme.bgColor === '#000000' || themeKey === 'deep_black' || theme.name === 'اسود' || theme.name === 'أبيض وأسود';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    const quranAccentColor = getThemeQuranAccentColor(theme, themeKey);
 
     // Get authentic English translation if in English mode
     const translation = getAdhkarTranslation(dhikr.text);
@@ -200,36 +202,15 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             </div>
 
             {/* Dhikr text: generous line-height to prevent tashkeel collision */}
-            {isEn ? (
-                <p 
-                    className="text-base sm:text-lg leading-relaxed text-center font-sans font-medium mb-4 select-none text-balance" 
-                    dir="ltr"
-                    style={{ color: 'var(--text-color)' }}
-                >
-                    {displayText}
-                </p>
-            ) : (
-                <p 
-                    className="text-lg leading-loose font-medium font-cairo text-center mb-4 select-none text-balance"
-                    dir="rtl"
-                    style={{ color: 'var(--text-color)' }}
-                >
-                    {displayText}
-                </p>
-            )}
-            
-            {/* Source */}
-            {displaySource && (
-                <div className="flex justify-center mb-3">
-                    <span 
-                        className="app-3d-badge text-xs sm:text-sm text-center opacity-85 font-bold bg-slate-100 dark:bg-zinc-800/70 px-3.5 py-1 rounded-full" 
-                        dir={isEn ? 'ltr' : 'rtl'}
-                        style={{ color: 'var(--text-color)' }}
-                    >
-                        {displaySource}
-                    </span>
-                </div>
-            )}
+            <QuranFormattedText
+                text={displayText}
+                source={displaySource}
+                isEn={isEn}
+                accentColor={quranAccentColor}
+                className={isEn ? 'text-base sm:text-lg leading-relaxed font-sans font-medium mb-4' : 'text-lg leading-loose font-medium font-cairo mb-4'}
+                nonQuranClassName={isEn ? 'text-base sm:text-lg leading-relaxed text-center font-sans font-medium mb-4 select-none text-balance' : 'text-lg leading-loose font-medium font-cairo text-center mb-4 select-none text-balance'}
+                style={{ color: 'var(--text-color)' }}
+            />
             
             {/* Bottom Action buttons row */}
             <div className="flex justify-between items-center mt-auto pt-3 pb-1 border-t border-slate-100/90 dark:border-white/5 overflow-visible">

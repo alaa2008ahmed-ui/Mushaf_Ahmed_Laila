@@ -6,6 +6,7 @@ import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { Volume2, VolumeX, Copy, Check, Share2, ZoomIn, ChevronDown } from 'lucide-react';
 import { hexToRgba, getModernFlatTokens } from '../../utils/flatDesignTokens';
+import { QuranFormattedText, getThemeQuranAccentColor } from '../Common/QuranFormattedText';
 
 interface ZoomModalProps {
     zoomedDhikr: {
@@ -27,6 +28,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
     const { theme, themeKey } = useTheme();
     const { language, dir } = useLanguage();
     const tokens = getModernFlatTokens(theme, themeKey);
+    const quranAccentColor = getThemeQuranAccentColor(theme, themeKey);
     const isEn = language === 'en';
 
     const [copied, setCopied] = useState(false);
@@ -131,28 +133,20 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
 
                     {/* Scrollable Content Area */}
                     <div className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4">
-                        {isEn ? (
-                            <div 
-                                className="leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
-                                style={{ fontSize: `${fontSize}px` }}
-                                dir="ltr"
-                            >
-                                {displayText}
-                            </div>
-                        ) : (
-                            <div 
-                                className="leading-loose font-medium font-cairo text-center select-none py-2"
-                                style={{ fontSize: `${fontSize + 4}px` }}
-                                dir="rtl"
-                            >
-                                {displayText}
-                            </div>
-                        )}
+                        <QuranFormattedText
+                            text={displayText}
+                            source={displaySource}
+                            isEn={isEn}
+                            accentColor={quranAccentColor}
+                            fontSize={isEn ? fontSize : fontSize + 4}
+                            className={isEn ? 'leading-relaxed font-sans font-medium my-4' : 'leading-loose font-medium font-cairo py-2'}
+                            nonQuranClassName={isEn ? 'leading-relaxed font-sans font-medium text-center my-4 select-none text-balance' : 'leading-loose font-medium font-cairo text-center select-none py-2'}
+                        />
 
                         {displaySource && (
                             <p 
                                 className="text-sm sm:text-base mt-4 font-bold font-cairo text-center" 
-                                style={{ color: tokens.primaryColor }} 
+                                style={{ color: quranAccentColor }} 
                                 dir={isEn ? 'ltr' : 'rtl'}
                             >
                                 {displaySource}

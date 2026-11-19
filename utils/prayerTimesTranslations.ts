@@ -40,6 +40,8 @@ export const TONE_NAMES_MAP: Record<string, { ar: string; en: string }> = {
   'الشهادة': { ar: 'الشهادة', en: 'Shahadah' },
   'الصلاة': { ar: 'الصلاة', en: 'Salah' },
   'اختيار نغمة': { ar: 'اختيار نغمة', en: 'Select tone' },
+  'نغمات الهاتف': { ar: 'نغمات الهاتف', en: 'Phone Tones' },
+  'نغمة من الهاتف': { ar: 'نغمة من الهاتف', en: 'Phone Tone' },
   'نغمة مخصصة من الجهاز...': { ar: 'اختيار نغمة', en: 'Select tone' },
   'نغمة مخصصة': { ar: 'نغمة مخصصة', en: 'Custom Tone' },
   'رنين هادئ': { ar: 'رنين هادئ', en: 'Soft Chime' },
@@ -1432,7 +1434,8 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   changeTone: { ar: 'تغيير', en: 'Change' },
   currentToneFile: { ar: 'الملف الحالي:', en: 'Current file:' },
   selectToneModalTitle: { ar: 'اختر نغمة التنبيه', en: 'Select Alert Tone' },
-  selectNotificationToneModalTitle: { ar: 'اختر نغمة الإشعارات', en: 'Select Notification Tone' },
+  selectNotificationToneModalTitle: { ar: 'نغمات الإشعارات والتنبيهات', en: 'Notification & Alert Tones' },
+  selectPhoneTone: { ar: 'نغمات الهاتف', en: 'Phone Tones' },
   selectToneFromDevice: { ar: 'اختيار نغمة', en: 'Select tone' },
   noSound: { ar: 'بدون صوت', en: 'Silent' },
   close: { ar: 'إغلاق', en: 'Close' },
@@ -1580,7 +1583,25 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   },
   alertVolumeMuted: { ar: 'مكتوم', en: 'Muted' },
   testAlertSound: { ar: 'تجربة', en: 'Test' },
-  stopAlertSound: { ar: 'إيقاف', en: 'Stop' }
+  stopAlertSound: { ar: 'إيقاف', en: 'Stop' },
+
+  // Sunrise & Duha Card / Settings Modal
+  duha: { ar: 'الضحى', en: 'Duha' },
+  duhaButtonTooltip: { ar: 'تخصيص تنبيهات الشروق وصلاة الضحى', en: 'Customize Sunrise & Duha alerts' },
+  sunriseSettingsTitle: { ar: 'إعدادات الشروق وصلاة الضحى', en: 'Sunrise & Duha Settings' },
+  adjustSunriseTime: { ar: 'تعديل وقت الشروق (بالدقائق)', en: 'Adjust Sunrise Time (minutes)' },
+  sunriseSettingsGuideTooltip: { ar: 'دليل إعدادات الشروق وصلاة الضحى', en: 'Sunrise & Duha Settings Guide' },
+  sunrisePreAlertTitle: { ar: 'تنبيه قرب الشروق (لإدراك صلاة الفجر)', en: 'Pre-Sunrise Alert (Catch Fajr)' },
+  sunrisePreAlertDesc: { ar: 'تذكير قبل شروق الشمس للمبادرة بأداء صلاة الفجر', en: 'Reminder before sunrise to hurry and perform Fajr prayer' },
+  sunriseAtAlertTitle: { ar: 'تنبيه لحظة الشروق (نهاية وقت الفجر)', en: 'At Sunrise Alert (End of Fajr)' },
+  sunriseAtAlertDesc: { ar: 'نغمة هادئة عند الشروق وبداية وقت النهي عن النافلة', en: 'Calm alert at sunrise when prohibited prayer time begins' },
+  sunriseAtBadge: { ar: 'عند الشروق', en: 'At Sunrise' },
+  duhaAlertTitle: { ar: 'تنبيه صلاة الضحى / الإشراق', en: 'Duha / Ishraq Prayer Alert' },
+  duhaAlertDesc: { ar: 'تذكير بصلاة الضحى بعد ارتفاع الشمس وزوال وقت النهي', en: 'Reminder for Duha prayer after prohibited time ends' },
+  ishraqStartHint: { ar: 'بداية الإشراق', en: 'Ishraq start' },
+  beforeSunriseTimeLabel: { ar: 'قبل الشروق:', en: 'Before sunrise:' },
+  afterSunriseTimeLabel: { ar: 'بعد الشروق:', en: 'After sunrise:' },
+  toastSunriseSettingsSaved: { ar: 'تم حفظ إعدادات الشروق وصلاة الضحى بنجاح', en: 'Sunrise & Duha settings saved successfully' }
 };
 
 export function tPrayer(key: string, language: Language = 'ar', params?: Record<string, string | number>): string {
