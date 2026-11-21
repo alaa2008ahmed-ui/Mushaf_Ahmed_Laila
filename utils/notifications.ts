@@ -5,7 +5,7 @@ import { BASE_ADHKAR_MORNING, BASE_ADHKAR_EVENING } from '../data/adkarSabahMasa
 import { ALL_DUAA } from '../data/adiaData';
 import { ADIA_EN_MAP } from '../data/adiaTranslationsEn';
 import { PhoneNotificationSettings } from '../hooks/useNotificationSettings';
-import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dailyWirdNotificationService';
+import { syncDailyWirdNotifications, ensureWirdNotificationChannel, isWirdNotificationId } from './dailyWirdNotificationService';
 import { updateNativeAlertsGroupSummary, ensureNativeCustomNotificationChannel } from './silentMode';
 import { getActiveNotificationTone, getActiveNotificationSoundPath } from './prayerTimesUtils';
 import { ensureNotificationPermission } from './permissionHelper';
@@ -92,7 +92,7 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
         sabah: { enabled: true, time: '07:00' },
         masaa: { enabled: true, time: '16:30' },
         dua: { enabled: true, time: '14:00' },
-        tasbeehMorning: { enabled: true, time: '10:00' },
+        tasbeehMorning: { enabled: true, time: '10:30' },
         tasbeehEvening: { enabled: true, time: '20:00' },
         kahf: { enabled: true, time: '09:00' },
         randomAthkar: { enabled: false, frequency: 5, startTime: '08:00', endTime: '22:00' },
@@ -109,6 +109,12 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
                 const parsed = JSON.parse(saved);
                 if (parsed.state && parsed.state.phoneSettings) {
                     activeSettings = parsed.state.phoneSettings;
+                    if ((parsed.version ?? 0) < 1 && activeSettings.tasbeehMorning?.time === '10:00') {
+                        activeSettings = {
+                            ...activeSettings,
+                            tasbeehMorning: { ...activeSettings.tasbeehMorning, time: '10:30' },
+                        };
+                    }
                 }
             } catch(e) {
                 console.error('Error parsing notification settings', e);
@@ -125,7 +131,7 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
 
     const athkarPending = (pending?.notifications || []).filter(
         n => (n.id < 1000 || n.id >= 9000) && 
-             !(n.id >= 9300 && n.id <= 9399) && 
+             !isWirdNotificationId(n.id) && 
              !deliveredIds.has(n.id)
     );
     if (athkarPending.length > 0) {
@@ -142,7 +148,7 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
     );
     const notifSoundPath = getActiveNotificationSoundPath();
     const cleanToneId = (activeTone.id || 'chime').replace(/[^a-zA-Z0-9_]/g, '');
-    let athkarChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
+    let athkarChannelId = isSoundMuted ? 'athkar_channel_v5_silent' : `athkar_channel_v4_${cleanToneId}`;
     let soundFileNameForCapacitor: string | undefined = isSoundMuted
         ? undefined
         : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
@@ -185,14 +191,17 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
         } catch (e) {}
       }
 
-      // Silent channel for muted reminders
+      // Silent channel for muted reminders (with vibration enabled)
+      try {
+        await LocalNotifications.deleteChannel({ id: 'athkar_channel_v4_silent' });
+      } catch (e) {}
       try {
         await LocalNotifications.createChannel({
-          id: 'athkar_channel_v4_silent',
+          id: 'athkar_channel_v5_silent',
           name: isEn ? 'Reminders (Silent)' : 'أذكار وتنبيهات (بدون صوت)',
-          description: isEn ? 'Reminders without sound' : 'قناة تنبيهات الأذكار بدون صوت',
+          description: isEn ? 'Reminders without sound' : 'قناة تنبيهات الأذكار بدون صوت مع اهتزاز',
           importance: 5,
-          vibration: false,
+          vibration: true,
           visibility: 1
         });
       } catch (e) {}

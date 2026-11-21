@@ -8,6 +8,7 @@ import {
     setSelectedShareDesign,
     getShareDesignForHomeVariant,
 } from '../utils/shareCardDesigns';
+import { isTourPreviewMode, getTourPreviewInitParams } from '../utils/tourPreviewMode';
 
 interface ThemeContextType {
     theme: Theme;
@@ -73,7 +74,7 @@ export const syncModernDOMClasses = (isNight: boolean, variant: 'gold' | 'sky' |
 };
 
 export const restoreHomeThemeDOMInstantly = () => {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined' || isTourPreviewMode()) return;
     try {
         const root = document.documentElement;
         const body = document.body;
@@ -95,24 +96,29 @@ export const restoreHomeThemeDOMInstantly = () => {
 // Immediate DOM sync on load to prevent any initial render theme flash
 try {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        const isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
-        const variant = (localStorage.getItem('modern_home_theme_variant') as any) || 'gold';
-        syncModernDOMClasses(isNight, variant);
-        syncSystemStatusBar(isNight, '#FFFFFF', `modern:${isNight ? 'night' : variant}`);
+        if (isTourPreviewMode()) {
+            const init = getTourPreviewInitParams();
+            const isNight = init.night ?? (localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true');
+            const variant = init.variant ?? ((localStorage.getItem('modern_home_theme_variant') as any) || 'gold');
+            syncModernDOMClasses(isNight, variant);
+        } else {
+            const isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
+            const variant = (localStorage.getItem('modern_home_theme_variant') as any) || 'gold';
+            syncModernDOMClasses(isNight, variant);
+            syncSystemStatusBar(isNight, '#FFFFFF', `modern:${isNight ? 'night' : variant}`);
+        }
     }
 } catch (e) {}
 
 export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
-    const [currentPage, setCurrentPageState] = useState('home');
-    const setCurrentPage = useCallback((pageId: string) => {
-        if (pageId === 'home') {
-            restoreHomeThemeDOMInstantly();
-        }
-        setCurrentPageState(prev => (prev === pageId ? prev : pageId));
-    }, []);
+    const isTourPreview = useMemo(() => isTourPreviewMode(), []);
+    const tourInit = useMemo(() => (isTourPreview ? getTourPreviewInitParams() : null), [isTourPreview]);
+
+    const [currentPage, setCurrentPageState] = useState(() => (tourInit?.page || 'home'));
     const homeLayout = 'modern';
 
     const [isNightMode, setIsNightMode] = useState<boolean>(() => {
+        if (tourInit && tourInit.night !== null) return tourInit.night;
         try {
             const legacy = localStorage.getItem('night_mode_active') === 'true';
             const modernSaved = localStorage.getItem('night_mode_active_modern');
@@ -123,6 +129,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     });
 
     const [homeThemeVariant, setHomeThemeVariantState] = useState<'gold' | 'sky' | 'emerald' | 'burgundy'>(() => {
+        if (tourInit?.variant) return tourInit.variant;
         try {
             const saved = localStorage.getItem('modern_home_theme_variant');
             if (saved === 'sky' || saved === 'emerald' || saved === 'burgundy' || saved === 'gold') {
@@ -134,17 +141,32 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }
     });
 
+    const setCurrentPage = useCallback((pageId: string) => {
+        if (pageId === 'home') {
+            if (isTourPreview) {
+                syncModernDOMClasses(isNightMode, homeThemeVariant);
+            } else {
+                restoreHomeThemeDOMInstantly();
+            }
+        }
+        setCurrentPageState(prev => (prev === pageId ? prev : pageId));
+    }, [isTourPreview, isNightMode, homeThemeVariant]);
+
     const applyHomeThemeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy', syncShareDesign = true) => {
         setHomeThemeVariantState(variant);
         try {
-            localStorage.setItem('modern_home_theme_variant', variant);
-            const storedNight = localStorage.getItem('night_mode_active_modern');
-            const effectiveNight = storedNight !== null ? storedNight === 'true' : isNightMode;
-            syncModernDOMClasses(effectiveNight, variant);
-            syncCurrentSplashImage(effectiveNight, variant);
-            applyQuranThemeForHomeVariant(variant);
-            if (syncShareDesign && !effectiveNight) {
-                setSelectedShareDesign(getShareDesignForHomeVariant(variant, false));
+            if (!isTourPreview) {
+                localStorage.setItem('modern_home_theme_variant', variant);
+                const storedNight = localStorage.getItem('night_mode_active_modern');
+                const effectiveNight = storedNight !== null ? storedNight === 'true' : isNightMode;
+                syncModernDOMClasses(effectiveNight, variant);
+                syncCurrentSplashImage(effectiveNight, variant);
+                applyQuranThemeForHomeVariant(variant);
+                if (syncShareDesign && !effectiveNight) {
+                    setSelectedShareDesign(getShareDesignForHomeVariant(variant, false));
+                }
+            } else {
+                syncModernDOMClasses(isNightMode, variant);
             }
         } catch {}
         setTimeout(() => {
@@ -159,28 +181,32 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     };
 
     useEffect(() => {
+        if (isTourPreview) return;
         try {
             const syncedVariant = localStorage.getItem('quran_synced_home_theme_variant');
             if (syncedVariant !== homeThemeVariant) {
                 applyQuranThemeForHomeVariant(homeThemeVariant);
             }
         } catch (e) {}
-    }, [homeThemeVariant]);
+    }, [homeThemeVariant, isTourPreview]);
 
     useEffect(() => {
+        if (isTourPreview) return;
         syncCurrentSplashImage(isNightMode, homeThemeVariant);
-    }, [isNightMode, homeThemeVariant]);
+    }, [isNightMode, homeThemeVariant, isTourPreview]);
 
     const setNightModeActive = (active: boolean) => {
-        try {
-            localStorage.setItem('night_mode_active_modern', String(active));
-            localStorage.setItem('night_mode_active', String(active));
-        } catch (e) {}
-        syncCurrentSplashImage(active, homeThemeVariant);
+        if (!isTourPreview) {
+            try {
+                localStorage.setItem('night_mode_active_modern', String(active));
+                localStorage.setItem('night_mode_active', String(active));
+            } catch (e) {}
+            syncCurrentSplashImage(active, homeThemeVariant);
+            setSelectedShareDesign(
+                active ? 'obsidian_gold' : getShareDesignForHomeVariant(homeThemeVariant, false)
+            );
+        }
         syncModernDOMClasses(active, homeThemeVariant);
-        setSelectedShareDesign(
-            active ? 'obsidian_gold' : getShareDesignForHomeVariant(homeThemeVariant, false)
-        );
         setIsNightMode(active);
         setTimeout(() => {
             window.dispatchEvent(new Event('themeChanged'));
@@ -189,15 +215,17 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
 
     const toggleNightMode = () => {
         const nextVal = !isNightMode;
-        try {
-            localStorage.setItem('night_mode_active_modern', String(nextVal));
-            localStorage.setItem('night_mode_active', String(nextVal));
-        } catch (e) {}
-        syncCurrentSplashImage(nextVal, homeThemeVariant);
+        if (!isTourPreview) {
+            try {
+                localStorage.setItem('night_mode_active_modern', String(nextVal));
+                localStorage.setItem('night_mode_active', String(nextVal));
+            } catch (e) {}
+            syncCurrentSplashImage(nextVal, homeThemeVariant);
+            setSelectedShareDesign(
+                nextVal ? 'obsidian_gold' : getShareDesignForHomeVariant(homeThemeVariant, false)
+            );
+        }
         syncModernDOMClasses(nextVal, homeThemeVariant);
-        setSelectedShareDesign(
-            nextVal ? 'obsidian_gold' : getShareDesignForHomeVariant(homeThemeVariant, false)
-        );
 
         setIsNightMode(nextVal);
 
@@ -242,6 +270,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     }, [activeThemeKey]);
 
     useEffect(() => {
+        if (isTourPreview) return;
         const syncTheme = () => {
             try {
                 const legacy = localStorage.getItem('night_mode_active') === 'true';
@@ -262,13 +291,14 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             window.removeEventListener('themeChanged', syncTheme);
             window.removeEventListener('storage', syncTheme);
         };
-    }, []);
+    }, [isTourPreview]);
 
     useEffect(() => {
+        if (isTourPreview) return;
         if (theme && activeThemeKey) {
             syncWidgetThemeColors(activeThemeKey, theme);
         }
-    }, [activeThemeKey, theme]);
+    }, [activeThemeKey, theme, isTourPreview]);
 
     useLayoutEffect(() => {
         const root = document.documentElement;
@@ -306,7 +336,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             document.documentElement.classList.remove('quran-page-active');
             document.body.classList.remove('quran-page-active');
             document.body.style.removeProperty('background-color');
-            document.body.style.backgroundColor = isNightMode ? '#000000' : '#FFFFFF';
+            document.body.style.backgroundColor = isNightMode ? '#000000' : (isHub ? '#FFFFFF' : (theme.bgColor || '#FFFFFF'));
             document.body.style.backgroundImage = 'none';
         }
 
@@ -385,7 +415,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
 
         // Synchronize mobile StatusBar icons ONLY when theme changes (QuranReader syncs its own active Quran theme)
         const isQuranReaderScreen = currentPage === 'quran' || currentPage === 'quran-landscape';
-        if (!isQuranReaderScreen) {
+        if (!isQuranReaderScreen && !isTourPreview) {
             let shouldUseLightStatusBarIcons = false;
             if (pageKey === 'quran') {
                 const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
@@ -396,12 +426,13 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             }
             syncSystemStatusBar(shouldUseLightStatusBarIcons, '#FFFFFF', activeThemeKey);
         }
-    }, [theme, currentPage, homeThemeVariant, isNightMode]);
+    }, [theme, currentPage, homeThemeVariant, isNightMode, isTourPreview]);
 
     useEffect(() => {
+        if (isTourPreview) return;
         // Instantly synchronize home screen theme colors with all widgets
         syncWidgetThemeColors(activeThemeKey, theme);
-    }, [activeThemeKey, theme]);
+    }, [activeThemeKey, theme, isTourPreview]);
 
     const isQuranPage = useMemo(() => {
         const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;

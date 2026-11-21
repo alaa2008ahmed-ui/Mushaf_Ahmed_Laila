@@ -331,8 +331,8 @@
       body.hide-top-bars .settings-top-bar { display: block !important; }
       
       /* When top bars are hidden in other pages */
-      body.hide-top-bars:not(.quran-context) main:not(.absolute),
-      body.hide-top-bars:not(.quran-context) .app-top-bar:not(.settings-top-bar) + * {
+      body.hide-top-bars:not(.quran-context):not(.tour-showcase-open) main:not(.absolute),
+      body.hide-top-bars:not(.quran-context):not(.tour-showcase-open) .app-top-bar:not(.settings-top-bar) + * {
           padding-top: calc(var(--app-safe-top) + 0.5rem) !important;
       }
 

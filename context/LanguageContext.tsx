@@ -3,6 +3,7 @@ import { Preferences } from '@capacitor/preferences';
 import { syncDailyWirdNotifications } from '../utils/dailyWirdNotificationService';
 import { setupNotifications } from '../utils/notifications';
 import { setNativeAppLanguage } from '../utils/silentMode';
+import { isTourPreviewMode, getTourPreviewInitParams } from '../utils/tourPreviewMode';
 
 export type Language = 'ar' | 'en';
 
@@ -1071,7 +1072,12 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const isTourPreview = React.useMemo(() => isTourPreviewMode(), []);
   const [language, setLanguageState] = useState<Language>(() => {
+    if (isTourPreview) {
+      const init = getTourPreviewInitParams();
+      if (init.lang) return init.lang;
+    }
     try {
       const saved = localStorage.getItem('app_language');
       if (saved === 'en' || saved === 'ar') {
@@ -1087,15 +1093,18 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const dir = isRTL ? 'rtl' : 'ltr';
 
   useEffect(() => {
+    // Update document root attributes
+    document.documentElement.setAttribute('lang', language);
+    document.documentElement.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
+
+    if (isTourPreview) return;
+
     try {
       localStorage.setItem('app_language', language);
       Preferences.set({ key: 'app_language', value: language }).catch(() => {});
     } catch (e) {
       // ignore
     }
-    // Update document root attributes
-    document.documentElement.setAttribute('lang', language);
-    document.documentElement.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
 
     // Update native Android app locale & notification titles
     try {
@@ -1117,7 +1126,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     } catch (e) {
       // ignore
     }
-  }, [language, isRTL]);
+  }, [language, isRTL, isTourPreview]);
 
   const setLanguage = React.useCallback((lang: Language) => {
     setLanguageState(lang);

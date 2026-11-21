@@ -6491,7 +6491,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             />
             )}
             {sajdahCardInfo.show && (
-            <SajdahCardModal info={sajdahCardInfo} onClose={handleCloseSajdahCard} isLandscape={isLandscape} currentTheme={currentTheme} />
+            <SajdahCardModal info={sajdahCardInfo} onClose={handleCloseSajdahCard} isLandscape={isLandscape} currentTheme={currentTheme} setToastMessage={showToast} />
             )}
             {showResumeModal && savedSession && (
             <ResumeSessionModal 

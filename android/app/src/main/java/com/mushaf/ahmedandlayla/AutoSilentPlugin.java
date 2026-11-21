@@ -467,30 +467,7 @@ public class AutoSilentPlugin extends Plugin {
         try {
             Context context = getContext();
             if (context != null) {
-                SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
-                String rawJson = storage.getString("dailyWirdSettings_v2", null);
-                if (rawJson != null && !rawJson.trim().isEmpty()) {
-                    try {
-                        org.json.JSONObject root = new org.json.JSONObject(rawJson);
-                        org.json.JSONArray profiles = root.optJSONArray("profiles");
-                        String activeId = root.optString("activeId", "");
-                        if (profiles != null && profiles.length() > 0) {
-                            org.json.JSONObject activeProfile = profiles.getJSONObject(0);
-                            for (int i = 0; i < profiles.length(); i++) {
-                                org.json.JSONObject p = profiles.getJSONObject(i);
-                                if (activeId.equals(p.optString("id"))) {
-                                    activeProfile = p;
-                                    break;
-                                }
-                            }
-                            String todayDateStr = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
-                            String lastCompleted = activeProfile.optString("lastCompletedDate", "");
-                            if (lastCompleted != null && lastCompleted.startsWith(todayDateStr)) {
-                                DailyWirdAlarmReceiver.cancelActiveWirdNotifications(context);
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                }
+                DailyWirdAlarmReceiver.reconcileActiveNotifications(context);
                 DailyWirdAlarmReceiver.scheduleNextAlarms(context);
             }
             call.resolve();
@@ -951,7 +928,10 @@ public class AutoSilentPlugin extends Plugin {
                             : "Reminders and adhkar notifications with selected phone tone");
                         channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                         channel.setBypassDnd(true);
-                        channel.enableVibration(true);
+                        NotificationVibrationHelper.configureChannelVibration(
+                            channel,
+                            NotificationVibrationHelper.ALERT_VIBRATION_PATTERN
+                        );
                         channel.enableLights(true);
                         channel.setShowBadge(false);
                         channel.setSound(soundUri, alarmAudioAttributes);

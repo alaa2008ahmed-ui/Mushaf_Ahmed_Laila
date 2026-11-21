@@ -15,6 +15,7 @@ import { useLanguage } from './LanguageContext';
 import { PRAYER_NAMES_EN, getLocalizedLocationName } from '../utils/prayerTimesTranslations';
 import { ensureNotificationPermission, isMainAppEntered } from '../utils/permissionHelper';
 import { getCountryInfo, LocationSearchSuggestion } from '../utils/locationSearchService';
+import { triggerAlertVibration } from '../utils/vibrationHelper';
 
 // --- Types ---
 export interface SunriseAlertsConfig {
@@ -1166,7 +1167,11 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     'adhan_v4_takbeer1', 'adhan_v4_takbeer2', 'adhan_v4_takbeer3',
                     'adhan_v4_takbeer4', 'adhan_v4_takbeer5', 'adhan_v4_takbeer6',
                     'adhan_v4_azan1', 'adhan_v4_azan2', 'adhan_v4_azan3', 'adhan_v4_azan4',
-                    'adhan_v4_salah', 'adhan_v4_shahadah', 'adhan_v4_silent'
+                    'adhan_v4_salah', 'adhan_v4_shahadah', 'adhan_v4_silent',
+                    'adhan_v5_silent',
+                    'athkar_channel_v4_silent',
+                    'iqama_v4_silent_channel',
+                    'prayer_silent_v4_silent_channel'
                 ];
                 const existingChannels = await LocalNotifications.listChannels();
                 const existingIds = new Set((existingChannels?.channels || []).map((c: any) => c.id));
@@ -1198,15 +1203,15 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     }
                 }
 
-                // Silent Adhan channel for muted prayers
-                if (!existingIds.has('adhan_v5_silent')) {
+                // Silent Adhan channel for muted prayers (with vibration enabled)
+                if (!existingIds.has('adhan_v6_silent')) {
                     try {
                         await LocalNotifications.createChannel({
-                            id: 'adhan_v5_silent',
+                            id: 'adhan_v6_silent',
                             name: isEn ? 'Prayer Adhan (Silent)' : 'أذان الصلوات (بدون صوت)',
-                            description: isEn ? 'Adhan notification without sound' : 'إشعار الأذان بدون صوت تنبيه',
+                            description: isEn ? 'Adhan notification without sound' : 'إشعار الأذان بدون صوت تنبيه مع اهتزاز',
                             importance: 5,
-                            vibration: false,
+                            vibration: true,
                             visibility: 1,
                             lights: true
                         });
@@ -1386,7 +1391,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     let finalSound: string | undefined = 'takbeer1.mp3';
 
                     if (!playSound) {
-                        chosenChannelId = 'adhan_v5_silent';
+                        chosenChannelId = 'adhan_v6_silent';
                         finalSound = undefined;
                     } else if (matchedChan) {
                         chosenChannelId = matchedChan.id;
@@ -1552,7 +1557,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 title: silentStartTitle,
                                 body: silentStartBody,
                                 schedule: { at: silentStart, allowWhileIdle: true },
-                                channelId: shouldPlaySilentChime ? 'prayer_silent_v5_droplet_channel' : 'adhan_v5_silent',
+                                channelId: shouldPlaySilentChime ? 'prayer_silent_v5_droplet_channel' : 'adhan_v6_silent',
                                 sound: shouldPlaySilentChime ? 'notif_droplet.wav' : undefined,
                                 smallIcon: 'ic_stat_name',
                                 extra: { type: 'auto_silent_start', prayer: key, playSound: shouldPlaySilentChime, soundFile: shouldPlaySilentChime ? '/assets/audio/notif_droplet.wav' : undefined }
@@ -1620,7 +1625,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 ? `${preMins} mins left until sunrise.. Hurry to perform Fajr prayer.`
                                 : `بقي ${preMins} دقيقة على شروق الشمس.. بادر بأداء صلاة الفجر.`,
                             schedule: { at: preSunriseDate, allowWhileIdle: true },
-                            channelId: isAudioPaused ? 'adhan_v5_silent' : 'pre_adhan_v4_droplet_channel',
+                            channelId: isAudioPaused ? 'adhan_v6_silent' : 'pre_adhan_v4_droplet_channel',
                             sound: isAudioPaused ? undefined : 'notif_droplet.wav',
                             smallIcon: 'ic_stat_name',
                             extra: {
@@ -1643,7 +1648,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             ? 'Fajr time has ended, and the 15-minute prohibited prayer time has begun.'
                             : 'انتهى وقت صلاة الفجر، وبدأ وقت النهي عن النافلة لـ ١٥ دقيقة.',
                         schedule: { at: sunriseDate, allowWhileIdle: true },
-                        channelId: isAudioPaused ? 'adhan_v5_silent' : 'sunrise_duha_v1_chime_channel',
+                        channelId: isAudioPaused ? 'adhan_v6_silent' : 'sunrise_duha_v1_chime_channel',
                         sound: isAudioPaused ? undefined : 'chime.mp3',
                         smallIcon: 'ic_stat_name',
                         extra: {
@@ -1668,7 +1673,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 ? "The sun has risen high.. Don't forget two rak'ahs of Duha prayer."
                                 : 'ارتفعت الشمس وزال وقت النهي.. لا تنسَ ركعتي الضحى صدقة عن مفاصلك.',
                             schedule: { at: duhaDate, allowWhileIdle: true },
-                            channelId: isAudioPaused ? 'adhan_v5_silent' : 'sunrise_duha_v1_chime_channel',
+                            channelId: isAudioPaused ? 'adhan_v6_silent' : 'sunrise_duha_v1_chime_channel',
                             sound: isAudioPaused ? undefined : 'chime.mp3',
                             smallIcon: 'ic_stat_name',
                             extra: {
@@ -1715,7 +1720,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             );
             const notifSoundPath = getActiveNotificationSoundPath();
             const cleanToneId = (activeTone.id || 'chime').replace(/[^a-zA-Z0-9_]/g, '');
-            let nightChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
+            let nightChannelId = isSoundMuted ? 'athkar_channel_v5_silent' : `athkar_channel_v4_${cleanToneId}`;
             let nightSoundFile: string | undefined = isSoundMuted
                 ? undefined
                 : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
@@ -2264,6 +2269,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             }
 
                             if (!isNative) {
+                                triggerAlertVibration('adhan');
                                 const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
 
                                 // Trigger in-app visual modal alert (web/browser only; APK uses status bar notifications only)
@@ -2318,6 +2324,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             triggeredAlertsRef.current.add(preAlertKey);
                             if (!isNative) {
                                 console.log(`[Foreground Alert] Playing prayer chime for pre-adhan ${key}`);
+                                triggerAlertVibration('alert');
                                 playNotificationSound(prayerChimeSound);
                             }
                         }
@@ -2335,6 +2342,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             triggeredAlertsRef.current.add(iqamaAlertKey);
                             if (!isNative) {
                                 console.log(`[Iqama Alert] Playing prayer chime and showing visual alert for ${key}`);
+                                triggerAlertVibration('alert');
                                 playNotificationSound(prayerChimeSound, true);
                                 
                                 const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
@@ -2380,6 +2388,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 const isIqamaAlsoAlerting = isIqamaEnabled && Math.abs(silentStartObj.getTime() - iqamaTimeObj.getTime()) < 60000;
                                 if (!isIqamaAlsoAlerting) {
                                     console.log(`[Foreground Alert] Playing prayer chime for auto-silent ${key}`);
+                                    triggerAlertVibration('alert');
                                     playNotificationSound(prayerChimeSound);
                                 }
                             }
@@ -2422,6 +2431,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             const preKey = `${dayStr}_pre_sunrise`;
                             if (preDiff >= 0 && preDiff <= 45000 && !triggeredAlertsRef.current.has(preKey)) {
                                 triggeredAlertsRef.current.add(preKey);
+                                triggerAlertVibration('alert');
                                 if (!isGlobalAudioPaused) playNotificationSound('/assets/audio/notif_droplet.wav');
                                 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
                                     try {
@@ -2443,6 +2453,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             const srKey = `${dayStr}_at_sunrise`;
                             if (srDiff >= 0 && srDiff <= 45000 && !triggeredAlertsRef.current.has(srKey)) {
                                 triggeredAlertsRef.current.add(srKey);
+                                triggerAlertVibration('alert');
                                 if (!isGlobalAudioPaused) playNotificationSound('/assets/audio/chime.mp3');
                                 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
                                     try {
@@ -2466,6 +2477,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             const duhaKey = `${dayStr}_duha_prayer`;
                             if (duhaDiff >= 0 && duhaDiff <= 45000 && !triggeredAlertsRef.current.has(duhaKey)) {
                                 triggeredAlertsRef.current.add(duhaKey);
+                                triggerAlertVibration('alert');
                                 if (!isGlobalAudioPaused) playNotificationSound('/assets/audio/chime.mp3');
                                 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
                                     try {

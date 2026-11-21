@@ -5,6 +5,7 @@ import moment from 'moment-hijri';
 import { Capacitor } from '@capacitor/core';
 import { useTheme } from '../context/ThemeContext';
 import { playNotificationSound, stopNotificationSound } from '../utils/prayerTimesUtils';
+import { triggerAlertVibration } from '../utils/vibrationHelper';
 
 interface OccasionDef {
     id: 'mawlid' | 'eid_fitr' | 'eid_adha' | 'islamic_new_year' | 'ramadan' | 'ramadan_last_ten';
@@ -140,6 +141,7 @@ const MawlidNotification: React.FC = () => {
                     if (!lastShown) {
                         setCurrentOccasion(occ);
                         setIsOpen(true);
+                        triggerAlertVibration('alert');
                         // تشغيل النغمة الخاصة بالمناسبة تلقائياً
                         try {
                             playNotificationSound(occ.soundFile, true);
@@ -172,6 +174,7 @@ const MawlidNotification: React.FC = () => {
             if (targetOcc) {
                 setCurrentOccasion(targetOcc);
                 setIsOpen(true);
+                triggerAlertVibration('alert');
                 playNotificationSound(targetOcc.soundFile, true);
                 setIsPlayingSound(true);
             }

@@ -18,7 +18,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getAyahsInRange } from '../utils/quranMemorizationUtils';
-import { SURAH_NAMES_AR } from '../components/QuranReader/constants';
+import { SURAH_NAMES_AR, toArabic } from '../components/QuranReader/constants';
 import { SURAH_NAMES_EN } from './Memorization';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import MemorizationQuizModal from '../components/Memorization/MemorizationQuizModal';
@@ -61,31 +61,31 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   const unifiedBarStyle: React.CSSProperties = isBlackTheme
     ? { backgroundColor: '#18181b', color: '#FFFFFF' }
     : isSkyTheme
-      ? { background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#FFFFFF' }
+      ? { background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', color: '#FFFFFF' }
       : isEmeraldTheme
-        ? { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#FFFFFF' }
+        ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#FFFFFF' }
         : isBurgundyTheme
-          ? { background: 'linear-gradient(135deg, #9f1239 0%, #881337 100%)', color: '#FFFFFF' }
+          ? { background: 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)', color: '#FFFFFF' }
           : { backgroundColor: theme.topBarBg || '#FDE047', color: theme.topBarText || '#000000' };
 
   const barPrimaryBtnStyle: React.CSSProperties = isBlackTheme
     ? { backgroundColor: '#D97706', color: '#FFFFFF' }
     : isSkyTheme
-      ? { backgroundColor: '#075985', color: '#FFFFFF' }
+      ? { backgroundColor: '#0369a1', color: '#FFFFFF' }
       : isEmeraldTheme
-        ? { backgroundColor: '#064E3B', color: '#FFFFFF' }
+        ? { backgroundColor: '#047857', color: '#FFFFFF' }
         : isBurgundyTheme
-          ? { backgroundColor: '#4C0519', color: '#FFFFFF' }
+          ? { backgroundColor: '#881337', color: '#FFFFFF' }
           : { backgroundColor: primaryColor, color: btnTextColor };
 
   const barSecondaryBtnStyle: React.CSSProperties = isBlackTheme
     ? { backgroundColor: '#27272a', color: '#FFFFFF' }
     : isSkyTheme
-      ? { backgroundColor: '#FFFFFF', color: '#0369A1' }
+      ? { backgroundColor: '#FFFFFF', color: '#0284c7' }
       : isEmeraldTheme
-        ? { backgroundColor: '#FFFFFF', color: '#047857' }
+        ? { backgroundColor: '#FFFFFF', color: '#059669' }
         : isBurgundyTheme
-          ? { backgroundColor: '#FFFFFF', color: '#881337' }
+          ? { backgroundColor: '#FFFFFF', color: '#9f1239' }
           : { backgroundColor: '#FFFFFF', color: '#0F172A' };
 
   // Session settings from params or default
@@ -97,9 +97,15 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   const selectedReader = settings.reader || 'Abdul_Basit_Murattal_192kbps';
   const ayahRepeatTarget = settings.ayahRepeat || 3;
   const rangeRepeatTarget = settings.rangeRepeat || 1;
-  const pauseSeconds = settings.pauseLength || 2;
+  const rawPauseLength = settings.pauseLength ?? 2;
+  const isAutoPause = rawPauseLength === 'auto';
+  const pauseSeconds = isAutoPause
+    ? 0
+    : (Number.isFinite(Number(rawPauseLength)) ? Math.max(0, Number(rawPauseLength)) : 2);
+  const isPauseEnabled = isAutoPause || pauseSeconds > 0;
   const linkedRepeat = Boolean(settings.linkedRepeat);
-  const isCumulative = Boolean(settings.isCumulative); // 3x3 loop
+  const isCumulative = Boolean(settings.isCumulative); // Full-range cumulative loop
+  const isShanqiti3x3 = Boolean(settings.isShanqiti3x3); // Shanqiti 3x3 chunked cumulative loop
   const rangeId = settings.rangeId;
 
   // Ayahs list for this session
@@ -114,6 +120,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   const [currentAyahRepeat, setCurrentAyahRepeat] = useState(1);
   const [isPauseActive, setIsPauseActive] = useState(false);
   const [pauseCountdown, setPauseCountdown] = useState(0);
+  const [pauseStartIndex, setPauseStartIndex] = useState<number | null>(null);
 
   // Masking level: 0=visible, 1=hide endings, 2=hide half, 3=hide all
   const [maskLevel, setMaskLevel] = useState<MaskLevel>(0);
@@ -125,6 +132,8 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const maskBtnRef = useRef<HTMLButtonElement | null>(null);
   const [maskMenuTop, setMaskMenuTop] = useState<number>(64);
+  const speedBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [speedMenuBottom, setSpeedMenuBottom] = useState<number>(76);
 
   // Word-by-word tracking during recitation
   const [isWordTrackingEnabled, setIsWordTrackingEnabled] = useState(true);
@@ -135,10 +144,18 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
   const [showTafseerModal, setShowTafseerModal] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
-  // Audio elements
+  // Audio elements & preloading caches for gapless ayah transitions
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const unlockedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const preloadedAudioRef = useRef<Record<string, HTMLAudioElement>>({});
+  const blobUrlCacheRef = useRef<Record<string, string>>({});
+  const preloadInFlightRef = useRef<Record<string, Promise<void>>>({});
+  const isUnmountedRef = useRef<boolean>(false);
   const pauseTimerRef = useRef<any>(null);
   const peekTimerRef = useRef<any>(null);
+  const mainRef = useRef<HTMLElement | null>(null);
+  const ayahDurationsRef = useRef<Record<number, number>>({});
+  const playbackSpeedRef = useRef<number>(1.0);
 
   // Keep screen awake logic (Screen Wake Lock API) during reading/memorization
   useEffect(() => {
@@ -172,18 +189,41 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     };
   }, []);
 
-  // Auto-scroll to active ayah
+  // Auto-scroll to active ayah (or jump back to first ayah of linked/cumulative passage on recitation pause)
   useEffect(() => {
-    const el = document.getElementById(`session-ayah-${currentIndex}`);
-    if (el) {
+    const targetIdx = (isPauseActive && pauseStartIndex !== null) ? pauseStartIndex : currentIndex;
+    const el = document.getElementById(`session-ayah-${targetIdx}`);
+    if (!el) return;
+
+    if (mainRef.current) {
+      const container = mainRef.current;
+      if (targetIdx === 0) {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (isPauseActive && pauseStartIndex !== null) {
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetTop = container.scrollTop + (elRect.top - containerRect.top) - 68;
+        container.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+      } else {
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const centeredTop = container.scrollTop + (elRect.top - containerRect.top) - (container.clientHeight / 2) + (elRect.height / 2);
+        container.scrollTo({ top: Math.max(0, centeredTop), behavior: 'smooth' });
+      }
+    } else {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [currentIndex]);
+  }, [currentIndex, isPauseActive, pauseStartIndex]);
 
   const handleExit = useCallback(() => {
     if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.ontimeupdate = null;
+      audioRef.current.onloadedmetadata = null;
+      audioRef.current.onplay = null;
+      audioRef.current.onerror = null;
       audioRef.current.pause();
-      audioRef.current.src = '';
+      audioRef.current.currentTime = 0;
     }
     if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
     if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
@@ -229,11 +269,41 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
 
   // Cleanup on unmount
   useEffect(() => {
+    isUnmountedRef.current = false;
     return () => {
+      isUnmountedRef.current = true;
       if (audioRef.current) {
+        audioRef.current.onended = null;
+        audioRef.current.ontimeupdate = null;
+        audioRef.current.onloadedmetadata = null;
+        audioRef.current.onplay = null;
+        audioRef.current.onerror = null;
         audioRef.current.pause();
         audioRef.current.src = '';
       }
+      if (unlockedAudioRef.current) {
+        unlockedAudioRef.current.pause();
+        unlockedAudioRef.current.src = '';
+      }
+      Object.values(preloadedAudioRef.current).forEach((el) => {
+        try {
+          el.onended = null;
+          el.ontimeupdate = null;
+          el.onloadedmetadata = null;
+          el.onplay = null;
+          el.onerror = null;
+          el.pause();
+          el.src = '';
+        } catch (e) {}
+      });
+      preloadedAudioRef.current = {};
+      Object.values(blobUrlCacheRef.current).forEach((blobUrl) => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch (e) {}
+      });
+      blobUrlCacheRef.current = {};
+      preloadInFlightRef.current = {};
       if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
       if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
       releaseListenInterruption('mem-session-audio');
@@ -247,6 +317,72 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     const aStr = String(ayahNum).padStart(3, '0');
     return `https://everyayah.com/data/${selectedReader}/${sStr}${aStr}.mp3`;
   }, [selectedReader]);
+
+  // Preload an ayah into memory (Blob URL + buffered HTMLAudioElement) for instant, gapless transitions
+  const preloadAyahAtIndex = useCallback((idx: number) => {
+    if (isUnmountedRef.current || idx < 0 || idx >= ayahs.length) return;
+    const ayah = ayahs[idx];
+    const remoteUrl = getAyahAudioUrl(ayah.surahNumber, ayah.ayahNumber);
+
+    if (preloadedAudioRef.current[remoteUrl] || preloadInFlightRef.current[remoteUrl]) {
+      return;
+    }
+
+    preloadInFlightRef.current[remoteUrl] = (async () => {
+      try {
+        let resolvedUrl = blobUrlCacheRef.current[remoteUrl];
+
+        if (!resolvedUrl) {
+          // 1. Check offline Cache API if user downloaded audio
+          if ('caches' in window) {
+            try {
+              const cache = await caches.open('quran-audio-cache');
+              const cachedRes = await cache.match(remoteUrl);
+              if (cachedRes) {
+                const blob = await cachedRes.blob();
+                if (!isUnmountedRef.current && blob.size > 0) {
+                  resolvedUrl = URL.createObjectURL(blob);
+                  blobUrlCacheRef.current[remoteUrl] = resolvedUrl;
+                }
+              }
+            } catch (e) {}
+          }
+        }
+
+        // 2. Fetch into in-memory Blob URL to eliminate network/revalidation latency between ayahs
+        if (!resolvedUrl) {
+          try {
+            const res = await fetch(remoteUrl, { mode: 'cors' });
+            if (res.ok) {
+              const blob = await res.blob();
+              if (!isUnmountedRef.current && blob.size > 0) {
+                resolvedUrl = URL.createObjectURL(blob);
+                blobUrlCacheRef.current[remoteUrl] = resolvedUrl;
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (isUnmountedRef.current) return;
+
+        const finalSrc = resolvedUrl || remoteUrl;
+        if (!preloadedAudioRef.current[remoteUrl]) {
+          const el = new Audio();
+          el.preload = 'auto';
+          el.src = finalSrc;
+          el.onloadedmetadata = () => {
+            if (Number.isFinite(el.duration) && el.duration > 0) {
+              ayahDurationsRef.current[idx] = el.duration;
+            }
+          };
+          el.load();
+          preloadedAudioRef.current[remoteUrl] = el;
+        }
+      } finally {
+        delete preloadInFlightRef.current[remoteUrl];
+      }
+    })();
+  }, [ayahs, getAyahAudioUrl]);
 
   // Track refs for audio playback callbacks to prevent stale closure issues
   const currentIndexRef = useRef(0);
@@ -262,6 +398,10 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     currentAyahRepeatRef.current = currentAyahRepeat;
   }, [currentAyahRepeat]);
 
+  useEffect(() => {
+    playbackSpeedRef.current = playbackSpeed;
+  }, [playbackSpeed]);
+
   // Definition of a playback step in the memorization session
   interface PlaybackStep {
     ayahIndex: number;
@@ -270,17 +410,18 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     descriptionAr: string;
     descriptionEn: string;
     modeBadge?: string;
+    pauseAfter: boolean; // Only pause after single verses or at the end of a linked segment
+    segmentAyahIndices: number[]; // Verse indices recited together in this step/segment
   }
 
   // Generate sequence of steps based on chosen mode:
   // 1. Shanqiti (Cumulative 3x3):
-  //    - Ayah 1 x ayahRepeatTarget
-  //    - Ayah 2 x ayahRepeatTarget
-  //    - Link (Ayah 1 + 2) x ayahRepeatTarget
-  //    - Ayah 3 x ayahRepeatTarget
-  //    - Link (Ayah 1 + 2 + 3) x ayahRepeatTarget
-  //    - Next 3-verse block: Ayah 4 x N, Ayah 5 x N, Link (4+5) x N, Ayah 6 x N, Link (4+5+6) x N
-  //    - Consolidation link of whole group (1..6) x N, etc.
+  //    - Ayah 1 x N
+  //    - Ayah 2 x N, then Link (Ayah 1..2) x N
+  //    - Ayah 3 x N, then Link (Ayah 1..3) x N
+  //    - ...
+  //    - Ayah i x N, then Link (Ayah 1..i) x N (always starting from startAyah)
+  //    - End of session: Full consolidation (Ayah 1..end)
   // 2. Linked Repeat (الربط بالسابقة):
   //    - Ayah 1 x ayahRepeatTarget
   //    - Ayah 2 x ayahRepeatTarget, then Link (Ayah 1 + 2) x 1
@@ -295,17 +436,81 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     const N = Math.max(1, ayahRepeatTarget);
 
     if (isCumulative) {
-      // Shanquiti Cumulative method (3x3 loop)
-      const groupSize = 3;
-      const numGroups = Math.ceil(total / groupSize);
+      // Shanquiti Cumulative method (always anchored to the first ayah of the selected range)
+      const startA = ayahs[0].ayahNumber;
 
-      for (let g = 0; g < numGroups; g++) {
-        const groupStart = g * groupSize;
-        const groupEnd = Math.min(groupStart + groupSize, total);
+      for (let i = 0; i < total; i++) {
+        const ayahNum = ayahs[i].ayahNumber;
 
-        for (let i = groupStart; i < groupEnd; i++) {
+        // Step 1: Repeat current verse N times (1x pauseDuration after each repeat)
+        for (let r = 1; r <= N; r++) {
+          steps.push({
+            ayahIndex: i,
+            stepRepeatIndex: r,
+            stepRepeatTotal: N,
+            descriptionAr: `تكرار الآية ${ayahNum} (${r}/${N})`,
+            descriptionEn: `Verse ${ayahNum} repeat (${r}/${N})`,
+            modeBadge: 'الشنقيطي: حفظ الآية',
+            pauseAfter: true,
+            segmentAyahIndices: [i]
+          });
+        }
+
+        // Step 2: Cumulative link always from startAyah (index 0) up to current verse (index i)
+        if (i > 0) {
+          const linkedIndices = Array.from({ length: i + 1 }, (_, idx) => idx);
+          for (let r = 1; r <= N; r++) {
+            for (let k = 0; k <= i; k++) {
+              steps.push({
+                ayahIndex: k,
+                stepRepeatIndex: r,
+                stepRepeatTotal: N,
+                descriptionAr: `ربط تراكمي (${startA} - ${ayahNum}) [${r}/${N}]`,
+                descriptionEn: `Cumulative Link (${startA} - ${ayahNum}) [${r}/${N}]`,
+                modeBadge: 'الشنقيطي: ربط تراكمي',
+                pauseAfter: k === i,
+                segmentAyahIndices: linkedIndices
+              });
+            }
+          }
+        }
+      }
+
+      // End of session: Full consolidation of the entire selected range [startAyah ... endAyah]
+      if (total > 1) {
+        const consolidationIndices = Array.from({ length: total }, (_, idx) => idx);
+        const endA = ayahs[total - 1].ayahNumber;
+        const consolidationRepeats = Math.min(2, N);
+        for (let r = 1; r <= consolidationRepeats; r++) {
+          for (let k = 0; k < total; k++) {
+            steps.push({
+              ayahIndex: k,
+              stepRepeatIndex: r,
+              stepRepeatTotal: consolidationRepeats,
+              descriptionAr: `تثبيت شامل (${startA} - ${endA}) [${r}/${consolidationRepeats}]`,
+              descriptionEn: `Full consolidation (${startA} - ${endA}) [${r}/${consolidationRepeats}]`,
+              modeBadge: 'الشنقيطي: تثبيت شامل',
+              pauseAfter: k === total - 1,
+              segmentAyahIndices: consolidationIndices
+            });
+          }
+        }
+      }
+    } else if (isShanqiti3x3) {
+      // Shanqiti Cumulative (3x3):
+      // 1. Split range into consecutive groups of 3 ayahs (last group holds remaining 1 or 2 ayahs)
+      // 2. Cumulative link starts from the first ayah of the current group only
+      // 3. Full consolidation of the entire selected range at the end
+      const startA = ayahs[0].ayahNumber;
+
+      for (let chunkStart = 0; chunkStart < total; chunkStart += 3) {
+        const chunkEnd = Math.min(chunkStart + 3, total) - 1;
+        const chunkFirstAyahNum = ayahs[chunkStart].ayahNumber;
+
+        for (let i = chunkStart; i <= chunkEnd; i++) {
           const ayahNum = ayahs[i].ayahNumber;
-          // Step 1: Repeat current verse N times
+
+          // Step 1: Repeat current verse N times (1x pauseDuration after each repeat)
           for (let r = 1; r <= N; r++) {
             steps.push({
               ayahIndex: i,
@@ -313,44 +518,50 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
               stepRepeatTotal: N,
               descriptionAr: `تكرار الآية ${ayahNum} (${r}/${N})`,
               descriptionEn: `Verse ${ayahNum} repeat (${r}/${N})`,
-              modeBadge: 'الشنقيطي: حفظ الآية'
+              modeBadge: 'الشنقيطي (3×3): حفظ الآية',
+              pauseAfter: true,
+              segmentAyahIndices: [i]
             });
           }
 
-          // Step 2: Cumulative link from start of group up to current verse
-          if (i > groupStart) {
+          // Step 2: Cumulative link within current group starting from chunkStart up to current verse i
+          if (i > chunkStart) {
+            const linkedIndices = Array.from({ length: i - chunkStart + 1 }, (_, idx) => chunkStart + idx);
             for (let r = 1; r <= N; r++) {
-              for (let k = groupStart; k <= i; k++) {
-                const startA = ayahs[groupStart].ayahNumber;
-                const currA = ayahs[i].ayahNumber;
+              for (let k = chunkStart; k <= i; k++) {
                 steps.push({
                   ayahIndex: k,
                   stepRepeatIndex: r,
                   stepRepeatTotal: N,
-                  descriptionAr: `ربط تراكمي (${startA} - ${currA}) [${r}/${N}]`,
-                  descriptionEn: `Cumulative Link (${startA} - ${currA}) [${r}/${N}]`,
-                  modeBadge: 'الشنقيطي: ربط تراكمي'
+                  descriptionAr: `ربط المجموعة (${chunkFirstAyahNum} - ${ayahNum}) [${r}/${N}]`,
+                  descriptionEn: `Group Link (${chunkFirstAyahNum} - ${ayahNum}) [${r}/${N}]`,
+                  modeBadge: 'الشنقيطي (3×3): ربط تراكمي',
+                  pauseAfter: k === i,
+                  segmentAyahIndices: linkedIndices
                 });
               }
             }
           }
         }
+      }
 
-        // Consolidation link of all verses from 0 up to end of this group if more than 1 group
-        if (g > 0 && groupEnd > groupStart) {
-          for (let r = 1; r <= Math.min(2, N); r++) {
-            for (let k = 0; k < groupEnd; k++) {
-              const startA = ayahs[0].ayahNumber;
-              const endA = ayahs[groupEnd - 1].ayahNumber;
-              steps.push({
-                ayahIndex: k,
-                stepRepeatIndex: r,
-                stepRepeatTotal: Math.min(2, N),
-                descriptionAr: `تثبيت شامل (${startA} - ${endA}) [${r}/${Math.min(2, N)}]`,
-                descriptionEn: `Full consolidation (${startA} - ${endA}) [${r}/${Math.min(2, N)}]`,
-                modeBadge: 'الشنقيطي: تثبيت شامل'
-              });
-            }
+      // Step 3: End of session full consolidation of the entire selected range [startAyah ... endAyah]
+      if (total > 1) {
+        const consolidationIndices = Array.from({ length: total }, (_, idx) => idx);
+        const endA = ayahs[total - 1].ayahNumber;
+        const consolidationRepeats = Math.min(2, N);
+        for (let r = 1; r <= consolidationRepeats; r++) {
+          for (let k = 0; k < total; k++) {
+            steps.push({
+              ayahIndex: k,
+              stepRepeatIndex: r,
+              stepRepeatTotal: consolidationRepeats,
+              descriptionAr: `تثبيت شامل (${startA} - ${endA}) [${r}/${consolidationRepeats}]`,
+              descriptionEn: `Full consolidation (${startA} - ${endA}) [${r}/${consolidationRepeats}]`,
+              modeBadge: 'الشنقيطي (3×3): تثبيت شامل',
+              pauseAfter: k === total - 1,
+              segmentAyahIndices: consolidationIndices
+            });
           }
         }
       }
@@ -367,30 +578,37 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
             stepRepeatTotal: N,
             descriptionAr: `تكرار الآية ${ayahNum} (${r}/${N})`,
             descriptionEn: `Verse ${ayahNum} repeat (${r}/${N})`,
-            modeBadge: 'تكرار الآية'
+            modeBadge: 'تكرار الآية',
+            pauseAfter: true,
+            segmentAyahIndices: [i]
           });
         }
 
         // If there is a previous verse, immediately recite (Previous + Current) once to cement the sequence link
         if (i > 0) {
           const prevAyahNum = ayahs[i - 1].ayahNumber;
-          // Play previous verse
+          const pairIndices = [i - 1, i];
+          // Play previous verse (no pause after; continue straight into current verse)
           steps.push({
             ayahIndex: i - 1,
             stepRepeatIndex: 1,
             stepRepeatTotal: 1,
             descriptionAr: `ربط بالسابقة: آية ${prevAyahNum} ثم ${ayahNum}`,
             descriptionEn: `Link: Verse ${prevAyahNum} then ${ayahNum}`,
-            modeBadge: 'الربط بالسابقة'
+            modeBadge: 'الربط بالسابقة',
+            pauseAfter: false,
+            segmentAyahIndices: pairIndices
           });
-          // Play current verse
+          // Play current verse (pause once after both linked verses finish)
           steps.push({
             ayahIndex: i,
             stepRepeatIndex: 1,
             stepRepeatTotal: 1,
             descriptionAr: `ربط بالسابقة: إتمام الآية ${ayahNum}`,
             descriptionEn: `Link: Complete Verse ${ayahNum}`,
-            modeBadge: 'الربط بالسابقة'
+            modeBadge: 'الربط بالسابقة',
+            pauseAfter: true,
+            segmentAyahIndices: pairIndices
           });
         }
       }
@@ -405,14 +623,16 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
             stepRepeatTotal: N,
             descriptionAr: `تكرار الآية ${ayahNum} (${r}/${N})`,
             descriptionEn: `Verse ${ayahNum} repeat (${r}/${N})`,
-            modeBadge: 'تكرار الآية'
+            modeBadge: 'تكرار الآية',
+            pauseAfter: true,
+            segmentAyahIndices: [i]
           });
         }
       }
     }
 
     return steps;
-  }, [ayahs, ayahRepeatTarget, linkedRepeat, isCumulative]);
+  }, [ayahs, ayahRepeatTarget, linkedRepeat, isCumulative, isShanqiti3x3]);
 
   // Current step index in the playback sequence
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -468,7 +688,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         playAyahAtIndex(firstStep.ayahIndex);
       }
     } else {
-      // ENTIRE SESSION FINISHED: Stop audio completely and show completion modal!
+      // ENTIRE SESSION FINISHED: Stop audio completely, return to first ayah, and show completion modal!
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -476,6 +696,14 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
       setIsPlaying(false);
       setIsPauseActive(false);
+      setPauseStartIndex(null);
+      currentStepIndexRef.current = 0;
+      setCurrentStepIndex(0);
+      currentIndexRef.current = 0;
+      setCurrentIndex(0);
+      currentAyahRepeatRef.current = steps[0]?.stepRepeatIndex || 1;
+      setCurrentAyahRepeat(steps[0]?.stepRepeatIndex || 1);
+      currentRangeRepeatRef.current = 1;
       releaseListenInterruption('mem-session-audio');
 
       // Trigger completion modal and celebration chime
@@ -498,6 +726,25 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     handleAdvanceAfterAudioRef.current = handleAdvanceAfterAudio;
   }, [handleAdvanceAfterAudio]);
 
+  // Preload upcoming ayahs whenever the session starts or step advances
+  useEffect(() => {
+    if (ayahs.length === 0) return;
+    // Keep up to 12 upcoming distinct ayahs from current position & start of range buffered
+    const preloadCount = Math.min(ayahs.length, 12);
+    for (let j = 0; j < preloadCount; j++) {
+      preloadAyahAtIndex(j);
+    }
+    const steps = playbackStepsRef.current;
+    const seen = new Set<number>();
+    for (let sIdx = currentStepIndex; sIdx < steps.length && seen.size < 8; sIdx++) {
+      const aIdx = steps[sIdx].ayahIndex;
+      if (!seen.has(aIdx)) {
+        seen.add(aIdx);
+        preloadAyahAtIndex(aIdx);
+      }
+    }
+  }, [ayahs, currentStepIndex, preloadAyahAtIndex]);
+
   // Core Playback Logic: plays the ayah at a specific index
   const playAyahAtIndex = useCallback((index: number) => {
     if (index < 0 || index >= ayahs.length) return;
@@ -506,77 +753,179 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       pauseTimerRef.current = null;
     }
     setIsPauseActive(false);
+    setPauseStartIndex(null);
 
     currentIndexRef.current = index;
     setCurrentIndex(index);
     const ayah = ayahs[index];
-    const url = getAyahAudioUrl(ayah.surahNumber, ayah.ayahNumber);
+    const remoteUrl = getAyahAudioUrl(ayah.surahNumber, ayah.ayahNumber);
+    const resolvedUrl = blobUrlCacheRef.current[remoteUrl] || remoteUrl;
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
+    // Trigger preloading for current and upcoming ayahs
+    preloadAyahAtIndex(index);
+    preloadAyahAtIndex(index + 1);
+    const nextStep = playbackStepsRef.current[currentStepIndexRef.current + 1];
+    if (nextStep) {
+      preloadAyahAtIndex(nextStep.ayahIndex);
     }
-    const audio = audioRef.current;
-    audio.src = url;
-    audio.defaultPlaybackRate = playbackSpeed;
-    audio.playbackRate = playbackSpeed;
-    audio.onplay = () => {
-      if (audioRef.current) {
-        audioRef.current.playbackRate = playbackSpeed;
+
+    if (!unlockedAudioRef.current) {
+      unlockedAudioRef.current = new Audio();
+    }
+
+    const preloaded = preloadedAudioRef.current[remoteUrl];
+    const canUsePreloaded = Boolean(preloaded && !preloaded.error && preloaded.readyState >= 2);
+    const audio = canUsePreloaded ? preloaded! : unlockedAudioRef.current;
+
+    // Detach handlers and pause previous audio if switching elements
+    const prevAudio = audioRef.current;
+    if (prevAudio && prevAudio !== audio) {
+      prevAudio.onloadedmetadata = null;
+      prevAudio.onplay = null;
+      prevAudio.ontimeupdate = null;
+      prevAudio.onended = null;
+      prevAudio.onerror = null;
+      if (!prevAudio.paused) {
+        prevAudio.pause();
       }
-    };
+    }
+    audioRef.current = audio;
 
-    audio.ontimeupdate = () => {
-      if (audio.duration && audio.duration > 0) {
-        setAudioProgress({ currentTime: audio.currentTime, duration: audio.duration });
-      }
-    };
-
-    audio.onended = () => {
-      setAudioProgress(null);
-      // Verse ended -> trigger recitation pause period if configured
-      if (pauseSeconds > 0) {
-        setIsPauseActive(true);
-        setPauseCountdown(pauseSeconds);
-
-        let remaining = pauseSeconds;
-        if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
-
-        pauseTimerRef.current = setInterval(() => {
-          remaining -= 1;
-          setPauseCountdown(remaining);
-          if (remaining <= 0) {
-            clearInterval(pauseTimerRef.current);
-            pauseTimerRef.current = null;
-            setIsPauseActive(false);
-            if (handleAdvanceAfterAudioRef.current) {
-              handleAdvanceAfterAudioRef.current();
-            }
-          }
-        }, 1000);
+    if (audio === unlockedAudioRef.current) {
+      if (audio.src !== resolvedUrl) {
+        audio.src = resolvedUrl;
       } else {
-        if (handleAdvanceAfterAudioRef.current) {
-          handleAdvanceAfterAudioRef.current();
-        }
+        audio.currentTime = 0;
       }
-    };
+    } else {
+      audio.currentTime = 0;
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        ayahDurationsRef.current[index] = audio.duration;
+      }
+    }
 
-    audio.onerror = (e) => {
-      console.warn('Audio playback error', e);
-      setIsPlaying(false);
-      setAudioProgress(null);
-      releaseListenInterruption('mem-session-audio');
-    };
+    const attachHandlersAndPlay = (targetAudio: HTMLAudioElement, allowFallback: boolean) => {
+      targetAudio.defaultPlaybackRate = playbackSpeedRef.current;
+      targetAudio.playbackRate = playbackSpeedRef.current;
+      targetAudio.onloadedmetadata = () => {
+        if (Number.isFinite(targetAudio.duration) && targetAudio.duration > 0) {
+          ayahDurationsRef.current[index] = targetAudio.duration;
+        }
+      };
+      targetAudio.onplay = () => {
+        if (audioRef.current === targetAudio) {
+          targetAudio.playbackRate = playbackSpeedRef.current;
+        }
+      };
 
-    acquireListenInterruption('mem-session-audio');
-    audio.play()
-      .then(() => setIsPlaying(true))
-      .catch((err) => {
-        if (err?.name === 'AbortError') return;
-        console.warn('Autoplay prevented or failed', err);
+      targetAudio.ontimeupdate = () => {
+        if (audioRef.current !== targetAudio) return;
+        if (targetAudio.duration && targetAudio.duration > 0) {
+          ayahDurationsRef.current[index] = targetAudio.duration;
+          setAudioProgress({ currentTime: targetAudio.currentTime, duration: targetAudio.duration });
+        }
+      };
+
+      targetAudio.onended = () => {
+        if (audioRef.current !== targetAudio) return;
+        if (Number.isFinite(targetAudio.duration) && targetAudio.duration > 0) {
+          ayahDurationsRef.current[index] = targetAudio.duration;
+        }
+        setAudioProgress(null);
+
+        // Determine whether this step ends a single verse or the final verse of a linked segment
+        const activeStep = playbackStepsRef.current[currentStepIndexRef.current];
+        const shouldPause = isPauseEnabled && (activeStep ? activeStep.pauseAfter : true);
+
+        if (shouldPause) {
+          const segmentIndices = activeStep?.segmentAyahIndices?.length
+            ? activeStep.segmentAyahIndices
+            : [index];
+
+          let computedPauseSeconds = 0;
+          if (isAutoPause) {
+            const speed = Math.max(0.25, playbackSpeedRef.current || 1.0);
+            const totalRawDuration = segmentIndices.reduce((sum, aIdx) => {
+              const knownDur = ayahDurationsRef.current[aIdx];
+              if (Number.isFinite(knownDur) && knownDur > 0) {
+                return sum + knownDur;
+              }
+              const wordCount = stripTajweed(ayahs[aIdx]?.text || '').split(' ').filter(Boolean).length;
+              return sum + Math.max(2, wordCount * 0.65);
+            }, 0);
+            computedPauseSeconds = Math.max(1, Math.round(totalRawDuration / speed));
+          } else {
+            computedPauseSeconds = segmentIndices.length * pauseSeconds;
+          }
+
+          if (computedPauseSeconds > 0) {
+            setPauseStartIndex(segmentIndices.length > 1 ? segmentIndices[0] : null);
+            setIsPauseActive(true);
+            setPauseCountdown(computedPauseSeconds);
+
+            let remaining = computedPauseSeconds;
+            if (pauseTimerRef.current) clearInterval(pauseTimerRef.current);
+
+            pauseTimerRef.current = setInterval(() => {
+              remaining -= 1;
+              setPauseCountdown(remaining);
+              if (remaining <= 0) {
+                clearInterval(pauseTimerRef.current);
+                pauseTimerRef.current = null;
+                setIsPauseActive(false);
+                setPauseStartIndex(null);
+                if (handleAdvanceAfterAudioRef.current) {
+                  handleAdvanceAfterAudioRef.current();
+                }
+              }
+            }, 1000);
+          } else if (handleAdvanceAfterAudioRef.current) {
+            handleAdvanceAfterAudioRef.current();
+          }
+        } else {
+          if (handleAdvanceAfterAudioRef.current) {
+            handleAdvanceAfterAudioRef.current();
+          }
+        }
+      };
+
+      targetAudio.onerror = (e) => {
+        if (audioRef.current !== targetAudio) return;
+        console.warn('Audio playback error', e);
         setIsPlaying(false);
+        setAudioProgress(null);
         releaseListenInterruption('mem-session-audio');
-      });
-  }, [ayahs, getAyahAudioUrl, playbackSpeed, pauseSeconds]);
+      };
+
+      acquireListenInterruption('mem-session-audio');
+      targetAudio.play()
+        .then(() => setIsPlaying(true))
+        .catch((err) => {
+          if (err?.name === 'AbortError') return;
+          if (allowFallback && err?.name === 'NotAllowedError' && unlockedAudioRef.current && targetAudio !== unlockedAudioRef.current) {
+            targetAudio.onloadedmetadata = null;
+            targetAudio.onplay = null;
+            targetAudio.ontimeupdate = null;
+            targetAudio.onended = null;
+            targetAudio.onerror = null;
+            const fallbackAudio = unlockedAudioRef.current;
+            audioRef.current = fallbackAudio;
+            if (fallbackAudio.src !== resolvedUrl) {
+              fallbackAudio.src = resolvedUrl;
+            } else {
+              fallbackAudio.currentTime = 0;
+            }
+            attachHandlersAndPlay(fallbackAudio, false);
+            return;
+          }
+          console.warn('Autoplay prevented or failed', err);
+          setIsPlaying(false);
+          releaseListenInterruption('mem-session-audio');
+        });
+    };
+
+    attachHandlersAndPlay(audio, true);
+  }, [ayahs, getAyahAudioUrl, isAutoPause, isPauseEnabled, pauseSeconds, preloadAyahAtIndex]);
 
   // Manual ayah selection (works seamlessly whether currently playing or paused)
   const handleSelectAyah = useCallback((index: number, forcePlay = false) => {
@@ -586,6 +935,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       pauseTimerRef.current = null;
     }
     setIsPauseActive(false);
+    setPauseStartIndex(null);
     setAudioProgress(null);
 
     const steps = playbackStepsRef.current;
@@ -623,6 +973,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       }
       setIsPlaying(false);
       setIsPauseActive(false);
+      setPauseStartIndex(null);
       setAudioProgress(null);
       releaseListenInterruption('mem-session-audio');
     } else {
@@ -631,6 +982,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         pauseTimerRef.current = null;
       }
       setIsPauseActive(false);
+      setPauseStartIndex(null);
 
       const steps = playbackStepsRef.current;
       const targetAyahIdx = currentIndexRef.current;
@@ -707,7 +1059,8 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
     }, 2500);
   };
 
-  const activeAyah = ayahs[currentIndex] || ayahs[0];
+  const visualActiveIndex = (isPauseActive && pauseStartIndex !== null) ? pauseStartIndex : currentIndex;
+  const activeAyah = ayahs[visualActiveIndex] || ayahs[0];
   const activeSurahName = activeAyah ? (isEn ? SURAH_NAMES_EN[activeAyah.surahNumber - 1] : SURAH_NAMES_AR[activeAyah.surahNumber - 1]) : '';
 
   return (
@@ -730,7 +1083,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         }}
       >
         <div
-          className="app-page-card border-0 max-w-xl mx-auto rounded-[22px] px-3 py-2 overflow-visible"
+          className="app-page-card hover:!transform-none border-0 max-w-xl mx-auto rounded-[22px] px-3 py-2 overflow-visible"
           style={unifiedBarStyle}
         >
           <div className="flex items-center justify-between w-full min-h-[42px] gap-1.5 sm:gap-2">
@@ -738,7 +1091,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
               <button
                 onClick={handleExit}
                 className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0"
-                style={barSecondaryBtnStyle}
+                style={barPrimaryBtnStyle}
                 title={isEn ? 'Exit Studio' : 'الخروج والعودة للتحفيظ'}
                 aria-label={isEn ? 'Exit Studio' : 'الخروج والعودة للتحفيظ'}
               >
@@ -784,6 +1137,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                 ref={maskBtnRef}
                 type="button"
                 onClick={() => {
+                  setShowSpeedMenu(false);
                   if (!showMaskMenu && maskBtnRef.current) {
                     const rect = maskBtnRef.current.getBoundingClientRect();
                     setMaskMenuTop(Math.round(rect.bottom + 8));
@@ -791,7 +1145,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                   setShowMaskMenu(prev => !prev);
                 }}
                 className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0"
-                style={maskLevel > 0 ? barPrimaryBtnStyle : barSecondaryBtnStyle}
+                style={barPrimaryBtnStyle}
                 title={isEn ? 'Display / Mask Mode' : 'وضع الإظهار والإخفاء'}
                 aria-label={isEn ? 'Display / Mask Mode' : 'وضع الإظهار والإخفاء'}
                 aria-expanded={showMaskMenu}
@@ -802,7 +1156,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
               <button
                 onClick={() => setShowTafseerModal(true)}
                 className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0"
-                style={barSecondaryBtnStyle}
+                style={barPrimaryBtnStyle}
                 title={isEn ? 'Quick Tafseer' : 'التفسير الميسر للآيات'}
                 aria-label={isEn ? 'Quick Tafseer' : 'التفسير الميسر للآيات'}
               >
@@ -814,27 +1168,32 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
       </header>
 
       {/* Recitation Pause Indicator - Floating 3D Banner */}
-      {isPauseActive && (
+      {isPauseActive && pauseCountdown > 0 && (
         <div 
-          className={`app-page-card border-0 fixed top-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none w-[90%] max-w-sm px-4 py-2.5 rounded-2xl flex items-center justify-center gap-2.5 animate-bounce ${s3d.surfaceCardClass}`}
-          style={{ color: s3d.noticeAccent }}
+          className={`app-page-card border-0 fixed left-1/2 -translate-x-1/2 z-50 pointer-events-none w-fit max-w-[90vw] px-3 py-1.5 rounded-xl flex items-center justify-center gap-2 animate-bounce ${s3d.surfaceCardClass}`}
+          style={{
+            color: s3d.noticeAccent,
+            top: 'calc(var(--app-safe-top, 0px) + 76px)'
+          }}
         >
           <div 
-            className="app-3d-badge border-0 w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+            className="app-3d-badge border-0 w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
             style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
           >
-            <Volume2 size={16} />
+            <Volume2 size={13} />
           </div>
-          <span className="text-xs sm:text-sm font-bold tracking-tight">
-            {isEn ? `Your turn to recite! (${pauseCountdown}s)` : `حان دورك للترديد بصوتك! (${pauseCountdown} ثوانٍ)`}
+          <span className="text-[11px] sm:text-xs font-bold tracking-tight whitespace-nowrap">
+            {isEn
+              ? `Your turn to recite! (${pauseCountdown})`
+              : `حان دورك للترديد بصوتك! (${toArabic(pauseCountdown)})`}
           </span>
         </div>
       )}
 
       {/* Main Quran Verse Canvas */}
-      <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-4 space-y-4 max-w-xl mx-auto w-full hide-scrollbar">
+      <main ref={mainRef} className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-4 space-y-4 max-w-xl mx-auto w-full hide-scrollbar">
         {ayahs.map((ayah, aIdx) => {
-          const isActive = aIdx === currentIndex;
+          const isActive = aIdx === visualActiveIndex;
           const cleanText = stripTajweed(ayah.text);
           const words = cleanText.split(' ').filter(Boolean);
 
@@ -854,14 +1213,14 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
               } as React.CSSProperties}
             >
               {/* Header inside verse card */}
-              <div className="flex items-center justify-between mb-3 text-xs">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-bold opacity-75">
+              <div className="flex items-start justify-between gap-2 mb-3 text-xs">
+                <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
+                  <span className="font-bold opacity-75 leading-snug">
                     {isEn ? SURAH_NAMES_EN[ayah.surahNumber - 1] : SURAH_NAMES_AR[ayah.surahNumber - 1]} - {isEn ? `Ayah ${ayah.ayahNumber}` : `الآية ${ayah.ayahNumber}`}
                   </span>
                   {isActive && currentStep?.modeBadge && (
                     <span 
-                      className="app-3d-badge border-0 text-[10px] font-bold px-2.5 py-0.5 rounded-lg"
+                      className="app-3d-badge border-0 text-[10px] font-bold px-2.5 py-0.5 rounded-lg whitespace-nowrap"
                       style={{ backgroundColor: s3d.softResultBg, color: s3d.noticeAccent }}
                     >
                       {currentStep.modeBadge}
@@ -870,7 +1229,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
                 </div>
                 {isActive && (
                   <span 
-                    className="app-3d-badge border-0 font-bold text-[11px] px-2.5 py-0.5 rounded-full"
+                    className="app-3d-badge border-0 font-bold text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0"
                     style={{
                       backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.12),
                       color: primaryColor
@@ -977,7 +1336,7 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
         style={{ backgroundColor: pageBg }}
       >
         <div
-          className="app-page-card border-0 max-w-xl mx-auto rounded-[22px] px-3.5 py-2.5 overflow-visible"
+          className="app-page-card hover:!transform-none border-0 max-w-xl mx-auto rounded-[22px] px-3.5 py-2.5 overflow-visible"
           style={unifiedBarStyle}
         >
           {/* Main Controls Row */}
@@ -1034,66 +1393,97 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
             {/* Speed Button with 3D Popover */}
             <div className="relative overflow-visible">
               <button
-                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                ref={speedBtnRef}
+                type="button"
+                onClick={() => {
+                  setShowMaskMenu(false);
+                  if (!showSpeedMenu && speedBtnRef.current) {
+                    const rect = speedBtnRef.current.getBoundingClientRect();
+                    setSpeedMenuBottom(Math.round(window.innerHeight - rect.top + 8));
+                  }
+                  setShowSpeedMenu(prev => !prev);
+                }}
                 className="app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer text-[10px] font-black"
                 style={barPrimaryBtnStyle}
                 title={isEn ? 'Playback Speed' : 'سرعة الصوت'}
+                aria-expanded={showSpeedMenu}
               >
                 <span>{playbackSpeed}x</span>
               </button>
-
-              {/* Speed Selection Popover Menu */}
-              {showSpeedMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40 bg-black/35" 
-                    onClick={() => setShowSpeedMenu(false)}
-                  />
-                  <div 
-                    className={`app-page-card border-0 absolute bottom-11 left-0 sm:left-auto sm:right-0 z-50 w-36 rounded-2xl p-2.5 space-y-1.5 ${s3d.surfaceCardClass}`}
-                    dir={isEn ? 'ltr' : 'rtl'}
-                  >
-                    <div className={`px-2 py-1 text-xs font-black opacity-75 flex items-center justify-between border-b pb-1 ${s3d.dividerClass}`}>
-                      <span>{playbackSpeed}x</span>
-                      <button 
-                        onClick={() => setShowSpeedMenu(false)}
-                        className={`app-inner-3d-box unified-3d-btn border-0 w-6 h-6 rounded-full flex items-center justify-center shrink-0 cursor-pointer ${s3d.isBlackTheme ? 'bg-zinc-800' : 'bg-slate-100 dark:bg-white/10'}`}
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-1.5 pt-0.5 pb-1 px-0.5 max-h-56 overflow-y-auto hide-scrollbar">
-                      {SPEED_OPTIONS.map(speedVal => {
-                        const isSelected = playbackSpeed === speedVal;
-                        return (
-                          <button
-                            key={speedVal}
-                            onClick={() => handleSelectSpeed(speedVal)}
-                            className={`app-page-card border-0 w-full py-1.5 px-3 rounded-xl font-bold text-xs text-center transition-all cursor-pointer ${
-                              isSelected ? '' : s3d.surfaceCardClass
-                            }`}
-                            style={isSelected ? { backgroundColor: primaryColor, color: btnTextColor } : undefined}
-                          >
-                            {speedVal}x
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </div>
       </footer>
 
+      {/* Speed Selection Popover Menu (Outside <footer> & .app-page-card to eliminate transform flicker and block background clicks) */}
+      {showSpeedMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/35 touch-none"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowSpeedMenu(false);
+            }}
+          />
+          <div
+            className="fixed inset-x-0 z-50 pointer-events-none px-3 sm:px-4"
+            style={{ bottom: `${speedMenuBottom}px` }}
+          >
+            <div className="max-w-xl mx-auto relative">
+              <div
+                className={`app-page-card hover:!transform-none border-0 pointer-events-auto absolute bottom-0 ${isEn ? 'right-0' : 'left-0'} w-36 rounded-2xl p-2.5 space-y-1.5 ${s3d.surfaceCardClass}`}
+                dir={isEn ? 'ltr' : 'rtl'}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={`px-2 py-1 text-xs font-black opacity-75 flex items-center justify-between border-b pb-1 ${s3d.dividerClass}`}>
+                  <span>{playbackSpeed}x</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSpeedMenu(false)}
+                    className={`app-inner-3d-box unified-3d-btn border-0 w-6 h-6 rounded-full flex items-center justify-center shrink-0 cursor-pointer ${s3d.isBlackTheme ? 'bg-zinc-800' : 'bg-slate-100 dark:bg-white/10'}`}
+                    aria-label={isEn ? 'Close' : 'إغلاق'}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+
+                <div className="space-y-1.5 pt-0.5 pb-1 px-0.5 max-h-56 overflow-y-auto hide-scrollbar">
+                  {SPEED_OPTIONS.map(speedVal => {
+                    const isSelected = playbackSpeed === speedVal;
+                    return (
+                      <button
+                        key={speedVal}
+                        type="button"
+                        onClick={() => handleSelectSpeed(speedVal)}
+                        className={`app-page-card hover:!transform-none border-0 w-full py-1.5 px-3 rounded-xl font-bold text-xs text-center transition-all cursor-pointer ${
+                          isSelected ? '' : s3d.surfaceCardClass
+                        }`}
+                        style={isSelected ? { backgroundColor: primaryColor, color: btnTextColor } : undefined}
+                      >
+                        {speedVal}x
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Mask Mode Selection Dropdown Menu (Outside <header> for clean theme styling) */}
       {showMaskMenu && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-transparent"
-            onClick={() => setShowMaskMenu(false)}
+            className="fixed inset-0 z-40 bg-transparent touch-none"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMaskMenu(false);
+            }}
           />
           <div
             className="fixed inset-x-0 z-50 pointer-events-none px-3 sm:px-4"
@@ -1101,8 +1491,9 @@ const MemorizationSession: React.FC<MemorizationSessionProps> = ({ onBack, onNav
           >
             <div className="max-w-xl mx-auto relative">
               <div
-                className={`app-page-card border-0 pointer-events-auto absolute top-0 ${isEn ? 'right-0' : 'left-0'} w-44 rounded-2xl p-2.5 space-y-1.5 ${s3d.surfaceCardClass}`}
+                className={`app-page-card hover:!transform-none border-0 pointer-events-auto absolute top-0 ${isEn ? 'right-0' : 'left-0'} w-44 rounded-2xl p-2.5 space-y-1.5 ${s3d.surfaceCardClass}`}
                 dir={isEn ? 'ltr' : 'rtl'}
+                onClick={(e) => e.stopPropagation()}
               >
                 <div className={`px-2 py-1 text-xs font-black opacity-80 flex items-center justify-between border-b pb-1.5 ${s3d.dividerClass}`}>
                   <span className="flex items-center gap-1.5">

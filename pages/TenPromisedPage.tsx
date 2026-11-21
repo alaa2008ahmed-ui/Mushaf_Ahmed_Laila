@@ -517,9 +517,9 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
             {/* Top Header Bar */}
             <header className="app-top-bar z-20 shrink-0">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                    <div className="flex items-center justify-between gap-1 w-full min-h-[44px]">
                         {/* Left/Right Back & Zoom Controls */}
-                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center gap-1`}>
+                        <div className="flex items-center gap-0.5 shrink-0">
                             <button
                                 onClick={handleBackClick}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -547,11 +547,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                         </div>
 
                         {/* Title in center */}
-                        <div className={`text-center ${selectedCompanion ? 'px-20 sm:px-24' : 'px-14'}`}>
+                        <div className="flex-1 min-w-0 flex items-center justify-center px-1 text-center overflow-hidden">
                             <h1 className={`app-top-bar__title ${isEn ? 'font-bold' : 'font-cairo'} ${
                                 selectedCompanion 
-                                    ? 'text-sm sm:text-base leading-tight font-bold truncate max-w-[220px] sm:max-w-md' 
-                                    : 'text-lg sm:text-2xl'
+                                    ? 'text-sm sm:text-base leading-tight font-bold truncate' 
+                                    : 'text-base sm:text-xl leading-tight font-black truncate'
                             }`}>
                                 {selectedCompanion 
                                     ? (isEn ? selectedCompanion.nameEn : selectedCompanion.nameAr)
@@ -560,7 +560,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                         </div>
 
                         {/* Right/Left Tools: Guide (shown ONLY in list view) + ThemeLock + Home */}
-                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                        <div className="flex items-center gap-0.5 shrink-0">
                             {/* ايقونة الارشاد بالشريط العلوى بجوار زر الهوم وتظهر ايقونه الارشاد فقط فى صفحه اسماء العشرة المبشرين بالجنه */}
                             {!selectedCompanion && (
                                 <button

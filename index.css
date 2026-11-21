@@ -982,7 +982,8 @@ body:not(.quran-context).theme-black .wird-inner-raised:active {
 }
 
 /* الصناديق الفرعية الداخلية المجسمة الثابتة والفواصل المنحوتة داخل البطاقات */
-body:not(.quran-context) .app-inner-3d-box {
+body:not(.quran-context) .app-inner-3d-box,
+.settings-3d-adia-scope .app-inner-3d-box {
   border: none !important;
   box-shadow: 0 3.5px 0 rgba(0, 0, 0, 0.09), 0 6px 14px -2px rgba(0, 0, 0, 0.08), inset 0 1.5px 1px rgba(255, 255, 255, 0.95), inset 0 -1.5px 3px rgba(0, 0, 0, 0.04) !important;
 }
@@ -990,12 +991,19 @@ body:not(.quran-context) .app-inner-3d-box {
 html.dark body:not(.quran-context) .app-inner-3d-box,
 body:not(.quran-context).dark .app-inner-3d-box,
 body:not(.quran-context).theme-black-gold .app-inner-3d-box,
-body:not(.quran-context).theme-black .app-inner-3d-box {
+body:not(.quran-context).theme-black .app-inner-3d-box,
+html.dark .settings-3d-adia-scope .app-inner-3d-box,
+body.dark .settings-3d-adia-scope .app-inner-3d-box,
+body.theme-black-gold .settings-3d-adia-scope .app-inner-3d-box,
+body.theme-black .settings-3d-adia-scope .app-inner-3d-box,
+.settings-3d-adia-scope.settings-3d-dark .app-inner-3d-box,
+.quran-3d-dark .app-inner-3d-box {
   border: none !important;
   box-shadow: 0 3.5px 0 #09090b, 0 7px 14px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.14), inset 0 -1.5px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
-body:not(.quran-context) .app-3d-divider {
+body:not(.quran-context) .app-3d-divider,
+.settings-3d-adia-scope .app-3d-divider {
   border-bottom: 1px solid rgba(15, 23, 42, 0.07) !important;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
 }
@@ -1003,12 +1011,19 @@ body:not(.quran-context) .app-3d-divider {
 html.dark body:not(.quran-context) .app-3d-divider,
 body:not(.quran-context).dark .app-3d-divider,
 body:not(.quran-context).theme-black-gold .app-3d-divider,
-body:not(.quran-context).theme-black .app-3d-divider {
+body:not(.quran-context).theme-black .app-3d-divider,
+html.dark .settings-3d-adia-scope .app-3d-divider,
+body.dark .settings-3d-adia-scope .app-3d-divider,
+body.theme-black-gold .settings-3d-adia-scope .app-3d-divider,
+body.theme-black .settings-3d-adia-scope .app-3d-divider,
+.settings-3d-adia-scope.settings-3d-dark .app-3d-divider,
+.quran-3d-dark .app-3d-divider {
   border-bottom: 1px solid rgba(0, 0, 0, 0.55) !important;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-body:not(.quran-context) .app-3d-divider-top {
+body:not(.quran-context) .app-3d-divider-top,
+.settings-3d-adia-scope .app-3d-divider-top {
   border-top: 1px solid rgba(15, 23, 42, 0.07) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
@@ -1016,7 +1031,13 @@ body:not(.quran-context) .app-3d-divider-top {
 html.dark body:not(.quran-context) .app-3d-divider-top,
 body:not(.quran-context).dark .app-3d-divider-top,
 body:not(.quran-context).theme-black-gold .app-3d-divider-top,
-body:not(.quran-context).theme-black .app-3d-divider-top {
+body:not(.quran-context).theme-black .app-3d-divider-top,
+html.dark .settings-3d-adia-scope .app-3d-divider-top,
+body.dark .settings-3d-adia-scope .app-3d-divider-top,
+body.theme-black-gold .settings-3d-adia-scope .app-3d-divider-top,
+body.theme-black .settings-3d-adia-scope .app-3d-divider-top,
+.settings-3d-adia-scope.settings-3d-dark .app-3d-divider-top,
+.quran-3d-dark .app-3d-divider-top {
   border-top: 1px solid rgba(0, 0, 0, 0.55) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
@@ -1166,7 +1187,8 @@ body:not(.quran-context).theme-black .app-3d-checkbox.app-3d-checkbox-checked,
   box-shadow: 0 3px 0 #09090b, 0 5px 10px rgba(0, 0, 0, 0.55), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35), inset 0 -1.5px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
-body:not(.quran-context) .app-3d-badge {
+body:not(.quran-context) .app-3d-badge,
+.settings-3d-adia-scope .app-3d-badge {
   border: none !important;
   outline: none !important;
   box-shadow: 0 2.5px 0 rgba(0, 0, 0, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.1), inset 0 1.5px 1px rgba(255, 255, 255, 0.85), inset 0 -1.5px 2px rgba(0, 0, 0, 0.05) !important;
@@ -1177,7 +1199,15 @@ html.theme-black-gold body:not(.quran-context) .app-3d-badge,
 html.theme-black body:not(.quran-context) .app-3d-badge,
 body:not(.quran-context).dark .app-3d-badge,
 body:not(.quran-context).theme-black-gold .app-3d-badge,
-body:not(.quran-context).theme-black .app-3d-badge {
+body:not(.quran-context).theme-black .app-3d-badge,
+html.dark .settings-3d-adia-scope .app-3d-badge,
+html.theme-black-gold .settings-3d-adia-scope .app-3d-badge,
+html.theme-black .settings-3d-adia-scope .app-3d-badge,
+body.dark .settings-3d-adia-scope .app-3d-badge,
+body.theme-black-gold .settings-3d-adia-scope .app-3d-badge,
+body.theme-black .settings-3d-adia-scope .app-3d-badge,
+.settings-3d-adia-scope.settings-3d-dark .app-3d-badge,
+.quran-3d-dark .app-3d-badge {
   border: none !important;
   box-shadow: 0 2.5px 0 #09090b, 0 5px 12px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -1.5px 2px rgba(0, 0, 0, 0.45) !important;
 }
@@ -1444,16 +1474,35 @@ button.quran-raised-btn-selected * {
 body.theme-shiny-gold #monthly-table-container,
 body.theme-shiny-gold #monthly-table-container table,
 html.theme-shiny-gold #monthly-table-container,
-html.theme-shiny-gold #monthly-table-container table {
+html.theme-shiny-gold #monthly-table-container table,
+body.theme-sky #monthly-table-container,
+body.theme-sky #monthly-table-container table,
+html.theme-sky #monthly-table-container,
+html.theme-sky #monthly-table-container table,
+body.theme-emerald #monthly-table-container,
+body.theme-emerald #monthly-table-container table,
+html.theme-emerald #monthly-table-container,
+html.theme-emerald #monthly-table-container table,
+body.theme-burgundy #monthly-table-container,
+body.theme-burgundy #monthly-table-container table,
+html.theme-burgundy #monthly-table-container,
+html.theme-burgundy #monthly-table-container table {
     background-color: #FFFFFF !important;
     background: #FFFFFF !important;
 }
 
 /* ==========================================================================
-   الوضع السماوي (Sky / Azure Mode): خلفية بيضاء، بطاقات سماوية مع أبيض، نصوص وأرقام سوداء، أزرار زرقاء غامقة
+   الوضع السماوي (Sky / Azure Mode): خلفية سماوية فاتحة للصفحات الفرعية (تظهر البطاقات البيضاء بوضوح)، وخلفية بيضاء للرئيسية
    ========================================================================== */
-body.theme-sky,
-html.theme-sky {
+body.theme-sky:not(.quran-context):not(.quran-page-active):not(.hide-top-bars),
+html.theme-sky:not(:has(body.quran-context)):not(:has(body.quran-page-active)):not(:has(body.hide-top-bars)) {
+    background-color: #E0F2FE !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+
+body.theme-sky.hide-top-bars:not(.quran-context):not(.quran-page-active),
+html.theme-sky:has(body.hide-top-bars):not(:has(body.quran-context)):not(:has(body.quran-page-active)) {
     background-color: #FFFFFF !important;
     background-image: none !important;
     color: #000000 !important;
@@ -1703,10 +1752,17 @@ body.theme-sky .golden-3d-card div[dir="ltr"]:not(.surah-nav-buttons) span {
 }
 
 /* ==========================================================================
-   الوضع الزمردي (Emerald Mode): خلفية بيضاء، بطاقات زمردية مع أبيض، نصوص وأرقام سوداء، أزرار خضراء غامقة
+   الوضع الزمردي (Emerald Mode): خلفية زمردية فاتحة للصفحات الفرعية (تظهر البطاقات البيضاء بوضوح)، وخلفية بيضاء للرئيسية
    ========================================================================== */
-body.theme-emerald,
-html.theme-emerald {
+body.theme-emerald:not(.quran-context):not(.quran-page-active):not(.hide-top-bars),
+html.theme-emerald:not(:has(body.quran-context)):not(:has(body.quran-page-active)):not(:has(body.hide-top-bars)) {
+    background-color: #D1FAE5 !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+
+body.theme-emerald.hide-top-bars:not(.quran-context):not(.quran-page-active),
+html.theme-emerald:has(body.hide-top-bars):not(:has(body.quran-context)):not(:has(body.quran-page-active)) {
     background-color: #FFFFFF !important;
     background-image: none !important;
     color: #000000 !important;
@@ -1979,10 +2035,17 @@ html.theme-emerald .golden-3d-card [class*="from-amber-600"] {
 }
 
 /* ==========================================================================
-   الوضع العنابي (Burgundy Mode): خلفية بيضاء، بطاقات عنابية مع أبيض، نصوص وأرقام سوداء، أزرار عنابية غامقة
+   الوضع العنابي (Burgundy Mode): خلفية عنابية وردية فاتحة للصفحات الفرعية (تظهر البطاقات البيضاء بوضوح)، وخلفية بيضاء للرئيسية
    ========================================================================== */
-body.theme-burgundy,
-html.theme-burgundy {
+body.theme-burgundy:not(.quran-context):not(.quran-page-active):not(.hide-top-bars),
+html.theme-burgundy:not(:has(body.quran-context)):not(:has(body.quran-page-active)):not(:has(body.hide-top-bars)) {
+    background-color: #FFE4E6 !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+
+body.theme-burgundy.hide-top-bars:not(.quran-context):not(.quran-page-active),
+html.theme-burgundy:has(body.hide-top-bars):not(:has(body.quran-context)):not(:has(body.quran-page-active)) {
     background-color: #FFFFFF !important;
     background-image: none !important;
     color: #000000 !important;
@@ -3155,5 +3218,252 @@ body.theme-black-gold .app-3d-range {
     margin-left: -50dvh;
     z-index: 40;
   }
+}
+
+/* ==========================================================================
+   Visual Qibla 3D Diorama Map & Living Bobbing 3D Location Markers
+   ========================================================================== */
+@keyframes qiblaMarkerBob {
+  0%, 100% {
+    transform: translate3d(0, 0px, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -11px, 0) scale(1.045);
+  }
+}
+
+@keyframes qiblaMarkerShadow {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.46;
+  }
+  50% {
+    transform: translateX(-50%) scale(0.68);
+    opacity: 0.18;
+  }
+}
+
+@keyframes qiblaBeaconPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.42);
+    opacity: 0.82;
+  }
+  75%, 100% {
+    transform: translate(-50%, -50%) scale(1.85);
+    opacity: 0;
+  }
+}
+
+@keyframes qiblaDashFlow {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.qibla-3d-map-stage {
+  position: relative;
+}
+
+.qibla-3d-floor-shadow {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -10px;
+  height: 22px;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.34) 0%, rgba(15, 23, 42, 0.12) 55%, rgba(15, 23, 42, 0) 78%);
+  filter: blur(7px);
+  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+}
+
+.qibla-3d-map-board {
+  transform: translateY(0px);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.qibla-3d-map-board.qibla-3d-active {
+  transform: translateY(-3px);
+}
+
+.qibla-3d-map-viewport {
+  transition: box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.4s ease;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 6px 0 rgba(148, 163, 184, 0.45),
+    0 14px 26px rgba(15, 23, 42, 0.14),
+    inset 0 2px 4px rgba(255, 255, 255, 0.85);
+}
+
+.qibla-3d-active .qibla-3d-map-viewport {
+  border: 3px solid rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 10px 0 #cbd5e1,
+    0 20px 36px rgba(15, 23, 42, 0.24),
+    inset 0 5px 14px rgba(15, 23, 42, 0.2),
+    inset 0 -3px 8px rgba(255, 255, 255, 0.72);
+}
+
+.dark .qibla-3d-map-viewport,
+body.theme-black-gold .qibla-3d-map-viewport {
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 6px 0 #09090b,
+    0 16px 28px rgba(0, 0, 0, 0.68),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.14);
+}
+
+.dark .qibla-3d-active .qibla-3d-map-viewport,
+body.theme-black-gold .qibla-3d-active .qibla-3d-map-viewport {
+  border: 3px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 10px 0 #050507,
+    0 22px 38px rgba(0, 0, 0, 0.86),
+    inset 0 6px 16px rgba(0, 0, 0, 0.78),
+    inset 0 -3px 8px rgba(255, 255, 255, 0.14);
+}
+
+.qibla-3d-map-dark .leaflet-tile-pane {
+  filter: brightness(0.84) contrast(1.06) saturate(0.9);
+}
+
+.qibla-3d-active .leaflet-tile-pane {
+  filter: contrast(1.08) saturate(1.12);
+}
+
+.qibla-3d-map-dark.qibla-3d-active .leaflet-tile-pane {
+  filter: brightness(0.86) contrast(1.14) saturate(0.96);
+}
+
+.qibla-3d-hillshade-layer {
+  mix-blend-mode: multiply;
+  filter: contrast(1.68) brightness(1.04) saturate(1.1);
+  pointer-events: none;
+}
+
+.qibla-3d-map-dark .qibla-3d-hillshade-layer {
+  mix-blend-mode: soft-light;
+  filter: contrast(1.55) brightness(1.1);
+}
+
+.qibla-3d-map-viewport .leaflet-control-attribution {
+  font-size: 9px;
+  opacity: 0.65;
+  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(4px);
+  border-top-left-radius: 8px;
+}
+
+.qibla-3d-map-dark .qibla-3d-map-viewport .leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.72) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.qibla-3d-divicon {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.qibla-3d-marker-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.qibla-3d-marker-stand {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: center 84%;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.qibla-3d-active .qibla-3d-marker-stand {
+  transform: translateY(-4px) scale(1.08);
+}
+
+.qibla-3d-marker-root.is-focused .qibla-3d-marker-stand {
+  transform: translateY(-7px) scale(1.14);
+}
+
+.qibla-3d-marker-bob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 10px;
+  animation: qiblaMarkerBob 2.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: transform;
+}
+
+.qibla-3d-marker-bob.is-user {
+  animation-delay: -1.15s;
+}
+
+.qibla-3d-marker-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 30px;
+  height: 10px;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0) 72%);
+  animation: qiblaMarkerShadow 2.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  pointer-events: none;
+}
+
+.qibla-3d-marker-shadow.is-user {
+  width: 24px;
+  height: 8px;
+  animation-delay: -1.15s;
+}
+
+.qibla-3d-beacon-ring {
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  width: 28px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  animation: qiblaBeaconPulse 2.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  pointer-events: none;
+}
+
+.qibla-3d-beacon-ring.is-user {
+  width: 24px;
+  height: 12px;
+  animation-delay: -1.15s;
+}
+
+.qibla-3d-marker-root.is-focused .qibla-3d-beacon-ring {
+  border-width: 3px;
+}
+
+.qibla-3d-marker-tag {
+  margin-bottom: 2px;
+  padding: 1.5px 7px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.qibla-3d-arc-flow {
+  animation: qiblaDashFlow 1.4s linear infinite;
 }
 

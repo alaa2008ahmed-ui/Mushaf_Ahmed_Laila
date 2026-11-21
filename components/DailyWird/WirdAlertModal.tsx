@@ -5,6 +5,7 @@ import { playNotificationSound, stopNotificationSound, getActiveNotificationSoun
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { WirdAlertData } from '../../utils/dailyWirdNotificationService';
+import { triggerAlertVibration } from '../../utils/vibrationHelper';
 
 interface WirdAlertModalProps {
   alert: WirdAlertData | null;
@@ -27,7 +28,8 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
   useEffect(() => {
     // Only play sound if on web/browser (never in native APK)
     if (alert && !Capacitor.isNativePlatform()) {
-      // Play chosen notification sound upon alert appearance
+      // Vibrate and play chosen notification sound upon alert appearance
+      triggerAlertVibration('alert');
       const sound = getActiveNotificationSoundPath();
       if (sound && sound !== 'none') {
         playNotificationSound(sound, true);

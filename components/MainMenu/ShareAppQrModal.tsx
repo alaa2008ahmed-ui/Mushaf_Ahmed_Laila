@@ -417,12 +417,12 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
           isBlackTheme 
             ? 'bg-[#09090b] text-white' 
             : isSkyTheme 
-              ? 'bg-[#f0f9ff] text-slate-900' 
+              ? 'bg-[#E0F2FE] text-slate-900' 
               : isEmeraldTheme 
-                ? 'bg-[#f0fdf4] text-slate-900' 
+                ? 'bg-[#D1FAE5] text-slate-900' 
                 : isBurgundyTheme
-                  ? 'bg-[#fff1f2] text-slate-900'
-                  : 'bg-[#fffdfa] text-slate-800'
+                  ? 'bg-[#FFE4E6] text-slate-900'
+                  : 'bg-[#FEF9C3] text-slate-800'
         }`}
         style={{
           paddingTop: 'var(--app-safe-top, 0px)',

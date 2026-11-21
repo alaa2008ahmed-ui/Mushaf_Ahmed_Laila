@@ -4,6 +4,7 @@ import { Preferences } from '@capacitor/preferences';
 import { playNotificationSound, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
 import { updateNativeAlertsGroupSummary } from './silentMode';
 import { ensureNotificationPermission } from './permissionHelper';
+import { triggerAlertVibration } from './vibrationHelper';
 
 // Android status bar notification icon: Holy Quran on Rehal (Stand)
 export const WIRD_NOTIFICATION_ICON = 'ic_stat_name';
@@ -61,6 +62,19 @@ const RECURRING_MORNING_ID = 9301;
 const RECURRING_EVENING_ID = 9302;
 const BASE_MORNING_EXACT_ID = 9310;
 const BASE_EVENING_EXACT_ID = 9330;
+const EXTRA_USER_ID_BASE = 93100;
+const USER_STEP_DELAY_MS = 10000;
+
+export const isWirdNotificationId = (id: number): boolean =>
+  (id >= 9300 && id <= 9399) || (id >= EXTRA_USER_ID_BASE && id <= 999999);
+
+const stableHash = (str: string): number => {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h * 31) + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+};
 
 // Exact canonical page boundaries for all 30 Juz of the Holy Qur'an (Madinah Mushaf - 604 pages)
 // Juz 1 starts at page 1 and ends at page 21 (Al-Baqarah 141).
@@ -167,22 +181,37 @@ export const getWirdTotalDays = (profile: WirdProfile): number => {
 };
 
 /**
+ * Reads all wird profiles ordered so the active profile is always first,
+ * followed by all remaining profiles in their stored order.
+ */
+export const getOrderedWirdProfiles = (): WirdProfile[] => {
+  try {
+    const saved = localStorage.getItem('dailyWirdSettings_v2');
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    const profiles: WirdProfile[] = Array.isArray(parsed.profiles) ? parsed.profiles : [];
+    if (profiles.length === 0) return [];
+    const activeId = parsed.activeId || profiles[0].id;
+    const activeIndex = profiles.findIndex(p => p.id === activeId);
+    if (activeIndex <= 0) {
+      return profiles;
+    }
+    return [
+      profiles[activeIndex],
+      ...profiles.filter((_, idx) => idx !== activeIndex)
+    ];
+  } catch (e) {
+    console.error('Error getting ordered wird profiles:', e);
+    return [];
+  }
+};
+
+/**
  * Reads the active wird profile from localStorage
  */
 export const getActiveWirdProfile = (): WirdProfile | null => {
-  try {
-    const saved = localStorage.getItem('dailyWirdSettings_v2');
-    if (!saved) return null;
-    const parsed = JSON.parse(saved);
-    const profiles: WirdProfile[] = parsed.profiles || [];
-    const activeId = parsed.activeId || (profiles.length > 0 ? profiles[0].id : null);
-    if (!activeId) return null;
-    const profile = profiles.find(p => p.id === activeId);
-    return profile || null;
-  } catch (e) {
-    console.error('Error getting active wird profile:', e);
-    return null;
-  }
+  const ordered = getOrderedWirdProfiles();
+  return ordered.length > 0 ? ordered[0] : null;
 };
 
 /**
@@ -451,14 +480,15 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
       return;
     }
 
-    const profile = getActiveWirdProfile();
+    const orderedProfiles = getOrderedWirdProfiles();
+    const activeProfile = orderedProfiles[0] || null;
 
-    // 2. Clear previously scheduled wird notifications (IDs 9300 to 9399) that are not currently delivered
+    // 2. Clear previously scheduled wird notifications that are not currently delivered
     const pending = await LocalNotifications.getPending();
     const delivered = await LocalNotifications.getDeliveredNotifications();
     const deliveredIds = new Set((delivered?.notifications || []).map(n => n.id));
     const wirdPending = (pending?.notifications || []).filter(
-      n => n.id >= 9300 && n.id <= 9399 && !deliveredIds.has(n.id)
+      n => isWirdNotificationId(n.id) && !deliveredIds.has(n.id)
     );
     if (wirdPending.length > 0) {
       await LocalNotifications.cancel({ notifications: wirdPending });
@@ -466,23 +496,38 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
-    const isTodayAlreadyCompleted = Boolean(
-      profile && profile.lastCompletedDate && profile.lastCompletedDate.startsWith(todayStr)
-    );
 
-    // If today is completed, remove any delivered notifications from drawer immediately
-    if (isTodayAlreadyCompleted) {
-      try {
-        const wirdDelivered = (delivered?.notifications || []).filter(
-          n => n.id >= 9300 && n.id <= 9399
-        );
-        if (wirdDelivered.length > 0) {
-          await LocalNotifications.removeDeliveredNotifications({
-            notifications: wirdDelivered
-          });
+    const isProfileDoneOrDisabledToday = (p: WirdProfile): boolean => {
+      if (!p || !p.isActive || p.reminderEnabled === false) return true;
+      if (p.lastCompletedDate && p.lastCompletedDate.startsWith(todayStr)) return true;
+      const totDays = getWirdTotalDays(p);
+      if ((p.completedDays?.length || 0) >= totDays) return true;
+      const st = calculateWirdStatus(p, now);
+      return st.isTodayDayCompleted;
+    };
+
+    // Reconcile delivered notifications per profile so completing one user's wird
+    // never dismisses unread notifications belonging to other users.
+    try {
+      const profileMap = new Map<string, WirdProfile>();
+      for (const p of orderedProfiles) {
+        if (p?.id) profileMap.set(p.id, p);
+      }
+      const toRemove = (delivered?.notifications || []).filter(n => {
+        if (!isWirdNotificationId(n.id)) return false;
+        const extraPid = n.extra?.profileId;
+        if (extraPid) {
+          const matched = profileMap.get(extraPid);
+          return !matched || isProfileDoneOrDisabledToday(matched);
         }
-      } catch (e) {}
-    }
+        return Boolean(activeProfile && isProfileDoneOrDisabledToday(activeProfile));
+      });
+      if (toRemove.length > 0) {
+        await LocalNotifications.removeDeliveredNotifications({
+          notifications: toRemove
+        });
+      }
+    } catch (e) {}
 
     // Also trigger native alarm synchronization
     try {
@@ -499,176 +544,215 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
       return;
     }
 
-    if (!profile || !profile.isActive || profile.reminderEnabled === false) {
-      console.log('[DailyWird] No active wird or reminder is disabled.');
-      return;
-    }
+    const eligibleProfiles = orderedProfiles.filter(p => {
+      if (!p || !p.isActive || p.reminderEnabled === false) return false;
+      const totDays = getWirdTotalDays(p);
+      return (p.completedDays?.length || 0) < totDays;
+    });
 
-    const totalDays = getWirdTotalDays(profile);
-    if (profile.completedDays.length >= totalDays) {
-      console.log('[DailyWird] Khatma already completed. No reminder needed.');
+    if (eligibleProfiles.length === 0) {
+      console.log('[DailyWird] No active eligible wird profiles or reminders are disabled.');
       return;
     }
 
     await ensureWirdNotificationChannel(lang);
 
     const notificationsToSchedule: any[] = [];
-
-    // 3. Baseline Daily Repeating Notifications via AlarmManager:
-    // Morning (10:00 AM) and Evening (10:00 PM / 22:00)
-    const baselineDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
-    const morningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, false, lang);
-    const eveningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, true, lang);
     const wirdSoundFile = getActiveNotificationSoundFileName();
     const wirdSoundPath = getActiveNotificationSoundPath();
     const wirdCapacitorSound = wirdSoundFile && wirdSoundFile !== 'none' ? wirdSoundFile : undefined;
     const hasWirdSound = wirdCapacitorSound !== undefined;
 
-    notificationsToSchedule.push({
-      id: RECURRING_MORNING_ID,
-      title: morningBaseContent.title,
-      body: morningBaseContent.body,
-      schedule: { on: { hour: 10, minute: 0 }, allowWhileIdle: true, repeats: true },
-      channelId: WIRD_CHANNEL_ID,
-      sound: wirdCapacitorSound,
-      extra: {
-        page: 'daily-wird',
-        type: 'daily-wird',
-        period: 'morning',
-        profileId: profile.id,
-        playSound: hasWirdSound,
-        soundFile: wirdSoundPath
-      },
-      smallIcon: WIRD_NOTIFICATION_ICON,
-      iconColor: '#2E7D5E',
-      group: WIRD_GROUP_ID,
-      groupSummary: false,
-      ongoing: false,
-      autoCancel: true
+    const usedBlockBases = new Set<number>();
+
+    eligibleProfiles.forEach((profile, eligibleIdx) => {
+      const isPrimarySlot = activeProfile ? profile.id === activeProfile.id : eligibleIdx === 0;
+      let blockBase = 0;
+      if (!isPrimarySlot) {
+        blockBase = EXTRA_USER_ID_BASE + (stableHash(profile.id) % 20000) * 40;
+        while (usedBlockBases.has(blockBase)) {
+          blockBase += 40;
+        }
+        usedBlockBases.add(blockBase);
+      }
+
+      const morningRecurringId = isPrimarySlot ? RECURRING_MORNING_ID : blockBase + 1;
+      const eveningRecurringId = isPrimarySlot ? RECURRING_EVENING_ID : blockBase + 2;
+      const morningExactBase = isPrimarySlot ? BASE_MORNING_EXACT_ID : blockBase + 10;
+      const eveningExactBase = isPrimarySlot ? BASE_EVENING_EXACT_ID : blockBase + 25;
+
+      const stepDelayMs = eligibleIdx * USER_STEP_DELAY_MS;
+      const stepDelaySec = Math.floor(stepDelayMs / 1000);
+      const totalDays = getWirdTotalDays(profile);
+      const isTodayAlreadyCompleted = Boolean(
+        profile.lastCompletedDate && profile.lastCompletedDate.startsWith(todayStr)
+      );
+
+      // Parse profile morning reminderTime (default 10:00)
+      let baseMorningHour = 10;
+      let baseMorningMinute = 0;
+      if (profile.reminderTime && profile.reminderTime.includes(':')) {
+        const parts = profile.reminderTime.split(':').map(Number);
+        if (!isNaN(parts[0])) baseMorningHour = parts[0];
+        if (!isNaN(parts[1])) baseMorningMinute = parts[1];
+      }
+
+      const addSecondsToTime = (h: number, m: number, addSec: number) => {
+        const totalSec = (h * 3600) + (m * 60) + addSec;
+        return {
+          hour: Math.floor(totalSec / 3600) % 24,
+          minute: Math.floor((totalSec % 3600) / 60),
+          second: totalSec % 60
+        };
+      };
+
+      const morningOn = addSecondsToTime(baseMorningHour, baseMorningMinute, stepDelaySec);
+      const eveningOn = addSecondsToTime(22, 0, stepDelaySec);
+
+      // 3. Baseline Daily Repeating Notifications:
+      const baselineDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
+      const morningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, false, lang);
+      const eveningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, true, lang);
+
+      notificationsToSchedule.push({
+        id: morningRecurringId,
+        title: morningBaseContent.title,
+        body: morningBaseContent.body,
+        schedule: { on: morningOn, allowWhileIdle: true, repeats: true },
+        channelId: WIRD_CHANNEL_ID,
+        sound: wirdCapacitorSound,
+        extra: {
+          page: 'daily-wird',
+          type: 'daily-wird',
+          period: 'morning',
+          profileId: profile.id,
+          playSound: hasWirdSound,
+          soundFile: wirdSoundPath
+        },
+        smallIcon: WIRD_NOTIFICATION_ICON,
+        iconColor: '#2E7D5E',
+        group: WIRD_GROUP_ID,
+        groupSummary: false,
+        ongoing: false,
+        autoCancel: true
+      });
+
+      notificationsToSchedule.push({
+        id: eveningRecurringId,
+        title: eveningBaseContent.title,
+        body: eveningBaseContent.body,
+        schedule: { on: eveningOn, allowWhileIdle: true, repeats: true },
+        channelId: WIRD_CHANNEL_ID,
+        sound: wirdCapacitorSound,
+        extra: {
+          page: 'daily-wird',
+          type: 'daily-wird',
+          period: 'evening',
+          profileId: profile.id,
+          playSound: hasWirdSound,
+          soundFile: wirdSoundPath
+        },
+        smallIcon: 'ic_stat_name',
+        iconColor: '#2E7D5E',
+        group: WIRD_GROUP_ID,
+        groupSummary: false,
+        ongoing: false,
+        autoCancel: true
+      });
+
+      // 4. Exact Lookahead Schedule for Day 0 (today) and the next 14 calendar days
+      for (let dayOffset = 0; dayOffset <= 14; dayOffset++) {
+        const targetDate = new Date();
+        targetDate.setDate(now.getDate() + dayOffset);
+
+        let missedOnTargetDate: number;
+        if (dayOffset === 0) {
+          const start = new Date(profile.startDate);
+          start.setHours(0, 0, 0, 0);
+          const diffTime = Math.max(0, targetDate.getTime() - start.getTime());
+          const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          missedOnTargetDate = Math.max(0, daysElapsed - profile.completedDays.length);
+        } else {
+          missedOnTargetDate = (isTodayAlreadyCompleted ? 0 : 1) + (dayOffset - 1);
+        }
+
+        const targetDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
+
+        // Morning Schedule (+10s per additional user)
+        const morningTarget = new Date(targetDate);
+        morningTarget.setHours(baseMorningHour, baseMorningMinute, 0, 0);
+        morningTarget.setTime(morningTarget.getTime() + stepDelayMs);
+
+        const shouldScheduleMorning = (dayOffset > 0 || !isTodayAlreadyCompleted) && (morningTarget.getTime() > now.getTime());
+        if (shouldScheduleMorning) {
+          const morningContent = buildWirdNotificationContent(profile, targetDayNumber, missedOnTargetDate, false, lang);
+          notificationsToSchedule.push({
+            id: morningExactBase + dayOffset,
+            title: morningContent.title,
+            body: morningContent.body,
+            schedule: { at: morningTarget, allowWhileIdle: true },
+            channelId: WIRD_CHANNEL_ID,
+            sound: wirdCapacitorSound,
+            extra: {
+              page: 'daily-wird',
+              type: 'daily-wird',
+              period: 'morning',
+              profileId: profile.id,
+              profileName: profile.name,
+              dayNumber: targetDayNumber,
+              missedCount: missedOnTargetDate,
+              playSound: hasWirdSound,
+              soundFile: wirdSoundPath
+            },
+            smallIcon: 'ic_stat_name',
+            iconColor: '#2E7D5E',
+            group: WIRD_GROUP_ID,
+            groupSummary: false,
+            ongoing: false,
+            autoCancel: true
+          });
+        }
+
+        // Evening Schedule (10:00 PM / 22:00 + 10s per additional user)
+        const eveningTarget = new Date(targetDate);
+        eveningTarget.setHours(22, 0, 0, 0);
+        eveningTarget.setTime(eveningTarget.getTime() + stepDelayMs);
+
+        const shouldScheduleEvening = (dayOffset > 0 || !isTodayAlreadyCompleted) && (eveningTarget.getTime() > now.getTime());
+        if (shouldScheduleEvening) {
+          const eveningContent = buildWirdNotificationContent(profile, targetDayNumber, missedOnTargetDate, true, lang);
+          notificationsToSchedule.push({
+            id: eveningExactBase + dayOffset,
+            title: eveningContent.title,
+            body: eveningContent.body,
+            schedule: { at: eveningTarget, allowWhileIdle: true },
+            channelId: WIRD_CHANNEL_ID,
+            sound: wirdCapacitorSound,
+            extra: {
+              page: 'daily-wird',
+              type: 'daily-wird',
+              period: 'evening',
+              profileId: profile.id,
+              profileName: profile.name,
+              dayNumber: targetDayNumber,
+              missedCount: missedOnTargetDate,
+              playSound: hasWirdSound,
+              soundFile: wirdSoundPath
+            },
+            smallIcon: 'ic_stat_name',
+            iconColor: '#2E7D5E',
+            group: WIRD_GROUP_ID,
+            groupSummary: false,
+            ongoing: false,
+            autoCancel: true
+          });
+        }
+      }
     });
-
-    notificationsToSchedule.push({
-      id: RECURRING_EVENING_ID,
-      title: eveningBaseContent.title,
-      body: eveningBaseContent.body,
-      schedule: { on: { hour: 22, minute: 0 }, allowWhileIdle: true, repeats: true },
-      channelId: WIRD_CHANNEL_ID,
-      sound: wirdCapacitorSound,
-      extra: {
-        page: 'daily-wird',
-        type: 'daily-wird',
-        period: 'evening',
-        profileId: profile.id,
-        playSound: hasWirdSound,
-        soundFile: wirdSoundPath
-      },
-      smallIcon: 'ic_stat_name',
-      iconColor: '#2E7D5E',
-      group: WIRD_GROUP_ID,
-      groupSummary: false,
-      ongoing: false,
-      autoCancel: true
-    });
-
-    // 4. Exact Lookahead Schedule for Day 0 (today) and the next 14 calendar days
-    for (let dayOffset = 0; dayOffset <= 14; dayOffset++) {
-      // Calculate calendar target date
-      const targetDate = new Date();
-      targetDate.setDate(now.getDate() + dayOffset);
-      const targetDateStr = targetDate.toISOString().split('T')[0];
-
-      // Missed count calculation assuming no additional reading in between:
-      // If dayOffset == 0 (today):
-      //   missed = 0 if on track, or past missed days
-      // If dayOffset >= 1 (future):
-      //   if today is completed: dayOffset - 1 missed days
-      //   if today is not completed: dayOffset missed days
-      let missedOnTargetDate: number;
-      if (dayOffset === 0) {
-        const start = new Date(profile.startDate);
-        start.setHours(0, 0, 0, 0);
-        const diffTime = Math.max(0, targetDate.getTime() - start.getTime());
-        const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        missedOnTargetDate = Math.max(0, daysElapsed - profile.completedDays.length);
-      } else {
-        missedOnTargetDate = (isTodayAlreadyCompleted ? 0 : 1) + (dayOffset - 1);
-      }
-
-      const targetDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
-
-      // Morning Schedule (10:00 AM)
-      const morningTarget = new Date(targetDate);
-      morningTarget.setHours(10, 0, 0, 0);
-
-      // If today and already completed today, skip morning reminder for today
-      const shouldScheduleMorning = (dayOffset > 0 || !isTodayAlreadyCompleted) && (morningTarget.getTime() > now.getTime());
-      if (shouldScheduleMorning) {
-        const morningContent = buildWirdNotificationContent(profile, targetDayNumber, missedOnTargetDate, false, lang);
-        notificationsToSchedule.push({
-          id: BASE_MORNING_EXACT_ID + dayOffset,
-          title: morningContent.title,
-          body: morningContent.body,
-          schedule: { at: morningTarget, allowWhileIdle: true },
-          channelId: WIRD_CHANNEL_ID,
-          sound: wirdCapacitorSound,
-          extra: {
-            page: 'daily-wird',
-            type: 'daily-wird',
-            period: 'morning',
-            profileId: profile.id,
-            profileName: profile.name,
-            dayNumber: targetDayNumber,
-            missedCount: missedOnTargetDate,
-            playSound: hasWirdSound,
-            soundFile: wirdSoundPath
-          },
-          smallIcon: 'ic_stat_name',
-          iconColor: '#2E7D5E',
-          group: WIRD_GROUP_ID,
-          groupSummary: false,
-          ongoing: false,
-          autoCancel: true
-        });
-      }
-
-      // Evening Schedule (10:00 PM / 22:00)
-      const eveningTarget = new Date(targetDate);
-      eveningTarget.setHours(22, 0, 0, 0);
-
-      const shouldScheduleEvening = (dayOffset > 0 || !isTodayAlreadyCompleted) && (eveningTarget.getTime() > now.getTime());
-      if (shouldScheduleEvening) {
-        const eveningContent = buildWirdNotificationContent(profile, targetDayNumber, missedOnTargetDate, true, lang);
-        notificationsToSchedule.push({
-          id: BASE_EVENING_EXACT_ID + dayOffset,
-          title: eveningContent.title,
-          body: eveningContent.body,
-          schedule: { at: eveningTarget, allowWhileIdle: true },
-          channelId: WIRD_CHANNEL_ID,
-          sound: wirdCapacitorSound,
-          extra: {
-            page: 'daily-wird',
-            type: 'daily-wird',
-            period: 'evening',
-            profileId: profile.id,
-            profileName: profile.name,
-            dayNumber: targetDayNumber,
-            missedCount: missedOnTargetDate,
-            playSound: hasWirdSound,
-            soundFile: wirdSoundPath
-          },
-          smallIcon: 'ic_stat_name',
-          iconColor: '#2E7D5E',
-          group: WIRD_GROUP_ID,
-          groupSummary: false,
-          ongoing: false,
-          autoCancel: true
-        });
-      }
-    }
 
     if (notificationsToSchedule.length > 0) {
       await LocalNotifications.schedule({ notifications: notificationsToSchedule });
-      console.log(`[DailyWird] Successfully scheduled ${notificationsToSchedule.length} phone notifications in (${lang}) with chime sound and custom icon.`);
+      console.log(`[DailyWird] Successfully scheduled ${notificationsToSchedule.length} phone notifications for ${eligibleProfiles.length} user(s) in (${lang}).`);
       await updateNativeAlertsGroupSummary();
     }
   } catch (error) {
@@ -677,66 +761,150 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 };
 
 /**
- * Triggers an immediate test notification with chime sound and custom icon for the user to verify
+ * Triggers immediate test notifications for all users (active first, then 10s apart)
  */
 export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') => {
   const lang = langOverride || getCurrentAppLanguage();
   const isEn = lang === 'en';
-  const profile = getActiveWirdProfile();
-  const dayNumber = profile ? profile.currentDay : 1;
-  const userName = profile ? formatWirdUserName(profile.name, lang) : (isEn ? 'Ahmed' : 'أحمد');
-  
-  const content = profile 
-    ? buildWirdNotificationContent(profile, dayNumber, 0, false, lang)
-    : (isEn ? {
-        title: `Dear ${userName}: Daily Wird Phone Alert`,
-        body: `Gentle reminder for today's portion.. Blessed is the one who dedicates time to the Holy Qur'an.`
-      } : {
-        title: `يا ${userName}: نور يومك بكتاب الله`,
-        body: `تذكير بورد اليوم.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
-      });
-
-  // Play chosen notification sound
+  const orderedProfiles = getOrderedWirdProfiles();
+  const targets: (WirdProfile | null)[] = orderedProfiles.length > 0 ? orderedProfiles : [null];
   const testSound = getActiveNotificationSoundPath();
-  if (testSound && testSound !== 'none') {
-    playNotificationSound(testSound, true);
-  }
 
   if (Capacitor.isNativePlatform()) {
     try {
       await ensureWirdNotificationChannel(lang);
       const testSoundFile = getActiveNotificationSoundFileName();
       const testSoundForCap = testSoundFile && testSoundFile !== 'none' ? testSoundFile : undefined;
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: TEST_NOTIFICATION_ID,
-            title: content.title,
-            body: content.body,
-            schedule: { at: new Date(Date.now() + 500), allowWhileIdle: true },
-            channelId: WIRD_CHANNEL_ID,
-            sound: testSoundForCap,
-            extra: {
-              page: 'daily-wird',
-              type: 'daily-wird',
-              profileId: profile?.id || 'demo',
-              dayNumber,
-              missedCount: 0,
-              playSound: testSoundForCap !== undefined,
-              soundFile: testSound
-            },
-            smallIcon: 'ic_stat_name',
-            iconColor: '#2E7D5E',
-            group: WIRD_GROUP_ID,
-            groupSummary: false,
-            ongoing: false,
-            autoCancel: true
+      const usedTestIds = new Set<number>([TEST_NOTIFICATION_ID]);
+      const notifications: any[] = [];
+
+      targets.forEach((profile, idx) => {
+        const dayNumber = profile ? profile.currentDay : 1;
+        const userName = profile ? formatWirdUserName(profile.name, lang) : (isEn ? 'Ahmed' : 'أحمد');
+        const content = profile
+          ? buildWirdNotificationContent(profile, dayNumber, 0, false, lang)
+          : (isEn ? {
+              title: `Dear ${userName}: Daily Wird Phone Alert`,
+              body: `Gentle reminder for today's portion.. Blessed is the one who dedicates time to the Holy Qur'an.`
+            } : {
+              title: `يا ${userName}: نور يومك بكتاب الله`,
+              body: `تذكير بورد اليوم.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
+            });
+
+        let notifId = TEST_NOTIFICATION_ID;
+        if (idx > 0 && profile) {
+          notifId = EXTRA_USER_ID_BASE + (stableHash(profile.id) % 20000) * 40 + 35;
+          while (usedTestIds.has(notifId)) {
+            notifId += 40;
           }
-        ]
+          usedTestIds.add(notifId);
+        }
+
+        notifications.push({
+          id: notifId,
+          title: content.title,
+          body: content.body,
+          schedule: { at: new Date(Date.now() + 500 + (idx * USER_STEP_DELAY_MS)), allowWhileIdle: true },
+          channelId: WIRD_CHANNEL_ID,
+          sound: testSoundForCap,
+          extra: {
+            page: 'daily-wird',
+            type: 'daily-wird',
+            profileId: profile?.id || 'demo',
+            dayNumber,
+            missedCount: 0,
+            playSound: testSoundForCap !== undefined,
+            soundFile: testSound
+          },
+          smallIcon: 'ic_stat_name',
+          iconColor: '#2E7D5E',
+          group: WIRD_GROUP_ID,
+          groupSummary: false,
+          ongoing: false,
+          autoCancel: true
+        });
       });
+
+      await LocalNotifications.schedule({ notifications });
     } catch (e) {
       console.warn('Error sending test wird notification:', e);
     }
+  }
+
+  targets.forEach((_, idx) => {
+    const fire = () => {
+      triggerAlertVibration('alert');
+      if (testSound && testSound !== 'none') {
+        playNotificationSound(testSound, true);
+      }
+    };
+    if (idx === 0) {
+      fire();
+    } else if (!Capacitor.isNativePlatform()) {
+      window.setTimeout(fire, idx * USER_STEP_DELAY_MS);
+    }
+  });
+};
+
+/**
+ * Checks all ordered wird profiles (active user first) on web/browser and returns unread alerts
+ */
+export const checkAllWirdAlertsOnAppResume = (): WirdAlertData[] => {
+  if (Capacitor.isNativePlatform()) {
+    return [];
+  }
+
+  try {
+    const ordered = getOrderedWirdProfiles();
+    if (ordered.length === 0) return [];
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const lang = getCurrentAppLanguage();
+    const soundFileName = getActiveNotificationSoundFileName() || 'chime.mp3';
+    const alerts: WirdAlertData[] = [];
+
+    for (const profile of ordered) {
+      if (!profile || !profile.isActive || profile.reminderEnabled === false) {
+        continue;
+      }
+
+      const totalDays = getWirdTotalDays(profile);
+      if (profile.completedDays.length >= totalDays) {
+        continue;
+      }
+
+      const status = calculateWirdStatus(profile);
+      if (status.isTodayDayCompleted) {
+        continue;
+      }
+
+      const lastAlertKey = `wird_alert_shown_date_${profile.id}`;
+      const lastShown = localStorage.getItem(lastAlertKey);
+      if (lastShown === todayStr) {
+        continue;
+      }
+
+      const dayRange = getWirdDayRange(status.targetDayNumber, profile);
+      const content = buildWirdNotificationContent(profile, status.targetDayNumber, status.missedDaysCount, false, lang);
+
+      alerts.push({
+        profileId: profile.id,
+        profileName: profile.name,
+        currentDay: status.targetDayNumber,
+        totalDays: status.totalDays,
+        startPage: dayRange.start,
+        endPage: dayRange.end,
+        missedDaysCount: status.missedDaysCount,
+        title: content.title,
+        message: content.body,
+        soundFileName
+      });
+    }
+
+    return alerts;
+  } catch (e) {
+    console.error('Error checking wird alerts on resume:', e);
+    return [];
   }
 };
 
@@ -744,53 +912,8 @@ export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') =>
  * Checks if the user has an uncompleted wird on web/browser only
  */
 export const checkWirdAlertOnAppResume = (): WirdAlertData | null => {
-  if (Capacitor.isNativePlatform()) {
-    return null;
-  }
-
-  try {
-    const profile = getActiveWirdProfile();
-    if (!profile || !profile.isActive || profile.reminderEnabled === false) {
-      return null;
-    }
-
-    const totalDays = getWirdTotalDays(profile);
-    if (profile.completedDays.length >= totalDays) {
-      return null;
-    }
-
-    const status = calculateWirdStatus(profile);
-    if (status.isTodayDayCompleted) {
-      return null;
-    }
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const lastAlertKey = `wird_alert_shown_date_${profile.id}`;
-    const lastShown = localStorage.getItem(lastAlertKey);
-    if (lastShown === todayStr) {
-      return null;
-    }
-
-    const lang = getCurrentAppLanguage();
-    const dayRange = getWirdDayRange(status.targetDayNumber, profile);
-    const content = buildWirdNotificationContent(profile, status.targetDayNumber, status.missedDaysCount, false, lang);
-
-    return {
-      profileId: profile.id,
-      profileName: profile.name,
-      currentDay: status.targetDayNumber,
-      totalDays: status.totalDays,
-      startPage: dayRange.start,
-      endPage: dayRange.end,
-      missedDaysCount: status.missedDaysCount,
-      title: content.title,
-      message: content.body,
-      soundFileName: getActiveNotificationSoundFileName() || 'chime.mp3'
-    };
-  } catch (e) {
-    console.error('Error checking wird alert on resume:', e);
-    return null;
-  }
+  const alerts = checkAllWirdAlertsOnAppResume();
+  return alerts.length > 0 ? alerts[0] : null;
 };
 
 export const markWirdAlertShownToday = (profileId: string) => {

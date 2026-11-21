@@ -76,7 +76,7 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
         }
         if (themeKey === 'sky_mode' || homeThemeVariant === 'sky') {
             return {
-                pageBg: '#f8fafc',
+                pageBg: '#E0F2FE',
                 headerBg: '#ffffff',
                 cardBg: '#ffffff',
                 cardActiveBg: '#f0f9ff',
@@ -93,7 +93,7 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
         }
         if (themeKey === 'emerald_mode' || homeThemeVariant === 'emerald') {
             return {
-                pageBg: '#f8fafc',
+                pageBg: '#D1FAE5',
                 headerBg: '#ffffff',
                 cardBg: '#ffffff',
                 cardActiveBg: '#f0fdf4',
@@ -110,7 +110,7 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
         }
         if (themeKey === 'burgundy_mode' || homeThemeVariant === 'burgundy') {
             return {
-                pageBg: '#faf5f5',
+                pageBg: '#FFE4E6',
                 headerBg: '#ffffff',
                 cardBg: '#ffffff',
                 cardActiveBg: '#fff1f2',
@@ -128,7 +128,7 @@ export const PrayerCalculationSettings: React.FC<PrayerCalculationSettingsProps>
         // Golden / Default
         const primaryAcc = theme.palette?.[0] || '#d97706';
         return {
-            pageBg: '#fdfbf7',
+            pageBg: '#FEF9C3',
             headerBg: '#ffffff',
             cardBg: '#ffffff',
             cardActiveBg: '#fffbeb',

@@ -25,6 +25,7 @@ import {
 import {
   getPageRange,
   getQuarterRange,
+  getJuzRange,
   PRESET_MEMORIZATION_PLANS,
   MemorizationPlanItem
 } from '../utils/quranMemorizationUtils';
@@ -74,8 +75,41 @@ interface MemorizationProps {
     onNavigate: (pageId: string, params?: any) => void;
 }
 
-type SelectionMode = 'ayahs' | 'page' | 'quarter';
+type SelectionMode = 'ayahs' | 'page' | 'quarter' | 'juz';
 type ActiveTab = 'setup' | 'plans' | 'review' | 'quiz';
+
+const MEMORIZATION_SETTINGS_STORAGE_KEY = 'memorization_settings_v1';
+
+interface SavedMemorizationSettings {
+    selectionMode?: SelectionMode;
+    selectedPage?: number;
+    selectedQuarter?: number;
+    selectedJuz?: number;
+    reader?: string;
+    fromSurah?: number;
+    fromAyah?: number;
+    toSurah?: number;
+    toAyah?: number;
+    rangeRepeat?: number;
+    ayahRepeat?: number;
+    linkedRepeat?: boolean;
+    isCumulative?: boolean;
+    isShanqiti3x3?: boolean;
+    pauseLength?: number | 'auto';
+    testAfterSession?: boolean;
+}
+
+function readSavedMemorizationSettings(): SavedMemorizationSettings {
+    try {
+        const raw = localStorage.getItem(MEMORIZATION_SETTINGS_STORAGE_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return {};
+        return parsed as SavedMemorizationSettings;
+    } catch {
+        return {};
+    }
+}
 
 const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const { theme, themeKey } = useTheme();
@@ -98,27 +132,78 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
         boxShadow: primary3DShadow
     };
 
+    const initialSavedSettings = React.useMemo(() => readSavedMemorizationSettings(), []);
+
     // Tabs
     const [activeTab, setActiveTab] = useState<ActiveTab>('setup');
 
-    // Selection Mode: by ayahs, by page, or by quarter
-    const [selectionMode, setSelectionMode] = useState<SelectionMode>('ayahs');
-    const [selectedPage, setSelectedPage] = useState<number>(1);
-    const [selectedQuarter, setSelectedQuarter] = useState<number>(1);
+    // Selection Mode: by ayah, by page, by quarter, or by juz
+    const [selectionMode, setSelectionMode] = useState<SelectionMode>(() => {
+        const mode = initialSavedSettings.selectionMode;
+        return mode === 'ayahs' || mode === 'page' || mode === 'quarter' || mode === 'juz' ? mode : 'ayahs';
+    });
+    const [selectedPage, setSelectedPage] = useState<number>(() => {
+        const p = initialSavedSettings.selectedPage;
+        return typeof p === 'number' && Number.isInteger(p) && p >= 1 && p <= 604 ? p : 1;
+    });
+    const [selectedQuarter, setSelectedQuarter] = useState<number>(() => {
+        const q = initialSavedSettings.selectedQuarter;
+        return typeof q === 'number' && Number.isInteger(q) && q >= 1 && q <= 240 ? q : 1;
+    });
+    const [selectedJuz, setSelectedJuz] = useState<number>(() => {
+        const j = initialSavedSettings.selectedJuz;
+        return typeof j === 'number' && Number.isInteger(j) && j >= 1 && j <= 30 ? j : 1;
+    });
 
     // Reader & Repetitions
-    const [selectedReader, setSelectedReader] = useState(MEMORIZATION_READERS[1]?.id || 'Abdul_Basit_Murattal_192kbps');
-    const [fromSurah, setFromSurah] = useState(1);
-    const [fromAyah, setFromAyah] = useState(1);
-    const [toSurah, setToSurah] = useState(1);
-    const [toAyah, setToAyah] = useState(7);
+    const [selectedReader, setSelectedReader] = useState<string>(() => {
+        const r = initialSavedSettings.reader;
+        return typeof r === 'string' && r.trim() !== ''
+            ? r
+            : (MEMORIZATION_READERS[1]?.id || 'Abdul_Basit_Murattal_192kbps');
+    });
+    const [fromSurah, setFromSurah] = useState<number>(() => {
+        const s = initialSavedSettings.fromSurah;
+        return typeof s === 'number' && s >= 1 && s <= 114 ? s : 1;
+    });
+    const [fromAyah, setFromAyah] = useState<number>(() => {
+        const a = initialSavedSettings.fromAyah;
+        return typeof a === 'number' && a >= 1 ? a : 1;
+    });
+    const [toSurah, setToSurah] = useState<number>(() => {
+        const s = initialSavedSettings.toSurah;
+        return typeof s === 'number' && s >= 1 && s <= 114 ? s : 1;
+    });
+    const [toAyah, setToAyah] = useState<number>(() => {
+        const a = initialSavedSettings.toAyah;
+        return typeof a === 'number' && a >= 1 ? a : 7;
+    });
 
-    const [rangeRepeat, setRangeRepeat] = useState(1);
-    const [ayahRepeat, setAyahRepeat] = useState(1);
-    const [linkedRepeat, setLinkedRepeat] = useState(false);
-    const [isCumulative, setIsCumulative] = useState(false); // 3x3 loop
-    const [pauseLength, setPauseLength] = useState(3);
-    const [testAfterSession, setTestAfterSession] = useState(true);
+    const [rangeRepeat, setRangeRepeat] = useState<number>(() => {
+        const rr = initialSavedSettings.rangeRepeat;
+        return typeof rr === 'number' && rr >= 1 ? rr : 1;
+    });
+    const [ayahRepeat, setAyahRepeat] = useState<number>(() => {
+        const ar = initialSavedSettings.ayahRepeat;
+        return typeof ar === 'number' && ar >= 1 ? ar : 1;
+    });
+    const [linkedRepeat, setLinkedRepeat] = useState<boolean>(() => {
+        return typeof initialSavedSettings.linkedRepeat === 'boolean' ? initialSavedSettings.linkedRepeat : false;
+    });
+    const [isCumulative, setIsCumulative] = useState<boolean>(() => {
+        return typeof initialSavedSettings.isCumulative === 'boolean' ? initialSavedSettings.isCumulative : false;
+    });
+    const [isShanqiti3x3, setIsShanqiti3x3] = useState<boolean>(() => {
+        return typeof initialSavedSettings.isShanqiti3x3 === 'boolean' ? initialSavedSettings.isShanqiti3x3 : false;
+    }); // Shanqiti 3x3 chunked loop
+    const [pauseLength, setPauseLength] = useState<number | 'auto'>(() => {
+        const pl = initialSavedSettings.pauseLength;
+        if (pl === 'auto') return 'auto';
+        return typeof pl === 'number' && pl >= 0 ? pl : 3;
+    });
+    const [testAfterSession, setTestAfterSession] = useState<boolean>(() => {
+        return typeof initialSavedSettings.testAfterSession === 'boolean' ? initialSavedSettings.testAfterSession : true;
+    });
 
     // Data lists
     const [memorizedRanges, setMemorizedRanges] = useState<MemorizedRange[]>([]);
@@ -134,7 +219,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const [userPlans, setUserPlans] = useState<any>({});
 
     // Modals & Pickers
-    const [activePicker, setActivePicker] = useState<'range' | 'ayah' | 'pause' | 'reader' | 'fromSurah' | 'fromAyah' | 'toSurah' | 'toAyah' | 'page' | 'quarter' | null>(null);
+    const [activePicker, setActivePicker] = useState<'range' | 'ayah' | 'pause' | 'reader' | 'fromSurah' | 'fromAyah' | 'toSurah' | 'toAyah' | 'page' | 'quarter' | 'juz' | null>(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [showQuizModal, setShowQuizModal] = useState(false);
     const [quizTargetRange, setQuizTargetRange] = useState<any>(null);
@@ -207,23 +292,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
 
     useEffect(() => {
         refreshData();
-        const savedSettings = localStorage.getItem('memorization_settings_v1');
-        if (savedSettings) {
-            try {
-                const parsed = JSON.parse(savedSettings);
-                if (parsed.reader) setSelectedReader(parsed.reader);
-                if (parsed.fromSurah) setFromSurah(parsed.fromSurah);
-                if (parsed.fromAyah) setFromAyah(parsed.fromAyah);
-                if (parsed.toSurah) setToSurah(parsed.toSurah);
-                if (parsed.toAyah) setToAyah(parsed.toAyah);
-                if (parsed.rangeRepeat) setRangeRepeat(parsed.rangeRepeat);
-                if (parsed.ayahRepeat) setAyahRepeat(parsed.ayahRepeat);
-                if (parsed.linkedRepeat !== undefined) setLinkedRepeat(parsed.linkedRepeat);
-                if (parsed.isCumulative !== undefined) setIsCumulative(parsed.isCumulative);
-                if (parsed.pauseLength !== undefined) setPauseLength(parsed.pauseLength);
-                if (parsed.testAfterSession !== undefined) setTestAfterSession(parsed.testAfterSession);
-            } catch (e) {}
-        }
 
         const session = localStorage.getItem('memorization_session_v1');
         if (session) {
@@ -236,23 +304,47 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
         }
     }, []);
 
-    // Save settings on change
+    // Save all Setup tab settings automatically whenever any setting changes
     useEffect(() => {
-        const payload = {
-            reader: selectedReader,
-            fromSurah,
-            fromAyah,
-            toSurah,
-            toAyah,
-            rangeRepeat,
-            ayahRepeat,
-            linkedRepeat,
-            isCumulative,
-            pauseLength,
-            testAfterSession
-        };
-        localStorage.setItem('memorization_settings_v1', JSON.stringify(payload));
-    }, [selectedReader, fromSurah, fromAyah, toSurah, toAyah, rangeRepeat, ayahRepeat, linkedRepeat, isCumulative, pauseLength, testAfterSession]);
+        try {
+            const payload: SavedMemorizationSettings = {
+                selectionMode,
+                selectedPage,
+                selectedQuarter,
+                selectedJuz,
+                reader: selectedReader,
+                fromSurah,
+                fromAyah,
+                toSurah,
+                toAyah,
+                rangeRepeat,
+                ayahRepeat,
+                linkedRepeat,
+                isCumulative,
+                isShanqiti3x3,
+                pauseLength,
+                testAfterSession
+            };
+            localStorage.setItem(MEMORIZATION_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+        } catch (e) {}
+    }, [
+        selectionMode,
+        selectedPage,
+        selectedQuarter,
+        selectedJuz,
+        selectedReader,
+        fromSurah,
+        fromAyah,
+        toSurah,
+        toAyah,
+        rangeRepeat,
+        ayahRepeat,
+        linkedRepeat,
+        isCumulative,
+        isShanqiti3x3,
+        pauseLength,
+        testAfterSession
+    ]);
 
     // Back Interceptor
     useEffect(() => {
@@ -289,6 +381,17 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
         setActivePicker(null);
     };
 
+    // Update range when Juz changes
+    const handleJuzSelect = (juzNum: number) => {
+        setSelectedJuz(juzNum);
+        const b = getJuzRange(juzNum);
+        setFromSurah(b.start.s);
+        setFromAyah(b.start.a);
+        setToSurah(b.end.s);
+        setToAyah(b.end.a);
+        setActivePicker(null);
+    };
+
     const getAyahsCount = (surahNum: number) => {
         return quranJsonData.surahs[surahNum - 1]?.ayahs.length || 0;
     };
@@ -309,6 +412,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             ayahRepeat: customParams?.ayahRepeat || ayahRepeat,
             linkedRepeat: customParams?.linkedRepeat !== undefined ? customParams.linkedRepeat : linkedRepeat,
             isCumulative: customParams?.isCumulative !== undefined ? customParams.isCumulative : isCumulative,
+            isShanqiti3x3: customParams?.isShanqiti3x3 !== undefined ? customParams.isShanqiti3x3 : isShanqiti3x3,
             pauseLength: customParams?.pauseLength !== undefined ? customParams.pauseLength : pauseLength,
             testAfterSession: customParams?.testAfterSession !== undefined ? customParams.testAfterSession : testAfterSession,
             rangeId: customParams?.rangeId
@@ -552,30 +656,37 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                 {/* TAB 1: SETUP (إعداد الحفظ والتحديد المرن) */}
                 {activeTab === 'setup' && (
                     <div className="space-y-4">
-                        {/* Flexible Range Selector Modes (آيات / صفحات / أرباع) */}
+                        {/* Flexible Range Selector Modes (آية / صفحة / ربع / جزء) */}
                         <div id="memorization-selection-mode-container" className="app-page-card border-0 p-4 rounded-3xl bg-white dark:bg-[#1E293B] space-y-3.5">
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="font-bold text-xs" style={{ color: primaryColor }}>
-                                    <span>{isEn ? 'Select Range Method' : 'طريقة تحديد النطاق'}</span>
+                            <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                <span className="font-bold text-xs whitespace-nowrap" style={{ color: primaryColor }}>
+                                    <span>{isEn ? 'Select Range' : 'تحديد النطاق'}</span>
                                 </span>
                                 
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                                <div className="flex flex-wrap items-center gap-1 text-[10px] font-bold">
                                     <button
                                         type="button"
                                         onClick={() => setSelectionMode('ayahs')}
-                                        className={`px-2.5 py-1.5 rounded-xl transition-all border-0 cursor-pointer ${
+                                        className={`px-2 py-1.5 rounded-xl whitespace-nowrap transition-all border-0 cursor-pointer ${
                                             selectionMode === 'ayahs'
                                                 ? 'font-black active:translate-y-[2px]'
                                                 : 'wird-inner-raised bg-white dark:bg-[#0F172A] opacity-75 hover:opacity-100'
                                         }`}
                                         style={selectionMode === 'ayahs' ? primary3DStyle : undefined}
                                     >
-                                        {isEn ? 'Verses' : 'بالآيات'}
+                                        {isEn ? 'Verse' : 'بالآية'}
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setSelectionMode('page')}
-                                        className={`px-2.5 py-1.5 rounded-xl transition-all border-0 cursor-pointer ${
+                                        onClick={() => {
+                                            setSelectionMode('page');
+                                            const b = getPageRange(selectedPage);
+                                            setFromSurah(b.start.s);
+                                            setFromAyah(b.start.a);
+                                            setToSurah(b.end.s);
+                                            setToAyah(b.end.a);
+                                        }}
+                                        className={`px-2 py-1.5 rounded-xl whitespace-nowrap transition-all border-0 cursor-pointer ${
                                             selectionMode === 'page'
                                                 ? 'font-black active:translate-y-[2px]'
                                                 : 'wird-inner-raised bg-white dark:bg-[#0F172A] opacity-75 hover:opacity-100'
@@ -586,15 +697,41 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setSelectionMode('quarter')}
-                                        className={`px-2.5 py-1.5 rounded-xl transition-all border-0 cursor-pointer ${
+                                        onClick={() => {
+                                            setSelectionMode('quarter');
+                                            const b = getQuarterRange(selectedQuarter);
+                                            setFromSurah(b.start.s);
+                                            setFromAyah(b.start.a);
+                                            setToSurah(b.end.s);
+                                            setToAyah(b.end.a);
+                                        }}
+                                        className={`px-2 py-1.5 rounded-xl whitespace-nowrap transition-all border-0 cursor-pointer ${
                                             selectionMode === 'quarter'
                                                 ? 'font-black active:translate-y-[2px]'
                                                 : 'wird-inner-raised bg-white dark:bg-[#0F172A] opacity-75 hover:opacity-100'
                                         }`}
                                         style={selectionMode === 'quarter' ? primary3DStyle : undefined}
                                     >
-                                        {isEn ? 'Quarter' : 'بالأرباع'}
+                                        {isEn ? 'Quarter' : 'بالربع'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectionMode('juz');
+                                            const b = getJuzRange(selectedJuz);
+                                            setFromSurah(b.start.s);
+                                            setFromAyah(b.start.a);
+                                            setToSurah(b.end.s);
+                                            setToAyah(b.end.a);
+                                        }}
+                                        className={`px-2 py-1.5 rounded-xl whitespace-nowrap transition-all border-0 cursor-pointer ${
+                                            selectionMode === 'juz'
+                                                ? 'font-black active:translate-y-[2px]'
+                                                : 'wird-inner-raised bg-white dark:bg-[#0F172A] opacity-75 hover:opacity-100'
+                                        }`}
+                                        style={selectionMode === 'juz' ? primary3DStyle : undefined}
+                                    >
+                                        {isEn ? 'Juz' : 'بالجزء'}
                                     </button>
                                 </div>
                             </div>
@@ -631,6 +768,26 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                             style={primary3DStyle}
                                         >
                                             {isEn ? `Quarter ${selectedQuarter}` : `الربع ${selectedQuarter}`}
+                                        </button>
+                                    </div>
+                                    <div className="text-[11px] opacity-70">
+                                        {getSurahName(fromSurah)} ({fromAyah}) ➔ {getSurahName(toSurah)} ({toAyah})
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Mode D: By Juz */}
+                            {selectionMode === 'juz' && (
+                                <div className="app-inner-3d-box border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/85 space-y-2">
+                                    <div className="flex items-center justify-between text-xs font-bold">
+                                        <span>{isEn ? 'Quran Juz' : 'الجزء من القرآن'}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActivePicker('juz')}
+                                            className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer border-0 active:translate-y-[2px] transition-all"
+                                            style={primary3DStyle}
+                                        >
+                                            {isEn ? `Juz ${selectedJuz}` : `الجزء ${selectedJuz}`}
                                         </button>
                                     </div>
                                     <div className="text-[11px] opacity-70">
@@ -739,9 +896,13 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     <button 
                                         type="button"
                                         onClick={() => setActivePicker('pause')}
-                                        className="app-page-card border-0 px-2.5 h-9 min-w-[3rem] rounded-xl bg-white dark:bg-[#1E293B] font-bold text-xs cursor-pointer"
+                                        className="app-page-card border-0 px-2.5 h-9 min-w-[3rem] rounded-xl bg-white dark:bg-[#1E293B] font-bold text-xs cursor-pointer whitespace-nowrap"
                                     >
-                                        {pauseLength === 0 ? (isEn ? '0 (Off)' : '0 (مستمر)') : `${pauseLength}s`}
+                                        {pauseLength === 'auto'
+                                            ? (isEn ? 'Auto' : 'تلقائي')
+                                            : pauseLength === 0
+                                                ? (isEn ? '0 (Off)' : '0 (مستمر)')
+                                                : `${pauseLength}s`}
                                     </button>
                                 </div>
 
@@ -750,7 +911,10 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     onClick={() => {
                                         const nextVal = !linkedRepeat;
                                         setLinkedRepeat(nextVal);
-                                        if (nextVal) setIsCumulative(false);
+                                        if (nextVal) {
+                                            setIsCumulative(false);
+                                            setIsShanqiti3x3(false);
+                                        }
                                     }}
                                 >
                                     <div className="flex flex-col">
@@ -765,7 +929,10 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                             e.stopPropagation();
                                             const nextVal = !linkedRepeat;
                                             setLinkedRepeat(nextVal);
-                                            if (nextVal) setIsCumulative(false);
+                                            if (nextVal) {
+                                                setIsCumulative(false);
+                                                setIsShanqiti3x3(false);
+                                            }
                                         }}
                                         className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 cursor-pointer app-3d-checkbox ${
                                             linkedRepeat
@@ -779,42 +946,68 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 </div>
                             </div>
 
-                            {/* Cumulative 3x3 Loop Toggle */}
-                            <div 
-                                className="wird-inner-raised border-0 p-3.5 rounded-2xl bg-amber-50/90 dark:bg-[#0F172A]/80 flex items-center justify-between cursor-pointer active:translate-y-[2px]"
-                                onClick={() => {
-                                    const nextVal = !isCumulative;
-                                    setIsCumulative(nextVal);
-                                    if (nextVal) setLinkedRepeat(false);
-                                }}
-                            >
+                            {/* Cumulative Methods Single Card (2-button selector) */}
+                            <div className="wird-inner-raised border-0 p-3.5 rounded-2xl bg-amber-50/90 dark:bg-[#0F172A]/80 space-y-2.5">
                                 <div>
                                     <div className="text-xs font-bold text-amber-900 dark:text-amber-200">
-                                        {isEn ? 'Cumulative 3x3 Loop (Shanqiti)' : 'الحفظ التراكمي الشنقيطي (3×3)'}
+                                        {isEn ? 'Cumulative Memorization' : 'الحفظ التراكمي'}
                                     </div>
                                     <div className="text-[10px] text-amber-700 dark:text-amber-400">
-                                        {isEn ? 'Repeats verses progressively for strong retention' : 'تكرار الآيات تصاعدياً لضمان الرسوخ وعدم التفلت'}
+                                        {isShanqiti3x3
+                                            ? (isEn ? '3-verse groups with in-group linking & full consolidation' : 'تقسيم النطاق لمجموعات من 3 آيات مع الربط والتثبيت الشامل')
+                                            : isCumulative
+                                                ? (isEn ? 'Repeats verses progressively for strong retention' : 'تكرار الآيات تصاعدياً لضمان الرسوخ وعدم التفلت')
+                                                : (isEn ? 'Choose between Cumulative or Shanqiti (3×3)' : 'اختر إحدى طريقتي الحفظ التراكمي أو الشنقيطي (3×3)')}
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    role="checkbox"
-                                    aria-checked={isCumulative}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const nextVal = !isCumulative;
-                                        setIsCumulative(nextVal);
-                                        if (nextVal) setLinkedRepeat(false);
-                                    }}
-                                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 cursor-pointer app-3d-checkbox ${
-                                        isCumulative
-                                            ? 'app-3d-checkbox-checked bg-amber-500 text-white'
-                                            : 'bg-slate-100 dark:bg-zinc-800 text-transparent'
-                                    }`}
-                                    aria-label={isEn ? 'Cumulative 3x3 Loop' : 'الحفظ التراكمي الشنقيطي'}
-                                >
-                                    {isCumulative && <Check size={14} strokeWidth={3} />}
-                                </button>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        aria-pressed={isCumulative}
+                                        onClick={() => {
+                                            const nextVal = !isCumulative;
+                                            setIsCumulative(nextVal);
+                                            if (nextVal) {
+                                                setLinkedRepeat(false);
+                                                setIsShanqiti3x3(false);
+                                            }
+                                        }}
+                                        className={`px-2 py-2.5 rounded-xl text-[10.5px] sm:text-xs transition-all border-0 cursor-pointer flex items-center justify-center gap-1.5 text-center leading-snug active:translate-y-[2px] ${
+                                            isCumulative
+                                                ? 'font-black'
+                                                : 'wird-inner-raised bg-white dark:bg-[#1E293B] text-amber-900 dark:text-amber-200 font-bold opacity-85 hover:opacity-100'
+                                        }`}
+                                        style={isCumulative ? primary3DStyle : undefined}
+                                        aria-label={isEn ? 'Cumulative Loop' : 'الحفظ التراكمي'}
+                                    >
+                                        {isCumulative && <Check size={13} strokeWidth={3} className="shrink-0" />}
+                                        <span>{isEn ? 'Cumulative Loop' : 'الحفظ التراكمي'}</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        aria-pressed={isShanqiti3x3}
+                                        onClick={() => {
+                                            const nextVal = !isShanqiti3x3;
+                                            setIsShanqiti3x3(nextVal);
+                                            if (nextVal) {
+                                                setLinkedRepeat(false);
+                                                setIsCumulative(false);
+                                            }
+                                        }}
+                                        className={`px-2 py-2.5 rounded-xl text-[10.5px] sm:text-xs transition-all border-0 cursor-pointer flex items-center justify-center gap-1.5 text-center leading-snug active:translate-y-[2px] ${
+                                            isShanqiti3x3
+                                                ? 'font-black'
+                                                : 'wird-inner-raised bg-white dark:bg-[#1E293B] text-amber-900 dark:text-amber-200 font-bold opacity-85 hover:opacity-100'
+                                        }`}
+                                        style={isShanqiti3x3 ? primary3DStyle : undefined}
+                                        aria-label={isEn ? 'Shanqiti Cumulative (3×3)' : 'الحفظ التراكمي الشنقيطي (3×3)'}
+                                    >
+                                        {isShanqiti3x3 && <Check size={13} strokeWidth={3} className="shrink-0" />}
+                                        <span>{isEn ? 'Shanqiti (3×3)' : 'الحفظ التراكمي الشنقيطي (3×3)'}</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -1294,9 +1487,49 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 </div>
                             )}
 
+                            {/* Juz Picker (1 to 30) */}
+                            {activePicker === 'juz' && (
+                                <div className="grid grid-cols-4 gap-2.5 p-0.5">
+                                    {Array.from({ length: 30 }).map((_, i) => {
+                                        const jNum = i + 1;
+                                        const isSelected = selectedJuz === jNum;
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={jNum}
+                                                onClick={() => handleJuzSelect(jNum)}
+                                                className={`aspect-square flex items-center justify-center rounded-xl font-bold text-xs cursor-pointer border-0 ${
+                                                    isSelected
+                                                        ? 'active:translate-y-[2px]'
+                                                        : 'app-page-card bg-white dark:bg-[#0F172A]'
+                                                }`}
+                                                style={isSelected ? primary3DStyle : undefined}
+                                            >
+                                                {jNum}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             {/* Number Pickers (Repeats, Pause) */}
                             {activePicker === 'pause' && (
                                 <div className="grid grid-cols-2 gap-3 p-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setPauseLength('auto');
+                                            setActivePicker(null);
+                                        }}
+                                        className={`col-span-2 py-3.5 px-3 flex items-center justify-center rounded-2xl font-bold transition-all text-sm border-0 cursor-pointer ${
+                                            pauseLength === 'auto'
+                                                ? 'active:translate-y-[2px]'
+                                                : 'app-page-card bg-white dark:bg-[#0F172A]'
+                                        }`}
+                                        style={pauseLength === 'auto' ? primary3DStyle : undefined}
+                                    >
+                                        {isEn ? 'Auto (By Verse Length)' : 'تلقائي (بمقدار طول الآية)'}
+                                    </button>
                                     {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => {
                                         const isSelected = pauseLength === val;
                                         return (
@@ -1316,7 +1549,11 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                             >
                                                 {val === 0 
                                                     ? (isEn ? '0s (Continuous)' : '0 (مستمر بدون توقف)') 
-                                                    : `${val} ${isEn ? 'sec' : 'ثوانٍ'}`}
+                                                    : val === 1
+                                                        ? (isEn ? '1 sec' : 'ثانية واحدة')
+                                                        : val === 2
+                                                            ? (isEn ? '2 sec' : 'ثانيتان')
+                                                            : `${val} ${isEn ? 'sec' : 'ثوانٍ'}`}
                                             </button>
                                         );
                                     })}

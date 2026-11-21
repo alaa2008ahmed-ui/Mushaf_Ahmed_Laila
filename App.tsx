@@ -36,7 +36,7 @@ import {
   getWirdDayRange, 
   getWirdTotalDays, 
   buildWirdNotificationContent, 
-  checkWirdAlertOnAppResume, 
+  checkAllWirdAlertsOnAppResume,
   markWirdAlertShownToday 
 } from './utils/dailyWirdNotificationService';
 import { getPendingShortcutInfo, markNativeShortcutConsumed, updateNativeAlertsGroupSummary } from './utils/silentMode';
@@ -44,9 +44,13 @@ import ScrollToTopFAB from './components/ScrollToTopFAB';
 import GlobalAppToast from './components/Common/GlobalAppToast';
 import FloatingListenButton from './components/Listen/FloatingListenButton';
 import { useListenQuranStore } from './hooks/useListenQuranStore';
+import { isTourPreviewMode, getTourPreviewInitParams } from './utils/tourPreviewMode';
+import { triggerAlertVibration } from './utils/vibrationHelper';
 
 // --- Main App Component ---
 function App() {
+  const isTourPreview = React.useMemo(() => isTourPreviewMode(), []);
+  const tourInit = React.useMemo(() => (isTourPreview ? getTourPreviewInitParams() : null), [isTourPreview]);
   const { theme, setHomeThemeVariant, setNightModeActive, setCurrentPage } = useTheme();
   const { setLanguage } = useLanguage();
 
@@ -103,7 +107,7 @@ function App() {
   const currentOrientationRef = React.useRef<'portrait' | 'landscape'>('portrait');
 
   const [splashStage, setSplashStage] = useState<'splash' | 'welcome' | 'app'>(() => {
-    if (initialShortcut) {
+    if (isTourPreview || initialShortcut) {
       purgeBootSplashMemory();
       return 'app';
     }
@@ -111,6 +115,7 @@ function App() {
   });
 
   const [hasChosenInitialLanguage, setHasChosenInitialLanguage] = useState<boolean>(() => {
+    if (isTourPreview) return true;
     try {
       return localStorage.getItem('has_selected_initial_language') === 'true';
     } catch (e) {
@@ -120,6 +125,7 @@ function App() {
 
   // Track app launch count for "جديد" badge and sync first-time preferences
   useEffect(() => {
+    if (isTourPreview) return;
     recordAppLaunch();
     try {
       if (localStorage.getItem('home_layout_system') !== 'modern') {
@@ -135,9 +141,15 @@ function App() {
       }).catch(() => {});
       Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
     } catch (e) {}
-  }, []);
+  }, [isTourPreview]);
 
   const [history, setHistory] = useState<string[]>(() => {
+    if (isTourPreview) {
+      if (tourInit?.page && tourInit.page !== 'home') {
+        return ['home', tourInit.page];
+      }
+      return ['home'];
+    }
     // Clear any previous saved history/page so fresh app launch from icon always opens directly on the home page
     try {
       localStorage.removeItem('last_active_history');
@@ -150,6 +162,7 @@ function App() {
     return ['home'];
   });
   const [navParams, setNavParams] = useState<any>(null);
+  const [tourRouteKey, setTourRouteKey] = useState(0);
   const [lastMenuPage, setLastMenuPage] = useState('home');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   
@@ -157,6 +170,7 @@ function App() {
   const [updateInfo, setUpdateInfo] = useState<{ show: boolean; newVersion: string }>({ show: false, newVersion: '' });
 
   useEffect(() => {
+    if (isTourPreview) return;
     const checkUpdate = async () => {
       if (!REMOTE_VERSION_URL || REMOTE_VERSION_URL.includes('your-server.com')) return;
 
@@ -192,7 +206,7 @@ function App() {
     // فحص التحديث بعد ثانية واحدة من التشغيل
     const timeout = setTimeout(checkUpdate, 1000);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [isTourPreview]);
 
   // Compute active page ID synchronously for 0ms delay theme synchronization
   const activePageId = React.useMemo(() => {
@@ -214,14 +228,14 @@ function App() {
 
   // Synchronize current page ID in ThemeContext safely in useEffect
   React.useEffect(() => {
-    if (activePageId === 'home') {
+    if (activePageId === 'home' && !isTourPreview) {
       restoreHomeThemeDOMInstantly();
     }
     setCurrentPage(activePageId);
-    if (activePageId && activePageId !== 'home') {
+    if (activePageId && activePageId !== 'home' && !isTourPreview) {
       markPageAsSeen(activePageId);
     }
-  }, [activePageId, setCurrentPage]);
+  }, [activePageId, setCurrentPage, isTourPreview]);
 
   useEffect(() => {
     if (!history.includes('search')) {
@@ -233,7 +247,7 @@ function App() {
     }
 
     // --- Orientation Management (سلاسة وسرعة لحظية بدون تكرار أو تعليق) ---
-    if (Capacitor.isNativePlatform()) {
+    if (!isTourPreview && Capacitor.isNativePlatform()) {
       const targetOrientation = (currentPage === 'quran-landscape' || activePageId === 'quran_search_landscape') ? 'landscape' : 'portrait';
       if (currentOrientationRef.current !== targetOrientation) {
         currentOrientationRef.current = targetOrientation;
@@ -242,7 +256,7 @@ function App() {
         });
       }
     }
-  }, [history, activePageId]);
+  }, [history, activePageId, isTourPreview]);
 
   const handleNavigate = useCallback((pageId: string, params?: any) => {
     const rawPageId = pageId;
@@ -291,14 +305,16 @@ function App() {
     }
 
     if (pageId === 'home') {
-      restoreHomeThemeDOMInstantly();
+      if (!isTourPreview) {
+        restoreHomeThemeDOMInstantly();
+      }
       setHistory(['home']);
       setNavParams(null);
       return;
     }
 
     if (validPages.includes(pageId)) {
-      if (pageId !== 'home') {
+      if (pageId !== 'home' && !isTourPreview) {
         markPageAsSeen(pageId);
         recordAppVisit(pageId);
       }
@@ -405,9 +421,10 @@ function App() {
     } else {
       alert(`التنقل إلى قسم "${pageId}" قيد الإنشاء.`);
     }
-  }, []);
+  }, [isTourPreview]);
 
   useEffect(() => {
+    if (isTourPreview) return;
     // Notification listeners only on mount (permission prompt & scheduling are deferred until entering Home Page)
     let actionListener: any = null;
     let receivedListener: any = null;
@@ -429,8 +446,10 @@ function App() {
         }
       });
 
-      receivedListener = LocalNotifications.addListener('localNotificationReceived', () => {
+      receivedListener = LocalNotifications.addListener('localNotificationReceived', (notification) => {
         updateNativeAlertsGroupSummary();
+        const notifType = notification?.extra?.type;
+        triggerAlertVibration(notifType === 'adhan' ? 'adhan' : 'alert');
       });
     }
 
@@ -442,7 +461,7 @@ function App() {
         receivedListener.then((l: any) => l.remove());
       }
     };
-  }, [handleNavigate]);
+  }, [handleNavigate, isTourPreview]);
 
   const performUiClick = useCallback((label: string) => {
     const normalizedLabel = normalizeArabic(label);
@@ -486,6 +505,7 @@ function App() {
 
   // --- Deep Linking from Android Widgets, Notifications & App Shortcuts ---
   useEffect(() => {
+    if (isTourPreview) return;
     let isMounted = true;
 
     const consumeAndNavigate = (target: string, seq?: number) => {
@@ -618,7 +638,47 @@ function App() {
         urlSub.then((listener: any) => listener.remove()).catch(() => {});
       }
     };
-  }, [handleNavigate, normalizeShortcutTarget]);
+  }, [handleNavigate, normalizeShortcutTarget, isTourPreview]);
+
+  // --- Interactive App Tour Preview Iframe Bridge ---
+  useEffect(() => {
+    if (!isTourPreview) return;
+
+    const handleTourSyncMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data;
+      if (!data || data.type !== 'TOUR_SYNC_STATE') return;
+
+      if (data.language === 'ar' || data.language === 'en') {
+        setLanguage(data.language);
+      }
+      if (typeof data.isNightMode === 'boolean') {
+        setNightModeActive(data.isNightMode);
+      }
+      if (
+        data.themeVariant === 'gold' ||
+        data.themeVariant === 'sky' ||
+        data.themeVariant === 'emerald' ||
+        data.themeVariant === 'burgundy'
+      ) {
+        setHomeThemeVariant(data.themeVariant);
+      }
+      if (typeof data.page === 'string' && data.page) {
+        setNavParams(data.navParams ?? null);
+        setHistory(data.page === 'home' ? ['home'] : ['home', data.page]);
+        setTourRouteKey((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener('message', handleTourSyncMessage);
+    try {
+      window.parent?.postMessage({ type: 'TOUR_PREVIEW_READY' }, window.location.origin);
+    } catch {}
+
+    return () => {
+      window.removeEventListener('message', handleTourSyncMessage);
+    };
+  }, [isTourPreview, setLanguage, setNightModeActive, setHomeThemeVariant]);
 
   const handleVoiceAction = useCallback((action: string, text: string, params?: any) => {
     console.log('Voice Action:', action, text, params);
@@ -736,6 +796,8 @@ function App() {
               updateInfo={updateInfo}
               setUpdateInfo={setUpdateInfo}
               isSplashActive={false}
+              isTourPreview={isTourPreview}
+              tourRouteKey={tourRouteKey}
             />
           )}
 
@@ -776,7 +838,9 @@ function AppContent({
   setShowExitConfirm,
   updateInfo,
   setUpdateInfo,
-  isSplashActive = false
+  isSplashActive = false,
+  isTourPreview = false,
+  tourRouteKey = 0,
 }: any) {
   const { setCurrentPage: setVoicePage } = useVoiceControl();
   const { theme } = useTheme();
@@ -786,6 +850,7 @@ function AppContent({
   // Trigger notification permission prompt & scheduling ONLY after entering the Main App / Home Page
   // (guarantees Splash screen and Language Selection screen appear cleanly without OS popup interruption)
   useEffect(() => {
+    if (isTourPreview) return;
     let isMounted = true;
     const timer = window.setTimeout(async () => {
       if (!isMounted) return;
@@ -805,11 +870,11 @@ function AppContent({
       window.clearTimeout(timer);
       setMainAppEntered(false);
     };
-  }, []);
+  }, [isTourPreview]);
 
   useEffect(() => {
-    // Only listen for in-app modal alert on web/browser (never in native APK)
-    if (Capacitor.isNativePlatform()) return;
+    // Only listen for in-app modal alert on web/browser (never in native APK or tour preview)
+    if (isTourPreview || Capacitor.isNativePlatform()) return;
 
     const handleWirdAlertEvent = (e: any) => {
       const detail = e.detail;
@@ -843,20 +908,43 @@ function AppContent({
 
     window.addEventListener('show-wird-alert', handleWirdAlertEvent);
     return () => window.removeEventListener('show-wird-alert', handleWirdAlertEvent);
-  }, []);
+  }, [isTourPreview]);
 
-  // Check on app launch/resume for uncompleted wird alert (browser/web only, never in native APK)
+  // Check on app launch/resume for uncompleted wird alerts (browser/web only, never in native APK or tour preview)
+  // Emits active user first, followed by each additional unread user 10 seconds apart.
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) return;
+    if (isTourPreview || Capacitor.isNativePlatform()) return;
 
-    const timer = setTimeout(() => {
-      const alertData = checkWirdAlertOnAppResume();
-      if (alertData) {
-        setActiveWirdAlert(alertData);
-      }
+    const scheduledTimers: number[] = [];
+    const startTimer = window.setTimeout(() => {
+      const alerts = checkAllWirdAlertsOnAppResume();
+      alerts.forEach((alertData, idx) => {
+        const showTimer = window.setTimeout(() => {
+          setActiveWirdAlert(prev => {
+            if (prev?.profileId && prev.profileId !== alertData.profileId) {
+              markWirdAlertShownToday(prev.profileId);
+            }
+            return alertData;
+          });
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification(alertData.title, {
+                body: alertData.message,
+                icon: '/icon.png',
+                tag: `daily_wird_${alertData.profileId}_${new Date().toISOString().split('T')[0]}`
+              });
+            } catch (e) {}
+          }
+        }, idx * 10000);
+        scheduledTimers.push(showTimer);
+      });
     }, 2500);
-    return () => clearTimeout(timer);
-  }, []);
+
+    return () => {
+      window.clearTimeout(startTimer);
+      scheduledTimers.forEach(t => window.clearTimeout(t));
+    };
+  }, [isTourPreview]);
 
   useEffect(() => {
     setVoicePage(page);
@@ -870,6 +958,7 @@ function AppContent({
     showExitConfirm,
     navigateBack,
     setShowExitConfirm,
+    disabled: isTourPreview,
   });
 
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
@@ -891,6 +980,7 @@ function AppContent({
   return (
     <div className="relative min-h-[100dvh]">
       <AppRouter 
+        key={isTourPreview ? `tour-${page}-${tourRouteKey}` : undefined}
         page={page} 
         onBack={navigateBack} 
         onNavigate={handleNavigate} 
@@ -904,7 +994,7 @@ function AppContent({
         }
       />
 
-      {showExitConfirm && (
+      {!isTourPreview && showExitConfirm && (
           <ExitConfirmModal
               isOpen={showExitConfirm}
               onConfirm={handleConfirmExit}
@@ -913,7 +1003,7 @@ function AppContent({
           />
       )}
 
-      {updateInfo?.show && (
+      {!isTourPreview && updateInfo?.show && (
           <UpdateNotificationModal 
               isOpen={updateInfo.show}
               onClose={() => setUpdateInfo({ ...updateInfo, show: false })}
@@ -923,24 +1013,24 @@ function AppContent({
           />
       )}
       
-      <RateUs />
-      {!Capacitor.isNativePlatform() && <MawlidNotification />}
+      {!isTourPreview && <RateUs />}
+      {!isTourPreview && !Capacitor.isNativePlatform() && <MawlidNotification />}
 
-      {!Capacitor.isNativePlatform() && activeAdhanAlert && (
+      {!isTourPreview && !Capacitor.isNativePlatform() && activeAdhanAlert && (
         <AdhanAlertModal
           alert={activeAdhanAlert}
           onDismiss={dismissAdhanAlert}
         />
       )}
 
-      {!Capacitor.isNativePlatform() && activeIqamaAlert && (
+      {!isTourPreview && !Capacitor.isNativePlatform() && activeIqamaAlert && (
         <IqamaAlertModal
           alert={activeIqamaAlert}
           onDismiss={dismissIqamaAlert}
         />
       )}
 
-      {!Capacitor.isNativePlatform() && activeWirdAlert && (
+      {!isTourPreview && !Capacitor.isNativePlatform() && activeWirdAlert && (
         <WirdAlertModal
           alert={activeWirdAlert}
           onDismiss={() => {

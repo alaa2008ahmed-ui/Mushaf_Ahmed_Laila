@@ -4,6 +4,7 @@ import { playNotificationSound } from '../../utils/prayerTimesUtils';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { tPrayer, getPrayerDisplayName } from '../../utils/prayerTimesTranslations';
+import { triggerAlertVibration } from '../../utils/vibrationHelper';
 
 interface IqamaAlertModalProps {
     alert: {
@@ -21,7 +22,8 @@ export const IqamaAlertModal: React.FC<IqamaAlertModalProps> = ({ alert, onDismi
 
     useEffect(() => {
         if (!alert) return;
-        // Automatically play the water droplet alert tone when Iqama alert modal appears
+        // Automatically vibrate and play the water droplet alert tone when Iqama alert modal appears
+        triggerAlertVibration('alert');
         playNotificationSound('/assets/audio/notif_droplet.wav', true);
     }, [alert?.prayerKey, alert?.timeStr]);
 

@@ -116,7 +116,7 @@ public class AdhanPlaybackService extends Service {
             : "Prayer Adhan notifications with in-app volume control");
         channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         channel.setBypassDnd(true);
-        channel.enableVibration(true);
+        NotificationVibrationHelper.configureChannelVibration(channel, NotificationVibrationHelper.ADHAN_VIBRATION_PATTERN);
         channel.enableLights(true);
         channel.setShowBadge(false);
         channel.setSound(null, null);
@@ -169,6 +169,7 @@ public class AdhanPlaybackService extends Service {
             .setSortKey("05_adhan")
             .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
             .setNumber(0)
+            .setVibrate(NotificationVibrationHelper.ADHAN_VIBRATION_PATTERN)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
         if (includeStopAction) {
@@ -220,6 +221,7 @@ public class AdhanPlaybackService extends Service {
                 nm.notify(notifId, silentNotif);
                 AlertsGroupHelper.updateGroupSummary(this, nm);
             }
+            NotificationVibrationHelper.vibrateAdhan(this);
             stopSelf();
             return START_NOT_STICKY;
         }
@@ -239,6 +241,7 @@ public class AdhanPlaybackService extends Service {
             }
         }
 
+        NotificationVibrationHelper.vibrateAdhan(this);
         startPlayback(this, notifId, title, body, soundName, soundUri, isArabic, volumePercent);
         return START_NOT_STICKY;
     }
@@ -263,6 +266,7 @@ public class AdhanPlaybackService extends Service {
                 nm.notify(notifId, buildAdhanNotification(context, notifId, title, body, isArabic, false, false));
                 AlertsGroupHelper.updateGroupSummary(context, nm);
             }
+            NotificationVibrationHelper.vibrateAdhan(context);
             return;
         }
 
@@ -270,6 +274,7 @@ public class AdhanPlaybackService extends Service {
             nm.notify(notifId, buildAdhanNotification(context, notifId, title, body, isArabic, true, false));
             AlertsGroupHelper.updateGroupSummary(context, nm);
         }
+        NotificationVibrationHelper.vibrateAdhan(context);
         startPlayback(context.getApplicationContext(), notifId, title, body, soundName, soundUri, isArabic, volumePercent);
     }
 

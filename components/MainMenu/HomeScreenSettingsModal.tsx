@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { BookCheck, Sparkles } from 'lucide-react';
+import { BookCheck, Sparkles, Presentation } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getTawafCounterState, saveTawafCounterState, subscribeTawafCounter, TawafCounterState } from '../../utils/tawafCounterStorage';
@@ -13,6 +13,7 @@ import SurahDesignPickerModal from '../QuranReader/SurahDesignPickerModal';
 import ScrollSpeedModal from '../QuranReader/ScrollSpeedModal';
 import ApprovedSourcesModal from './ApprovedSourcesModal';
 import WhatsNewModal from './WhatsNewModal';
+import InteractiveAppTourModal from './InteractiveAppTourModal';
 import ShareDesignSelectorSection from './ShareDesignSelectorSection';
 import { READERS, ARABIC_READERS, MEMORIZATION_READERS, SURAH_INFO, THEMES, DEFAULT_SETTINGS, getValidReaderForMode } from '../QuranReader/constants';
 import { QuranDownloadModal, TafsirDownloadModal } from '../QuranReader/DownloadModals';
@@ -94,6 +95,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
   const [showTafsirDownloadModal, setShowTafsirDownloadModal] = useState<boolean>(false);
   const [showApprovedSourcesModal, setShowApprovedSourcesModal] = useState<boolean>(false);
   const [showWhatsNewModal, setShowWhatsNewModal] = useState<boolean>(false);
+  const [showInteractiveTourModal, setShowInteractiveTourModal] = useState<boolean>(false);
   const [activeDownloadType, setActiveDownloadType] = useState<'mushaf' | 'listen' | 'memorization' | null>(null);
   const [activeQuranSubModal, setActiveQuranSubModal] = useState<string | null>(null);
 
@@ -342,6 +344,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     showPhoneNotificationModal,
     showApprovedSourcesModal,
     showWhatsNewModal,
+    showInteractiveTourModal,
     onClose
   });
   backStateRef.current = {
@@ -354,6 +357,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     showPhoneNotificationModal,
     showApprovedSourcesModal,
     showWhatsNewModal,
+    showInteractiveTourModal,
     onClose
   };
 
@@ -402,12 +406,17 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
         setShowApprovedSourcesModal(false);
         return true;
       }
-      // 9. If What's New modal is open
+      // 9. If Interactive App Tour modal is open
+      if (s.showInteractiveTourModal) {
+        setShowInteractiveTourModal(false);
+        return true;
+      }
+      // 10. If What's New modal is open
       if (s.showWhatsNewModal) {
         setShowWhatsNewModal(false);
         return true;
       }
-      // 10. If on the main settings screen, close settings modal
+      // 11. If on the main settings screen, close settings modal
       s.onClose();
       return true;
     };
@@ -780,6 +789,26 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
               </div>
             </button>
 
+            {/* Interactive App Tour Button */}
+            <button
+              type="button"
+              id="btn-interactive-app-tour"
+              onClick={() => setShowInteractiveTourModal(true)}
+              className="w-full text-start p-4 sm:p-5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between gap-3 white-3d-card-btn"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Presentation
+                  size={20}
+                  strokeWidth={2.2}
+                  className="shrink-0"
+                  style={{ color: isBlackTheme ? '#000000' : themeAccentColor }}
+                />
+                <h4 className="text-base sm:text-lg font-black truncate">
+                  {isEn ? 'Interactive App Tour' : 'الجولة التعريفية للتطبيق'}
+                </h4>
+              </div>
+            </button>
+
             {/* Approved Sources & References Button */}
             <button
               type="button"
@@ -1085,6 +1114,12 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
         <WhatsNewModal
           isOpen={showWhatsNewModal}
           onClose={() => setShowWhatsNewModal(false)}
+        />
+
+        {/* Full-Screen Interactive App Tour Showcase */}
+        <InteractiveAppTourModal
+          isOpen={showInteractiveTourModal}
+          onClose={() => setShowInteractiveTourModal(false)}
         />
       </div>
   );

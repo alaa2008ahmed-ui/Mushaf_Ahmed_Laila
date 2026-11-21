@@ -13,33 +13,72 @@ import android.content.SharedPreferences;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.PowerManager;
+import android.service.notification.StatusBarNotification;
 import androidx.core.app.NotificationCompat;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 /**
- * Intelligent Native Alarm Receiver for Daily Wird Phone Reminders
- * Ensures reliable alarms at 10:00 AM and 10:00 PM (22:00) with user's name,
- * dynamic catch-up messages, custom chime sound, and max-sized notification icon.
+ * Intelligent Native Alarm Receiver for Daily Wird Phone Reminders.
+ * Supports unlimited user profiles independently: emits notification/alert for the active user first,
+ * then sequentially emits each additional eligible user's notification 10 seconds apart.
  */
 public class DailyWirdAlarmReceiver extends BroadcastReceiver {
 
     public static final String ACTION_CHECK_DAILY_WIRD = "com.mushaf.ahmedandlayla.ACTION_CHECK_DAILY_WIRD";
+    public static final String ACTION_WIRD_USER_STEP = "com.mushaf.ahmedandlayla.ACTION_WIRD_USER_STEP";
     public static final String ACTION_SYNC_DAILY_WIRD = "com.mushaf.ahmedandlayla.ACTION_SYNC_DAILY_WIRD";
     public static final String EXTRA_PERIOD = "period"; // "morning" or "evening"
+    public static final String EXTRA_PROCESSED_IDS = "processed_ids";
+    public static final String EXTRA_WIRD_PROFILE_ID = "wird_profile_id";
 
     private static final String CHANNEL_ID = "daily_wird_reminders_channel";
     private static final String NOTIFICATION_GROUP = "com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD";
     private static final int MORNING_NOTIF_ID = 9301;
     private static final int EVENING_NOTIF_ID = 9302;
+    private static final int STEP_MORNING_REQUEST_CODE = 9303;
+    private static final int STEP_EVENING_REQUEST_CODE = 9304;
+    private static final int EXTRA_USER_NOTIF_ID_BASE = 93100;
+    private static final long USER_STEP_DELAY_MS = 10_000L;
     private static final int TOTAL_QURAN_PAGES = 604;
+
+    private static final class ProfileEntry {
+        final JSONObject profile;
+        final String id;
+        final boolean isActiveProfile;
+        final int morningNotifId;
+        final int eveningNotifId;
+
+        ProfileEntry(JSONObject profile, String id, boolean isActiveProfile, int morningNotifId, int eveningNotifId) {
+            this.profile = profile;
+            this.id = id;
+            this.isActiveProfile = isActiveProfile;
+            this.morningNotifId = morningNotifId;
+            this.eveningNotifId = eveningNotifId;
+        }
+    }
+
+    private static final class WirdNotificationPayload {
+        final int notifId;
+        final String title;
+        final String message;
+
+        WirdNotificationPayload(int notifId, String title, String message) {
+            this.notifId = notifId;
+            this.title = title;
+            this.message = message;
+        }
+    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -62,11 +101,20 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                     int currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
                     period = (currentHour >= 18) ? "evening" : "morning";
                 }
-                evaluateAndNotifyWird(context, "evening".equalsIgnoreCase(period));
+                boolean isEvening = "evening".equalsIgnoreCase(period);
+                cancelStepAlarm(context, isEvening);
+                processDailyWirdStep(context, isEvening, new HashSet<>());
+                // Always reschedule the next alarms to maintain unbroken daily chain
+                scheduleNextAlarms(context);
+            } else if (ACTION_WIRD_USER_STEP.equals(action)) {
+                String period = intent.getStringExtra(EXTRA_PERIOD);
+                boolean isEvening = "evening".equalsIgnoreCase(period);
+                Set<String> processedIds = parseProcessedIds(intent.getStringExtra(EXTRA_PROCESSED_IDS));
+                processDailyWirdStep(context, isEvening, processedIds);
+            } else {
+                // Boot / time change / sync: reschedule the next alarms
+                scheduleNextAlarms(context);
             }
-
-            // Always reschedule the next alarms to maintain unbroken daily chain
-            scheduleNextAlarms(context);
         } catch (Exception ignored) {
         } finally {
             if (wakeLock != null && wakeLock.isHeld()) {
@@ -165,9 +213,10 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
     }
 
     /**
-     * Inspects active wird profile in SharedPreferences and posts phone notification if unread
+     * Evaluates ordered profiles starting from the active user, emits at most one notification now,
+     * and schedules the next eligible user's notification exactly 10 seconds later.
      */
-    private void evaluateAndNotifyWird(Context context, boolean isEvening) {
+    private void processDailyWirdStep(Context context, boolean isEvening, Set<String> processedIds) {
         SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
         String rawJson = storage.getString("dailyWirdSettings_v2", null);
         if (rawJson == null || rawJson.trim().isEmpty()) {
@@ -176,47 +225,306 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
 
         try {
             JSONObject root = new JSONObject(rawJson);
-            JSONArray profiles = root.optJSONArray("profiles");
-            if (profiles == null || profiles.length() == 0) return;
+            List<ProfileEntry> ordered = getOrderedProfiles(root);
+            if (ordered.isEmpty()) return;
 
-            String activeId = root.optString("activeId", "");
-            JSONObject activeProfile = null;
-            if (!activeId.isEmpty()) {
-                for (int i = 0; i < profiles.length(); i++) {
-                    JSONObject p = profiles.getJSONObject(i);
-                    if (activeId.equals(p.optString("id"))) {
-                        activeProfile = p;
-                        break;
-                    }
+            boolean postedOne = false;
+            boolean hasMoreEligible = false;
+
+            for (ProfileEntry entry : ordered) {
+                if (processedIds.contains(entry.id)) {
+                    continue;
+                }
+
+                WirdNotificationPayload payload = evaluateProfile(storage, entry, isEvening);
+                if (payload == null) {
+                    cancelNotificationsForEntry(context, entry);
+                    processedIds.add(entry.id);
+                    continue;
+                }
+
+                if (!postedOne) {
+                    showWirdPhoneNotification(context, payload.notifId, payload.title, payload.message, entry.id);
+                    processedIds.add(entry.id);
+                    postedOne = true;
+                } else {
+                    hasMoreEligible = true;
+                    break;
                 }
             }
-            if (activeProfile == null) {
-                activeProfile = profiles.getJSONObject(0);
-            }
-            if (activeProfile == null) return;
 
-            boolean isActive = activeProfile.optBoolean("isActive", true);
-            boolean reminderEnabled = activeProfile.optBoolean("reminderEnabled", true);
-            if (!isActive || !reminderEnabled) {
+            if (hasMoreEligible) {
+                scheduleStepAlarm(context, isEvening, processedIds, System.currentTimeMillis() + USER_STEP_DELAY_MS);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Reconciles currently delivered notifications against live profiles:
+     * cancels notifications only for profiles that completed today, are disabled, or were deleted.
+     */
+    public static void reconcileActiveNotifications(Context context) {
+        if (context == null) return;
+        try {
+            SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+            String rawJson = storage.getString("dailyWirdSettings_v2", null);
+            if (rawJson == null || rawJson.trim().isEmpty()) {
                 cancelActiveWirdNotifications(context);
                 return;
+            }
+
+            JSONObject root = new JSONObject(rawJson);
+            List<ProfileEntry> ordered = getOrderedProfiles(root);
+            if (ordered.isEmpty()) {
+                cancelActiveWirdNotifications(context);
+                return;
+            }
+
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+
+            Set<String> eligibleProfileIds = new HashSet<>();
+            for (ProfileEntry entry : ordered) {
+                boolean eligibleMorning = evaluateProfile(storage, entry, false) != null;
+                boolean eligibleEvening = evaluateProfile(storage, entry, true) != null;
+                if (!eligibleMorning && !eligibleEvening) {
+                    nm.cancel(entry.morningNotifId);
+                    nm.cancel(entry.eveningNotifId);
+                } else {
+                    eligibleProfileIds.add(entry.id);
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                try {
+                    StatusBarNotification[] active = nm.getActiveNotifications();
+                    if (active != null) {
+                        for (StatusBarNotification sbn : active) {
+                            Notification notif = sbn.getNotification();
+                            if (notif == null || notif.extras == null) continue;
+                            String pId = notif.extras.getString(EXTRA_WIRD_PROFILE_ID);
+                            if (pId != null && !pId.isEmpty() && !eligibleProfileIds.contains(pId)) {
+                                nm.cancel(sbn.getId());
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            AlertsGroupHelper.updateGroupSummary(context, nm);
+        } catch (Exception ignored) {}
+    }
+
+    private static List<ProfileEntry> getOrderedProfiles(JSONObject root) {
+        List<ProfileEntry> ordered = new ArrayList<>();
+        if (root == null) return ordered;
+
+        JSONArray profiles = root.optJSONArray("profiles");
+        if (profiles == null || profiles.length() == 0) return ordered;
+
+        String activeId = root.optString("activeId", "");
+        int activeIdx = 0;
+        if (!activeId.isEmpty()) {
+            for (int i = 0; i < profiles.length(); i++) {
+                JSONObject p = profiles.optJSONObject(i);
+                if (p != null && activeId.equals(p.optString("id"))) {
+                    activeIdx = i;
+                    break;
+                }
+            }
+        }
+
+        Set<Integer> usedNotifIds = new HashSet<>();
+        usedNotifIds.add(MORNING_NOTIF_ID);
+        usedNotifIds.add(EVENING_NOTIF_ID);
+        usedNotifIds.add(9300);
+
+        JSONObject activeObj = profiles.optJSONObject(activeIdx);
+        if (activeObj != null) {
+            String activeProfileId = activeObj.optString("id", "");
+            if (activeProfileId.isEmpty()) {
+                activeProfileId = "idx_" + activeIdx;
+            }
+            ordered.add(new ProfileEntry(activeObj, activeProfileId, true, MORNING_NOTIF_ID, EVENING_NOTIF_ID));
+        }
+
+        for (int i = 0; i < profiles.length(); i++) {
+            if (i == activeIdx) continue;
+            JSONObject p = profiles.optJSONObject(i);
+            if (p == null) continue;
+
+            String pId = p.optString("id", "");
+            if (pId.isEmpty()) {
+                pId = "idx_" + i;
+            }
+
+            int hashBucket = Math.abs(stableStringHash(pId)) % 400000;
+            int morningId = EXTRA_USER_NOTIF_ID_BASE + (hashBucket * 2);
+            while (usedNotifIds.contains(morningId) || usedNotifIds.contains(morningId + 1)) {
+                morningId += 2;
+            }
+            int eveningId = morningId + 1;
+            usedNotifIds.add(morningId);
+            usedNotifIds.add(eveningId);
+
+            ordered.add(new ProfileEntry(p, pId, false, morningId, eveningId));
+        }
+
+        return ordered;
+    }
+
+    private static int stableStringHash(String value) {
+        if (value == null) return 0;
+        int h = 0;
+        for (int i = 0; i < value.length(); i++) {
+            h = (31 * h) + value.charAt(i);
+        }
+        return h;
+    }
+
+    private static Set<String> parseProcessedIds(String jsonStr) {
+        Set<String> result = new HashSet<>();
+        if (jsonStr == null || jsonStr.trim().isEmpty()) return result;
+        try {
+            JSONArray arr = new JSONArray(jsonStr);
+            for (int i = 0; i < arr.length(); i++) {
+                String id = arr.optString(i, "");
+                if (!id.isEmpty()) {
+                    result.add(id);
+                }
+            }
+        } catch (Exception ignored) {}
+        return result;
+    }
+
+    private static void scheduleStepAlarm(Context context, boolean isEvening, Set<String> processedIds, long triggerAtMillis) {
+        if (context == null) return;
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+
+        JSONArray arr = new JSONArray();
+        for (String id : processedIds) {
+            arr.put(id);
+        }
+
+        Intent stepIntent = new Intent(context, DailyWirdAlarmReceiver.class);
+        stepIntent.setAction(ACTION_WIRD_USER_STEP);
+        stepIntent.putExtra(EXTRA_PERIOD, isEvening ? "evening" : "morning");
+        stepIntent.putExtra(EXTRA_PROCESSED_IDS, arr.toString());
+
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        int requestCode = isEvening ? STEP_EVENING_REQUEST_CODE : STEP_MORNING_REQUEST_CODE;
+        PendingIntent stepPi = PendingIntent.getBroadcast(context, requestCode, stepIntent, flags);
+
+        Intent showIntent = new Intent(context, MainActivity.class);
+        showIntent.putExtra("shortcut_target", "daily-wird");
+        showIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent showPi = PendingIntent.getActivity(context, requestCode, showIntent, flags);
+
+        try {
+            // Use setAlarmClock for the 10-second inter-user step so Android Doze never throttles it
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !am.canScheduleExactAlarms()) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, stepPi);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(triggerAtMillis, showPi);
+                am.setAlarmClock(alarmClockInfo, stepPi);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                am.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, stepPi);
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, stepPi);
+            }
+        } catch (SecurityException se) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, stepPi);
+                } else {
+                    am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, stepPi);
+                }
+            } catch (Exception ignored) {}
+        } catch (Exception ignored) {}
+    }
+
+    private static void cancelStepAlarm(Context context, boolean isEvening) {
+        if (context == null) return;
+        try {
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+            Intent stepIntent = new Intent(context, DailyWirdAlarmReceiver.class);
+            stepIntent.setAction(ACTION_WIRD_USER_STEP);
+            int flags = PendingIntent.FLAG_NO_CREATE;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+            int requestCode = isEvening ? STEP_EVENING_REQUEST_CODE : STEP_MORNING_REQUEST_CODE;
+            PendingIntent stepPi = PendingIntent.getBroadcast(context, requestCode, stepIntent, flags);
+            if (stepPi != null) {
+                am.cancel(stepPi);
+                stepPi.cancel();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static void cancelNotificationsForEntry(Context context, ProfileEntry entry) {
+        if (context == null || entry == null) return;
+        try {
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(entry.morningNotifId);
+                nm.cancel(entry.eveningNotifId);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        StatusBarNotification[] active = nm.getActiveNotifications();
+                        if (active != null) {
+                            for (StatusBarNotification sbn : active) {
+                                Notification notif = sbn.getNotification();
+                                if (notif != null && notif.extras != null &&
+                                    entry.id.equals(notif.extras.getString(EXTRA_WIRD_PROFILE_ID))) {
+                                    nm.cancel(sbn.getId());
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+                AlertsGroupHelper.updateGroupSummary(context, nm);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Inspects a single wird profile and returns notification payload if unread, or null if ineligible/completed
+     */
+    private static WirdNotificationPayload evaluateProfile(
+        SharedPreferences storage,
+        ProfileEntry entry,
+        boolean isEvening
+    ) {
+        if (entry == null || entry.profile == null) return null;
+        JSONObject profile = entry.profile;
+
+        try {
+            boolean isActive = profile.optBoolean("isActive", true);
+            boolean reminderEnabled = profile.optBoolean("reminderEnabled", true);
+            if (!isActive || !reminderEnabled) {
+                return null;
             }
 
             // Check if user already marked today completed via lastCompletedDate
             String todayDateStr = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
-            String lastCompletedDate = activeProfile.optString("lastCompletedDate", "");
+            String lastCompletedDate = profile.optString("lastCompletedDate", "");
             if (lastCompletedDate != null && lastCompletedDate.startsWith(todayDateStr)) {
                 // Today's reading already finished! Do not notify today.
-                cancelActiveWirdNotifications(context);
-                return;
+                return null;
             }
 
-            String mode = activeProfile.optString("mode", "days");
-            int val = activeProfile.optInt("value", mode.equals("days") ? 30 : 20);
-            int startPageOffset = activeProfile.optInt("startPage", 1);
+            String mode = profile.optString("mode", "days");
+            int val = Math.max(1, profile.optInt("value", mode.equals("days") ? 30 : 20));
+            int startPageOffset = profile.optInt("startPage", 1);
             int totalDays = mode.equals("days") ? val : (int) Math.ceil((double) TOTAL_QURAN_PAGES / val);
 
-            JSONArray completedDaysJson = activeProfile.optJSONArray("completedDays");
+            JSONArray completedDaysJson = profile.optJSONArray("completedDays");
             Set<Integer> completedSet = new HashSet<>();
             if (completedDaysJson != null) {
                 for (int i = 0; i < completedDaysJson.length(); i++) {
@@ -226,12 +534,11 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             int completedCount = completedSet.size();
             if (completedCount >= totalDays) {
                 // Khatma already completed!
-                cancelActiveWirdNotifications(context);
-                return;
+                return null;
             }
 
             // Calculate days elapsed since start date
-            String startDateStr = activeProfile.optString("startDate", todayDateStr);
+            String startDateStr = profile.optString("startDate", todayDateStr);
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
             Date startDate;
             try {
@@ -254,8 +561,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
 
             int targetDayNumber = Math.min(completedCount + 1, totalDays);
             if (completedSet.contains(targetDayNumber)) {
-                cancelActiveWirdNotifications(context);
-                return;
+                return null;
             }
 
             // Calculate page range for today
@@ -275,19 +581,15 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             todayEndPage = Math.min(Math.max(todayStartPage, todayEndPage), TOTAL_QURAN_PAGES);
 
             // ACCURATE PROGRESS VERIFICATION:
-            // Check if user has read partially today (lastPage) vs fully completing today's portion
-            int lastPageRead = activeProfile.optInt("lastPage", 0);
-            boolean isPartiallyRead = (lastPageRead >= todayStartPage && lastPageRead < todayEndPage);
+            // Check if user has fully completed today's portion via lastPage
+            int lastPageRead = profile.optInt("lastPage", 0);
             boolean isFullyCompleted = (lastPageRead >= todayEndPage && todayEndPage > 0);
-
-            // If the user reached or passed today's end page, it is fully completed!
             if (isFullyCompleted) {
-                cancelActiveWirdNotifications(context);
-                return;
+                return null;
             }
 
             // User Name Formatting ("وباسم المستخدم")
-            String rawName = activeProfile.optString("name", "").trim();
+            String rawName = profile.optString("name", "").trim();
             String appLang = storage.getString("app_language", "ar");
             boolean isEn = "en".equalsIgnoreCase(appLang);
 
@@ -391,17 +693,18 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 }
             }
 
-            int notifId = isEvening ? EVENING_NOTIF_ID : MORNING_NOTIF_ID;
-            showWirdPhoneNotification(context, notifId, title, message);
-
-        } catch (Exception ignored) {}
+            int notifId = isEvening ? entry.eveningNotifId : entry.morningNotifId;
+            return new WirdNotificationPayload(notifId, title, message);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     /**
      * Posts high-priority system phone notification with chime sound,
      * status bar icon (ic_stat_name at max size), and group GENERAL_ALERTS_CARD.
      */
-    private void showWirdPhoneNotification(Context context, int notifId, String title, String message) {
+    private void showWirdPhoneNotification(Context context, int notifId, String title, String message, String profileId) {
         try {
             NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm == null) return;
@@ -427,7 +730,10 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 channel.setDescription("تنبيهات قراءة الورد اليومي والختمات القرآنية بصوت التذكير الهادئ");
                 channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                 channel.setBypassDnd(true);
-                channel.enableVibration(true);
+                NotificationVibrationHelper.configureChannelVibration(
+                    channel,
+                    NotificationVibrationHelper.ALERT_VIBRATION_PATTERN
+                );
                 channel.enableLights(true);
                 channel.setShowBadge(false);
                 if (soundUri != null) {
@@ -444,6 +750,11 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 flags |= PendingIntent.FLAG_IMMUTABLE;
             }
             PendingIntent pendingIntent = PendingIntent.getActivity(context, notifId, openAppIntent, flags);
+
+            Bundle extras = new Bundle();
+            if (profileId != null && !profileId.isEmpty()) {
+                extras.putString(EXTRA_WIRD_PROFILE_ID, profileId);
+            }
 
             // Status Bar Notification Icon: Holy Quran on Rehal (Stand)
             int smallIconRes = R.drawable.ic_stat_name;
@@ -463,6 +774,8 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 .setSortKey("12_daily_wird")
                 .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
                 .setNumber(0)
+                .addExtras(extras)
+                .setVibrate(NotificationVibrationHelper.ALERT_VIBRATION_PATTERN)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             if (soundUri != null) {
@@ -471,6 +784,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
 
             nm.notify(notifId, builder.build());
             AlertsGroupHelper.updateGroupSummary(context, nm);
+            NotificationVibrationHelper.vibrateAlert(context);
         } catch (Exception ignored) {}
     }
 
@@ -484,8 +798,24 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             if (nm != null) {
                 nm.cancel(MORNING_NOTIF_ID);
                 nm.cancel(EVENING_NOTIF_ID);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        StatusBarNotification[] active = nm.getActiveNotifications();
+                        if (active != null) {
+                            for (StatusBarNotification sbn : active) {
+                                int id = sbn.getId();
+                                Notification notif = sbn.getNotification();
+                                boolean hasWirdExtra = notif != null && notif.extras != null
+                                    && notif.extras.containsKey(EXTRA_WIRD_PROFILE_ID);
+                                if (hasWirdExtra || (id >= EXTRA_USER_NOTIF_ID_BASE && id <= 893200)) {
+                                    nm.cancel(id);
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+                AlertsGroupHelper.updateGroupSummary(context, nm);
             }
-            AlertsGroupHelper.updateGroupSummary(context, nm);
         } catch (Exception ignored) {}
     }
 }

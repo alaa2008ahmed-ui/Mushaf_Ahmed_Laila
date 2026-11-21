@@ -12,6 +12,7 @@ import { QIBLA_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { openLocationSettings, requestLocationPermission } from '../utils/permissionHelper';
 import { hexToRgba } from '../utils/flatDesignTokens';
+import { Kaaba3DIcon, Qibla3DArrow, Compass3DLetter, Compass3DCenterDome } from '../components/Qibla3DIcons';
 
 // --- Helper Functions ---
 const toRad = (deg: number) => deg * Math.PI / 180;
@@ -441,7 +442,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                  
                 {activeMode === 'compass' && (
                     <div className="flex flex-col items-center justify-start w-full pt-8 sm:pt-10">
-                        {/* واجهة البوصلة */}
+                        {/* واجهة البوصلة ثلاثية الأبعاد المجسمة */}
                         <div 
                             onMouseDown={handleTouchOrMouseDown}
                             onMouseMove={handleTouchOrMouseMove}
@@ -450,76 +451,144 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             onTouchStart={handleTouchOrMouseDown}
                             onTouchMove={handleTouchOrMouseMove}
                             onTouchEnd={handleTouchOrMouseUp}
-                            className={`app-page-card relative w-64 h-64 md:w-80 md:h-80 rounded-full border-0 flex items-center justify-center transition-all duration-300 cursor-grab active:cursor-grabbing ${surfaceCardClass} ${
-                                isAligned ? 'ring-4 ring-green-500' : ''
+                            className={`relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center transition-all duration-300 cursor-grab active:cursor-grabbing ${
+                                isAligned ? 'ring-4 ring-green-500/90' : ''
                             }`}
+                            style={{
+                                background: isBlackTheme
+                                    ? 'linear-gradient(145deg, #3f3f46 0%, #18181b 52%, #09090b 100%)'
+                                    : 'linear-gradient(145deg, #ffffff 0%, #e2e8f0 55%, #cbd5e1 100%)',
+                                padding: '10px',
+                                boxShadow: isAligned
+                                    ? (isBlackTheme
+                                        ? '0 10px 0 #09090b, 0 22px 38px rgba(34,197,94,0.35), inset 0 2px 3px rgba(255,255,255,0.28)'
+                                        : '0 10px 0 #94a3b8, 0 22px 38px rgba(34,197,94,0.32), inset 0 2px 4px rgba(255,255,255,0.95)')
+                                    : (isBlackTheme
+                                        ? '0 10px 0 #050507, 0 22px 36px rgba(0,0,0,0.78), inset 0 2px 3px rgba(255,255,255,0.22)'
+                                        : '0 10px 0 #cbd5e1, 0 22px 36px rgba(15,23,42,0.2), inset 0 2px 4px rgba(255,255,255,0.98)')
+                            }}
                         >
-                            
-                            <div ref={compassCircleRef} className="absolute w-full h-full transition-transform duration-300 ease-out pointer-events-none">
-                                 {/* Direction letters outside/inside the circle: North (N / ش), South (S / ج), West (W / غ), East (E / ق) */}
-                                 <div 
-                                     className="absolute -top-9 left-1/2 -translate-x-1/2 text-2xl font-black select-none tracking-tight" 
-                                     style={{ color: primaryColor }}
-                                 >
-                                     {isEn ? 'N' : 'ش'}
-                                 </div>
-                                 <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-base font-bold text-slate-400 dark:text-zinc-500 select-none">
-                                     {isEn ? 'S' : 'ج'}
-                                 </div>
-                                 <div className="absolute -left-8 top-1/2 -translate-y-1/2 text-base font-bold text-slate-400 dark:text-zinc-500 select-none">
-                                     {isEn ? 'W' : 'غ'}
-                                 </div>
-                                 <div className="absolute -right-8 top-1/2 -translate-y-1/2 text-base font-bold text-slate-400 dark:text-zinc-500 select-none">
-                                     {isEn ? 'E' : 'ق'}
-                                 </div>
-
-                                 {/* علامات الدرجات والتدريج */}
-                                 {Array.from({ length: 24 }).map((_, i) => (
-                                   <div 
-                                     key={i} 
-                                     className="absolute top-0 left-1/2 w-full h-1/2 pointer-events-none -translate-x-1/2" 
-                                     style={{ transform: `rotate(${i * 15}deg)`, transformOrigin: '50% 100%' }}
-                                   >
-                                     <div 
-                                        className={`mx-auto w-0.5 rounded-full ${
-                                            i % 6 === 0 
-                                                ? (isBlackTheme ? 'h-3 bg-white/60' : 'h-3 bg-slate-400') 
-                                                : (i % 2 === 0 
-                                                    ? (isBlackTheme ? 'h-2 bg-white/35' : 'h-2 bg-slate-300') 
-                                                    : (isBlackTheme ? 'h-1.5 bg-white/20' : 'h-1.5 bg-slate-200'))
-                                        }`}
-                                     ></div>
-                                   </div>
-                                 ))}
-                            </div>
-                            
-                            {/* سهم اتجاه القبلة: ملون بلون الثيم الأساسي للتطبيق */}
-                            {qiblaDirection !== null && (
-                                 <div ref={qiblaPointerRef} className="absolute w-full h-full transition-transform duration-300 ease-out pointer-events-none">
-                                     <svg viewBox="0 0 100 100" className="w-full h-full" style={{ filter: `drop-shadow(0 3px 6px ${primaryColor}40)` }}>
-                                        <path d="M50 0 L60 20 L50 15 L40 20 Z" fill={primaryColor} />
-                                    </svg>
-                                </div>
-                            )}
-                            
-                            {/* أيقونة الكعبة المشرفة عند المحاذاة التامة */}
-                            <div className="transition-all duration-500 pointer-events-none" style={{ opacity: isAligned ? 1 : 0, transform: isAligned ? 'scale(1)' : 'scale(0)' }}>
-                                 <i 
-                                    className="fa-solid fa-kaaba text-6xl" 
-                                    style={{ 
-                                        color: primaryColor, 
-                                        transform: `rotate(${unwrappedHeadingRef.current}deg)` 
+                            {/* القرص الداخلي الغائر والمجسم */}
+                            <div
+                                className="relative w-full h-full rounded-full flex items-center justify-center"
+                                style={{
+                                    background: isBlackTheme
+                                        ? 'radial-gradient(circle at 35% 28%, #27272a 0%, #18181b 58%, #09090b 100%)'
+                                        : 'radial-gradient(circle at 35% 28%, #ffffff 0%, #f8fafc 60%, #e2e8f0 100%)',
+                                    boxShadow: isBlackTheme
+                                        ? 'inset 0 6px 14px rgba(0,0,0,0.85), inset 0 -3px 8px rgba(255,255,255,0.08)'
+                                        : 'inset 0 6px 14px rgba(15,23,42,0.14), inset 0 -4px 10px rgba(255,255,255,0.95)'
+                                }}
+                            >
+                                {/* حلقات زخرفية غائرة داخل القرص لتعزيز العمق */}
+                                <div
+                                    className="absolute inset-5 rounded-full pointer-events-none"
+                                    style={{
+                                        border: isBlackTheme ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.07)',
+                                        boxShadow: isBlackTheme ? 'inset 0 1px 2px rgba(0,0,0,0.6)' : 'inset 0 1px 2px rgba(15,23,42,0.06)'
                                     }}
-                                 ></i>
+                                />
+                                <div
+                                    className="absolute inset-11 rounded-full pointer-events-none"
+                                    style={{
+                                        border: isBlackTheme ? '1px dashed rgba(255,255,255,0.07)' : '1px dashed rgba(15,23,42,0.06)'
+                                    }}
+                                />
+
+                                {/* لمعة زجاجية علوية خفيفة */}
+                                <div
+                                    className="absolute inset-1.5 rounded-full pointer-events-none"
+                                    style={{
+                                        background: isBlackTheme
+                                            ? 'linear-gradient(155deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0) 44%)'
+                                            : 'linear-gradient(155deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0) 46%)'
+                                    }}
+                                />
+
+                                <div ref={compassCircleRef} className="absolute w-full h-full transition-transform duration-300 ease-out pointer-events-none">
+                                    {/* أحرف الاتجاهات المجسمة ثلاثية الأبعاد على جوانب الدائرة */}
+                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 select-none flex items-center justify-center">
+                                        <Compass3DLetter
+                                            letter={isEn ? 'N' : 'ش'}
+                                            color={primaryColor}
+                                            size={42}
+                                            isPrimary
+                                        />
+                                    </div>
+                                    <div className="absolute -bottom-11 left-1/2 -translate-x-1/2 select-none flex items-center justify-center">
+                                        <Compass3DLetter
+                                            letter={isEn ? 'S' : 'ج'}
+                                            color={isBlackTheme ? '#a1a1aa' : '#94a3b8'}
+                                            size={34}
+                                        />
+                                    </div>
+                                    <div className="absolute -left-11 top-1/2 -translate-y-1/2 select-none flex items-center justify-center">
+                                        <Compass3DLetter
+                                            letter={isEn ? 'W' : 'غ'}
+                                            color={isBlackTheme ? '#a1a1aa' : '#94a3b8'}
+                                            size={34}
+                                        />
+                                    </div>
+                                    <div className="absolute -right-11 top-1/2 -translate-y-1/2 select-none flex items-center justify-center">
+                                        <Compass3DLetter
+                                            letter={isEn ? 'E' : 'ق'}
+                                            color={isBlackTheme ? '#a1a1aa' : '#94a3b8'}
+                                            size={34}
+                                        />
+                                    </div>
+
+                                    {/* علامات الدرجات والتدريج المجسمة */}
+                                    {Array.from({ length: 24 }).map((_, i) => (
+                                      <div 
+                                        key={i} 
+                                        className="absolute top-0 left-1/2 w-full h-1/2 pointer-events-none -translate-x-1/2" 
+                                        style={{ transform: `rotate(${i * 15}deg)`, transformOrigin: '50% 100%' }}
+                                      >
+                                        <div 
+                                           className={`mx-auto rounded-full ${
+                                               i % 6 === 0 
+                                                   ? 'w-1 h-3.5 mt-1' 
+                                                   : (i % 2 === 0 
+                                                       ? 'w-0.5 h-2.5 mt-1' 
+                                                       : 'w-0.5 h-1.5 mt-1')
+                                           }`}
+                                           style={{
+                                               background: i % 6 === 0
+                                                   ? (isBlackTheme ? 'linear-gradient(180deg, #e4e4e7, #71717a)' : 'linear-gradient(180deg, #64748b, #cbd5e1)')
+                                                   : (isBlackTheme ? 'rgba(255,255,255,0.28)' : 'rgba(148,163,184,0.55)'),
+                                               boxShadow: i % 6 === 0
+                                                   ? '0 1px 1px rgba(0,0,0,0.22)'
+                                                   : undefined
+                                           }}
+                                        ></div>
+                                      </div>
+                                    ))}
+                                </div>
+                                
+                                {/* سهم اتجاه القبلة المجسم ثلاثي الأبعاد */}
+                                {qiblaDirection !== null && (
+                                     <div ref={qiblaPointerRef} className="absolute w-full h-full transition-transform duration-300 ease-out pointer-events-none">
+                                         <Qibla3DArrow color={primaryColor} />
+                                    </div>
+                                )}
+                                
+                                {/* أيقونة الكعبة المشرفة عند المحاذاة التامة */}
+                                <div className="transition-all duration-500 pointer-events-none z-10 flex items-center justify-center" style={{ opacity: isAligned ? 1 : 0, transform: isAligned ? 'scale(1)' : 'scale(0)' }}>
+                                    <Kaaba3DIcon
+                                        size={76}
+                                        style={{
+                                            filter: `drop-shadow(0 6px 14px ${primaryColor}55)`
+                                        }}
+                                    />
+                                </div>
+                                
+                                {/* القبة المركزية المجسمة */}
+                                {!isAligned && (
+                                    <div className="absolute pointer-events-none z-10 flex items-center justify-center">
+                                        <Compass3DCenterDome color={primaryColor} size={26} />
+                                    </div>
+                                )}
                             </div>
-                            
-                            {/* النقطة المركزية */}
-                            {!isAligned && (
-                                <div 
-                                    className="border-0 absolute w-5 h-5 rounded-full transition-all duration-300 pointer-events-none" 
-                                    style={{ backgroundColor: primaryColor }}
-                                ></div>
-                            )}
                         </div>
 
                         {permissionStatus === 'prompt' && (
@@ -580,7 +649,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                                 <span>
                                     {isEn
                                         ? 'Location service (GPS) must be enabled to calculate Qibla direction accurately'
-                                        : 'يجب تفعيل خدمة الموقع (GPS) لحساب اتجاه القبله بدقه'}
+                                        : 'يجب تفعيل خدمة الموقع (GPS) لحساب اتجاه القبلة بدقه'}
                                 </span>
                             </button>
                         </div>
@@ -595,7 +664,15 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
 
                 {activeMode === 'ar' && qiblaDirection !== null && (
                     <div className="w-full h-full min-h-[460px] max-w-2xl mx-auto flex flex-col">
-                        <ARQibla qiblaDirection={qiblaDirection} heading={heading} isAligned={isAligned} theme={theme} />
+                        <ARQibla
+                            qiblaDirection={qiblaDirection}
+                            heading={heading}
+                            isAligned={isAligned}
+                            theme={theme}
+                            themeKey={themeKey}
+                            isNightMode={isNightMode}
+                            homeThemeVariant={homeThemeVariant}
+                        />
                     </div>
                 )}
 

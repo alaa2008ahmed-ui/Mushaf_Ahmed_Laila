@@ -396,7 +396,14 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                     className="w-10 h-10 rounded-2xl flex items-center justify-center theme-btn-bg text-sm quran-raised-btn border-0 active:scale-95 transition-all cursor-pointer"
                                     title={isEn ? "Surah Index Guide" : "إرشاد فهرس السور"}
                                 >
-                                    <i className="fas fa-question-circle text-emerald-500 text-lg quran-3d-icon"></i>
+                                    <i
+                                        className="fas fa-question-circle text-lg quran-3d-icon"
+                                        style={{
+                                            color: currentTheme?.id === 'deep_black'
+                                                ? '#ffffff'
+                                                : (currentTheme?.accent || 'var(--qr-accent, #10b981)')
+                                        }}
+                                    ></i>
                                 </button>
                             )}
                         </div>

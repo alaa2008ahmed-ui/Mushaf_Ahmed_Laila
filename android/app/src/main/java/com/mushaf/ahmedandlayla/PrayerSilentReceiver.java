@@ -65,9 +65,9 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
     public static final String KEY_SCHEDULED_IQAMAS = "scheduled_iqama_alarms";
 
     public static final String CHANNEL_ID = "prayer_silent_v5_droplet_channel";
-    public static final String SILENT_CHANNEL_ID = "prayer_silent_v4_silent_channel";
+    public static final String SILENT_CHANNEL_ID = "prayer_silent_v5_silent_channel";
     public static final String IQAMA_CHANNEL_ID = "iqama_v5_droplet_channel";
-    public static final String IQAMA_SILENT_CHANNEL_ID = "iqama_v4_silent_channel";
+    public static final String IQAMA_SILENT_CHANNEL_ID = "iqama_v5_silent_channel";
 
     private static final long ALARM_LOOKAHEAD_MS = 48L * 60L * 60L * 1000L; // 48 hours
 
@@ -1167,6 +1167,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 .setSortKey("08_iqama")
                 .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
                 .setNumber(0)
+                .setVibrate(NotificationVibrationHelper.ALERT_VIBRATION_PATTERN)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             if (effectiveSound && soundUri != null) {
@@ -1177,6 +1178,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
             nm.notify(notifId, builder.build());
             AlertsGroupHelper.updateGroupSummary(context, nm);
+            NotificationVibrationHelper.vibrateAlert(context);
 
             if (effectiveSound && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                 playChime(context);
@@ -1189,6 +1191,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
         try {
             nm.deleteNotificationChannel("iqama_v3_chime_channel");
             nm.deleteNotificationChannel("iqama_v4_chime_channel");
+            nm.deleteNotificationChannel("iqama_v4_silent_channel");
         } catch (Exception ignored) {}
 
         int resId = context.getResources().getIdentifier("notif_droplet", "raw", context.getPackageName());
@@ -1214,7 +1217,10 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 : "Chime alert when prayer Iqama begins");
             iqamaChan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             iqamaChan.setBypassDnd(true);
-            iqamaChan.enableVibration(true);
+            NotificationVibrationHelper.configureChannelVibration(
+                iqamaChan,
+                NotificationVibrationHelper.ALERT_VIBRATION_PATTERN
+            );
             iqamaChan.enableLights(true);
             iqamaChan.setShowBadge(false);
             if (soundUri != null) {
@@ -1234,7 +1240,10 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 : "Silent notification when prayer Iqama begins");
             iqamaSilentChan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             iqamaSilentChan.setBypassDnd(true);
-            iqamaSilentChan.enableVibration(false);
+            NotificationVibrationHelper.configureChannelVibration(
+                iqamaSilentChan,
+                NotificationVibrationHelper.ALERT_VIBRATION_PATTERN
+            );
             iqamaSilentChan.enableLights(true);
             iqamaSilentChan.setShowBadge(false);
             iqamaSilentChan.setSound(null, null);
@@ -1699,6 +1708,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             nm.deleteNotificationChannel("prayer_silent_channel");
             nm.deleteNotificationChannel("prayer_silent_v3_chime_channel");
             nm.deleteNotificationChannel("prayer_silent_v4_chime_channel");
+            nm.deleteNotificationChannel("prayer_silent_v4_silent_channel");
         } catch (Exception ignored) {}
 
         int resId = context.getResources().getIdentifier("notif_droplet", "raw", context.getPackageName());
@@ -1723,7 +1733,10 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             : "Notifications for activating and ending auto-silent mode during prayer");
         chimeChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         chimeChannel.setBypassDnd(true);
-        chimeChannel.enableVibration(true);
+        NotificationVibrationHelper.configureChannelVibration(
+            chimeChannel,
+            NotificationVibrationHelper.ALERT_VIBRATION_PATTERN
+        );
         chimeChannel.enableLights(true);
         chimeChannel.setShowBadge(false);
         if (soundUri != null) {
@@ -1741,7 +1754,10 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             : "Notification when auto-silent activates right after Iqama alert");
         silentChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         silentChannel.setBypassDnd(true);
-        silentChannel.enableVibration(false);
+        NotificationVibrationHelper.configureChannelVibration(
+            silentChannel,
+            NotificationVibrationHelper.ALERT_VIBRATION_PATTERN
+        );
         silentChannel.enableLights(true);
         silentChannel.setShowBadge(false);
         silentChannel.setSound(null, null);
@@ -1787,6 +1803,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 .setSortKey("10_alert")
                 .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
                 .setNumber(0)
+                .setVibrate(NotificationVibrationHelper.ALERT_VIBRATION_PATTERN)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             if (playChimeSound && soundUri != null) {
@@ -1797,6 +1814,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
             nm.notify(notifId, builder.build());
             AlertsGroupHelper.updateGroupSummary(context, nm);
+            NotificationVibrationHelper.vibrateAlert(context);
         } catch (Exception ignored) {}
     }
 }

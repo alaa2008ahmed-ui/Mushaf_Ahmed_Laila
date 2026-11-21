@@ -27,7 +27,7 @@ const defaultPhoneSettings: PhoneNotificationSettings = {
     sabah: { enabled: true, time: '07:00' },
     masaa: { enabled: true, time: '16:30' },
     dua: { enabled: true, time: '14:00' },
-    tasbeehMorning: { enabled: true, time: '10:00' },
+    tasbeehMorning: { enabled: true, time: '10:30' },
     tasbeehEvening: { enabled: true, time: '20:00' },
     kahf: { enabled: true, time: '09:00' },
     randomAthkar: {
@@ -61,6 +61,22 @@ export const useNotificationSettings = create<NotificationSettingsState>()(
         {
             name: 'phone-notification-storage',
             storage: createJSONStorage(() => localStorage),
+            version: 1,
+            migrate: (persistedState: any, version: number) => {
+                if (version < 1 && persistedState?.phoneSettings?.tasbeehMorning?.time === '10:00') {
+                    return {
+                        ...persistedState,
+                        phoneSettings: {
+                            ...persistedState.phoneSettings,
+                            tasbeehMorning: {
+                                ...persistedState.phoneSettings.tasbeehMorning,
+                                time: '10:30',
+                            },
+                        },
+                    };
+                }
+                return persistedState;
+            },
         }
     )
 );

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { VolumeX, Check, X } from 'lucide-react';
 import { stopNotificationSound } from '../../utils/prayerTimesUtils';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { tPrayer, getPrayerDisplayName } from '../../utils/prayerTimesTranslations';
+import { triggerAlertVibration } from '../../utils/vibrationHelper';
 
 interface AdhanAlertModalProps {
     alert: {
@@ -18,6 +19,11 @@ interface AdhanAlertModalProps {
 export const AdhanAlertModal: React.FC<AdhanAlertModalProps> = ({ alert, onDismiss }) => {
     const { language, isRTL, dir } = useLanguage();
     const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+
+    useEffect(() => {
+        if (!alert) return;
+        triggerAlertVibration('adhan');
+    }, [alert?.prayerKey, alert?.timeStr]);
 
     if (!alert) return null;
 

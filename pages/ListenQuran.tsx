@@ -40,6 +40,7 @@ import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/C
 import { LISTEN_QURAN_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { hexToRgba } from '../utils/flatDesignTokens';
+import { showGlobalAppToast } from '../utils/appNotificationSettings';
 
 const mockQuranData = {
     surahs: SURAH_LIST.map(s => ({
@@ -1090,7 +1091,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                     quranData={mockQuranData}
                     initialReaderId={reciterId}
                     getAvailableSurahs={getAvailableSurahs}
-                    showToast={() => {}}
+                    showToast={showGlobalAppToast}
                     mode="surah"
                     readersList={RECITERS}
                 />

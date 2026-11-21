@@ -353,8 +353,8 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
 
         if (isSky) {
             return {
-                modalBg: '#F0F9FF',
-                headerBg: '#E0F2FE',
+                modalBg: '#E0F2FE',
+                headerBg: '#BAE6FD',
                 cardBg: '#ffffff',
                 innerBg: '#f8fafc',
                 dividerColor: 'rgba(2, 132, 199, 0.12)',
@@ -368,8 +368,8 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         }
         if (isEmerald) {
             return {
-                modalBg: '#F0FDF4',
-                headerBg: '#DCFCE7',
+                modalBg: '#D1FAE5',
+                headerBg: '#A7F3D0',
                 cardBg: '#ffffff',
                 innerBg: '#f8fafc',
                 dividerColor: 'rgba(5, 150, 105, 0.12)',
@@ -383,8 +383,8 @@ export const IslamicTimePickerModal: React.FC<IslamicTimePickerModalProps> = ({
         }
         if (isBurgundy) {
             return {
-                modalBg: '#FFF1F2',
-                headerBg: '#FFE4E6',
+                modalBg: '#FFE4E6',
+                headerBg: '#FECDD3',
                 cardBg: '#ffffff',
                 innerBg: '#f8fafc',
                 dividerColor: 'rgba(190, 18, 60, 0.12)',

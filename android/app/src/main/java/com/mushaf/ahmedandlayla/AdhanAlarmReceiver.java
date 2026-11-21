@@ -144,8 +144,11 @@ public class AdhanAlarmReceiver extends BroadcastReceiver {
             NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm == null) return;
 
-            String silentChannelId = "adhan_v5_silent";
+            String silentChannelId = "adhan_v6_silent";
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                try {
+                    nm.deleteNotificationChannel("adhan_v5_silent");
+                } catch (Exception ignored) {}
                 NotificationChannel ch = nm.getNotificationChannel(silentChannelId);
                 if (ch == null) {
                     ch = new NotificationChannel(
@@ -157,7 +160,11 @@ public class AdhanAlarmReceiver extends BroadcastReceiver {
                         ? "إشعار الأذان بدون صوت مع أيقونة بالشريط العلوي"
                         : "Silent Adhan notification with status bar icon");
                     ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-                    ch.enableVibration(false);
+                    ch.setBypassDnd(true);
+                    NotificationVibrationHelper.configureChannelVibration(
+                        ch,
+                        NotificationVibrationHelper.ADHAN_VIBRATION_PATTERN
+                    );
                     ch.enableLights(true);
                     ch.setShowBadge(false);
                     ch.setSound(null, null);
@@ -182,7 +189,7 @@ public class AdhanAlarmReceiver extends BroadcastReceiver {
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setAutoCancel(true)
                 .setContentIntent(contentPi)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setGroup(AlertsGroupHelper.PRAYER_GROUP_KEY)
                 .setGroupSummary(false)
@@ -190,10 +197,12 @@ public class AdhanAlarmReceiver extends BroadcastReceiver {
                 .setSortKey("05_adhan")
                 .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
                 .setNumber(0)
+                .setVibrate(NotificationVibrationHelper.ADHAN_VIBRATION_PATTERN)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             nm.notify(notifId, builder.build());
             AlertsGroupHelper.updateGroupSummary(context, nm);
+            NotificationVibrationHelper.vibrateAdhan(context);
         } catch (Exception ignored) {}
     }
 

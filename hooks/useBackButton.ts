@@ -6,6 +6,7 @@ interface UseBackButtonProps {
     history: string[];
     navigateBack: () => void;
     setShowExitConfirm: (show: boolean) => void;
+    disabled?: boolean;
 }
 
 // Global stack of interceptors
@@ -26,6 +27,7 @@ export function useBackButton({
     history,
     navigateBack,
     setShowExitConfirm,
+    disabled = false,
 }: UseBackButtonProps) {
     const historyRef = useRef(history);
     useEffect(() => {
@@ -79,6 +81,7 @@ export function useBackButton({
     }, []);
 
     useEffect(() => {
+        if (disabled) return;
         let isMounted = true;
         // 1. Capacitor native Android back button event (hardware button & back gestures)
         let capacitorListener: Promise<{ remove: () => Promise<void> }> | null = null;
@@ -124,5 +127,5 @@ export function useBackButton({
             document.removeEventListener('backbutton', handleBackButton, false);
             window.removeEventListener('popstate', handlePopState);
         };
-    }, [handleBackButton]);
+    }, [handleBackButton, disabled]);
 }

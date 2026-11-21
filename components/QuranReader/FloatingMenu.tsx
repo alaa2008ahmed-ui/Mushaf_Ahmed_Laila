@@ -1217,7 +1217,7 @@ const NotificationSettingsContent: React.FC<{
                 {
                   id: "tasbeehMorning",
                   label: isEn ? "Morning Tasbeeh" : "التسبيح (صباحاً)",
-                  desc: isEn ? "Daily at 10:00 AM" : "تنبيه يومي الساعة 10:00 صباحاً",
+                  desc: isEn ? "Daily at 10:30 AM" : "تنبيه يومي الساعة 10:30 صباحاً",
                 },
                 {
                   id: "tasbeehEvening",

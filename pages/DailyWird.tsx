@@ -1091,8 +1091,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                   <div 
                     key={profile.id}
                     onClick={() => {
-                      setActiveId(profile.id);
+                      saveAllSettings(allSettings, profile.id);
                       setShowProfileMenu(false);
+                      syncDailyWirdNotifications(language);
                     }}
                     className={`app-page-card border-0 p-3 rounded-xl flex items-center justify-between cursor-pointer transition-all overflow-visible ${
                       isProfileActive 

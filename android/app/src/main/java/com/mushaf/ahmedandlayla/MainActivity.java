@@ -648,7 +648,11 @@ public class MainActivity extends BridgeActivity {
                 "persistent_prayer_channel_v3",
                 "persistent_prayer_channel_v4",
                 "prayer_alerts_summary_channel_v1",
-                "general_alerts_summary_channel_v1"
+                "general_alerts_summary_channel_v1",
+                "athkar_channel_v4_silent",
+                "adhan_v5_silent",
+                "iqama_v4_silent_channel",
+                "prayer_silent_v4_silent_channel"
             };
             for (String oldId : legacyChannels) {
                 try {
@@ -698,7 +702,7 @@ public class MainActivity extends BridgeActivity {
                 {"athkar_channel_v4_notif_harpeggio", isArabic ? "تنبيهات وأذكار (وتر هادئ)" : "Reminders (Harpeggio)", "notif_harpeggio"},
                 {"athkar_channel_v4_notif_subtle", isArabic ? "تنبيهات وأذكار (تنبيه خفيف)" : "Reminders (Subtle)", "notif_subtle"},
                 {"athkar_channel_v4_notif_marimba", isArabic ? "تنبيهات وأذكار (نغمة خشبية)" : "Reminders (Marimba)", "notif_marimba"},
-                {"athkar_channel_v4_silent", isArabic ? "تنبيهات وأذكار (بدون صوت)" : "Reminders (Silent)", "none"},
+                {"athkar_channel_v5_silent", isArabic ? "تنبيهات وأذكار (بدون صوت)" : "Reminders (Silent)", "none"},
 
                 // Islamic Occasions
                 {"islamic_eid_channel", isArabic ? "تكبيرات وأعياد المسلمين" : "Eid Takbeers", "takbeer1"},
@@ -717,7 +721,12 @@ public class MainActivity extends BridgeActivity {
                     channel.setDescription(isArabic ? "تنبيه مع أيقونة بالشريط العلوي وصوت مخصص" : "High priority alert with status bar icon");
                     channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                     channel.setBypassDnd(true);
-                    channel.enableVibration(!"none".equals(rawSound));
+                    NotificationVibrationHelper.configureChannelVibration(
+                        channel,
+                        id.startsWith("adhan_")
+                            ? NotificationVibrationHelper.ADHAN_VIBRATION_PATTERN
+                            : NotificationVibrationHelper.ALERT_VIBRATION_PATTERN
+                    );
                     channel.enableLights(true);
                     channel.setShowBadge(false); // Disabling badge prevents continuous "1" on launcher icon
 
@@ -738,13 +747,18 @@ public class MainActivity extends BridgeActivity {
             // Silent Adhan channel (used when Adhan or volume preset is muted)
             try {
                 NotificationChannel silentChan = new NotificationChannel(
-                    "adhan_v5_silent",
+                    "adhan_v6_silent",
                     isArabic ? "أذان الصلوات (بدون صوت)" : "Prayer Adhan (Silent)",
                     NotificationManager.IMPORTANCE_HIGH
                 );
                 silentChan.setDescription(isArabic ? "إشعار الأذان بدون صوت مع أيقونة بالشريط العلوي" : "Silent Adhan notification with status bar icon");
                 silentChan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-                silentChan.enableVibration(false);
+                silentChan.setBypassDnd(true);
+                NotificationVibrationHelper.configureChannelVibration(
+                    silentChan,
+                    NotificationVibrationHelper.ADHAN_VIBRATION_PATTERN
+                );
+                silentChan.enableLights(true);
                 silentChan.setShowBadge(false);
                 silentChan.setSound(null, null);
                 nm.createNotificationChannel(silentChan);

@@ -78,7 +78,7 @@ export const presetThemes: { [key: string]: Theme } = {
     },
     sky_mode: {
         name: "الوضع السماوي",
-        bgColor: "#FFFFFF",
+        bgColor: "#E0F2FE",
         textColor: "#000000",
         font: "'Cairo', sans-serif",
         palette: ["#0284C7", "#0369A1", "#38BDF8", "#075985"],
@@ -94,13 +94,13 @@ export const presetThemes: { [key: string]: Theme } = {
         cardBg: "#BAE6FD",
         cardText: "#000000",
         cardBorder: "1.5px solid #38BDF8",
-        modalBg: "#FFFFFF",
+        modalBg: "#E0F2FE",
         modalText: "#000000",
         sajdah: "#0369A1"
     },
     emerald_mode: {
         name: "الوضع الزمردي",
-        bgColor: "#FFFFFF",
+        bgColor: "#D1FAE5",
         textColor: "#000000",
         font: "'Cairo', sans-serif",
         palette: ["#059669", "#047857", "#34D399", "#065F46"],
@@ -116,13 +116,13 @@ export const presetThemes: { [key: string]: Theme } = {
         cardBg: "#A7F3D0",
         cardText: "#000000",
         cardBorder: "1.5px solid #34D399",
-        modalBg: "#FFFFFF",
+        modalBg: "#D1FAE5",
         modalText: "#000000",
         sajdah: "#047857"
     },
     burgundy_mode: {
         name: "الوضع العنابي",
-        bgColor: "#FFFFFF",
+        bgColor: "#FFE4E6",
         textColor: "#000000",
         font: "'Cairo', sans-serif",
         palette: ["#881337", "#9f1239", "#fb7185", "#701a75"],
@@ -138,7 +138,7 @@ export const presetThemes: { [key: string]: Theme } = {
         cardBg: "#fecdd3",
         cardText: "#000000",
         cardBorder: "1.5px solid #fb7185",
-        modalBg: "#FFFFFF",
+        modalBg: "#FFE4E6",
         modalText: "#000000",
         sajdah: "#881337"
     }

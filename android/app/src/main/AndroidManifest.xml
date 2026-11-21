@@ -216,6 +216,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_CHECK_DAILY_WIRD" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_WIRD_USER_STEP" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_SYNC_DAILY_WIRD" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />

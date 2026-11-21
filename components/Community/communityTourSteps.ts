@@ -180,12 +180,12 @@ export const MEMORIZATION_SETUP_STEPS: SpotlightStep[] = [
   {
     id: 'mem_mode',
     targetSelector: '#memorization-selection-mode-container',
-    titleAr: 'طريقة تحديد النطاق المرنة',
+    titleAr: 'تحديد النطاق المرن',
     titleEn: 'Flexible Range Selection',
-    descAr: 'اختر الطريقة الأنسب لك لتحديد المقاطع المراد حفظها: بالآيات والسور، بصفحة المصحف، أو بأرباع الأحزاب.',
-    descEn: 'Choose how to specify your target passage: by Surah & Ayahs, Mushaf Page, or Hizb Quarters (Rub\').',
+    descAr: 'اختر الطريقة الأنسب لك لتحديد المقاطع المراد حفظها: بالآية والسورة، بالصفحة، بالربع، أو بالجزء.',
+    descEn: 'Choose how to specify your target passage: by Verse & Surah, Mushaf Page, Quarter (Rub\'), or Juz.',
     badgeAr: 'تحديد النطاق',
-    badgeEn: 'Range Method',
+    badgeEn: 'Range',
     iconName: 'quran',
     accentColor: '#0ea5e9',
     gradient: 'from-sky-500 to-blue-600'
