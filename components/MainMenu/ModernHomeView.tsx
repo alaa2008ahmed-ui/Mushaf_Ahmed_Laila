@@ -280,7 +280,7 @@ const AyahTickerBar: React.FC<AyahTickerBarProps> = React.memo(({
     <div
       ref={containerRef}
       onClick={onNavigate}
-      className="w-full overflow-hidden relative py-1.5 px-2.5 rounded-xl mt-2.5 flex items-center cursor-pointer select-none group"
+      className={`w-full overflow-hidden relative py-1.5 px-2.5 rounded-xl mt-2.5 flex items-center select-none ${onNavigate ? 'cursor-pointer group' : ''}`}
       style={{
         minHeight: '34px',
         contain: 'layout paint',
@@ -1236,12 +1236,24 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   }, [config.location, isEn]);
 
   const handleOpenQuranFromCard = useCallback(() => {
+    if (isEn) {
+      onNavigate('quran', {
+        from: 'modern_home',
+        surah: lastReadQuran.surah,
+        ayah: lastReadQuran.ayah,
+        page: lastReadQuran.page,
+        readingMode: 'translation',
+      });
+      return;
+    }
+    const savedMode = localStorage.getItem('quran_reading_mode_ar_v') || localStorage.getItem('last_arabic_reading_mode_v');
+    const resolvedMode = savedMode === 'madinah' || !savedMode ? 'mushaf' : savedMode;
     onNavigate('quran', {
       from: 'modern_home',
       surah: lastReadQuran.surah,
       ayah: lastReadQuran.ayah,
       page: lastReadQuran.page,
-      ...(isEn ? { readingMode: 'translation' } : {}),
+      readingMode: resolvedMode,
     });
   }, [onNavigate, lastReadQuran.surah, lastReadQuran.ayah, lastReadQuran.page, isEn]);
 
@@ -1617,38 +1629,58 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   const renderQuranCard = () => (
       /* 1. بطاقة القرآن الكريم ومتابعة التلاوة (Standalone Golden Quran Card) */
       <div 
-        className="w-full golden-3d-card p-4 sm:p-5 select-none flex flex-col gap-2.5"
+        className="w-full golden-3d-card px-4 pt-3.5 pb-5 sm:px-5 sm:pt-4 sm:pb-5 select-none flex flex-col justify-between gap-3.5 min-h-[148px] sm:min-h-[162px]"
       >
-        <div className="flex items-center justify-between gap-2 sm:gap-3 w-full">
-          <div 
-            onClick={() => onNavigate('quran', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
-            className="flex flex-col justify-center min-w-0 flex-1 text-start cursor-pointer group"
-          >
-            <div className="flex items-center">
-              <span className="card-header-title text-xs sm:text-sm font-black truncate group-hover:text-amber-900 transition-colors font-cairo" style={{ color: (isNightMode || isBlackTheme) ? '#FFFFFF' : '#451A03' }}>
+        <div className="flex flex-col gap-2 w-full">
+          <div className="flex items-start justify-between gap-2 w-full">
+            <div 
+              className="flex items-center min-w-0 flex-1 text-start pt-1"
+            >
+              <span className="card-header-title text-xs sm:text-sm font-black truncate transition-colors font-cairo" style={{ color: (isNightMode || isBlackTheme) ? '#FFFFFF' : '#451A03' }}>
                 {isEn ? 'Continue Quran Recitation' : 'تابع تلاوة المصحف'}
               </span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap whitespace-nowrap text-[11px] sm:text-xs font-black mt-1 min-w-0 font-cairo">
-              <span className="truncate" style={{ color: (isNightMode || isBlackTheme) ? '#FFFFFF' : '#451A03' }}>
-                {lastReadQuran.surahName} :
-              </span>
-              <span className="shrink-0" style={{ color: (isNightMode || isBlackTheme) ? '#FDE68A' : '#5B2605' }}>
-                {isEn 
-                  ? `( Ayah ${lastReadQuran.ayah} Juz ${lastReadQuran.juz} Page ${lastReadQuran.page} )`
-                  : `( الآية ${formatNumber(lastReadQuran.ayah)} الجزء ${formatNumber(lastReadQuran.juz)} الصفحة ${formatNumber(lastReadQuran.page)} )`}
-              </span>
+
+            <div className="flex items-center gap-1.5 shrink-0 -mt-0.5">
+              <button
+                type="button"
+                onClick={handleOpenQuranFromCard}
+                className="px-2.5 sm:px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
+                title={isEn ? 'Vertical Reading' : 'تلاوة رأسية للمصحف'}
+              >
+                <span>{isEn ? 'Vertical' : 'رأسي'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('quran', { from: 'modern_home', readingMode: 'madinah' })}
+                className="px-2.5 sm:px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
+                title={isEn ? 'Madinah Mushaf (Horizontal)' : 'مصحف المدينة (أفقي)'}
+              >
+                <span>{isEn ? 'Madinah' : 'أفقي'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('quran-landscape', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
+                className="px-2.5 sm:px-4 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
+                title={isEn ? 'Landscape Reading' : 'تلاوة عرضية للمصحف'}
+              >
+                <span>{isEn ? 'Landscape' : 'عرضي'}</span>
+              </button>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => onNavigate('quran-landscape', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
-            className="px-6 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
-            title={isEn ? 'Landscape Reading' : 'تلاوة عرضية للمصحف'}
+          <div 
+            className="flex items-center gap-1 sm:gap-1.5 flex-wrap text-[11px] sm:text-xs font-black w-full min-w-0 font-cairo"
           >
-            <span>{isEn ? 'Landscape' : 'عرضي'}</span>
-          </button>
+            <span className="shrink-0" style={{ color: (isNightMode || isBlackTheme) ? '#FFFFFF' : '#451A03' }}>
+              {lastReadQuran.surahName} :
+            </span>
+            <span className="shrink-0" style={{ color: (isNightMode || isBlackTheme) ? '#FDE68A' : '#5B2605' }}>
+              {isEn 
+                ? `( Ayah ${lastReadQuran.ayah} Juz ${lastReadQuran.juz} Page ${lastReadQuran.page} )`
+                : `( الآية ${formatNumber(lastReadQuran.ayah)} الجزء ${formatNumber(lastReadQuran.juz)} الصفحة ${formatNumber(lastReadQuran.page)} )`}
+            </span>
+          </div>
         </div>
 
         {/* الشريط المتحرك لعرض نص الآية الكريمة */}
@@ -1659,7 +1691,6 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           isNightMode={isNightMode}
           isBlackTheme={isBlackTheme}
           formatNumber={formatNumber}
-          onNavigate={handleOpenQuranFromCard}
         />
       </div>
   );

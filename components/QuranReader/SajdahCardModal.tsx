@@ -188,12 +188,12 @@ const SajdahCardModal: FC<{
 
     return (
         <div
-            className={`fixed inset-0 bg-black/65 z-[2000] flex flex-col justify-end select-none settings-3d-adia-scope ${isDark ? 'settings-3d-dark quran-3d-dark' : ''}`}
+            className={`quran-modal-sheet-backdrop fixed inset-0 bg-black/65 z-[2000] flex flex-col justify-end select-none settings-3d-adia-scope ${isDark ? 'settings-3d-dark quran-3d-dark' : ''}`}
             onClick={handleCloseModal}
             dir="rtl"
         >
             <div
-                className={`app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col ${isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'} overflow-hidden relative`}
+                className={`quran-modal-sheet-panel app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col ${isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'} overflow-hidden relative`}
                 style={{
                     backgroundColor: sheetBgColor,
                     color: sheetTextColor,

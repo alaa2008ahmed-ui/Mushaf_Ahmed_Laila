@@ -2,7 +2,7 @@ import { ReadingMode, THEMES, DEFAULT_SETTINGS, getToolbarColorsForTheme } from 
 
 export type ReadingCluster = 'unified' | 'ar' | 'en';
 
-export const ALL_READING_MODES: ReadingMode[] = ['mushaf', 'tafseer', 'meanings', 'translation', 'bilingual'];
+export const ALL_READING_MODES: ReadingMode[] = ['mushaf', 'madinah', 'tafseer', 'meanings', 'translation', 'bilingual'];
 export const ARABIC_CLUSTER_MODES: ReadingMode[] = ALL_READING_MODES;
 export const ENGLISH_CLUSTER_MODES: ReadingMode[] = ALL_READING_MODES;
 

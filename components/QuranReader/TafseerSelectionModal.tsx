@@ -32,7 +32,7 @@ const TafseerSelectionModal: FC<{
 
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'}`} onClick={onClose}>
-            <div dir={dir} className={`modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} ${isLandscape ? 'w-[54%] max-w-[360px] max-h-[84%] rounded-3xl' : 'w-full max-w-[310px] rounded-3xl max-h-[85dvh]'} flex flex-col overflow-hidden border-0`} 
+            <div dir={dir} className={`modal-skinned madinah-enlarged-popup settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} ${isLandscape ? 'w-[54%] max-w-[360px] max-h-[84%] rounded-3xl' : 'w-full max-w-[310px] rounded-3xl max-h-[85dvh]'} flex flex-col overflow-hidden border-0`} 
                 style={{ 
                     fontFamily: p.fontFamily,
                     backgroundColor: p.modalBg, 

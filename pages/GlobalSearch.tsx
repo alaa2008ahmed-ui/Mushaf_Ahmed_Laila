@@ -31,14 +31,67 @@ import {
     getQuranSettingsForLayout 
 } from '../utils/quranThemeHelper';
 import { getCalculator3DStyles } from '../utils/calculator3DStyles';
+import { getMadinahThemePalette } from '../components/QuranReader/MadinahFrameSVG';
 import './QuranReader.css';
 
+// Cached loaders for Tafseer & Meanings when searching from those reading pages
+let cachedTafseerMap: Map<string, string> | null = null;
+let cachedMeaningsMap: Map<string, string> | null = null;
+
+const loadTafseerMap = async (): Promise<Map<string, string> | null> => {
+    if (cachedTafseerMap) return cachedTafseerMap;
+    try {
+        const res = await fetch('/assets/data/ar.jalalayn.json');
+        const data = await res.json();
+        const surahs = data?.data?.surahs;
+        if (Array.isArray(surahs)) {
+            const map = new Map<string, string>();
+            surahs.forEach((surah: any) => {
+                const sNum = surah?.number;
+                if (!sNum || !Array.isArray(surah.ayahs)) return;
+                surah.ayahs.forEach((ayah: any) => {
+                    if (ayah?.numberInSurah && ayah?.text) {
+                        map.set(`${sNum}:${ayah.numberInSurah}`, ayah.text);
+                    }
+                });
+            });
+            cachedTafseerMap = map;
+            return cachedTafseerMap;
+        }
+    } catch (e) {
+        console.error('Failed to load Tafseer for search:', e);
+    }
+    return null;
+};
+
+const loadMeaningsMap = async (): Promise<Map<string, string> | null> => {
+    if (cachedMeaningsMap) return cachedMeaningsMap;
+    try {
+        const res = await fetch('/tafseer.json');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+            const map = new Map<string, string>();
+            data.forEach((item: any) => {
+                if (item?.number && item?.aya && item?.text) {
+                    map.set(`${item.number}:${item.aya}`, item.text);
+                }
+            });
+            cachedMeaningsMap = map;
+            return cachedMeaningsMap;
+        }
+    } catch (e) {
+        console.error('Failed to load Meanings for search:', e);
+    }
+    return null;
+};
+
 // Helper to get reader theme
-const getReaderTheme = (isLandscape = false) => {
+const getReaderTheme = (isLandscape = false, readingMode = 'mushaf') => {
     try {
         const suffix = isLandscape ? '_h' : '_v';
-        const themeId = getQuranThemeIdForLayout(suffix);
-        const quranSettings = getQuranSettingsForLayout(suffix) || {};
+        const mode = readingMode || 'mushaf';
+        const themeId = getQuranThemeIdForLayout(suffix, undefined, mode);
+        const quranSettings = getQuranSettingsForLayout(suffix, undefined, mode) || {};
         const originalTheme = THEMES[themeId as keyof typeof THEMES] || THEMES.black;
         
         const isDeepBlack = themeId === 'deep_black';
@@ -94,6 +147,7 @@ export let searchCache = {
     activeTab: 'all' as string | string[],
     sectionsKey: 'all',
     language: '',
+    readingMode: '',
     scrollTop: 0,
     quranResults: [] as any[],
     athkarResults: [] as any[],
@@ -115,6 +169,7 @@ export const clearSearchCache = () => {
         activeTab: 'all',
         sectionsKey: 'all',
         language: '',
+        readingMode: '',
         scrollTop: 0,
         quranResults: [],
         athkarResults: [],
@@ -151,12 +206,49 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     );
     const isQuranLandscape = navParams?.from === 'quran-landscape';
 
-    const [readerTheme, setReaderTheme] = useState(() => getReaderTheme(isQuranLandscape));
+    const sourceReadingMode: string | undefined = React.useMemo(() => {
+        if (!isFromQuran) return undefined;
+        if (navParams?.readingMode) return navParams.readingMode;
+        const orient = isQuranLandscape ? 'h' : 'v';
+        if (isEn) {
+            return (
+                localStorage.getItem(`quran_reading_mode_en_${orient}`) ||
+                localStorage.getItem(`last_reading_mode_${orient}`) ||
+                'translation'
+            );
+        }
+        return (
+            localStorage.getItem(`quran_reading_mode_ar_${orient}`) ||
+            localStorage.getItem(`last_arabic_reading_mode_${orient}`) ||
+            localStorage.getItem(`last_reading_mode_${orient}`) ||
+            'mushaf'
+        );
+    }, [isFromQuran, navParams?.readingMode, isQuranLandscape, isEn]);
 
-    // Pre-fetch English Quran translation data if in English mode
+    const readingModeLabel = React.useMemo(() => {
+        if (!sourceReadingMode) return '';
+        switch (sourceReadingMode) {
+            case 'mushaf': return isEn ? 'Mushaf' : 'المصحف';
+            case 'madinah': return isEn ? 'Madinah Mushaf' : 'مصحف المدينة';
+            case 'tafseer': return isEn ? 'Tafseer' : 'التفسير';
+            case 'meanings': return isEn ? 'Word Meanings' : 'المعاني';
+            case 'bilingual': return isEn ? 'Recitation & Translation' : 'التلاوة والترجمة';
+            case 'translation': return isEn ? 'Translation' : 'الترجمة';
+            default: return '';
+        }
+    }, [sourceReadingMode, isEn]);
+
+    const [readerTheme, setReaderTheme] = useState(() => getReaderTheme(isQuranLandscape, sourceReadingMode || 'mushaf'));
+
+    // Pre-fetch English Quran translation & mode-specific data when needed
     useEffect(() => {
         loadQuranEnglishTranslation();
-    }, []);
+        if (sourceReadingMode === 'tafseer') {
+            loadTafseerMap();
+        } else if (sourceReadingMode === 'meanings') {
+            loadMeaningsMap();
+        }
+    }, [sourceReadingMode]);
 
     const handleBack = useCallback(() => {
         onBack();
@@ -183,10 +275,10 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     
     useEffect(() => {
         setCurrentPage(isFromQuran ? (isQuranLandscape ? 'quran_search_landscape' : 'quran_search') : 'search');
-        setReaderTheme(getReaderTheme(isQuranLandscape));
+        setReaderTheme(getReaderTheme(isQuranLandscape, sourceReadingMode || 'mushaf'));
         
         const handleThemeChange = () => {
-            setReaderTheme(getReaderTheme(isQuranLandscape));
+            setReaderTheme(getReaderTheme(isQuranLandscape, sourceReadingMode || 'mushaf'));
         };
         
         window.addEventListener('theme-change', handleThemeChange);
@@ -195,7 +287,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             window.removeEventListener('theme-change', handleThemeChange);
             window.removeEventListener('settings-change', handleThemeChange);
         };
-    }, [setCurrentPage, isFromQuran, isQuranLandscape]);
+    }, [setCurrentPage, isFromQuran, isQuranLandscape, sourceReadingMode]);
 
     const isAppBlackTheme = s3d.isBlackTheme;
     const appIsDark = s3d.isDark;
@@ -217,29 +309,86 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         isDark: appIsDark,
     };
 
-    const theme = isFromQuran ? readerTheme : appSearchTheme;
+    const isMadinahFlatSearch = isFromQuran && sourceReadingMode === 'madinah';
+    const madinahPalette = React.useMemo(
+        () => (isMadinahFlatSearch ? getMadinahThemePalette(readerTheme) : null),
+        [isMadinahFlatSearch, readerTheme]
+    );
+
+    const theme = isMadinahFlatSearch && madinahPalette
+        ? {
+              ...readerTheme,
+              bgColor: madinahPalette.frameBg,
+              bg: madinahPalette.frameBg,
+              textColor: readerTheme.isDark ? '#f8fafc' : madinahPalette.bannerText,
+              text: readerTheme.isDark ? '#f8fafc' : madinahPalette.bannerText,
+              accent: madinahPalette.primary,
+              btnBg: madinahPalette.cartoucheFill,
+              palette: [
+                  madinahPalette.primary,
+                  ...(readerTheme.palette?.slice(1) || [madinahPalette.secondary, madinahPalette.cartoucheFill]),
+              ],
+          }
+        : (isFromQuran ? readerTheme : appSearchTheme);
+
+    const madinahAccent = madinahPalette ? madinahPalette.primary : (theme.accent || theme.palette[0]);
+    const madinahBorderSubtle = `${madinahAccent}44`;
+    const madinahBorderStrong = `${madinahAccent}99`;
+    const madinahVars: React.CSSProperties = isMadinahFlatSearch
+        ? ({
+              '--madinah-menu-bg': theme.bgColor,
+              '--madinah-menu-surface': theme.btnBg || (theme.isDark ? '#0a0a0c' : '#ffffff'),
+              '--madinah-menu-header-bg': theme.isDark ? 'rgba(255, 255, 255, 0.06)' : theme.bgColor,
+              '--madinah-menu-text': theme.textColor,
+              '--madinah-menu-border': madinahAccent,
+              '--madinah-menu-border-strong': madinahBorderStrong,
+              '--madinah-menu-border-subtle': madinahBorderSubtle,
+              '--madinah-menu-accent': madinahAccent,
+              '--madinah-menu-icon-text': madinahAccent.toUpperCase() === '#FFFFFF' ? '#000000' : '#ffffff',
+          } as React.CSSProperties)
+        : {};
+
     const accentBadgeText = (theme.accent || theme.palette?.[0] || '').toUpperCase() === '#FFFFFF' ? '#000000' : '#ffffff';
 
-    const card3DClass = isFromQuran ? 'quran-raised-card' : `app-page-card ${s3d.surfaceCardClass}`;
-    const btn3DClass = isFromQuran ? 'quran-raised-btn' : `app-page-card ${s3d.surfaceCardClass}`;
-    const inner3DClass = isFromQuran ? 'quran-raised-card' : 'app-3d-badge';
-    const badge3DStyle: React.CSSProperties = isFromQuran
-        ? { backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }
-        : { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor, border: 'none' };
+    const card3DClass = isMadinahFlatSearch
+        ? 'madinah-flat-card'
+        : (isFromQuran ? 'quran-raised-card' : `app-page-card ${s3d.surfaceCardClass}`);
+    const btn3DClass = isMadinahFlatSearch
+        ? 'madinah-flat-btn'
+        : (isFromQuran ? 'quran-raised-btn' : `app-page-card ${s3d.surfaceCardClass}`);
+    const inner3DClass = isMadinahFlatSearch
+        ? 'madinah-flat-badge'
+        : (isFromQuran ? 'quran-raised-card' : 'app-3d-badge');
+    const icon3DClass = isMadinahFlatSearch ? '' : 'quran-3d-icon';
+
+    const badge3DStyle: React.CSSProperties = isMadinahFlatSearch
+        ? { backgroundColor: madinahAccent, color: accentBadgeText, border: `1px solid ${madinahAccent}` }
+        : isFromQuran
+            ? { backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }
+            : { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor, border: 'none' };
     const itemCardStyle = (darkAlpha = 'rgba(255,255,255,0.05)'): React.CSSProperties =>
-        isFromQuran
-            ? { backgroundColor: theme.isDark ? darkAlpha : '#ffffff', color: theme.textColor, border: 'none' }
-            : { color: s3d.textColor };
+        isMadinahFlatSearch
+            ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: `1.5px solid ${madinahBorderSubtle}` }
+            : isFromQuran
+                ? { backgroundColor: theme.isDark ? darkAlpha : '#ffffff', color: theme.textColor, border: 'none' }
+                : { color: s3d.textColor };
     const headerCardStyle = (darkAlpha = 'rgba(255,255,255,0.06)'): React.CSSProperties =>
-        isFromQuran
-            ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }
-            : { color: s3d.textColor };
-    const sectionIconStyle: React.CSSProperties = isFromQuran
-        ? { backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }
-        : { backgroundColor: s3d.softResultBg, color: s3d.noticeAccent, border: 'none' };
+        isMadinahFlatSearch
+            ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: `1.5px solid ${madinahBorderSubtle}` }
+            : isFromQuran
+                ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }
+                : { color: s3d.textColor };
+    const sectionIconStyle: React.CSSProperties = isMadinahFlatSearch
+        ? { backgroundColor: `${madinahAccent}14`, color: madinahAccent, border: `1px solid ${madinahBorderSubtle}` }
+        : isFromQuran
+            ? { backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }
+            : { backgroundColor: s3d.softResultBg, color: s3d.noticeAccent, border: 'none' };
     
     const [query, setQuery] = useState(searchCache.query);
     const [selectedSections, setSelectedSections] = useState<string[]>(() => {
+        if (isFromQuran && (sourceReadingMode || '') !== searchCache.readingMode) {
+            return ['quran'];
+        }
         if (Array.isArray(searchCache.activeTab)) {
             return searchCache.activeTab.length > 0 ? searchCache.activeTab : (isFromQuran ? ['quran'] : ['all']);
         }
@@ -396,6 +545,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             searchCache.query = '';
             searchCache.sectionsKey = currentSectionsKey;
             searchCache.language = language;
+            searchCache.readingMode = sourceReadingMode || '';
             searchCache.scrollTop = 0;
             searchCache.quranResults = [];
             searchCache.athkarResults = [];
@@ -416,11 +566,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         const hasLatinChars = /[a-zA-Z]/.test(q);
         const hasArabicChars = /[\u0600-\u06FF]/.test(q);
+        const allowLatinInQuran = isEn || sourceReadingMode === 'bilingual' || sourceReadingMode === 'translation';
+        const allowArabicInQuran = !isEn || sourceReadingMode === 'bilingual';
 
-        // Strict language enforcement:
-        // - In Arabic mode (!isEn): searching with English/Latin text must result in NOTHING (0 results).
-        // - In English mode (isEn): searching with Arabic text must result in NOTHING (0 results).
-        if ((!isEn && hasLatinChars) || (isEn && hasArabicChars)) {
+        // Strict language enforcement (relaxed for bilingual/translation Quran reading pages):
+        if ((!allowLatinInQuran && hasLatinChars) || (!allowArabicInQuran && hasArabicChars)) {
             setQuranResults([]);
             setAthkarResults([]);
             setSalahAthkarResults([]);
@@ -438,6 +588,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             searchCache.query = q;
             searchCache.sectionsKey = currentSectionsKey;
             searchCache.language = language;
+            searchCache.readingMode = sourceReadingMode || '';
             searchCache.quranResults = [];
             searchCache.athkarResults = [];
             searchCache.salahAthkarResults = [];
@@ -453,10 +604,18 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             return;
         }
 
-        // Ensure English Quran translation is loaded if needed
+        // Ensure English Quran translation / Tafseer / Meanings are loaded if needed for the active reading page
         let enQuranData = getCachedQuranEnglishTranslation();
-        if (isEn && shouldSearch('quran') && !enQuranData) {
+        if (shouldSearch('quran') && (isEn || sourceReadingMode === 'bilingual' || sourceReadingMode === 'translation') && !enQuranData) {
             enQuranData = await loadQuranEnglishTranslation();
+        }
+        let tafseerMap: Map<string, string> | null = null;
+        if (shouldSearch('quran') && sourceReadingMode === 'tafseer') {
+            tafseerMap = await loadTafseerMap();
+        }
+        let meaningsMap: Map<string, string> | null = null;
+        if (shouldSearch('quran') && sourceReadingMode === 'meanings') {
+            meaningsMap = await loadMeaningsMap();
         }
 
         const normQ = normalizeArabic(q);
@@ -544,13 +703,18 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         const activeHighlightRegex = isEn ? englishRegex : arabicRegex;
 
-        // 1. Search Quran
+        // 1. Search Quran (scoped & adapted to the source reading page)
         const foundQuran: any[] = [];
         const seenAyahKeys = new Set<string>();
 
         if (shouldSearch('quran')) {
-            if (isEn) {
-                if (enQuranData && enQuranData.length > 0) {
+            const isEnglishQuranSearch =
+                sourceReadingMode === 'translation' ||
+                (isEn && sourceReadingMode !== 'bilingual') ||
+                ((sourceReadingMode === 'bilingual') && hasLatinChars && !hasArabicChars);
+
+            if (isEnglishQuranSearch) {
+                if (!isNumberSearch && enQuranData && enQuranData.length > 0 && hasLatinChars) {
                     const enResults = searchQuranEnglish(q, enQuranData, quranData);
                     enResults.forEach(item => {
                         const key = `${item.surah}:${item.ayah}`;
@@ -587,48 +751,59 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         }
                     }
                 }
-            } else {
-                if (arabicRegex || isNumberSearch) {
-                    for (let sIdx = 0; sIdx < quranData.surahs.length; sIdx++) {
-                        const surah = quranData.surahs[sIdx];
-                        for (let aIdx = 0; aIdx < surah.ayahs.length; aIdx++) {
-                            const ayah = surah.ayahs[aIdx];
-                            const key = `${surah.number}:${ayah.numberInSurah}`;
-                            const enVerse = enQuranData?.[sIdx]?.verses?.[aIdx];
-                            const enTransText = enVerse?.translation || '';
-                            const surahNameEn = SURAH_NAMES_EN[surah.number - 1] || surah.name;
+            } else if ((arabicRegex && searchWordsAr.length > 0) || isNumberSearch) {
+                for (let sIdx = 0; sIdx < quranData.surahs.length; sIdx++) {
+                    const surah = quranData.surahs[sIdx];
+                    for (let aIdx = 0; aIdx < surah.ayahs.length; aIdx++) {
+                        const ayah = surah.ayahs[aIdx];
+                        const key = `${surah.number}:${ayah.numberInSurah}`;
+                        const enVerse = enQuranData?.[sIdx]?.verses?.[aIdx];
+                        const enTransText = enVerse?.translation || '';
+                        const surahNameEn = SURAH_NAMES_EN[surah.number - 1] || surah.name;
+                        const tafseerText = sourceReadingMode === 'tafseer' ? (tafseerMap?.get(key) || '') : '';
+                        const meaningsText = sourceReadingMode === 'meanings' ? (meaningsMap?.get(key) || '') : '';
 
-                            if (isNumberSearch && ayah.numberInSurah === searchNum) {
+                        if (isNumberSearch && ayah.numberInSurah === searchNum) {
+                            seenAyahKeys.add(key);
+                            foundQuran.push({ 
+                                type: 'quran',
+                                text: fixQuranText(ayah.text), 
+                                textEn: enTransText,
+                                tafseerText,
+                                meaningsText,
+                                surah: surah.number, 
+                                surahName: surah.name, 
+                                surahNameEn,
+                                ayah: ayah.numberInSurah, 
+                                page: ayah.page,
+                                juz: ayah.juz,
+                                highlightRegex: null
+                            });
+                        } else if (!isNumberSearch) {
+                            const cleanText = stripTajweedTags(ayah.text);
+                            const ayahMatched = matchArabic(cleanText) || (arabicRegex ? new RegExp(arabicRegex.source, 'gi').test(cleanText) : false);
+                            const tafseerMatched = sourceReadingMode === 'tafseer' && Boolean(tafseerText) && (matchArabic(tafseerText) || (arabicRegex ? new RegExp(arabicRegex.source, 'gi').test(tafseerText) : false));
+                            const meaningsMatched = sourceReadingMode === 'meanings' && Boolean(meaningsText) && (matchArabic(meaningsText) || (arabicRegex ? new RegExp(arabicRegex.source, 'gi').test(meaningsText) : false));
+
+                            if (ayahMatched || tafseerMatched || meaningsMatched) {
                                 seenAyahKeys.add(key);
                                 foundQuran.push({ 
                                     type: 'quran',
                                     text: fixQuranText(ayah.text), 
                                     textEn: enTransText,
+                                    tafseerText,
+                                    meaningsText,
+                                    ayahMatched,
+                                    tafseerMatched,
+                                    meaningsMatched,
                                     surah: surah.number, 
                                     surahName: surah.name, 
                                     surahNameEn,
                                     ayah: ayah.numberInSurah, 
                                     page: ayah.page,
                                     juz: ayah.juz,
-                                    highlightRegex: null
+                                    highlightRegex: arabicRegex
                                 });
-                            } else if (!isNumberSearch) {
-                                const cleanText = stripTajweedTags(ayah.text);
-                                if (matchArabic(cleanText) || (arabicRegex && arabicRegex.test(cleanText))) {
-                                    seenAyahKeys.add(key);
-                                    foundQuran.push({ 
-                                        type: 'quran',
-                                        text: fixQuranText(ayah.text), 
-                                        textEn: enTransText,
-                                        surah: surah.number, 
-                                        surahName: surah.name, 
-                                        surahNameEn,
-                                        ayah: ayah.numberInSurah, 
-                                        page: ayah.page,
-                                        juz: ayah.juz,
-                                        highlightRegex: arabicRegex
-                                    });
-                                }
                             }
                         }
                     }
@@ -942,6 +1117,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         searchCache.query = q;
         searchCache.sectionsKey = currentSectionsKey;
         searchCache.language = language;
+        searchCache.readingMode = sourceReadingMode || '';
         searchCache.quranResults = foundQuran;
         searchCache.athkarResults = foundAthkar;
         searchCache.salahAthkarResults = foundSalahAthkar;
@@ -954,7 +1130,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         searchCache.hajjUmrahResults = foundHajjUmrah;
         searchCache.tenPromisedResults = foundTenPromised;
         searchCache.divineMiraclesResults = foundDivineMiracles;
-    }, [isEn, language]);
+    }, [isEn, language, sourceReadingMode]);
 
     useEffect(() => {
         searchCache.activeTab = selectedSections.includes('all') ? 'all' : (selectedSections.length === 1 ? selectedSections[0] : (selectedSections as any));
@@ -984,6 +1160,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             searchCache.query = '';
             searchCache.sectionsKey = currentSectionsKey;
             searchCache.language = language;
+            searchCache.readingMode = sourceReadingMode || '';
             searchCache.scrollTop = 0;
             searchCache.quranResults = [];
             searchCache.athkarResults = [];
@@ -1000,7 +1177,12 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             return;
         }
 
-        if (trimmed === searchCache.query && currentSectionsKey === searchCache.sectionsKey && language === searchCache.language) {
+        if (
+            trimmed === searchCache.query &&
+            currentSectionsKey === searchCache.sectionsKey &&
+            language === searchCache.language &&
+            (sourceReadingMode || '') === searchCache.readingMode
+        ) {
             return;
         }
 
@@ -1012,7 +1194,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
         };
-    }, [query, selectedSections, language, performSearch]);
+    }, [query, selectedSections, language, sourceReadingMode, performSearch]);
 
     const highlightText = (text: string, regex: RegExp | null) => {
         if (!text) return null;
@@ -1084,7 +1266,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-5 ${card3DClass} border-0`}
                         style={headerCardStyle('rgba(255,255,255,0.06)')}
                     >
-                        <Search className="w-10 h-10 quran-3d-icon opacity-60" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />
+                        <Search className={`w-10 h-10 ${icon3DClass} opacity-60`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />
                     </div>
                     <p className="font-bold text-sm sm:text-base opacity-75" style={{ color: theme.textColor }}>
                         {isAllSelected
@@ -1155,6 +1337,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         }, {} as Record<number, { surahName: string, surahNameEn?: string, ayahs: any[] }>);
         const sortedQuranSurahs = Object.keys(groupedQuran).map(Number).sort((a, b) => a - b);
 
+        const isLatinQuery = /[a-zA-Z]/.test(query);
         const normQ = normalizeArabic(query);
         const innerGap = '[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]*';
         const wordGap = '[\\s\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]+';
@@ -1169,7 +1352,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         const highlightPattern = wordPatterns.join(wordGap);
         let activeRegex: RegExp | null = null;
         try {
-            if (isEn) {
+            if (isEn || isLatinQuery) {
                 const englishWords = query.toLowerCase().split(/\s+/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean);
                 if (englishWords.length > 0) activeRegex = new RegExp(`(${englishWords.join('|')})`, 'gi');
             } else if (highlightPattern) {
@@ -1179,13 +1362,92 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             activeRegex = null;
         }
 
-        const totalQuranWordOccurrences = quranResults.reduce((acc, item) => {
-            if (item.text && activeRegex) {
-                const matches = item.text.match(activeRegex);
-                return acc + (matches ? matches.length : 1);
+        const countQuranItemMatches = (item: any) => {
+            if (!activeRegex) return 1;
+            const targetParts: string[] = [];
+            if (isLatinQuery || sourceReadingMode === 'translation' || (isEn && sourceReadingMode !== 'bilingual')) {
+                if (item.textEn) targetParts.push(item.textEn);
+            } else {
+                if (item.text) targetParts.push(item.text);
+                if (sourceReadingMode === 'tafseer' && item.tafseerText) targetParts.push(item.tafseerText);
+                if (sourceReadingMode === 'meanings' && item.meaningsText) targetParts.push(item.meaningsText);
             }
-            return acc + 1;
-        }, 0);
+            const combined = targetParts.join(' ');
+            const matches = combined.match(activeRegex);
+            return matches ? Math.max(matches.length, 1) : 1;
+        };
+
+        const totalQuranWordOccurrences = quranResults.reduce((acc, item) => acc + countQuranItemMatches(item), 0);
+        const targetReadingMode = sourceReadingMode || (isEn ? 'translation' : undefined);
+        const quranSectionHeading = isEn
+            ? (readingModeLabel ? `The Holy Quran (${readingModeLabel})` : 'The Holy Quran')
+            : (readingModeLabel ? `القرآن الكريم (${readingModeLabel})` : 'القرآن الكريم');
+
+        const renderQuranResultContent = (r: any) => {
+            if (sourceReadingMode === 'bilingual') {
+                return (
+                    <div className="space-y-2">
+                        <div className="font-amiri-quran text-base leading-loose text-right" dir="rtl">
+                            {highlightText(r.text, isLatinQuery ? null : r.highlightRegex)}
+                        </div>
+                        {r.textEn && (
+                            <div className="text-sm font-medium opacity-85 leading-relaxed text-left border-t border-dashed pt-2" style={{ color: theme.textColor, borderColor: `${theme.accent || '#888'}33` }} dir="ltr">
+                                {highlightText(r.textEn, isLatinQuery ? r.highlightRegex : null)}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+            if (sourceReadingMode === 'translation' || isEn) {
+                return (
+                    <div className="space-y-1.5">
+                        <div className="text-sm font-medium leading-relaxed" style={{ color: theme.textColor }}>
+                            {highlightText(r.textEn || r.text, r.highlightRegex)}
+                        </div>
+                        {sourceReadingMode !== 'translation' && (
+                            <div className="font-amiri-quran text-sm opacity-70 leading-loose text-right" dir="rtl">
+                                {r.text}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+            if (sourceReadingMode === 'tafseer') {
+                return (
+                    <div className="space-y-2" dir="rtl">
+                        <div className="font-amiri-quran text-base leading-loose">
+                            {highlightText(r.text, r.highlightRegex)}
+                        </div>
+                        {r.tafseerText && (
+                            <div className="text-xs sm:text-sm opacity-85 leading-relaxed border-t border-dashed pt-2" style={{ color: theme.textColor, borderColor: `${theme.accent || '#888'}33` }}>
+                                <span className="font-bold ml-1.5" style={{ color: theme.accent || theme.palette?.[0] }}>التفسير:</span>
+                                {highlightText(r.tafseerText, r.highlightRegex)}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+            if (sourceReadingMode === 'meanings') {
+                return (
+                    <div className="space-y-2" dir="rtl">
+                        <div className="font-amiri-quran text-base leading-loose">
+                            {highlightText(r.text, r.highlightRegex)}
+                        </div>
+                        {r.meaningsText && (
+                            <div className="text-xs sm:text-sm opacity-85 leading-relaxed border-t border-dashed pt-2" style={{ color: theme.textColor, borderColor: `${theme.accent || '#888'}33` }}>
+                                <span className="font-bold ml-1.5" style={{ color: theme.accent || theme.palette?.[0] }}>المعاني:</span>
+                                {highlightText(r.meaningsText, r.highlightRegex)}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+            return (
+                <div className="font-amiri-quran text-base leading-loose" dir="rtl">
+                    {highlightText(r.text, r.highlightRegex)}
+                </div>
+            );
+        };
 
         return (
             <div className="space-y-4">
@@ -1200,8 +1462,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <BookOpen className="w-5 h-5 quran-3d-icon" /> 
-                                        {isEn ? "The Holy Quran" : "القرآن الكريم"}
+                                        <BookOpen className={`w-5 h-5 ${icon3DClass}`} /> 
+                                        {quranSectionHeading}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
@@ -1215,7 +1477,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                     : `${toArabic(quranResults.length)} آية`
                                             )}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.quran ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.quran ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.quran && (
@@ -1229,13 +1491,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                 : (rawArSurahName.startsWith('سورة') || rawArSurahName.startsWith('سُورَة')
                                                     ? rawArSurahName
                                                     : `سورة ${rawArSurahName}`);
-                                            const surahWordOccurrences = group.ayahs.reduce((acc: number, item: any) => {
-                                                if (item.text && activeRegex) {
-                                                    const matches = item.text.match(activeRegex);
-                                                    return acc + (matches ? matches.length : 1);
-                                                }
-                                                return acc + 1;
-                                            }, 0);
+                                            const surahWordOccurrences = group.ayahs.reduce((acc: number, item: any) => acc + countQuranItemMatches(item), 0);
                                             return (
                                                 <div key={surahNum} className={`rounded-2xl ${card3DClass} overflow-hidden border-0 mb-2`} style={itemCardStyle('rgba(255,255,255,0.04)')}>
                                                     <button 
@@ -1258,7 +1514,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                         : `${toArabic(group.ayahs.length)} آية`
                                                                 )}
                                                             </span>
-                                                            <ChevronLeft className={`w-4 h-4 transition-transform quran-3d-icon ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                                            <ChevronLeft className={`w-4 h-4 transition-transform ${icon3DClass} ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                                         </div>
                                                     </button>
                                                     
@@ -1269,7 +1525,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                     key={`quran-${surahNum}-${idx}`} 
                                                                     className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl ${card3DClass} border-0 transition-all cursor-pointer`}
                                                                     style={itemCardStyle('rgba(255,255,255,0.05)')}
-                                                                    onClick={() => handleResultClick(isQuranLandscape ? 'quran-landscape' : 'quran', { surah: r.surah, ayah: r.ayah, readingMode: isEn ? 'translation' : undefined })}
+                                                                    onClick={() => handleResultClick(isQuranLandscape ? 'quran-landscape' : 'quran', { surah: r.surah, ayah: r.ayah, readingMode: targetReadingMode, fromGlobalSearch: true, skipSavePosition: true })}
                                                                 >
                                                                     <div className="text-[11px] opacity-60 mb-1.5 flex items-center gap-1.5 font-bold">
                                                                         <span>{isEn ? `Verse ${r.ayah}` : `آية ${toArabic(r.ayah)}`}</span>
@@ -1278,20 +1534,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                         <span>•</span>
                                                                         <span>{isEn ? `Page ${r.page}` : `صفحة ${toArabic(r.page)}`}</span>
                                                                     </div>
-                                                                    {isEn ? (
-                                                                        <div className="space-y-1.5">
-                                                                            <div className="text-sm font-medium leading-relaxed" style={{ color: theme.textColor }}>
-                                                                                {highlightText(r.textEn || r.text, r.highlightRegex)}
-                                                                            </div>
-                                                                            <div className="font-amiri-quran text-sm opacity-70 leading-loose text-right" dir="rtl">
-                                                                                {r.text}
-                                                                            </div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="font-amiri-quran text-base leading-loose" dir="rtl">
-                                                                            {highlightText(r.text, r.highlightRegex)}
-                                                                        </div>
-                                                                    )}
+                                                                    {renderQuranResultContent(r)}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -1306,17 +1549,17 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <BookOpen className="w-4 h-4 quran-3d-icon" />
+                                        <BookOpen className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? (
                                             totalQuranWordOccurrences > quranResults.length
-                                                ? `The Holy Quran (${quranResults.length} Ayahs - ${totalQuranWordOccurrences} matches)`
-                                                : `The Holy Quran (${quranResults.length} Ayahs)`
+                                                ? `${quranSectionHeading} (${quranResults.length} Ayahs - ${totalQuranWordOccurrences} matches)`
+                                                : `${quranSectionHeading} (${quranResults.length} Ayahs)`
                                         ) : (
                                             totalQuranWordOccurrences > quranResults.length
-                                                ? `القرآن الكريم (${toArabic(quranResults.length)} آية - وردت ${toArabic(totalQuranWordOccurrences)} مرة)`
-                                                : `القرآن الكريم (${toArabic(quranResults.length)} آية)`
+                                                ? `${quranSectionHeading} (${toArabic(quranResults.length)} آية - وردت ${toArabic(totalQuranWordOccurrences)} مرة)`
+                                                : `${quranSectionHeading} (${toArabic(quranResults.length)} آية)`
                                         )}
                                     </h3>
                                 </div>
@@ -1329,13 +1572,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         : (rawArSurahName.startsWith('سورة') || rawArSurahName.startsWith('سُورَة')
                                             ? rawArSurahName
                                             : `سورة ${rawArSurahName}`);
-                                    const surahWordOccurrences = group.ayahs.reduce((acc: number, item: any) => {
-                                        if (item.text && activeRegex) {
-                                            const matches = item.text.match(activeRegex);
-                                            return acc + (matches ? matches.length : 1);
-                                        }
-                                        return acc + 1;
-                                    }, 0);
+                                    const surahWordOccurrences = group.ayahs.reduce((acc: number, item: any) => acc + countQuranItemMatches(item), 0);
                                     return (
                                         <div key={surahNum} className={`mb-2.5 rounded-2xl ${card3DClass} overflow-hidden border-0`} style={itemCardStyle('rgba(255,255,255,0.04)')}>
                                             <button 
@@ -1358,7 +1595,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                 : `${toArabic(group.ayahs.length)} آية`
                                                         )}
                                                     </span>
-                                                    <ChevronLeft className={`w-4 h-4 transition-transform quran-3d-icon ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                                    <ChevronLeft className={`w-4 h-4 transition-transform ${icon3DClass} ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                                 </div>
                                             </button>
                                             
@@ -1369,7 +1606,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                             key={`quran-${surahNum}-${idx}`} 
                                                             className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl ${card3DClass} border-0 transition-all cursor-pointer`}
                                                             style={itemCardStyle('rgba(255,255,255,0.05)')}
-                                                            onClick={() => handleResultClick(isQuranLandscape ? 'quran-landscape' : 'quran', { surah: r.surah, ayah: r.ayah, readingMode: isEn ? 'translation' : undefined })}
+                                                            onClick={() => handleResultClick(isQuranLandscape ? 'quran-landscape' : 'quran', { surah: r.surah, ayah: r.ayah, readingMode: targetReadingMode, fromGlobalSearch: true, skipSavePosition: true })}
                                                         >
                                                             <div className="text-[11px] opacity-60 mb-1.5 flex items-center gap-1.5 font-bold">
                                                                 <span>{isEn ? `Verse ${r.ayah}` : `آية ${toArabic(r.ayah)}`}</span>
@@ -1378,20 +1615,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                 <span>•</span>
                                                                 <span>{isEn ? `Page ${r.page}` : `صفحة ${toArabic(r.page)}`}</span>
                                                             </div>
-                                                            {isEn ? (
-                                                                <div className="space-y-1.5">
-                                                                    <div className="text-sm font-medium leading-relaxed" style={{ color: theme.textColor }}>
-                                                                        {highlightText(r.textEn || r.text, r.highlightRegex)}
-                                                                    </div>
-                                                                    <div className="font-amiri-quran text-sm opacity-70 leading-loose text-right" dir="rtl">
-                                                                        {r.text}
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="font-amiri-quran text-base leading-loose" dir="rtl">
-                                                                    {highlightText(r.text, r.highlightRegex)}
-                                                                </div>
-                                                            )}
+                                                            {renderQuranResultContent(r)}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -1415,14 +1639,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <Sun className="w-5 h-5 quran-3d-icon" /> 
+                                        <Sun className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Daily Adhkar (Morning & Evening)" : "أذكار الصباح والمساء"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? athkarResults.length : toArabic(athkarResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.athkar ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.athkar ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.athkar && (
@@ -1435,7 +1659,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                 style={itemCardStyle('rgba(255,255,255,0.05)')}
                                             >
                                                 <div className="text-[10px] opacity-60 mb-1 font-bold flex items-center gap-1.5">
-                                                    {r.kind === 'morning' ? <Sun className="w-3.5 h-3.5 quran-3d-icon" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} /> : <Moon className="w-3.5 h-3.5 quran-3d-icon" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />}
+                                                    {r.kind === 'morning' ? <Sun className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} /> : <Moon className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />}
                                                     <span>{r.kind === 'morning' ? (isEn ? 'Morning Adhkar' : 'أذكار الصباح') : (isEn ? 'Evening Adhkar' : 'أذكار المساء')}</span>
                                                 </div>
                                                 <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed line-clamp-2`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
@@ -1455,7 +1679,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <Sun className="w-4 h-4 quran-3d-icon" />
+                                        <Sun className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Daily Adhkar (${athkarResults.length})` : `أذكار الصباح والمساء (${toArabic(athkarResults.length)})`}
@@ -1469,7 +1693,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         onClick={() => handleResultClick('sabah-masaa', { kind: r.kind, id: r.id, text: r.text })}
                                     >
                                         <div className="text-[10px] opacity-60 mb-2 font-bold flex items-center gap-1.5">
-                                            {r.kind === 'morning' ? <Sun className="w-3.5 h-3.5 quran-3d-icon" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} /> : <Moon className="w-3.5 h-3.5 quran-3d-icon" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />}
+                                            {r.kind === 'morning' ? <Sun className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} /> : <Moon className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />}
                                             <span>{r.kind === 'morning' ? (isEn ? 'Morning Adhkar' : 'أذكار الصباح') : (isEn ? 'Evening Adhkar' : 'أذكار المساء')}</span>
                                         </div>
                                         <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-1`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
@@ -1498,14 +1722,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <CheckCircle2 className="w-5 h-5 quran-3d-icon" /> 
+                                        <CheckCircle2 className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Prayer Adhkar" : "أذكار الصلاة"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? salahAthkarResults.length : toArabic(salahAthkarResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.salahAthkar ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.salahAthkar ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.salahAthkar && (
@@ -1534,7 +1758,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <CheckCircle2 className="w-4 h-4 quran-3d-icon" />
+                                        <CheckCircle2 className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Prayer Adhkar (${salahAthkarResults.length})` : `أذكار الصلاة (${toArabic(salahAthkarResults.length)})`}
@@ -1573,14 +1797,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <Heart className="w-5 h-5 quran-3d-icon" /> 
+                                        <Heart className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Supplications (Duas)" : "الأدعية"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? duaResults.length : toArabic(duaResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.dua ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.dua ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.dua && (
@@ -1607,7 +1831,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <Heart className="w-4 h-4 quran-3d-icon" />
+                                        <Heart className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Supplications (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})`}
@@ -1644,14 +1868,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <Shield className="w-5 h-5 quran-3d-icon" /> 
+                                        <Shield className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Ruqyah Shariah" : "الرقية الشرعية"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? ruqyahResults.length : toArabic(ruqyahResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.ruqyah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.ruqyah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.ruqyah && (
@@ -1678,7 +1902,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <Shield className="w-4 h-4 quran-3d-icon" />
+                                        <Shield className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Ruqyah Shariah (${ruqyahResults.length})` : `الرقية الشرعية (${toArabic(ruqyahResults.length)})`}
@@ -1715,14 +1939,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <BookOpen className="w-5 h-5 quran-3d-icon" /> 
+                                        <BookOpen className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Hisn Al-Muslim" : "حصن المسلم"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? hisnResults.length : toArabic(hisnResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.hisn ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.hisn ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.hisn && (
@@ -1749,7 +1973,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <BookOpen className="w-4 h-4 quran-3d-icon" />
+                                        <BookOpen className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Hisn Al-Muslim (${hisnResults.length})` : `حصن المسلم (${toArabic(hisnResults.length)})`}
@@ -1786,14 +2010,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <BookOpen className="w-5 h-5 quran-3d-icon" /> 
+                                        <BookOpen className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "An-Nawawi's 40 Hadiths" : "الأربعون النووية"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? nawawiResults.length : toArabic(nawawiResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.nawawi ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.nawawi ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.nawawi && (
@@ -1820,7 +2044,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <BookOpen className="w-4 h-4 quran-3d-icon" />
+                                        <BookOpen className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `An-Nawawi's 40 Hadiths (${nawawiResults.length})` : `الأربعون النووية (${toArabic(nawawiResults.length)})`}
@@ -1857,14 +2081,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <Sparkles className="w-5 h-5 quran-3d-icon" /> 
+                                        <Sparkles className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Names of Allah (Asmaul Husna)" : "أسماء الله الحسنى"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? asmaulHusnaResults.length : toArabic(asmaulHusnaResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.asmaulHusna ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.asmaulHusna ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.asmaulHusna && (
@@ -1891,7 +2115,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <Sparkles className="w-4 h-4 quran-3d-icon" />
+                                        <Sparkles className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Names of Allah (${asmaulHusnaResults.length})` : `أسماء الله الحسنى (${toArabic(asmaulHusnaResults.length)})`}
@@ -1933,14 +2157,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <UserCheck className="w-5 h-5 quran-3d-icon" /> 
+                                        <UserCheck className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Prophetic Seerah" : "السيرة النبوية الشريفة"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? seerahResults.length : toArabic(seerahResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.seerah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.seerah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.seerah && (
@@ -1967,7 +2191,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <UserCheck className="w-4 h-4 quran-3d-icon" />
+                                        <UserCheck className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Prophetic Seerah (${seerahResults.length})` : `السيرة النبوية (${toArabic(seerahResults.length)})`}
@@ -2004,14 +2228,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <Compass className="w-5 h-5 quran-3d-icon" /> 
+                                        <Compass className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Hajj & Umrah" : "الحج والعمرة"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? hajjUmrahResults.length : toArabic(hajjUmrahResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.hajjUmrah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.hajjUmrah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.hajjUmrah && (
@@ -2038,7 +2262,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <Compass className="w-4 h-4 quran-3d-icon" />
+                                        <Compass className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Hajj & Umrah (${hajjUmrahResults.length})` : `الحج والعمرة (${toArabic(hajjUmrahResults.length)})`}
@@ -2075,14 +2299,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <Users className="w-5 h-5 quran-3d-icon" /> 
+                                        <Users className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Ten Promised Paradise" : "العشرة المبشرون بالجنة"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? tenPromisedResults.length : toArabic(tenPromisedResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.tenPromised ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.tenPromised ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.tenPromised && (
@@ -2109,7 +2333,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <Users className="w-4 h-4 quran-3d-icon" />
+                                        <Users className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Ten Promised Paradise (${tenPromisedResults.length})` : `العشرة المبشرون بالجنة (${toArabic(tenPromisedResults.length)})`}
@@ -2150,14 +2374,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     style={headerCardStyle('rgba(255,255,255,0.06)')}
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }}>
-                                        <Sparkles className="w-5 h-5 quran-3d-icon" /> 
+                                        <Sparkles className={`w-5 h-5 ${icon3DClass}`} /> 
                                         {isEn ? "Divine Miracles" : "المعجزات الإلهية"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inner3DClass} border-0`} style={badge3DStyle}>
                                             {isEn ? divineMiraclesResults.length : toArabic(divineMiraclesResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.divineMiracles ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform ${icon3DClass} ${expandedCategories.divineMiracles ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.divineMiracles && (
@@ -2184,7 +2408,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             <>
                                 <div className="flex items-center gap-2.5 mb-2 px-1">
                                     <span className={`p-2 rounded-xl ${inner3DClass} border-0`} style={sectionIconStyle}>
-                                        <Sparkles className="w-4 h-4 quran-3d-icon" />
+                                        <Sparkles className={`w-4 h-4 ${icon3DClass}`} />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
                                         {isEn ? `Divine Miracles (${divineMiraclesResults.length})` : `المعجزات الإلهية (${toArabic(divineMiraclesResults.length)})`}
@@ -2220,7 +2444,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
     const sectionsList = [
         { id: 'all', label: isEn ? 'All Sections' : 'كل الأقسام' },
-        { id: 'quran', label: isEn ? 'Quran' : 'القرآن الكريم' },
+        { id: 'quran', label: readingModeLabel ? (isEn ? `Quran (${readingModeLabel})` : `القرآن • ${readingModeLabel}`) : (isEn ? 'Quran' : 'القرآن الكريم') },
         { id: 'athkar', label: isEn ? 'Adhkar' : 'أذكار اليوم' },
         { id: 'salahAthkar', label: isEn ? 'Prayer Adhkar' : 'أذكار الصلاة' },
         { id: 'dua', label: isEn ? 'Supplications' : 'الأدعية' },
@@ -2240,10 +2464,12 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
     return (
         <div
-            className={`h-[100dvh] w-full flex flex-col relative overflow-hidden transition-colors ${isQuranLandscape ? 'global-search-landscape' : ''} ${theme.isDark ? 'dark' : ''}`}
+            id="global-search-page"
+            className={`h-[100dvh] w-full flex flex-col relative overflow-hidden transition-colors ${isMadinahFlatSearch ? 'madinah-flat-search' : ''} ${isQuranLandscape ? 'global-search-landscape' : ''} ${theme.isDark ? 'dark' : ''}`}
             dir={isEn ? "ltr" : "rtl"}
             style={{
-                backgroundColor: theme.bgColor
+                backgroundColor: theme.bgColor,
+                ...madinahVars
             }}
         >
             <header className="app-top-bar shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
@@ -2253,7 +2479,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                             <button
                                 onClick={handleBack}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 ${isMadinahFlatSearch ? 'active:opacity-70' : 'active:scale-90'} cursor-pointer`}
                                 title={isEn ? "Go Back" : "رجوع للخلف"}
                                 aria-label={isEn ? "Go Back" : "رجوع للخلف"}
                             >
@@ -2272,7 +2498,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                             <button
                                 onClick={handleGoHome}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 ${isMadinahFlatSearch ? 'active:opacity-70' : 'active:scale-90'} cursor-pointer`}
                                 title={isEn ? "Home" : "الصفحة الرئيسية"}
                                 aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                             >
@@ -2300,9 +2526,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         ? "Search in selected sections..." 
                                         : "ابحث في الأقسام المحددة...")
                             } 
-                            className={`w-full py-3 px-3 rounded-2xl focus:outline-none text-xs sm:text-sm font-bold ${card3DClass} border-0 transition-all ${isEn ? 'pl-12 pr-11 text-left' : 'pr-12 pl-11 text-right'}`}
+                            className={`w-full py-3 px-3 rounded-2xl focus:outline-none text-xs sm:text-sm font-bold ${card3DClass} ${isMadinahFlatSearch ? '' : 'border-0'} transition-all ${isEn ? 'pl-12 pr-11 text-left' : 'pr-12 pl-11 text-right'}`}
                             dir={isEn ? "ltr" : "rtl"}
-                            style={isFromQuran ? {
+                            style={isMadinahFlatSearch ? {
+                                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'),
+                                color: theme.textColor,
+                                border: `1.5px solid ${madinahBorderStrong}`,
+                                outline: 'none'
+                            } : isFromQuran ? {
                                 backgroundColor: theme.isDark ? 'rgba(255,255,255,0.07)' : (theme.btnBg || '#ffffff'), 
                                 color: theme.textColor,
                                 border: 'none',
@@ -2313,20 +2544,20 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             }}
                         />
                         <span
-                            className={`absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full ${isFromQuran ? 'quran-3d-badge' : 'app-3d-badge'} border-0 pointer-events-none flex items-center justify-center`}
+                            className={`absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full ${isMadinahFlatSearch ? 'madinah-flat-badge' : (isFromQuran ? 'quran-3d-badge border-0' : 'app-3d-badge border-0')} pointer-events-none flex items-center justify-center`}
                             style={sectionIconStyle}
                             aria-hidden="true"
                         >
-                            <Search className="w-3.5 h-3.5 quran-3d-icon" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />
+                            <Search className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />
                         </span>
                         {query && (
                             <button 
                                 onClick={() => { setQuery(''); setTimeout(() => (document.querySelector('input') as HTMLElement)?.focus(), 10); }} 
-                                className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-full ${isFromQuran ? 'quran-raised-card' : `app-page-card ${s3d.surfaceCardClass}`} border-0 cursor-pointer flex items-center justify-center`}
-                                style={isFromQuran ? { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : '#f3f4f6', border: 'none' } : undefined}
+                                className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-full ${isMadinahFlatSearch ? 'madinah-flat-icon-btn' : (isFromQuran ? 'quran-raised-card border-0' : `app-page-card ${s3d.surfaceCardClass} border-0`)} cursor-pointer flex items-center justify-center`}
+                                style={isMadinahFlatSearch ? { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : '#f3f4f6', border: `1px solid ${madinahBorderSubtle}` } : isFromQuran ? { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : '#f3f4f6', border: 'none' } : undefined}
                                 title={isEn ? "Clear" : "مسح"}
                             >
-                                <X className="w-3.5 h-3.5 quran-3d-icon" style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />
+                                <X className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />
                             </button>
                         )}
                     </div>
@@ -2346,17 +2577,17 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     <button 
                                         key="all"
                                         onClick={() => handleToggleSection('all')}
-                                        className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-bold transition-all border-0 cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                                        className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-bold transition-all ${isMadinahFlatSearch ? '' : 'border-0'} cursor-pointer shrink-0 flex items-center gap-1.5 ${
                                             isAllSelected 
-                                                ? (isFromQuran ? 'quran-raised-btn-selected shadow-md scale-[1.02]' : 'app-page-card')
-                                                : (isFromQuran ? 'quran-raised-btn opacity-85 hover:opacity-100' : `${btn3DClass}`)
+                                                ? (isMadinahFlatSearch ? 'madinah-flat-btn-selected' : (isFromQuran ? 'quran-raised-btn-selected shadow-md scale-[1.02]' : 'app-page-card'))
+                                                : (isMadinahFlatSearch ? 'madinah-flat-btn opacity-90 hover:opacity-100' : (isFromQuran ? 'quran-raised-btn opacity-85 hover:opacity-100' : `${btn3DClass}`))
                                         }`}
                                         style={isAllSelected ? badge3DStyle : headerCardStyle('rgba(255,255,255,0.06)')}
                                     >
                                         <span>{isEn ? "All Sections" : "كل الأقسام"}</span>
                                         {query && totalResults > 0 && (
                                             <span 
-                                                className={`${isFromQuran ? 'quran-3d-badge' : 'app-3d-badge'} border-0 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold`}
+                                                className={`${isMadinahFlatSearch ? 'madinah-flat-badge' : (isFromQuran ? 'quran-3d-badge border-0' : 'app-3d-badge border-0')} text-[10px] px-1.5 py-0.2 rounded-full font-extrabold`}
                                                 style={{ 
                                                     backgroundColor: isAllSelected ? 'rgba(0,0,0,0.2)' : (theme.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'),
                                                     color: isAllSelected ? (isFromQuran ? accentBadgeText : s3d.btnTextColor) : theme.textColor
@@ -2391,17 +2622,17 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                             <button 
                                                 key={sec.id}
                                                 onClick={() => handleToggleSection(sec.id)}
-                                                className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-bold transition-all border-0 cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                                                className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-bold transition-all ${isMadinahFlatSearch ? '' : 'border-0'} cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                                     isSelected 
-                                                        ? (isFromQuran ? 'quran-raised-btn-selected shadow-md scale-[1.02]' : 'app-page-card')
-                                                        : (isFromQuran ? 'quran-raised-btn opacity-85 hover:opacity-100' : `${btn3DClass}`)
+                                                        ? (isMadinahFlatSearch ? 'madinah-flat-btn-selected' : (isFromQuran ? 'quran-raised-btn-selected shadow-md scale-[1.02]' : 'app-page-card'))
+                                                        : (isMadinahFlatSearch ? 'madinah-flat-btn opacity-90 hover:opacity-100' : (isFromQuran ? 'quran-raised-btn opacity-85 hover:opacity-100' : `${btn3DClass}`))
                                                 }`}
                                                 style={isSelected ? badge3DStyle : headerCardStyle('rgba(255,255,255,0.06)')}
                                             >
                                                 <span>{sec.label}</span>
                                                 {query && totalResults > 0 && count > 0 && (
                                                     <span 
-                                                        className={`${isFromQuran ? 'quran-3d-badge' : 'app-3d-badge'} border-0 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold`}
+                                                        className={`${isMadinahFlatSearch ? 'madinah-flat-badge' : (isFromQuran ? 'quran-3d-badge border-0' : 'app-3d-badge border-0')} text-[10px] px-1.5 py-0.2 rounded-full font-extrabold`}
                                                         style={{ 
                                                             backgroundColor: isSelected ? 'rgba(0,0,0,0.2)' : (theme.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'),
                                                             color: isSelected ? (isFromQuran ? accentBadgeText : s3d.btnTextColor) : theme.textColor

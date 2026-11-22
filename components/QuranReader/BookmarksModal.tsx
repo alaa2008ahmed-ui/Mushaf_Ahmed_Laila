@@ -33,7 +33,7 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ bookmarks, quranData, o
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'}`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
             <div 
-                className={`modal-skinned ${isLandscape ? 'w-[56%] max-w-[360px] max-h-[84%] rounded-3xl' : 'w-full max-w-[360px] sm:max-w-[380px] rounded-3xl max-h-[88dvh]'} flex flex-col border-0 overflow-hidden ${p.isDark ? 'quran-3d-dark' : ''}`} 
+                className={`modal-skinned madinah-enlarged-popup ${isLandscape ? 'w-[56%] max-w-[360px] max-h-[84%] rounded-3xl' : 'w-full max-w-[360px] sm:max-w-[380px] rounded-3xl max-h-[88dvh]'} flex flex-col border-0 overflow-hidden ${p.isDark ? 'quran-3d-dark' : ''}`} 
                 style={{
                     fontFamily: p.fontFamily,
                     backgroundColor: p.modalBg,

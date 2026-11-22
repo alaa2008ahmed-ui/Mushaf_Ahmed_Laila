@@ -292,7 +292,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
         <div
             className={isLandscape
                 ? "fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center p-2.5 overflow-hidden"
-                : "fixed top-0 left-0 right-0 z-[1200] flex items-center justify-center overflow-hidden"
+                : "quran-fullscreen-modal-backdrop fixed top-0 left-0 right-0 z-[1200] flex items-center justify-center overflow-hidden"
             }
             style={isLandscape ? undefined : { top: 0, left: 0, right: 0, height: `${initialHeight}px`, backgroundColor: 'rgba(0,0,0,0.5)' }}
             dir={isRTL ? "rtl" : "ltr"}
@@ -301,7 +301,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
             <div
                 className={isLandscape
                     ? `modal-skinned compact-landscape-modal ${isDarkTheme ? 'quran-3d-dark' : ''} w-[62%] max-w-[440px] h-[86%] max-h-[86%] rounded-3xl flex flex-col overflow-hidden shadow-2xl border-0`
-                    : "w-full h-full flex flex-col overflow-hidden shadow-2xl border-0"
+                    : "quran-fullscreen-modal-panel w-full h-full flex flex-col overflow-hidden shadow-2xl border-0"
                 }
                 style={{ backgroundColor: currentTheme?.bg || '#ffffff', border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}

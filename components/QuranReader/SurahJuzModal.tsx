@@ -3,6 +3,7 @@ import { JUZ_MAP, toArabic, SURAH_INFO, HIZB_QUARTERS, SURAH_NAMES_EN } from './
 import SurahInfoModal from './SurahInfoModal';
 import { useLanguage } from '../../context/LanguageContext';
 import { useShowPageGuides } from '../../utils/guideManager';
+import { loadMadinahPageFont, preloadAdjacentMadinahFonts } from '../../utils/qpcMadinahData';
 
 interface SurahJuzModalProps {
     type: 'surah' | 'juz' | 'hizb';
@@ -98,7 +99,26 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
             .trim();
     };
 
+    const prewarmSelectionFont = useCallback((surahNum: number, ayahNum: number) => {
+        if (readingMode !== 'madinah' || !quranData?.surahs) return;
+        const surahObj = quranData.surahs[surahNum - 1];
+        const ayahObj =
+            (surahObj?.ayahs?.[ayahNum - 1]?.numberInSurah === ayahNum
+                ? surahObj.ayahs[ayahNum - 1]
+                : surahObj?.ayahs?.find((ay: any) => ay.numberInSurah === ayahNum));
+        const targetPage = Number(ayahObj?.page);
+        if (targetPage >= 1 && targetPage <= 604) {
+            void loadMadinahPageFont(targetPage);
+            void loadMadinahPageFont(1);
+            preloadAdjacentMadinahFonts(targetPage);
+        }
+    }, [readingMode, quranData]);
+
     const normalizedSearch = removeDiacritics(searchTerm);
+
+    useEffect(() => {
+        prewarmSelectionFont(selectedSurah, selectedAyah);
+    }, [prewarmSelectionFont, selectedSurah, selectedAyah]);
 
     // Scroll to selected items on mount and when they change
     useEffect(() => {
@@ -159,6 +179,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
         }
         setSelectedHizbQuarter(targetHq);
         setSearchTerm('');
+        prewarmSelectionFont(juzData.s, juzData.a);
     };
 
     const handleSurahClick = (s: number) => {
@@ -167,6 +188,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
         setSelectedJuz(getJuzForAyah(s, 1));
         setSelectedHizbQuarter(getHizbQuarterForSurah(s));
         setSearchTerm('');
+        prewarmSelectionFont(s, 1);
     };
 
     const handleSurahPointerDown = (s: number, name: string) => {
@@ -198,6 +220,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
             }
         }
         setSelectedHizbQuarter(targetHq);
+        prewarmSelectionFont(selectedSurah, a);
     };
 
     const handleHizbQuarterClick = (hq: number) => {
@@ -224,6 +247,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
         setSelectedAyah(targetAyah);
         setSelectedJuz(getJuzForAyah(targetSurah, targetAyah));
         setSearchTerm('');
+        prewarmSelectionFont(targetSurah, targetAyah);
     };
 
     const ayahsCount = SURAH_INFO[selectedSurah]?.ayahs || 0;
@@ -364,7 +388,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
              dir={isRTL ? "rtl" : "ltr"}
              onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div 
-                className={`modal-skinned ${isLandscape ? 'w-[62%] max-w-[430px] h-[86%] max-h-[86%] rounded-3xl' : 'w-full max-w-4xl rounded-3xl max-h-[90dvh]'} shadow-2xl overflow-hidden flex flex-col border-0`}
+                className={`modal-skinned surah-juz-modal ${isLandscape ? 'w-[62%] max-w-[430px] h-[86%] max-h-[86%] rounded-3xl' : 'w-full max-w-4xl rounded-3xl max-h-[90dvh]'} shadow-2xl overflow-hidden flex flex-col border-0`}
                 style={{ border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}
             >

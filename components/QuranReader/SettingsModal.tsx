@@ -6,6 +6,12 @@ import { useTheme } from '../../context/ThemeContext';
 import { getReciterDisplayName } from '../../utils/listenQuranTranslations';
 
 import SurahHeader from './SurahHeader';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
+import {
+    MADINAH_FRAME_DESIGNS,
+    MadinahFrameMiniPreview,
+    normalizeMadinahFrameDesign,
+} from './madinahFrameDesigns';
 import { getClusterForLanguage, syncClusterSettings } from '../../utils/quranClusterSync';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 
@@ -29,6 +35,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const { language } = useLanguage();
     const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const isEn = language === 'en';
+    const isMadinahMode = readingMode === 'madinah';
     const [isClosing, setIsClosing] = useState(false);
 
     const onCloseRef = useRef(onClose);
@@ -204,7 +211,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <div 
             className={isLandscape
                 ? `fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center p-2.5 font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDarkTheme ? 'settings-3d-dark' : ''}`
-                : `fixed inset-0 z-[1200] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDarkTheme ? 'settings-3d-dark' : ''}`
+                : `quran-fullscreen-modal-backdrop fixed inset-0 z-[1200] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDarkTheme ? 'settings-3d-dark' : ''}`
             }
             dir={isEn ? "ltr" : "rtl"} 
             style={isLandscape ? undefined : { backgroundColor: resolvedPageBg }}
@@ -212,8 +219,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         >
             <div
                 className={isLandscape
-                    ? `modal-skinned compact-landscape-modal ${isDarkTheme ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
-                    : "flex-1 min-h-0 w-full flex flex-col overflow-hidden"
+                    ? `modal-skinned compact-landscape-modal madinah-settings-modal-panel ${isDarkTheme ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
+                    : "quran-fullscreen-modal-panel madinah-settings-modal-panel flex-1 min-h-0 w-full flex flex-col overflow-hidden"
                 }
                 style={isLandscape ? { backgroundColor: resolvedPageBg, border: 'none', outline: 'none' } : undefined}
                 onClick={isLandscape ? e => e.stopPropagation() : undefined}
@@ -286,11 +293,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     className={`${isLandscape ? 'p-3 pt-1.5 pb-3.5 space-y-2.5' : 'p-3.5 sm:p-4 space-y-4 app-scroll-safe'} overflow-y-auto text-center flex-1 min-h-0 scrollbar-hide`}
                 >
                     {/* حجم الخط: صف كامل مستقل */}
+                    {!isMadinahMode && (
                     <div id="font-size-row" className={`${isLandscape ? 'p-2.5 rounded-xl' : 'p-3.5 rounded-2xl'} app-page-card border-0 overflow-visible`} style={{ backgroundColor: cardSurfaceBg }}>
                         <div id="font-size-section" className="w-full flex flex-col justify-center overflow-visible">
                             <div className="flex items-center justify-between mb-2.5 overflow-visible">
                                 <label className="text-xs font-bold opacity-85">{isEn ? "Font Size" : "حجم الخط"}</label>
-                                <span className="text-[11px] px-3 py-1 rounded-xl app-page-card border-0 font-bold" style={{ backgroundColor: btnSurfaceBg }}>{formatFontSize(settings.fontSize)}</span>
+                                <span className="text-[11px] px-3 py-1 rounded-xl app-page-card border-0 font-bold" style={{ backgroundColor: btnSurfaceBg }}>
+                                    {formatFontSize(settings.fontSize)}
+                                </span>
                             </div>
                             <input 
                                 type="range" 
@@ -308,8 +318,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             />
                         </div>
                     </div>
+                    )}
 
                     {/* تخصيص الخط: صف كامل مستقل أسفل حجم الخط */}
+                    {!isMadinahMode && (
                     <div id="font-family-row" className={`${isLandscape ? 'p-2.5 pb-3 rounded-xl' : 'p-3.5 pb-4 rounded-2xl'} app-page-card border-0 overflow-visible`} style={{ backgroundColor: cardSurfaceBg }}>
                         <div id="font-family-section" className="w-full flex flex-col justify-center overflow-visible">
                             <label className="text-xs font-bold block opacity-85 mb-2.5">
@@ -329,7 +341,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         backgroundColor: settings.isBold ? (currentTheme?.accent || '#10b981') : btnSurfaceBg,
                                         color: settings.isBold ? '#ffffff' : (isDarkTheme ? '#ffffff' : currentTheme?.text),
                                     }}
-                                    title={isEn ? "Toggle bold font weight" : "تفعيل/إلغاء سماكة الخط (Bold)"}
+                                    title={isEn ? "Toggle bold font weight" : "تفعيل/إلاء سماكة الخط (Bold)"}
                                 >
                                     <span className={`${settings.isBold ? 'font-black' : ''}`}>{isEn ? "Bold" : "سماكة"}</span>
                                 </button>
@@ -348,6 +360,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
                         </div>
                     </div>
+                    )}
 
                     {/* ثانيا: بطاقة الألوان الثلاثة في صف واحد مدمج */}
                     <div id="colors-section" className={`${isLandscape ? 'p-2.5 pb-3 rounded-xl' : 'p-3.5 pb-4 rounded-2xl'} app-page-card border-0 overflow-visible`} style={{ backgroundColor: cardSurfaceBg }}>
@@ -497,6 +510,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
 
                     {/* تصميم رأس السورة */}
+                    {!isMadinahMode && (
                     <div id="surah-header-design-section" className="py-0.5 overflow-visible">
                         <label className="text-xs font-bold block opacity-85 mb-1.5 text-right">
                             {isEn ? "Surah Header Design" : "تصميم رأس السورة"}
@@ -523,8 +537,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </button>
                         </div>
                     </div>
+                    )}
 
                     {/* رابعا: وضع إخفاء الأشرطة بنفس صف بطاقة سرعة التمرير */}
+                    {!isMadinahMode && (
                     <div id="scroll-speed-and-hide-toolbars-row" className={`grid grid-cols-2 ${isLandscape ? 'gap-2.5' : 'gap-3'} py-0.5 overflow-visible`}>
                         {/* سرعة التمرير */}
                         <div id="scroll-speed-section" className="flex flex-col text-right overflow-visible">
@@ -571,11 +587,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
                         </div>
                     </div>
+                    )}
 
                     <div className="space-y-3 overflow-visible">
                         <div id="toggles-section" className="overflow-visible">
-                            <div id="sajdah-row" className={`grid grid-cols-2 ${isLandscape ? 'gap-2.5' : 'gap-3'} py-0.5 overflow-visible`}>
+                            <div id="sajdah-row" className={`grid ${isMadinahMode ? 'grid-cols-1' : 'grid-cols-2'} ${isLandscape ? 'gap-2.5' : 'gap-3'} py-0.5 overflow-visible`}>
                                 {/* بطاقة السجدة */}
+                                {!isMadinahMode && (
                                 <div id="sajdah-section" className="flex flex-col text-right overflow-visible">
                                     <label className={`text-xs font-bold opacity-85 mb-1.5 ${isLandscape ? '' : 'truncate'}`}>{isEn ? "Show Sajdah Card" : "إظهار بطاقة السجدة"}</label>
                                     <div
@@ -606,6 +624,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </div>
                                     </div>
                                 </div>
+                                )}
 
                                 {/* تظليل كلمة بكلمة */}
                                 <div id="word-highlight-section" className="flex flex-col text-right overflow-visible">
@@ -649,7 +668,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                                 {/* اختيار لون تظليل الكلمة المستقل مع المعاينة الحية */}
                                 {settings.wordHighlightEnabled && (
-                                    <div className="col-span-2 mt-2 p-3.5 pb-4 rounded-2xl space-y-3 app-page-card border-0 transition-all overflow-visible" style={{ backgroundColor: cardSurfaceBg }}>
+                                    <div className={`${isMadinahMode ? 'col-span-1' : 'col-span-2'} mt-2 p-3.5 pb-4 rounded-2xl space-y-3 app-page-card border-0 transition-all overflow-visible`} style={{ backgroundColor: cardSurfaceBg }}>
                                             <div className="flex items-center justify-between text-[11px] font-bold">
                                                 <span style={{ color: isDarkTheme ? '#ffffff' : currentTheme?.text }}>{isEn ? "Spoken Word Color" : "لون الكلمة المنطوقة"}</span>
                                                 <span className="text-[10px] opacity-80" style={{ color: currentTheme?.accent || 'var(--qr-accent)' }}>
@@ -728,6 +747,77 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 </div>
                             </div>
                         </div>
+
+                    {isMadinahMode && (() => {
+                        const activeFrameDesign = normalizeMadinahFrameDesign(settings.madinahFrameDesign);
+                        const framePalette = getMadinahThemePalette(currentTheme);
+                        return (
+                            <div
+                                id="madinah-frame-design-section"
+                                className={`${isLandscape ? 'p-2.5 pb-3 rounded-xl' : 'p-3.5 pb-4 rounded-2xl'} app-page-card border-0 overflow-visible`}
+                                style={{ backgroundColor: cardSurfaceBg }}
+                            >
+                                <div className="flex items-center justify-between mb-2.5 overflow-visible">
+                                    <label className="text-xs font-bold opacity-85">
+                                        {isEn ? 'Page Frame & Ornament' : 'إطارات وزخارف الصفحة'}
+                                    </label>
+                                    <span
+                                        className="text-[11px] font-bold opacity-80"
+                                        style={{ color: currentTheme?.accent || framePalette.primary }}
+                                    >
+                                        {MADINAH_FRAME_DESIGNS.find((d) => d.id === activeFrameDesign)?.[isEn ? 'nameEn' : 'nameAr']}
+                                    </span>
+                                </div>
+                                <div className={`grid ${isLandscape ? 'grid-cols-3 gap-2' : 'grid-cols-2 gap-2.5'} overflow-visible`}>
+                                    {MADINAH_FRAME_DESIGNS.map((designMeta) => {
+                                        const isSelected = activeFrameDesign === designMeta.id;
+                                        return (
+                                            <button
+                                                key={designMeta.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    updateSetting('madinahFrameDesign', designMeta.id);
+                                                    showToast(
+                                                        isEn
+                                                            ? `Frame changed to ${designMeta.nameEn}`
+                                                            : `تم اختيار إطار: ${designMeta.nameAr}`
+                                                    );
+                                                }}
+                                                className={`relative rounded-xl p-1.5 flex flex-col items-center gap-1.5 transition-all app-page-card border-0 cursor-pointer ${
+                                                    isSelected
+                                                        ? 'ring-2 ring-emerald-500 scale-[1.02]'
+                                                        : 'opacity-90 hover:opacity-100'
+                                                }`}
+                                                style={{
+                                                    backgroundColor: btnSurfaceBg,
+                                                    color: isDarkTheme ? '#ffffff' : (currentTheme?.text || '#0f172a'),
+                                                }}
+                                                title={isEn ? designMeta.nameEn : designMeta.nameAr}
+                                            >
+                                                <div className="w-full relative pointer-events-none">
+                                                    <MadinahFrameMiniPreview
+                                                        design={designMeta.id}
+                                                        palette={framePalette}
+                                                    />
+                                                    {isSelected && (
+                                                        <span
+                                                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] text-white shadow"
+                                                            style={{ backgroundColor: '#10b981' }}
+                                                        >
+                                                            <i className="fa-solid fa-check"></i>
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[11px] font-bold leading-tight truncate w-full text-center">
+                                                    {isEn ? designMeta.nameEn : designMeta.nameAr}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     <div id="downloads-section" className="space-y-2 py-0.5 overflow-visible">
                         {/* وضع بطاقة تحميل القرآن الكريم وبطاقة تحميل التفسير في صف واحد */}

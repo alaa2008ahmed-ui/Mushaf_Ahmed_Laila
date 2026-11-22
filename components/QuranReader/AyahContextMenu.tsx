@@ -40,7 +40,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
         }}>
             <div 
                 dir={dir}
-                className={`ayah-context-menu modal-skinned ${isLandscape ? 'w-[54%] max-w-[330px] max-h-[85%]' : 'w-full max-w-[325px] max-h-[78dvh]'} rounded-3xl flex flex-col pointer-events-auto overflow-hidden border-0 ${p.isDark ? 'quran-3d-dark' : ''}`} 
+                className={`ayah-context-menu modal-skinned madinah-enlarged-popup ${isLandscape ? 'w-[54%] max-w-[330px] max-h-[85%]' : 'w-full max-w-[325px] max-h-[78dvh]'} rounded-3xl flex flex-col pointer-events-auto overflow-hidden border-0 ${p.isDark ? 'quran-3d-dark' : ''}`} 
                 style={{ 
                     fontFamily: p.fontFamily,
                     backgroundColor: p.modalBg,
@@ -58,7 +58,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                             backgroundColor: p.headerBg,
                         }}
                     >
-                        <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide`} style={{ color: p.headerAccent }}>
+                        <span className={`ayah-context-title ${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide`} style={{ color: p.headerAccent }}>
                             {isEn ? "Colors & Customization" : "الألوان والتخصيص"}
                         </span>
                         <button 
@@ -88,7 +88,9 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                 const fieldColorValue = tempSettings[field.id] || (
                                     field.id === 'highlightTextColor' 
                                         ? (currentTheme?.highlightText || p.accentColor) 
-                                        : ''
+                                        : field.id === 'textColor'
+                                            ? (currentTheme?.text || '#000000')
+                                            : (currentTheme?.bg || '#ffffff')
                                 );
 
                                 return (
@@ -97,7 +99,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                         className={`flex flex-col ${isLandscape ? 'gap-1' : 'gap-1.5'} items-center`}
                                     >
                                         <span 
-                                            className={`${isLandscape ? 'text-[11px]' : 'text-xs'} font-bold text-center transition-colors select-none`}
+                                            className={`ayah-context-field-label ${isLandscape ? 'text-[11px]' : 'text-xs'} font-bold text-center transition-colors select-none`}
                                             style={{ 
                                                 color: isFieldActive ? p.headerAccent : p.mutedText
                                             }}
@@ -107,16 +109,17 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                         <button 
                                             type="button"
                                             onClick={() => setAyahContextColorField(isFieldActive ? null : field.id as any)}
-                                            className={`${isLandscape ? 'h-9 rounded-xl' : 'h-12 rounded-2xl'} w-full relative overflow-hidden flex items-center justify-center cursor-pointer border-0 ${isFieldActive ? 'quran-raised-btn-selected scale-[1.03]' : 'quran-raised-btn'}`}
+                                            className={`${isLandscape ? 'h-9 rounded-xl' : 'h-12 rounded-2xl'} w-full relative overflow-hidden flex items-center justify-center cursor-pointer border-0 quran-raised-btn ${isFieldActive ? 'ayah-color-selected scale-[1.03] ring-2 ring-offset-1' : ''}`}
                                             style={{
                                                 ...renderCheckerboard(fieldColorValue),
+                                                ...(isFieldActive ? { '--tw-ring-color': p.headerAccent, '--ayah-selected-border': p.headerAccent } as React.CSSProperties : {}),
                                             }}
                                             aria-label={field.label}
                                         >
                                             {isFieldActive && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/15">
+                                                <div className="relative z-10 flex items-center justify-center">
                                                     <div 
-                                                        className={`${isLandscape ? 'w-5 h-5' : 'w-6 h-6'} rounded-full flex items-center justify-center`}
+                                                        className={`${isLandscape ? 'w-5 h-5' : 'w-6 h-6'} rounded-full flex items-center justify-center border border-white/80`}
                                                         style={{ 
                                                             backgroundColor: p.selectedBg, 
                                                             color: p.selectedText 
@@ -140,9 +143,9 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                 }}
                             >
                                 <div className={`flex justify-between items-center ${isLandscape ? 'mb-1.5' : 'mb-2.5'}`}>
-                                    <span className={`${isLandscape ? 'text-[10px]' : 'text-[11px]'} font-bold`} style={{ color: p.headerAccent }}>
+                                    <span className={`ayah-context-picker-title ${isLandscape ? 'text-[10px]' : 'text-[11px]'} font-bold`} style={{ color: p.headerAccent }}>
                                         {isEn 
-                                            ? `Select ${ayahContextColorField === 'bgColor' ? 'background' : ayahContextColorField === 'textColor' ? 'text' : 'highlight'} color`
+                                            ? `Select ${ayahContextColorField === 'bgColor' ? 'background' : ayahContextColorField === 'textColor' ? 'text' : 'highlight'} color` 
                                             : `اختر لون ${ayahContextColorField === 'bgColor' ? 'الخلفية' : ayahContextColorField === 'textColor' ? 'النص' : 'التحديد'}`}
                                     </span>
                                 </div>
@@ -164,14 +167,15 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                                         onTempSettingsChange(newTempSettings, currentField);
                                                     }
                                                 }}
-                                                className={`${isLandscape ? 'h-6.5 rounded-lg' : 'h-8 rounded-xl'} relative flex items-center justify-center border-0 ${isSelected ? 'quran-raised-btn-selected scale-105' : 'quran-raised-btn'}`}
+                                                className={`${isLandscape ? 'h-6.5 rounded-lg' : 'h-8 rounded-xl'} relative flex items-center justify-center border-0 quran-raised-btn ${isSelected ? 'ayah-color-selected scale-105 ring-2 ring-offset-1' : ''}`}
                                                 style={{
                                                     ...renderCheckerboard(c),
+                                                    ...(isSelected ? { '--tw-ring-color': p.headerAccent, '--ayah-selected-border': p.headerAccent } as React.CSSProperties : {}),
                                                 }}
                                             >
                                                 {isSelected && (
                                                     <div 
-                                                        className={`${isLandscape ? 'w-3.5 h-3.5' : 'w-4 h-4'} rounded-full flex items-center justify-center`}
+                                                        className={`${isLandscape ? 'w-3.5 h-3.5' : 'w-4 h-4'} rounded-full flex items-center justify-center border border-white/80`}
                                                         style={{ 
                                                             backgroundColor: p.selectedBg, 
                                                             color: p.selectedText 

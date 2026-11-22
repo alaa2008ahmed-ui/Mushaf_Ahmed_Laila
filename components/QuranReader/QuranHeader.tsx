@@ -1,7 +1,14 @@
 import React from 'react';
 import { toArabic, SURAH_NAMES_EN } from './constants';
-import { Menu } from 'lucide-react';
+import { Menu, Bookmark } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
+import {
+    normalizeMadinahFrameDesign,
+    MadinahHeaderCircleSVG,
+    MadinahHeaderBadgeSVG,
+    MadinahHeaderSurahFrameSVG,
+} from './madinahFrameDesigns';
 
 interface QuranHeaderProps {
     isPageInputActive: boolean;
@@ -29,6 +36,12 @@ interface QuranHeaderProps {
     setIsFloatingMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
     isFloatingMenuOpen: boolean;
     isAnyMenuOpen: boolean;
+    isMadinahMode?: boolean;
+    madinahFrameDesign?: number;
+    handleBookmarkButtonPointerDown?: (e: React.PointerEvent | React.TouchEvent) => void;
+    handleBookmarkButtonPointerUp?: (e: React.PointerEvent | React.TouchEvent) => void;
+    handleBookmarkButtonPointerLeave?: () => void;
+    isCurrentBookmarked?: boolean;
 }
 
 const AutoFitText: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -139,23 +152,104 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
     memorizationSettings,
     setIsFloatingMenuOpen,
     isFloatingMenuOpen,
-    isAnyMenuOpen
+    isAnyMenuOpen,
+    isMadinahMode = false,
+    madinahFrameDesign,
+    handleBookmarkButtonPointerDown,
+    handleBookmarkButtonPointerUp,
+    handleBookmarkButtonPointerLeave,
+    isCurrentBookmarked = false
 }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const enSurahName = SURAH_NAMES_EN[currentAyah.s - 1] || surahName;
+    const madinahPalette = isMadinahMode ? getMadinahThemePalette(currentTheme) : null;
+    const resolvedFrameDesign = normalizeMadinahFrameDesign(madinahFrameDesign);
+
+    const renderMadinahCircleFrame = () => {
+        if (!madinahPalette) return null;
+        return <MadinahHeaderCircleSVG design={resolvedFrameDesign} palette={madinahPalette} />;
+    };
+
+    const renderMadinahPageFrame = () => {
+        if (!madinahPalette) return null;
+        return <MadinahHeaderBadgeSVG design={resolvedFrameDesign} palette={madinahPalette} />;
+    };
+
+    const renderMadinahSurahBannerFrame = () => {
+        if (!madinahPalette) return null;
+        return <MadinahHeaderSurahFrameSVG design={resolvedFrameDesign} palette={madinahPalette} />;
+    };
+
+    const pageElement = isPageInputActive ? (
+        <input
+            ref={pageInputRef}
+            id="header-page"
+            type="tel"
+            value={pageInput}
+            onChange={handlePageInputChange}
+            onBlur={handlePageInputBlur}
+            onKeyDown={handlePageInputKeyDown}
+            className={
+                madinahPalette
+                    ? "top-bar-text-button madinah-header-btn madinah-header-page-control relative z-10 w-full h-full !p-0 text-center !font-black !text-base flex items-center justify-center leading-none"
+                    : "top-bar-text-button !rounded-lg !min-w-[46px] !w-[46px] !h-[36px] !pt-0 !pb-[3px] !px-0 text-center flex-shrink-0 !font-black !text-lg flex items-center justify-center leading-none"
+            }
+            style={
+                madinahPalette
+                    ? { backgroundColor: 'transparent', color: madinahPalette.bannerText, border: 'none', boxShadow: 'none', fontFamily: 'inherit' }
+                    : getToolbarStyle('page', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder)
+            }
+            placeholder={isEn ? `${page}` : `${toArabic(page)}`}
+        />
+    ) : (
+        <button 
+            id="header-page" 
+            onClick={handlePageButtonClick}
+            className={
+                madinahPalette
+                    ? "top-bar-text-button madinah-header-btn madinah-header-page-control relative z-10 w-full h-full !p-0 flex-shrink-0 !font-black !text-base flex items-center justify-center leading-none"
+                    : "top-bar-text-button !rounded-lg !min-w-[46px] !w-[46px] !h-[36px] !pt-0 !pb-[3px] !px-0 flex-shrink-0 !font-black !text-lg flex items-center justify-center leading-none"
+            }
+            style={
+                madinahPalette
+                    ? { backgroundColor: 'transparent', color: madinahPalette.bannerText, border: 'none', boxShadow: 'none', fontFamily: 'inherit' }
+                    : getToolbarStyle('page', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder)
+            }
+        >
+            {isEn ? page : toArabic(page)}
+        </button>
+    );
 
     return (
-        <header id="header" className={`header-default quran-reader-header flex-none z-50 flex items-center justify-between shadow-xl w-full gap-1 border-0 ${isAnyMenuOpen ? 'pointer-events-none opacity-50' : ''}`} style={getToolbarStyle('top-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
+        <header
+            id="header"
+            className={`header-default quran-reader-header flex-none z-50 flex items-center justify-between ${madinahPalette ? 'madinah-flat-header' : 'shadow-xl'} w-full gap-1 border-0 ${isAnyMenuOpen ? 'pointer-events-none opacity-50' : ''}`}
+            style={
+                madinahPalette
+                    ? {
+                        backgroundColor: madinahPalette.frameBg,
+                        color: madinahPalette.bannerText,
+                        boxShadow: 'none',
+                        borderBottom: `1.5px solid ${madinahPalette.primary}`,
+                    }
+                    : getToolbarStyle('top-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)
+            }
+        >
             <div className="flex items-center">
                 <button 
                     id="btn-menu-header" 
                     onClick={() => (setIsFloatingMenuOpen as any)()}
-                    className={`top-bar-text-button !rounded-full !w-10 !h-10 !p-0 flex items-center justify-center flex-shrink-0 aspect-square ${isFloatingMenuOpen ? 'pointer-events-auto opacity-100' : (isAnyMenuOpen ? 'pointer-events-none opacity-50' : 'pointer-events-auto opacity-100')}`} 
-                    style={getToolbarStyle('btn-menu', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg)}
+                    className={`top-bar-text-button ${madinahPalette ? 'madinah-header-btn relative !w-[42px] !h-[42px]' : '!rounded-full !w-10 !h-10'} !p-0 flex items-center justify-center flex-shrink-0 aspect-square ${isFloatingMenuOpen ? 'pointer-events-auto opacity-100' : (isAnyMenuOpen ? 'pointer-events-none opacity-50' : 'pointer-events-auto opacity-100')}`} 
+                    style={
+                        madinahPalette
+                            ? { backgroundColor: 'transparent', color: madinahPalette.bannerText, boxShadow: 'none' }
+                            : getToolbarStyle('btn-menu', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg)
+                    }
                     title={isEn ? "Menu" : "القائمة"}
                 >
-                    <Menu size={20} className="quran-3d-icon" strokeWidth={2.4} />
+                    {renderMadinahCircleFrame()}
+                    <Menu size={madinahPalette ? 18 : 20} className={`${madinahPalette ? 'relative z-10' : 'quran-3d-icon'}`} strokeWidth={2.3} />
                 </button>
                 <div className="mr-1">
                 </div>
@@ -163,47 +257,71 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
             <button 
                 id="surah-name-header" 
                 onClick={() => openModal('surah-modal')}
-                className="top-bar-text-button flex items-center justify-center leading-none !pt-0 flex-1 min-w-0 mx-0.5 !px-1" 
-                style={getToolbarStyle('surah', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder)}
+                className={
+                    madinahPalette
+                        ? "top-bar-text-button madinah-header-btn madinah-header-surah-btn relative flex items-center justify-center leading-none !pt-0 !pb-0 flex-1 min-w-0 mx-0.5 !px-4 !h-[38px]"
+                        : "top-bar-text-button flex items-center justify-center leading-none !pt-0 flex-1 min-w-0 mx-0.5 !px-1"
+                }
+                style={
+                    madinahPalette
+                        ? { backgroundColor: 'transparent', color: madinahPalette.bannerText, boxShadow: 'none' }
+                        : getToolbarStyle('surah', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder)
+                }
             >
-                <AutoFitText>
-                    {isEn ? (
-                        isMemorizationMode && memorizationSettings ? (
-                            <>{currentAyah.s} - Surah {enSurahName.replace(/^Surah\s+/i, '')} - Ayahs {memorizationSettings.fromAyah}-{memorizationSettings.toAyah} - Juz {juz}</>
+                {renderMadinahSurahBannerFrame()}
+                <div className={madinahPalette ? "relative z-10 w-full h-full flex items-center justify-center" : "w-full h-full flex items-center justify-center"}>
+                    <AutoFitText>
+                        {isEn ? (
+                            isMemorizationMode && memorizationSettings ? (
+                                <>{currentAyah.s} - Surah {enSurahName.replace(/^Surah\s+/i, '')} - Ayahs {memorizationSettings.fromAyah}-{memorizationSettings.toAyah} - Juz {juz}</>
+                            ) : (
+                                <>{currentAyah.s} - Surah {enSurahName.replace(/^Surah\s+/i, '')} - Ayah {currentAyah.a} - Juz {juz}</>
+                            )
                         ) : (
-                            <>{currentAyah.s} - Surah {enSurahName.replace(/^Surah\s+/i, '')} - Ayah {currentAyah.a} - Juz {juz}</>
-                        )
-                    ) : (
-                        isMemorizationMode && memorizationSettings ? (
-                            <>{toArabic(currentAyah.s)} - سورة {surahName} - الآيات {toArabic(memorizationSettings.fromAyah)} - {toArabic(memorizationSettings.toAyah)} - جزء {toArabic(juz)}</>
-                        ) : (
-                            <>{toArabic(currentAyah.s)} - سورة {surahName} - ايه {toArabic(currentAyah.a)} - جزء {toArabic(juz)}</>
-                        )
-                    )}
-                </AutoFitText>
+                            isMemorizationMode && memorizationSettings ? (
+                                <>{toArabic(currentAyah.s)} - سورة {surahName} - الآيات {toArabic(memorizationSettings.fromAyah)} - {toArabic(memorizationSettings.toAyah)} - جزء {toArabic(juz)}</>
+                            ) : (
+                                <>{toArabic(currentAyah.s)} - سورة {surahName} - ايه {toArabic(currentAyah.a)} - جزء {toArabic(juz)}</>
+                            )
+                        )}
+                    </AutoFitText>
+                </div>
             </button>
-            {isPageInputActive ? (
-                <input
-                    ref={pageInputRef}
-                    id="header-page"
-                    type="tel"
-                    value={pageInput}
-                    onChange={handlePageInputChange}
-                    onBlur={handlePageInputBlur}
-                    onKeyDown={handlePageInputKeyDown}
-                    className="top-bar-text-button !rounded-lg !min-w-[46px] !w-[46px] !h-[36px] !pt-0 !pb-[3px] !px-0 text-center flex-shrink-0 !font-black !text-lg flex items-center justify-center leading-none"
-                    style={getToolbarStyle('page', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder)}
-                    placeholder={isEn ? `${page}` : `${toArabic(page)}`}
-                />
+            {madinahPalette ? (
+                <div className="madinah-header-page-wrap relative flex-shrink-0 w-[50px] h-[38px] flex items-center justify-center">
+                    {renderMadinahPageFrame()}
+                    <button
+                        id="madinah-header-bookmark-btn"
+                        type="button"
+                        onPointerDown={handleBookmarkButtonPointerDown}
+                        onPointerUp={handleBookmarkButtonPointerUp}
+                        onPointerLeave={handleBookmarkButtonPointerLeave}
+                        onTouchStart={handleBookmarkButtonPointerDown}
+                        onTouchEnd={handleBookmarkButtonPointerUp}
+                        onTouchCancel={handleBookmarkButtonPointerLeave}
+                        onContextMenu={(e) => e.preventDefault()}
+                        className="top-bar-text-button madinah-header-btn madinah-header-page-control relative z-10 w-full h-full !p-0 flex-shrink-0 flex items-center justify-center leading-none"
+                        style={{
+                            backgroundColor: 'transparent',
+                            color: isCurrentBookmarked ? madinahPalette.gold : madinahPalette.bannerText,
+                            border: 'none',
+                            boxShadow: 'none',
+                            touchAction: 'none',
+                            userSelect: 'none'
+                        }}
+                        title={isEn ? "Save Bookmark (Long press for saved bookmarks)" : "حفظ المرجع (ضغطة مطولة لقائمة الإشارات المحفوظة)"}
+                        aria-label={isEn ? "Save Bookmark" : "حفظ المرجع"}
+                    >
+                        <Bookmark
+                            size={18}
+                            strokeWidth={2.2}
+                            fill={isCurrentBookmarked ? 'currentColor' : 'none'}
+                            className="relative z-10"
+                        />
+                    </button>
+                </div>
             ) : (
-                <button 
-                    id="header-page" 
-                    onClick={handlePageButtonClick}
-                    className="top-bar-text-button !rounded-lg !min-w-[46px] !w-[46px] !h-[36px] !pt-0 !pb-[3px] !px-0 flex-shrink-0 !font-black !text-lg flex items-center justify-center leading-none" 
-                    style={getToolbarStyle('page', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder)}
-                >
-                    {isEn ? page : toArabic(page)}
-                </button>
+                pageElement
             )}
             
             <div className="relative flex-shrink-0">
@@ -212,10 +330,17 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
                     onPointerDown={handlePlayButtonPointerDown}
                     onPointerUp={handlePlayButtonPointerUp}
                     onPointerLeave={handlePlayButtonPointerLeave}
-                    className="top-bar-text-button !rounded-full !w-10 !h-10 !p-0 flex items-center justify-center flex-shrink-0 aspect-square" 
-                    style={{...getToolbarStyle('audio', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder), touchAction: 'none'}}
+                    className={`top-bar-text-button ${madinahPalette ? 'madinah-header-btn relative !w-[42px] !h-[42px]' : '!rounded-full !w-10 !h-10'} !p-0 flex items-center justify-center flex-shrink-0 aspect-square`} 
+                    style={
+                        madinahPalette
+                            ? { backgroundColor: 'transparent', color: madinahPalette.bannerText, boxShadow: 'none', touchAction: 'none' }
+                            : {...getToolbarStyle('audio', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder), touchAction: 'none'}
+                    }
                 >
-                    {renderPlayButtonIcon()}
+                    {renderMadinahCircleFrame()}
+                    <span className={madinahPalette ? "relative z-10 flex items-center justify-center" : "contents"}>
+                        {renderPlayButtonIcon()}
+                    </span>
                 </button>
                 {reciterToast.show && (
                     <div

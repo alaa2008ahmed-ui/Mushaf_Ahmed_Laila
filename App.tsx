@@ -46,6 +46,7 @@ import FloatingListenButton from './components/Listen/FloatingListenButton';
 import { useListenQuranStore } from './hooks/useListenQuranStore';
 import { isTourPreviewMode, getTourPreviewInitParams } from './utils/tourPreviewMode';
 import { triggerAlertVibration } from './utils/vibrationHelper';
+import { preloadQpcAndMadinahStartup } from './utils/qpcMadinahData';
 
 // --- Main App Component ---
 function App() {
@@ -486,7 +487,7 @@ function App() {
         const fromTarget = navParams?.from;
         const returnSidebar = navParams?.fromSidebar;
         if (returnSidebar) {
-          setNavParams({ openSidebar: true, isWird: navParams?.isWird });
+          setNavParams({ openSidebar: true, isWird: navParams?.isWird, readingMode: navParams?.readingMode });
         } else {
           setNavParams(null);
         }
@@ -743,7 +744,16 @@ function App() {
     }
     else if (action === 'open_search' || (action === 'ui_click' && params?.label?.includes('بحث'))) {
       const currentActive = history[history.length - 1];
-      handleNavigate('search', (currentActive === 'quran' || currentActive === 'quran-landscape') ? { from: currentActive } : undefined);
+      if (currentActive === 'quran' || currentActive === 'quran-landscape') {
+        const orient = currentActive === 'quran-landscape' ? 'h' : 'v';
+        const isEnglish = localStorage.getItem('app_language') === 'en';
+        const savedMode = isEnglish
+          ? (localStorage.getItem(`quran_reading_mode_en_${orient}`) || localStorage.getItem(`last_reading_mode_${orient}`) || 'translation')
+          : (localStorage.getItem(`quran_reading_mode_ar_${orient}`) || localStorage.getItem(`last_arabic_reading_mode_${orient}`) || localStorage.getItem(`last_reading_mode_${orient}`) || 'mushaf');
+        handleNavigate('search', { from: currentActive, readingMode: savedMode });
+      } else {
+        handleNavigate('search');
+      }
     }
     else if (action === 'open_settings' || (action === 'ui_click' && params?.label?.includes('اعدادات'))) window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_settings' } }));
     else if (action === 'exit_app') setShowExitConfirm(true);
@@ -870,6 +880,33 @@ function AppContent({
       window.clearTimeout(timer);
       setMainAppEntered(false);
     };
+  }, [isTourPreview]);
+
+  useEffect(() => {
+    if (isTourPreview) return;
+    const timer = window.setTimeout(() => {
+      const priorityPages: number[] = [];
+      try {
+        const candidates = [
+          localStorage.getItem('last_read_pos_madinah'),
+          localStorage.getItem('last_pos_madinah_v'),
+          localStorage.getItem('last_pos_madinah_h'),
+          localStorage.getItem('last_read_ayah_global'),
+        ];
+        for (let i = 0; i < candidates.length; i++) {
+          const raw = candidates[i];
+          if (!raw) continue;
+          const parsed = JSON.parse(raw);
+          const p = Number(parsed?.page);
+          if (p >= 1 && p <= 604) {
+            priorityPages.push(p, p - 1, p + 1);
+            break;
+          }
+        }
+      } catch (e) {}
+      preloadQpcAndMadinahStartup(priorityPages);
+    }, 120);
+    return () => window.clearTimeout(timer);
   }, [isTourPreview]);
 
   useEffect(() => {

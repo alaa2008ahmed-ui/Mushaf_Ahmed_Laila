@@ -762,14 +762,14 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
             dir={dir}
             className={isLandscape
                 ? `fixed inset-0 ${zIndexClass} bg-black/55 flex items-center justify-center p-2.5 font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''}`
-                : `fixed inset-0 ${zIndexClass} flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''}`
+                : `quran-fullscreen-modal-backdrop fixed inset-0 ${zIndexClass} flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''}`
             }
             onClick={isLandscape ? onClose : undefined}
         >
             <div
                 className={isLandscape
-                    ? `modal-skinned compact-landscape-modal ${isDark ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
-                    : "flex-1 min-h-0 w-full flex flex-col overflow-hidden"
+                    ? `modal-skinned compact-landscape-modal madinah-download-modal-panel ${isDark ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
+                    : "quran-fullscreen-modal-panel madinah-download-modal-panel flex-1 min-h-0 w-full flex flex-col overflow-hidden"
                 }
                 style={isLandscape ? { backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' } : undefined}
                 onClick={isLandscape ? e => e.stopPropagation() : undefined}
@@ -1403,14 +1403,14 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({
             dir={dir}
             className={isLandscape
                 ? `fixed inset-0 ${zIndexClass} bg-black/55 flex items-center justify-center p-2.5 font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''}`
-                : `fixed inset-0 ${zIndexClass} flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''}`
+                : `quran-fullscreen-modal-backdrop fixed inset-0 ${zIndexClass} flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''}`
             }
             onClick={isLandscape ? onClose : undefined}
         >
             <div
                 className={isLandscape
-                    ? `modal-skinned compact-landscape-modal ${isDark ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
-                    : "flex-1 min-h-0 w-full flex flex-col overflow-hidden"
+                    ? `modal-skinned compact-landscape-modal madinah-download-modal-panel ${isDark ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
+                    : "quran-fullscreen-modal-panel madinah-download-modal-panel flex-1 min-h-0 w-full flex flex-col overflow-hidden"
                 }
                 style={isLandscape ? { backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' } : undefined}
                 onClick={isLandscape ? e => e.stopPropagation() : undefined}

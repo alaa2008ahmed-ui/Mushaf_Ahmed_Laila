@@ -11,15 +11,19 @@ const PORT = Number(process.env.PORT) || 3000;
 async function startServer() {
   const app = express();
 
+  let viteServer: { close: () => Promise<void> } | null = null;
+
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
         hmr: false,
+        ws: false,
       },
       appType: 'spa',
     });
+    viteServer = vite;
     app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(__dirname, 'dist');
@@ -29,9 +33,24 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server listening on http://0.0.0.0:${PORT}`);
   });
+
+  const shutdown = async () => {
+    httpServer.close();
+    if (viteServer) {
+      try {
+        await viteServer.close();
+      } catch {
+        // ignore close errors
+      }
+    }
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
 
 startServer().catch((err) => {

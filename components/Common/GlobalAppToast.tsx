@@ -93,6 +93,39 @@ export const GlobalAppToast: React.FC = () => {
 
   if (!visible || !message) return null;
 
+  const madinahContainer =
+    typeof document !== 'undefined' && isQuranPage
+      ? (document.querySelector('#app-container.quran-reader-container.madinah-mode') as HTMLElement | null)
+      : null;
+
+  const madinahStyles = madinahContainer
+    ? (() => {
+        const inlineStyle = madinahContainer.style;
+        const computed = window.getComputedStyle(madinahContainer);
+        const bg =
+          inlineStyle.getPropertyValue('--madinah-menu-bg').trim() ||
+          computed.getPropertyValue('--madinah-menu-bg').trim() ||
+          '#fdf8ea';
+        const text =
+          inlineStyle.getPropertyValue('--madinah-menu-text').trim() ||
+          computed.getPropertyValue('--madinah-menu-text').trim() ||
+          '#78350f';
+        const border =
+          inlineStyle.getPropertyValue('--madinah-menu-border-strong').trim() ||
+          computed.getPropertyValue('--madinah-menu-border-strong').trim() ||
+          'rgba(180, 83, 9, 0.6)';
+        const accent =
+          inlineStyle.getPropertyValue('--madinah-menu-accent').trim() ||
+          computed.getPropertyValue('--madinah-menu-accent').trim() ||
+          '#b45309';
+        const iconText =
+          inlineStyle.getPropertyValue('--madinah-menu-icon-text').trim() ||
+          computed.getPropertyValue('--madinah-menu-icon-text').trim() ||
+          '#ffffff';
+        return { bg, text, border, accent, iconText };
+      })()
+    : null;
+
   const toast3D = getToast3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
 
   const resolvedBottom = bottomOffsetPx !== null
@@ -108,12 +141,35 @@ export const GlobalAppToast: React.FC = () => {
       style={{ bottom: resolvedBottom }}
     >
       <div 
-        className="app-3d-toast border-0 rounded-2xl px-4 py-2.5 flex items-center justify-center gap-2.5 text-center text-xs sm:text-sm font-bold leading-normal break-words max-w-[88vw] w-max"
-        style={toast3D.style}
+        className={
+          madinahStyles
+            ? "rounded-xl px-3.5 py-2 flex items-center justify-center gap-2 text-center text-xs sm:text-sm font-bold leading-normal break-words max-w-[88vw] w-max"
+            : "app-3d-toast border-0 rounded-2xl px-4 py-2.5 flex items-center justify-center gap-2.5 text-center text-xs sm:text-sm font-bold leading-normal break-words max-w-[88vw] w-max"
+        }
+        style={
+          madinahStyles
+            ? {
+                backgroundColor: madinahStyles.bg,
+                color: madinahStyles.text,
+                border: `1.5px solid ${madinahStyles.border}`,
+                boxShadow: 'none',
+                backgroundImage: 'none',
+              }
+            : toast3D.style
+        }
       >
         <span
           className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-          style={toast3D.iconStyle}
+          style={
+            madinahStyles
+              ? {
+                  backgroundColor: madinahStyles.accent,
+                  color: madinahStyles.iconText,
+                  boxShadow: 'none',
+                  backgroundImage: 'none',
+                }
+              : toast3D.iconStyle
+          }
         >
           <Check className="w-3 h-3 stroke-[3]" />
         </span>

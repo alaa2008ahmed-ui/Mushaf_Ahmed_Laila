@@ -226,7 +226,7 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
         <div className={`fixed inset-0 bg-black/55 ${zIndexClass} flex items-center justify-center ${isLandscape ? 'p-2' : 'p-3 sm:p-4'} font-cairo select-none`} onClick={handleClose}>
             <div 
                 dir={dir} 
-                className={`modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} font-cairo ${isLandscape ? 'w-[62%] max-w-[430px] h-[86%] max-h-[86%] rounded-3xl' : 'w-full max-w-md sm:max-w-2xl rounded-3xl max-h-[88dvh]'} shadow-2xl overflow-hidden flex flex-col relative border-0`} 
+                className={`modal-skinned madinah-enlarged-popup settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} font-cairo ${isLandscape ? 'w-[62%] max-w-[430px] h-[86%] max-h-[86%] rounded-3xl' : 'w-full max-w-md sm:max-w-2xl rounded-3xl max-h-[88dvh]'} shadow-2xl overflow-hidden flex flex-col relative border-0`} 
                 style={{
                     fontFamily: p.fontFamily,
                     backgroundColor: p.modalBg,

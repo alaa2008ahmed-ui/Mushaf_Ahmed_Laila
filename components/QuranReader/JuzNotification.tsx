@@ -46,7 +46,7 @@ const JuzNotification: FC<{isVisible: boolean, text: string, currentTheme: any}>
 
     return (
         <div 
-            className={`app-3d-toast fixed z-[3000] transition-all duration-500 pointer-events-none flex items-center gap-3 px-4 py-2.5 rounded-2xl border-0`}
+            className={`juz-notification app-3d-toast fixed z-[3000] transition-all duration-500 pointer-events-none flex items-center gap-3 px-4 py-2.5 rounded-2xl border-0`}
             style={{ 
                 bottom: 'calc(5rem + var(--app-safe-bottom, 0px) + 5rem)', 
                 right: isVisible ? 'calc(16px + env(safe-area-inset-right, 0px))' : '-400px',
@@ -56,7 +56,7 @@ const JuzNotification: FC<{isVisible: boolean, text: string, currentTheme: any}>
             }}
         >
             <div
-                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                className="juz-notification-icon w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                 style={{
                     backgroundColor: iconBg,
                     color: iconColor,

@@ -4,10 +4,11 @@ import { safeHtml2Canvas } from '../../utils/canvasHelper';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-import { FONTS, SURAH_NAMES_AR, toArabic, getAyahCountText, isDarkQuranTheme } from './constants';
+import { FONTS, SURAH_NAMES_AR, toArabic, getAyahCountText, isDarkQuranTheme, ReadingMode } from './constants';
 import { renderTajweedTextHtml } from './MushafPage';
 import { useLanguage } from '../../context/LanguageContext';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 import {
     SHARE_CARD_DESIGNS,
     ShareDesignId,
@@ -46,7 +47,7 @@ interface ShareAyahModalProps {
     currentAyah: { s: number; a: number };
     quranData: any;
     currentTheme: any;
-    readingMode?: 'mushaf' | 'tafseer' | 'meanings' | 'translation' | 'bilingual';
+    readingMode?: ReadingMode;
     settings?: any;
     showToast?: (msg: string) => void;
     isLandscape?: boolean;
@@ -512,6 +513,8 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
+    const isFlatMadinah = readingMode === 'madinah';
+    const isMushafLikeMode = readingMode === 'mushaf' || readingMode === 'madinah';
 
     const getDefaultBgForOpen = (prefs?: ShareStudioPrefs): ShareBgOption => {
         const savedPrefs = prefs ?? loadShareStudioPrefs();
@@ -619,7 +622,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
     const [isSharing, setIsSharing] = useState(false);
     const [isCopying, setIsCopying] = useState(false);
     const [explanationData, setExplanationData] = useState<any>(null);
-    const [explanationReady, setExplanationReady] = useState(() => readingMode === 'mushaf');
+    const [explanationReady, setExplanationReady] = useState(() => isMushafLikeMode);
     const [appSettings, setAppSettings] = useState<any>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const previewStageRef = useRef<HTMLDivElement>(null);
@@ -773,7 +776,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
     }, []);
 
     useEffect(() => {
-        if (readingMode === 'mushaf') {
+        if (isMushafLikeMode) {
             setExplanationReady(true);
             return;
         }
@@ -934,7 +937,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 
     const getExplanationText = (s: number, a: number) => {
         if (!explanationData) return '';
-        if (readingMode === 'mushaf') return '';
+        if (isMushafLikeMode) return '';
         
         const activeMode: any = readingMode;
 
@@ -1048,7 +1051,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
         const allSameMushafPage = touchedPages.size === 1;
         const fitsInSinglePage =
             ayahItems.length <= 1 ||
-            (allSameMushafPage && readingMode === 'mushaf') ||
+            (allSameMushafPage && isMushafLikeMode) ||
             (totalMushafPageCoverage <= 1.05 && totalWeightedChars <= SINGLE_PAGE_MAX_CHARS);
 
         const rawGroups: { ayahs: { s: number; a: number }[]; startPage: number; endPage: number }[] = [];
@@ -1678,7 +1681,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     const hasMultipleSurahsInChunk = chunk.ayahs.some((ay, idx) => idx > 0 && ay.s !== firstChunkAyah?.s);
                     const showTopBismillah =
                         showBismillah &&
-                        readingMode === 'mushaf' &&
+                        isMushafLikeMode &&
                         !(firstChunkAyah?.s === 9 && firstChunkAyah?.a === 1);
                     const showTopSurahLabel =
                         shareType === 'page' &&
@@ -1934,40 +1937,69 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
             {hiddenCaptureNodes}
             <div
                 ref={modalBackdropRef}
-                className="fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center overflow-clip"
+                className="quran-fullscreen-modal-backdrop fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center overflow-clip"
                 dir="rtl"
                 onClick={onClose}
             >
 
             {(() => {
+                const madinahPalette = isFlatMadinah ? resolveQuranModalPalette(currentTheme) : null;
                 const isDark = isDarkQuranTheme(currentTheme);
                 const isDeepBlack = currentTheme?.id === 'deep_black';
                 const rawAccent = isDeepBlack ? '#D97706' : (currentTheme?.accent || '#D97706');
-                const accentBg = currentTheme?.id === 'gold' ? '#D97706' : rawAccent;
+                const accentBg = isFlatMadinah && madinahPalette
+                    ? madinahPalette.selectedBg
+                    : (currentTheme?.id === 'gold' ? '#D97706' : rawAccent);
                 const accentLip = isDark ? '#050507' : 'rgba(15, 23, 42, 0.28)';
-                const accentText = isDeepBlack ? '#000000' : '#FFFFFF';
-                const studioBg = isDark ? (currentTheme?.bg || '#09090B') : '#F8FAFC';
-                const surfaceBg = isDark ? (currentTheme?.cardBg || '#141418') : '#FFFFFF';
-                const trackBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.05)';
-                const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.07)';
-                const textPrimary = isDark ? '#FFFFFF' : '#0F172A';
-                const textMuted = isDark ? 'rgba(255, 255, 255, 0.65)' : 'rgba(15, 23, 42, 0.58)';
+                const accentText = isFlatMadinah && madinahPalette
+                    ? madinahPalette.selectedText
+                    : (isDeepBlack ? '#000000' : '#FFFFFF');
+                const studioBg = isFlatMadinah && madinahPalette
+                    ? madinahPalette.modalBg
+                    : (isDark ? (currentTheme?.bg || '#09090B') : '#F8FAFC');
+                const surfaceBg = isFlatMadinah && madinahPalette
+                    ? madinahPalette.cardBg
+                    : (isDark ? (currentTheme?.cardBg || '#141418') : '#FFFFFF');
+                const trackBg = isFlatMadinah && madinahPalette
+                    ? madinahPalette.subtleBg
+                    : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.05)');
+                const dividerColor = isFlatMadinah
+                    ? 'var(--madinah-menu-border-subtle, rgba(180, 83, 9, 0.28))'
+                    : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.07)');
+                const textPrimary = isFlatMadinah && madinahPalette
+                    ? madinahPalette.cardText
+                    : (isDark ? '#FFFFFF' : '#0F172A');
+                const textMuted = isFlatMadinah && madinahPalette
+                    ? madinahPalette.mutedText
+                    : (isDark ? 'rgba(255, 255, 255, 0.65)' : 'rgba(15, 23, 42, 0.58)');
 
-                const tactileNeutralShadow = isDark
-                    ? '0 3.5px 0 #050507, 0 8px 16px rgba(0,0,0,0.65), inset 0 1.5px 1px rgba(255,255,255,0.16), inset 0 -1.5px 2px rgba(0,0,0,0.45)'
-                    : '0 3.5px 0 rgba(148,163,184,0.34), 0 8px 16px -3px rgba(15,23,42,0.09), inset 0 1.5px 1px rgba(255,255,255,0.95), inset 0 -1.5px 2px rgba(15,23,42,0.04)';
+                const flatNeutralBorder = isFlatMadinah ? '1.5px solid var(--madinah-menu-border-subtle, rgba(180, 83, 9, 0.28))' : undefined;
+                const flatActiveBorder = isFlatMadinah ? '1.5px solid var(--madinah-menu-accent, #b45309)' : undefined;
+                const flatStrongBorder = isFlatMadinah ? '1.5px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55))' : undefined;
 
-                const tactileActiveShadow = isDark
-                    ? `0 4px 0 #050507, 0 10px 20px rgba(0,0,0,0.75), inset 0 1.5px 1.5px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.3)`
-                    : `0 4px 0 ${accentLip}, 0 10px 20px -3px ${accentBg}48, inset 0 1.5px 1.5px rgba(255,255,255,0.38), inset 0 -2px 3px rgba(0,0,0,0.2)`;
+                const tactileNeutralShadow = isFlatMadinah
+                    ? 'none'
+                    : (isDark
+                        ? '0 3.5px 0 #050507, 0 8px 16px rgba(0,0,0,0.65), inset 0 1.5px 1px rgba(255,255,255,0.16), inset 0 -1.5px 2px rgba(0,0,0,0.45)'
+                        : '0 3.5px 0 rgba(148,163,184,0.34), 0 8px 16px -3px rgba(15,23,42,0.09), inset 0 1.5px 1px rgba(255,255,255,0.95), inset 0 -1.5px 2px rgba(15,23,42,0.04)');
 
-                const tactileInsetShadow = isDark
-                    ? 'inset 0 2px 5px rgba(0,0,0,0.68), inset 0 -1px 1px rgba(255,255,255,0.08)'
-                    : 'inset 0 2px 5px rgba(15,23,42,0.12), inset 0 -1px 1px rgba(255,255,255,0.85)';
+                const tactileActiveShadow = isFlatMadinah
+                    ? 'none'
+                    : (isDark
+                        ? `0 4px 0 #050507, 0 10px 20px rgba(0,0,0,0.75), inset 0 1.5px 1.5px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.3)`
+                        : `0 4px 0 ${accentLip}, 0 10px 20px -3px ${accentBg}48, inset 0 1.5px 1.5px rgba(255,255,255,0.38), inset 0 -2px 3px rgba(0,0,0,0.2)`);
 
-                const tactileCardShadow = isDark
-                    ? '0 6px 0 #050507, 0 22px 44px rgba(0,0,0,0.78), inset 0 1.5px 1px rgba(255,255,255,0.14), inset 0 -2px 3px rgba(0,0,0,0.45)'
-                    : '0 6px 0 rgba(148,163,184,0.32), 0 22px 44px -8px rgba(15,23,42,0.16), inset 0 1.5px 1px rgba(255,255,255,0.95), inset 0 -2px 3px rgba(15,23,42,0.05)';
+                const tactileInsetShadow = isFlatMadinah
+                    ? 'none'
+                    : (isDark
+                        ? 'inset 0 2px 5px rgba(0,0,0,0.68), inset 0 -1px 1px rgba(255,255,255,0.08)'
+                        : 'inset 0 2px 5px rgba(15,23,42,0.12), inset 0 -1px 1px rgba(255,255,255,0.85)');
+
+                const tactileCardShadow = isFlatMadinah
+                    ? 'none'
+                    : (isDark
+                        ? '0 6px 0 #050507, 0 22px 44px rgba(0,0,0,0.78), inset 0 1.5px 1px rgba(255,255,255,0.14), inset 0 -2px 3px rgba(0,0,0,0.45)'
+                        : '0 6px 0 rgba(148,163,184,0.32), 0 22px 44px -8px rgba(15,23,42,0.16), inset 0 1.5px 1px rgba(255,255,255,0.95), inset 0 -2px 3px rgba(15,23,42,0.05)');
 
                 // 9:16 WYSIWYG Artboard sizing (side mini-cards hidden; side rails shown only when typography controls are active)
                 const totalDesigns = SHARE_DESIGN_BGS.length;
@@ -2041,6 +2073,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                     fontFamily: 'var(--font-ui)',
                                                     backgroundColor: isSelected ? accentBg : surfaceBg,
                                                     color: isSelected ? accentText : textPrimary,
+                                                    border: isSelected ? flatActiveBorder : flatNeutralBorder,
                                                     boxShadow: isSelected ? tactileActiveShadow : tactileNeutralShadow,
                                                 }}
                                             >
@@ -2055,13 +2088,13 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                             <div className="flex items-center gap-2.5">
                                 <div
                                     className="flex items-center gap-1.5 p-1.5 rounded-xl shrink-0"
-                                    style={{ backgroundColor: trackBg, boxShadow: tactileInsetShadow }}
+                                    style={{ backgroundColor: trackBg, border: flatNeutralBorder, boxShadow: tactileInsetShadow }}
                                 >
                                     <button
                                         type="button"
                                         onClick={() => setFontSize((prev) => Math.max(12, prev - 2))}
                                         className="w-8 h-8 rounded-lg flex items-center justify-center border-0 cursor-pointer active:translate-y-0.5 active:scale-95 transition-all"
-                                        style={{ backgroundColor: surfaceBg, color: textPrimary, boxShadow: tactileNeutralShadow }}
+                                        style={{ backgroundColor: surfaceBg, color: textPrimary, border: flatNeutralBorder, boxShadow: tactileNeutralShadow }}
                                         title={isEn ? 'Decrease font size' : 'تصغير الخط'}
                                     >
                                         <Minus size={14} strokeWidth={2.5} />
@@ -2073,7 +2106,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         type="button"
                                         onClick={() => setFontSize((prev) => Math.min(48, prev + 2))}
                                         className="w-8 h-8 rounded-lg flex items-center justify-center border-0 cursor-pointer active:translate-y-0.5 active:scale-95 transition-all"
-                                        style={{ backgroundColor: surfaceBg, color: textPrimary, boxShadow: tactileNeutralShadow }}
+                                        style={{ backgroundColor: surfaceBg, color: textPrimary, border: flatNeutralBorder, boxShadow: tactileNeutralShadow }}
                                         title={isEn ? 'Increase font size' : 'تكبير الخط'}
                                     >
                                         <Plus size={14} strokeWidth={2.5} />
@@ -2082,7 +2115,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 
                                 <div
                                     className="flex-1 flex items-center gap-2 overflow-x-auto px-2.5 py-2 rounded-xl hide-scrollbar"
-                                    style={{ backgroundColor: trackBg, boxShadow: tactileInsetShadow }}
+                                    style={{ backgroundColor: trackBg, border: flatNeutralBorder, boxShadow: tactileInsetShadow }}
                                 >
                                     {TEXT_COLORS.map((color) => {
                                         const isSelected = textColor === color;
@@ -2097,9 +2130,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 style={{
                                                     backgroundColor: color,
                                                     border: isSelected ? `2.5px solid ${accentBg}` : '1.5px solid rgba(148,163,184,0.45)',
-                                                    boxShadow: isSelected
-                                                        ? `0 0 0 2px ${surfaceBg}, 0 3px 8px rgba(0,0,0,0.24)`
-                                                        : 'inset 0 1.5px 2px rgba(255,255,255,0.4), inset 0 -1.5px 2px rgba(0,0,0,0.2), 0 2.5px 5px rgba(0,0,0,0.18)',
+                                                    boxShadow: isFlatMadinah
+                                                        ? 'none'
+                                                        : (isSelected
+                                                            ? `0 0 0 2px ${surfaceBg}, 0 3px 8px rgba(0,0,0,0.24)`
+                                                            : 'inset 0 1.5px 2px rgba(255,255,255,0.4), inset 0 -1.5px 2px rgba(0,0,0,0.2), 0 2.5px 5px rgba(0,0,0,0.18)'),
                                                 }}
                                             />
                                         );
@@ -2118,6 +2153,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     style={{
                                         backgroundColor: trackBg,
                                         color: textPrimary,
+                                        border: flatNeutralBorder,
                                         boxShadow: tactileInsetShadow,
                                     }}
                                     maxLength={50}
@@ -2130,6 +2166,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     style={{
                                         backgroundColor: showBismillah ? accentBg : surfaceBg,
                                         color: showBismillah ? accentText : textMuted,
+                                        border: showBismillah ? flatActiveBorder : flatNeutralBorder,
                                         boxShadow: showBismillah ? tactileActiveShadow : tactileNeutralShadow,
                                     }}
                                     title={isEn ? (showBismillah ? 'Hide Bismillah' : 'Show Bismillah') : (showBismillah ? 'إخفاء البسملة من التصميم' : 'إظهار البسملة في التصميم')}
@@ -2154,6 +2191,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     style={{
                                         backgroundColor: surfaceBg,
                                         color: textPrimary,
+                                        border: flatNeutralBorder,
                                         boxShadow: tactileNeutralShadow,
                                     }}
                                     title="مشاركة الصورة المعروضة حالياً فقط"
@@ -2172,6 +2210,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     style={{
                                         backgroundColor: accentBg,
                                         color: accentText,
+                                        border: flatActiveBorder,
                                         boxShadow: tactileActiveShadow,
                                     }}
                                     title={`مشاركة جميع الصور (${pageChunks.length})`}
@@ -2189,6 +2228,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     style={{
                                         backgroundColor: surfaceBg,
                                         color: textPrimary,
+                                        border: flatNeutralBorder,
                                         boxShadow: tactileNeutralShadow,
                                     }}
                                 >
@@ -2205,6 +2245,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     style={{
                                         backgroundColor: accentBg,
                                         color: accentText,
+                                        border: flatActiveBorder,
                                         boxShadow: tactileActiveShadow,
                                     }}
                                 >
@@ -2221,6 +2262,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     style={{
                                         backgroundColor: surfaceBg,
                                         color: textPrimary,
+                                        border: flatNeutralBorder,
                                         boxShadow: tactileNeutralShadow,
                                     }}
                                 >
@@ -2247,7 +2289,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     const hasMultiplePreviewSurahs = currentPageChunk.ayahs.some((ay, idx) => idx > 0 && ay.s !== firstPreviewAyah?.s);
                     const showPreviewTopBismillah =
                         showBismillah &&
-                        readingMode === 'mushaf' &&
+                        isMushafLikeMode &&
                         !(firstPreviewAyah?.s === 9 && firstPreviewAyah?.a === 1);
                     const showPreviewTopSurahLabel =
                         shareType === 'page' &&
@@ -2380,6 +2422,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                                 fontWeight: 700,
                                                                 backgroundColor: isSelected ? accentBg : surfaceBg,
                                                                 color: isSelected ? accentText : textPrimary,
+                                                                border: isSelected ? flatActiveBorder : flatNeutralBorder,
                                                                 boxShadow: isSelected ? tactileActiveShadow : tactileNeutralShadow,
                                                             }}
                                                             title={isEn ? (font.nameEn || font.name) : font.name}
@@ -2405,7 +2448,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 style={{
                                                     backgroundColor: surfaceBg,
                                                     color: textPrimary,
-                                                    border: `1px solid ${dividerColor}`,
+                                                    border: isFlatMadinah ? flatNeutralBorder : `1px solid ${dividerColor}`,
                                                     boxShadow: tactileNeutralShadow,
                                                 }}
                                                 title={isEn ? 'Increase font size' : 'تكبير الخط'}
@@ -2419,7 +2462,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 
                                 {/* Exact scaled 9:16 wrapper so layout never overflows or clips */}
                                 <div
-                                    className="cursor-pointer"
+                                    className="share-preview-artboard-wrap cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         if (draggedFarRef.current) return;
@@ -2438,9 +2481,12 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         overflow: 'hidden',
                                         transform: dragOffset ? `translateX(${dragOffset}px)` : undefined,
                                         transition: isPointerDraggingRef.current ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                        boxShadow: isDark
-                                            ? '0 22px 45px -10px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.12)'
-                                            : '0 22px 45px -10px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)',
+                                        border: isFlatMadinah ? flatStrongBorder : undefined,
+                                        boxShadow: isFlatMadinah
+                                            ? 'none'
+                                            : (isDark
+                                                ? '0 22px 45px -10px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.12)'
+                                                : '0 22px 45px -10px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)'),
                                     }}
                                 >
                                 <div
@@ -2782,7 +2828,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         style={{
                                             backgroundColor: surfaceBg,
                                             color: textPrimary,
-                                            border: `1px solid ${dividerColor}`,
+                                            border: isFlatMadinah ? flatNeutralBorder : `1px solid ${dividerColor}`,
                                             boxShadow: tactileNeutralShadow,
                                         }}
                                         title={leftBg.name}
@@ -2802,7 +2848,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         style={{
                                             backgroundColor: surfaceBg,
                                             color: textPrimary,
-                                            border: `1px solid ${dividerColor}`,
+                                            border: isFlatMadinah ? flatNeutralBorder : `1px solid ${dividerColor}`,
                                             boxShadow: tactileNeutralShadow,
                                         }}
                                         title={rightBg.name}
@@ -2842,9 +2888,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                                 border: isSelected
                                                                     ? `2.5px solid ${accentBg}`
                                                                     : '1.5px solid rgba(148,163,184,0.45)',
-                                                                boxShadow: isSelected
-                                                                    ? `0 0 0 2px ${surfaceBg}, 0 3px 8px rgba(0,0,0,0.24)`
-                                                                    : 'inset 0 1.5px 2px rgba(255,255,255,0.4), inset 0 -1.5px 2px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.2)',
+                                                                boxShadow: isFlatMadinah
+                                                                    ? 'none'
+                                                                    : (isSelected
+                                                                        ? `0 0 0 2px ${surfaceBg}, 0 3px 8px rgba(0,0,0,0.24)`
+                                                                        : 'inset 0 1.5px 2px rgba(255,255,255,0.4), inset 0 -1.5px 2px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.2)'),
                                                             }}
                                                             aria-label={color}
                                                         />
@@ -2865,7 +2913,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 style={{
                                                     backgroundColor: surfaceBg,
                                                     color: textPrimary,
-                                                    border: `1px solid ${dividerColor}`,
+                                                    border: isFlatMadinah ? flatNeutralBorder : `1px solid ${dividerColor}`,
                                                     boxShadow: tactileNeutralShadow,
                                                 }}
                                                 title={isEn ? 'Decrease font size' : 'تصغير الخط'}
@@ -2884,6 +2932,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     className="flex items-center justify-between gap-2 mt-2 px-2.5 py-1.5 rounded-full shrink-0"
                                     style={{
                                         backgroundColor: surfaceBg,
+                                        border: flatNeutralBorder,
                                         boxShadow: tactileNeutralShadow,
                                     }}
                                 >
@@ -2892,7 +2941,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         onClick={() => setCurrentImagePageIndex((prev) => Math.max(0, prev - 1))}
                                         disabled={safePageIndex === 0}
                                         className="w-7 h-7 rounded-full flex items-center justify-center disabled:opacity-30 border-0 cursor-pointer transition-all active:translate-y-0.5 active:scale-90"
-                                        style={{ backgroundColor: surfaceBg, color: textPrimary, boxShadow: tactileNeutralShadow }}
+                                        style={{ backgroundColor: surfaceBg, color: textPrimary, border: flatNeutralBorder, boxShadow: tactileNeutralShadow }}
                                         title="الصورة السابقة"
                                     >
                                         <ChevronRight size={15} />
@@ -2905,7 +2954,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         onClick={() => setCurrentImagePageIndex((prev) => Math.min(pageChunks.length - 1, prev + 1))}
                                         disabled={safePageIndex >= pageChunks.length - 1}
                                         className="w-7 h-7 rounded-full flex items-center justify-center disabled:opacity-30 border-0 cursor-pointer transition-all active:translate-y-0.5 active:scale-90"
-                                        style={{ backgroundColor: surfaceBg, color: textPrimary, boxShadow: tactileNeutralShadow }}
+                                        style={{ backgroundColor: surfaceBg, color: textPrimary, border: flatNeutralBorder, boxShadow: tactileNeutralShadow }}
                                         title="الصورة التالية"
                                     >
                                         <ChevronLeft size={15} />
@@ -2923,6 +2972,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 className="w-full max-w-[440px] max-h-full rounded-3xl p-5 flex flex-col gap-3.5 overflow-y-auto"
                                 style={{
                                     backgroundColor: surfaceBg,
+                                    border: flatNeutralBorder,
                                     boxShadow: tactileCardShadow,
                                 }}
                             >
@@ -2938,6 +2988,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         style={{
                                             backgroundColor: isCopiedFeedback ? accentBg : surfaceBg,
                                             color: isCopiedFeedback ? accentText : textPrimary,
+                                            border: isCopiedFeedback ? flatActiveBorder : flatNeutralBorder,
                                             boxShadow: isCopiedFeedback ? tactileActiveShadow : tactileNeutralShadow,
                                         }}
                                     >
@@ -2981,12 +3032,13 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                             className="w-full max-w-[360px] rounded-3xl p-6 flex flex-col items-center text-center gap-4"
                             style={{
                                 backgroundColor: surfaceBg,
+                                border: flatNeutralBorder,
                                 boxShadow: tactileCardShadow,
                             }}
                         >
                             <div
                                 className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                                style={{ backgroundColor: accentBg, color: accentText, boxShadow: tactileActiveShadow }}
+                                style={{ backgroundColor: accentBg, color: accentText, border: flatActiveBorder, boxShadow: tactileActiveShadow }}
                             >
                                 <Volume2 size={30} />
                             </div>
@@ -3010,7 +3062,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             height: `${hPct}%`,
                                             backgroundColor: accentBg,
                                             opacity: idx % 2 === 0 ? 0.88 : 0.45,
-                                            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.35), 0 2px 4px rgba(0,0,0,0.12)',
+                                            boxShadow: isFlatMadinah ? 'none' : 'inset 0 1px 1px rgba(255,255,255,0.35), 0 2px 4px rgba(0,0,0,0.12)',
                                         }}
                                     />
                                 ))}
@@ -3018,7 +3070,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 
                             <div
                                 className="w-full px-3 py-2 rounded-xl text-[11px] font-bold truncate"
-                                style={{ backgroundColor: trackBg, color: textPrimary, boxShadow: tactileInsetShadow }}
+                                style={{ backgroundColor: trackBg, color: textPrimary, border: flatNeutralBorder, boxShadow: tactileInsetShadow }}
                                 dir="rtl"
                             >
                                 {audioFileName}
@@ -3031,7 +3083,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     <>
                         <div
                             ref={studioShellRef}
-                            className="w-full h-full flex flex-col overflow-clip"
+                            className={`quran-fullscreen-modal-panel ${isFlatMadinah ? 'madinah-share-studio-flat' : ''} w-full h-full flex flex-col overflow-clip`}
                             style={{ backgroundColor: studioBg, color: textPrimary }}
                             dir={isEn ? 'ltr' : 'rtl'}
                             onClick={(e) => e.stopPropagation()}
@@ -3043,7 +3095,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 backgroundColor: surfaceBg,
                                 borderColor: dividerColor,
                                 paddingTop: 'calc(0.6rem + var(--app-safe-top, 0px))',
-                                boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.42)' : '0 4px 14px rgba(15,23,42,0.06)',
+                                boxShadow: isFlatMadinah ? 'none' : (isDark ? '0 4px 16px rgba(0,0,0,0.42)' : '0 4px 14px rgba(15,23,42,0.06)'),
                             }}
                         >
                             {/* Font & Caption button on mobile image & page tabs */}
@@ -3055,6 +3107,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     style={{
                                         backgroundColor: studioGroup === 'typography' ? accentBg : surfaceBg,
                                         color: studioGroup === 'typography' ? accentText : textPrimary,
+                                        border: studioGroup === 'typography' ? flatActiveBorder : flatNeutralBorder,
                                         boxShadow: studioGroup === 'typography' ? tactileActiveShadow : tactileNeutralShadow,
                                     }}
                                 >
@@ -3079,6 +3132,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 style={{
                                     backgroundColor: surfaceBg,
                                     color: textPrimary,
+                                    border: flatNeutralBorder,
                                     boxShadow: tactileNeutralShadow,
                                 }}
                             >
@@ -3096,7 +3150,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                             >
                                 <div
                                     className="grid grid-cols-4 gap-1.5 p-1.5 rounded-2xl"
-                                    style={{ backgroundColor: trackBg, boxShadow: tactileInsetShadow }}
+                                    style={{ backgroundColor: trackBg, border: flatNeutralBorder, boxShadow: tactileInsetShadow }}
                                 >
                                     {shareModeOptions.map((opt) => {
                                         const isActive = shareType === opt.id;
@@ -3109,6 +3163,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 style={{
                                                     backgroundColor: isActive ? accentBg : surfaceBg,
                                                     color: isActive ? accentText : textPrimary,
+                                                    border: isActive ? flatActiveBorder : flatNeutralBorder,
                                                     boxShadow: isActive ? tactileActiveShadow : tactileNeutralShadow,
                                                 }}
                                             >
@@ -3124,9 +3179,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 ref={previewStageRef}
                                 className="flex-1 min-h-0 min-w-0 flex flex-col items-center justify-center p-2.5 sm:p-4 overflow-clip relative"
                                 style={{
-                                    background: isDark
-                                        ? 'radial-gradient(circle at 50% 45%, rgba(255,255,255,0.04) 0%, transparent 70%)'
-                                        : 'radial-gradient(circle at 50% 45%, rgba(217,119,6,0.06) 0%, transparent 72%)',
+                                    background: isFlatMadinah
+                                        ? studioBg
+                                        : (isDark
+                                            ? 'radial-gradient(circle at 50% 45%, rgba(255,255,255,0.04) 0%, transparent 70%)'
+                                            : 'radial-gradient(circle at 50% 45%, rgba(217,119,6,0.06) 0%, transparent 72%)'),
                                 }}
                             >
                                 {(shareType === 'image' || shareType === 'page') ? renderLiveImageArtboard() : renderNonImagePreview()}
@@ -3138,11 +3195,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 style={{
                                     backgroundColor: surfaceBg,
                                     borderColor: dividerColor,
-                                    boxShadow: isDark ? '-6px 0 22px rgba(0,0,0,0.45)' : '-6px 0 22px rgba(15,23,42,0.06)',
+                                    boxShadow: isFlatMadinah ? 'none' : (isDark ? '-6px 0 22px rgba(0,0,0,0.45)' : '-6px 0 22px rgba(15,23,42,0.06)'),
                                 }}
                             >
                                 <div className="p-4 border-b shrink-0" style={{ borderColor: dividerColor }}>
-                                    <div className="grid grid-cols-4 gap-1.5 p-1.5 rounded-2xl" style={{ backgroundColor: trackBg, boxShadow: tactileInsetShadow }}>
+                                    <div className="grid grid-cols-4 gap-1.5 p-1.5 rounded-2xl" style={{ backgroundColor: trackBg, border: flatNeutralBorder, boxShadow: tactileInsetShadow }}>
                                         {shareModeOptions.map((opt) => {
                                             const isActive = shareType === opt.id;
                                             return (
@@ -3154,6 +3211,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                     style={{
                                                         backgroundColor: isActive ? accentBg : surfaceBg,
                                                         color: isActive ? accentText : textPrimary,
+                                                        border: isActive ? flatActiveBorder : flatNeutralBorder,
                                                         boxShadow: isActive ? tactileActiveShadow : tactileNeutralShadow,
                                                     }}
                                                 >
@@ -3181,7 +3239,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 type="button"
                                                 onClick={() => setHideDesktopCustomization(false)}
                                                 className="w-full rounded-2xl p-4 text-center border-0 cursor-pointer transition-all active:translate-y-0.5 animate-fadeIn"
-                                                style={{ backgroundColor: surfaceBg, boxShadow: tactileNeutralShadow }}
+                                                style={{ backgroundColor: surfaceBg, border: flatNeutralBorder, boxShadow: tactileNeutralShadow }}
                                             >
                                                 <p className="text-xs font-bold" style={{ color: textPrimary }}>
                                                     {isEn ? 'Click the design to show colors, fonts & caption' : 'اضغط على التصميم لإظهار الألوان والخطوط والنص الإضافي'}
@@ -3189,7 +3247,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             </button>
                                         )
                                     ) : (
-                                        <div className="rounded-2xl p-4 space-y-2" style={{ backgroundColor: trackBg, boxShadow: tactileInsetShadow }}>
+                                        <div className="rounded-2xl p-4 space-y-2" style={{ backgroundColor: trackBg, border: flatNeutralBorder, boxShadow: tactileInsetShadow }}>
                                             <p className="text-xs font-extrabold" style={{ color: textPrimary }}>
                                                 {shareType === 'text'
                                                     ? (isEn ? 'Text Share Ready' : 'جاهز للمشاركة النصية')
@@ -3215,7 +3273,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                             style={{
                                 backgroundColor: surfaceBg,
                                 borderColor: dividerColor,
-                                boxShadow: isDark ? '0 -4px 18px rgba(0,0,0,0.48)' : '0 -4px 16px rgba(15,23,42,0.06)',
+                                boxShadow: isFlatMadinah ? 'none' : (isDark ? '0 -4px 18px rgba(0,0,0,0.48)' : '0 -4px 16px rgba(15,23,42,0.06)'),
                             }}
                         >
                             {/* Compact Mobile Caption Bar + Bismillah Toggle (Fonts, Colors & +/- Size are positioned in the left/right stage rails) */}
@@ -3233,6 +3291,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         style={{
                                             backgroundColor: trackBg,
                                             color: textPrimary,
+                                            border: flatNeutralBorder,
                                             boxShadow: tactileInsetShadow,
                                         }}
                                         maxLength={50}
@@ -3245,6 +3304,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         style={{
                                             backgroundColor: showBismillah ? accentBg : surfaceBg,
                                             color: showBismillah ? accentText : textMuted,
+                                            border: showBismillah ? flatActiveBorder : flatNeutralBorder,
                                             boxShadow: showBismillah ? tactileActiveShadow : tactileNeutralShadow,
                                         }}
                                         title={isEn ? (showBismillah ? 'Hide Bismillah' : 'Show Bismillah') : (showBismillah ? 'إخفاء البسملة من التصميم' : 'إظهار البسملة في التصميم')}
@@ -3273,8 +3333,8 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 }}
                             >
                                 <div
-                                    className="w-full max-w-[360px] flex flex-col max-h-[75dvh] overflow-clip rounded-3xl border-0"
-                                    style={{ backgroundColor: surfaceBg, color: textPrimary, boxShadow: tactileCardShadow }}
+                                    className="madinah-flat-submodal w-full max-w-[360px] flex flex-col max-h-[75dvh] overflow-clip rounded-3xl border-0"
+                                    style={{ backgroundColor: surfaceBg, color: textPrimary, border: flatStrongBorder, boxShadow: tactileCardShadow }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     {/* Range Header */}
@@ -3287,14 +3347,14 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 type="button"
                                                 onClick={() => setIsRangePickerOpen(false)}
                                                 className="w-8 h-8 rounded-full flex items-center justify-center border-0 cursor-pointer transition-all active:translate-y-0.5 active:scale-90"
-                                                style={{ backgroundColor: surfaceBg, color: textPrimary, boxShadow: tactileNeutralShadow }}
+                                                style={{ backgroundColor: surfaceBg, color: textPrimary, border: flatNeutralBorder, boxShadow: tactileNeutralShadow }}
                                             >
                                                 <X size={15} />
                                             </button>
                                         </div>
 
                                         {/* Mode Switch: Single Ayah vs Multi-Ayah Range */}
-                                        <div className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl" style={{ backgroundColor: trackBg, boxShadow: tactileInsetShadow }}>
+                                        <div className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl" style={{ backgroundColor: trackBg, border: flatNeutralBorder, boxShadow: tactileInsetShadow }}>
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -3305,6 +3365,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 style={{
                                                     backgroundColor: rangeSelectionMode === 'single' ? accentBg : surfaceBg,
                                                     color: rangeSelectionMode === 'single' ? accentText : textPrimary,
+                                                    border: rangeSelectionMode === 'single' ? flatActiveBorder : flatNeutralBorder,
                                                     boxShadow: rangeSelectionMode === 'single' ? tactileActiveShadow : tactileNeutralShadow,
                                                 }}
                                             >
@@ -3319,6 +3380,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 style={{
                                                     backgroundColor: rangeSelectionMode === 'range' ? accentBg : surfaceBg,
                                                     color: rangeSelectionMode === 'range' ? accentText : textPrimary,
+                                                    border: rangeSelectionMode === 'range' ? flatActiveBorder : flatNeutralBorder,
                                                     boxShadow: rangeSelectionMode === 'range' ? tactileActiveShadow : tactileNeutralShadow,
                                                 }}
                                             >
@@ -3335,6 +3397,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                     style={{
                                                         backgroundColor: rangeActiveStep === 'from' ? accentBg : surfaceBg,
                                                         color: rangeActiveStep === 'from' ? accentText : textPrimary,
+                                                        border: rangeActiveStep === 'from' ? flatActiveBorder : flatNeutralBorder,
                                                         boxShadow: rangeActiveStep === 'from' ? tactileActiveShadow : tactileNeutralShadow,
                                                     }}
                                                 >
@@ -3348,6 +3411,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                     style={{
                                                         backgroundColor: rangeActiveStep === 'to' ? accentBg : surfaceBg,
                                                         color: rangeActiveStep === 'to' ? accentText : textPrimary,
+                                                        border: rangeActiveStep === 'to' ? flatActiveBorder : flatNeutralBorder,
                                                         boxShadow: rangeActiveStep === 'to' ? tactileActiveShadow : tactileNeutralShadow,
                                                     }}
                                                 >
@@ -3403,6 +3467,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                             ? `${accentBg}22`
                                                             : surfaceBg,
                                                         color: isEndpoint ? accentText : textPrimary,
+                                                        border: isEndpoint ? flatActiveBorder : flatNeutralBorder,
                                                         boxShadow: isEndpoint ? tactileActiveShadow : tactileNeutralShadow,
                                                     }}
                                                 >
@@ -3413,9 +3478,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                             backgroundColor: isEndpoint ? 'rgba(255,255,255,0.22)' : surfaceBg,
                                                             color: isEndpoint ? accentText : accentBg,
                                                             border: isEndpoint ? '1px solid rgba(255,255,255,0.28)' : `1px solid ${dividerColor}`,
-                                                            boxShadow: isEndpoint
-                                                                ? '0 3px 0 rgba(0,0,0,0.22), 0 6px 12px rgba(0,0,0,0.18), inset 0 1.5px 1.5px rgba(255,255,255,0.45), inset 0 -1.5px 2px rgba(0,0,0,0.18)'
-                                                                : tactileNeutralShadow,
+                                                            boxShadow: isFlatMadinah
+                                                                ? 'none'
+                                                                : (isEndpoint
+                                                                    ? '0 3px 0 rgba(0,0,0,0.22), 0 6px 12px rgba(0,0,0,0.18), inset 0 1.5px 1.5px rgba(255,255,255,0.45), inset 0 -1.5px 2px rgba(0,0,0,0.18)'
+                                                                    : tactileNeutralShadow),
                                                         }}
                                                     >
                                                         {toArabic(val)}
@@ -3441,6 +3508,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 style={{
                                                     backgroundColor: accentBg,
                                                     color: accentText,
+                                                    border: flatActiveBorder,
                                                     boxShadow: tactileActiveShadow,
                                                 }}
                                             >

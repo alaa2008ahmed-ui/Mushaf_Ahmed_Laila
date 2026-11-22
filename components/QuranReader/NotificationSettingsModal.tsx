@@ -538,7 +538,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
             lang={isEn ? 'en' : 'ar'} 
             className={isLandscape
                 ? `settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} fixed inset-0 z-[9999999] bg-black/55 flex items-center justify-center p-2.5 font-cairo select-none overflow-hidden animate-fadeIn`
-                : `settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} fixed inset-0 z-[9999999] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn`
+                : `quran-fullscreen-modal-backdrop settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} fixed inset-0 z-[9999999] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn`
             }
             style={isLandscape ? undefined : { backgroundColor: notifPageBg }}
             onClick={isLandscape ? onClose : undefined}
@@ -546,7 +546,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
             <div
                 className={isLandscape
                     ? `modal-skinned compact-landscape-modal ${isBlackTheme ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
-                    : "flex-1 min-h-0 w-full flex flex-col overflow-hidden"
+                    : "quran-fullscreen-modal-panel flex-1 min-h-0 w-full flex flex-col overflow-hidden"
                 }
                 style={isLandscape ? { backgroundColor: notifPageBg, border: 'none', outline: 'none' } : undefined}
                 onClick={isLandscape ? e => e.stopPropagation() : undefined}
