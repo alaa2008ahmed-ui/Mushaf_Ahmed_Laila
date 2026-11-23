@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
-import { getAyahCountText, SURAH_INFO, SURAH_NAMES_EN, SURAH_NAMES_AR } from './constants';
+import { getAyahCountText, SURAH_INFO, SURAH_NAMES_EN, SURAH_NAMES_AR, isDarkQuranTheme } from './constants';
 import { useLanguage } from '../../context/LanguageContext';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
+import { IslamicSurahHeaderView, normalizeIslamicSurahDesign } from './surahHeaderDesigns';
 
 interface SurahHeaderProps {
     surahNumber: number;
@@ -86,356 +88,40 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
         clearLongPressTimer();
     };
 
-    const numericDesign = Number(design) || 1;
-    const isDarkGroup = currentTheme?.id === 'deep_black' || currentTheme?.id?.startsWith('i_');
-    const isDefaultTheme = currentTheme?.id === 'black' || !currentTheme?.id;
-    const isDesign1 = numericDesign === 1;
-    
-    // Improved color logic for better contrast and vibrancy across all themes
-    const themeAccent = currentTheme?.accent || '#10b981';
-    const headerBg = (isDefaultTheme && isDesign1) ? '#ffffff' : (isDarkGroup ? (currentTheme?.headerBg || '#000000') : themeAccent);
-    const headerText = (isDefaultTheme && isDesign1) ? '#000000' : '#ffffff'; 
-    const headerBorder = (isDefaultTheme && isDesign1) ? '#000000' : (isDarkGroup ? '#ffffff' : (currentTheme?.barBorder || 'rgba(255,255,255,0.6)'));
-    
-    // Cartouche (the inner box for the surah name)
-    const cartoucheBg = isDarkGroup ? (currentTheme?.bg || '#000000') : '#ffffff';
-    const cartoucheText = (isDefaultTheme && isDesign1) ? '#000000' : (currentTheme?.id === 'deep_black' ? '#ffffff' : (isDarkGroup ? (currentTheme?.accent || '#ffffff') : (currentTheme?.accent || '#14532d')));
+    const resolvedDesign = normalizeIslamicSurahDesign(design);
+    const palette = getMadinahThemePalette(currentTheme);
+    const isDark = isDarkQuranTheme(currentTheme);
 
-    // Ensure "Surah" is not repeated safely
-    const cleanSurahName = (surahName || '').replace(/سورة|سُورَةُ|سُورَة/g, '').trim() || (surahNumber > 0 ? (SURAH_NAMES_AR[surahNumber - 1] || '') : '');
+    const stripArabicDiacritics = (str: string) =>
+        str
+            .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+            .replace(/\u0671/g, 'ا')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+    // Ensure "Surah" is not repeated and remove all diacritics for Arabic display
+    const strippedInputName = stripArabicDiacritics((surahName || '').replace(/سورة|سُورَةُ|سُورَة/g, ''));
+    const plainFallbackName = surahNumber > 0 ? stripArabicDiacritics(SURAH_NAMES_AR[surahNumber - 1] || '') : '';
+    const cleanSurahName = strippedInputName || plainFallbackName;
     const englishSurahName = SURAH_NAMES_EN[surahNumber - 1] || cleanSurahName;
-    
+
     const fullSurahName = (isEn || isBilingualMode)
         ? `Surah ${englishSurahName}`
-        : `سُورَةُ ${cleanSurahName}`;
+        : `سورة ${cleanSurahName}`;
 
     const safeSurahType = surahType || (surahNumber > 0 && SURAH_INFO[surahNumber]?.type) || 'مكية';
     const rawSurahType = safeSurahType.includes('مدن') || safeSurahType.includes('Medin') ? 'Medinan' : 'Meccan';
     const displaySurahType = (isEn || isBilingualMode)
         ? rawSurahType
-        : safeSurahType;
+        : stripArabicDiacritics(safeSurahType);
 
     const safeAyahCount = typeof ayahCount === 'number' ? ayahCount : (SURAH_INFO[surahNumber]?.ayahs || 7);
     const displayAyahCount = (isEn || isBilingualMode)
         ? `${safeAyahCount} Verses`
         : getAyahCountText(safeAyahCount);
 
-    const quranFont = isEn ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'var(--font-amiri-quran)';
-    const hafsFont = isEn ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'var(--font-hafs)';
-
-    const renderDesign = () => {
-        switch (numericDesign) {
-            case 1: // Design 1 (Current)
-                return (
-                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-1' : 'px-2 sm:px-6'} rounded-xl border-0 overflow-hidden`}
-                         style={{ 
-                             background: headerBg,
-                             boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.16), 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 1px 1.5px rgba(255, 255, 255, 0.85), inset 0 -1.5px 2px rgba(0, 0, 0, 0.08)'
-                         }}>
-                        <div className="font-bold text-sm sm:text-lg z-10 whitespace-nowrap" style={{ color: headerText, fontFamily: hafsFont, textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}>
-                            {displayAyahCount}
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-0 max-w-[55%] sm:max-w-none"
-                                 style={{ 
-                                     borderRadius: '50px / 50px', 
-                                     minWidth: '140px',
-                                     backgroundColor: cartoucheBg,
-                                     boxShadow: '0 2.5px 6px -1px rgba(0, 0, 0, 0.14), inset 0 1px 1.5px rgba(255, 255, 255, 0.9), inset 0 -1px 2px rgba(0, 0, 0, 0.08)'
-                                 }}>
-                                <h2 className="text-base sm:text-xl font-bold whitespace-nowrap w-full text-center mb-0" style={{ color: cartoucheText, fontFamily: quranFont, transform: 'translateY(-2px)', textShadow: '0 1px 1px rgba(0,0,0,0.12)' }}>
-                                    {fullSurahName}
-                                </h2>
-                            </div>
-                        </div>
-                        <div className="font-bold text-sm sm:text-lg z-10 whitespace-nowrap" style={{ color: headerText, fontFamily: hafsFont, textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}>
-                            {displaySurahType}
-                        </div>
-                    </div>
-                );
-
-            case 2: // Classic / Ottoman Style
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center px-4 overflow-hidden">
-                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 600 80" preserveAspectRatio="none">
-                            <defs>
-                                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
-                                    <feOffset dx="1" dy="1" result="offsetblur" />
-                                    <feComponentTransfer>
-                                        <feFuncA type="linear" slope="0.3" />
-                                    </feComponentTransfer>
-                                    <feMerge>
-                                        <feMergeNode />
-                                        <feMergeNode in="SourceGraphic" />
-                                    </feMerge>
-                                </filter>
-                            </defs>
-                            <path d="M 0 10 Q 300 0 600 10 L 600 70 Q 300 80 0 70 Z" fill={headerBg} stroke={headerBorder} strokeWidth="2" />
-                            <path d="M 10 15 Q 300 8 590 15 L 590 65 Q 300 72 10 65 Z" fill="none" stroke={headerBorder} strokeWidth="1" opacity="0.4" />
-                            <circle cx="15" cy="15" r="4" fill={headerBorder} />
-                            <circle cx="585" cy="15" r="4" fill={headerBorder} />
-                            <circle cx="15" cy="65" r="4" fill={headerBorder} />
-                            <circle cx="585" cy="65" r="4" fill={headerBorder} />
-                        </svg>
-                        
-                        <div className={`relative z-10 w-full flex items-center justify-between ${compact ? 'px-2' : 'px-6 sm:px-10'}`}>
-                            <div className="font-bold text-xs sm:text-base" style={{ color: headerText }}>
-                                {displayAyahCount}
-                            </div>
-                            <div className="flex flex-col items-center">
-                                <h2 className="text-xl sm:text-3xl font-bold mb-0 leading-none" style={{ color: headerText, fontFamily: quranFont }}>
-                                    {fullSurahName}
-                                </h2>
-                            </div>
-                            <div className="font-bold text-xs sm:text-base" style={{ color: headerText }}>
-                                {displaySurahType}
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 3: // Geometric / Islamic Art
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center rounded-lg border-4"
-                         style={{ 
-                             backgroundColor: cartoucheBg, 
-                             borderColor: headerBorder,
-                             backgroundImage: `radial-gradient(${headerBorder}20 1px, transparent 0)`,
-                             backgroundSize: '10px 10px'
-                         }}>
-                        <div className={`absolute left-0 top-0 bottom-0 ${compact ? 'w-10' : 'w-16 sm:w-24'} flex items-center justify-center border-r-2`} style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
-                            <div className="text-[10px] sm:text-sm font-bold whitespace-nowrap" style={{ color: headerText }}>
-                                {displayAyahCount}
-                            </div>
-                        </div>
-                        <div className={`absolute right-0 top-0 bottom-0 ${compact ? 'w-10' : 'w-16 sm:w-24'} flex items-center justify-center border-l-2`} style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
-                            <div className="text-[10px] sm:text-sm font-bold whitespace-nowrap" style={{ color: headerText }}>
-                                {displaySurahType}
-                            </div>
-                        </div>
-                        
-                        <h2 className="text-xl sm:text-3xl font-bold mb-0" style={{ color: cartoucheText, fontFamily: quranFont }}>
-                            {fullSurahName}
-                        </h2>
-                        
-                        <div className="absolute top-1 left-18 sm:left-26 w-2 h-2 border-t border-l" style={{ borderColor: headerBorder }}></div>
-                        <div className="absolute top-1 right-18 sm:right-26 w-2 h-2 border-t border-r" style={{ borderColor: headerBorder }}></div>
-                        <div className="absolute bottom-1 left-18 sm:left-26 w-2 h-2 border-b border-l" style={{ borderColor: headerBorder }}></div>
-                        <div className="absolute bottom-1 right-18 sm:right-26 w-2 h-2 border-b border-r" style={{ borderColor: headerBorder }}></div>
-                    </div>
-                );
-
-            case 4: // Floral / Arabesque
-                return (
-                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-2' : 'px-4 sm:px-12'} rounded-xl overflow-hidden shadow-lg`}
-                         style={{ background: headerBg }}>
-                        <div className="absolute inset-0 opacity-20" style={{ 
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30c0-10 10-10 10-20S30 0 30 0s-10 0-10 10 10 10 10 20z' fill='${headerText.replace('#', '%23')}' fill-rule='evenodd'/%3E%3C/svg%3E")`,
-                            backgroundSize: '30px 30px'
-                        }}></div>
-                        
-                        <div className="z-10 bg-black/20 px-4 py-1.5 rounded-full border text-xs sm:text-sm font-bold" style={{ color: headerText, borderColor: `${headerText}40` }}>
-                            {displayAyahCount}
-                        </div>
-                        
-                        <div className="z-10 flex flex-col items-center">
-                            <h2 className="text-xl sm:text-3xl font-bold mb-0" style={{ color: headerText, fontFamily: quranFont }}>
-                                {fullSurahName}
-                            </h2>
-                        </div>
-                        
-                        <div className="z-10 bg-black/20 px-4 py-1.5 rounded-full border text-xs sm:text-sm font-bold" style={{ color: headerText, borderColor: `${headerText}40` }}>
-                            {displaySurahType}
-                        </div>
-                    </div>
-                );
-
-            case 7: // Pure White / Gold (Elegant)
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center rounded-3xl border-2 shadow-inner"
-                         style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
-                        <div className="absolute top-2 left-2 right-2 bottom-2 border rounded-2xl opacity-30" style={{ borderColor: headerBorder }}></div>
-                        <div className="absolute left-4 sm:left-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</div>
-                        <div className="relative z-10 flex flex-col items-center">
-                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: headerText, fontFamily: quranFont }}>
-                                {fullSurahName}
-                            </h2>
-                            <div className="h-0.5 w-24 mt-1" style={{ background: `linear-gradient(to right, transparent, ${headerBorder}, transparent)` }}></div>
-                        </div>
-                        <div className="absolute right-4 sm:right-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</div>
-                    </div>
-                );
-
-            case 9: // Octagonal Pattern
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center overflow-hidden rounded-lg border-2"
-                         style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
-                        <div className="absolute inset-0 opacity-10" style={{ 
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0L100 50L50 100L0 50Z' fill='${headerText.replace('#', '%23')}'/%3E%3C/svg%3E")`,
-                            backgroundSize: '50px 50px'
-                        }}></div>
-                        <div className="z-10 bg-white/90 dark:bg-black/80 px-10 py-2 rounded-lg border-2 shadow-xl" style={{ borderColor: headerBorder }}>
-                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: cartoucheText, fontFamily: quranFont }}>
-                                {fullSurahName}
-                            </h2>
-                        </div>
-                        <div className="absolute left-4 font-bold text-xs sm:text-sm" style={{ color: headerText }}>{displaySurahType}</div>
-                        <div className="absolute right-4 font-bold text-xs sm:text-sm" style={{ color: headerText }}>{displayAyahCount}</div>
-                    </div>
-                );
-
-            case 10: // Mosaic Style
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center rounded-xl border-4"
-                         style={{ 
-                             backgroundColor: headerBg, 
-                             borderColor: headerBorder,
-                             backgroundImage: `linear-gradient(45deg, ${headerBorder}10 25%, transparent 25%), linear-gradient(-45deg, ${headerBorder}10 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${headerBorder}10 75%), linear-gradient(-45deg, transparent 75%, ${headerBorder}10 75%)`,
-                             backgroundSize: '20px 20px'
-                         }}>
-                        <div className="absolute left-4 sm:left-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</div>
-                        <div className="z-10 flex flex-col items-center bg-white/80 dark:bg-black/80 px-8 py-1 rounded-full border shadow-sm" style={{ borderColor: headerBorder }}>
-                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: cartoucheText, fontFamily: quranFont }}>
-                                {fullSurahName}
-                            </h2>
-                        </div>
-                        <div className="absolute right-4 sm:right-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</div>
-                    </div>
-                );
-
-            case 11: // Simple Rounded with Side Badges
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-between px-4 sm:px-8 rounded-full border-2 shadow-md"
-                         style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
-                        <div className="flex items-center justify-center px-3 py-1 rounded-full border" style={{ backgroundColor: cartoucheBg, borderColor: headerBorder }}>
-                            <span className="text-xs font-bold" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displayAyahCount}</span>
-                        </div>
-                        <h2 className="text-xl sm:text-3xl font-bold" style={{ color: headerText, fontFamily: hafsFont }}>
-                            {fullSurahName}
-                        </h2>
-                        <div className="flex items-center justify-center px-3 py-1 rounded-full border" style={{ backgroundColor: cartoucheBg, borderColor: headerBorder }}>
-                            <span className="text-xs font-bold" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displaySurahType}</span>
-                        </div>
-                    </div>
-                );
-
-            case 14: // Double Border with Corner Accents
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center p-1"
-                         style={{ backgroundColor: headerBg }}>
-                        <div className="relative w-full h-full border-2 flex items-center justify-between px-4 sm:px-8" style={{ borderColor: headerBorder }}>
-                            <div className="absolute top-0 left-0 w-3 h-3 border-r-2 border-b-2" style={{ borderColor: headerBg, backgroundColor: headerBorder }}></div>
-                            <div className="absolute top-0 right-0 w-3 h-3 border-l-2 border-b-2" style={{ borderColor: headerBg, backgroundColor: headerBorder }}></div>
-                            <div className="absolute bottom-0 left-0 w-3 h-3 border-r-2 border-t-2" style={{ borderColor: headerBg, backgroundColor: headerBorder }}></div>
-                            <div className="absolute bottom-0 right-0 w-3 h-3 border-l-2 border-t-2" style={{ borderColor: headerBg, backgroundColor: headerBorder }}></div>
-                            
-                            <span className="text-sm font-bold z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</span>
-                            <h2 className="text-2xl sm:text-3xl font-bold z-10" style={{ color: headerText, fontFamily: hafsFont }}>
-                                {fullSurahName}
-                            </h2>
-                            <span className="text-sm font-bold z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</span>
-                        </div>
-                    </div>
-                );
-
-            case 15: // Calligraphic Ribbon
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center my-2">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-full h-10 shadow-md" style={{ backgroundColor: headerBg }}></div>
-                        </div>
-                        <div className="absolute left-2 sm:left-6 w-12 h-14 flex items-center justify-center shadow-lg" style={{ backgroundColor: cartoucheBg, clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}>
-                            <span className="text-xs font-bold mb-2" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displaySurahType}</span>
-                        </div>
-                        <div className="absolute right-2 sm:right-6 w-12 h-14 flex items-center justify-center shadow-lg" style={{ backgroundColor: cartoucheBg, clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}>
-                            <span className="text-xs font-bold mb-2 text-center leading-tight" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displayAyahCount.replace(' ', '\n')}</span>
-                        </div>
-                        <h2 className="text-2xl sm:text-3xl font-bold z-10 drop-shadow-md" style={{ color: headerText, fontFamily: hafsFont }}>
-                            {fullSurahName}
-                        </h2>
-                    </div>
-                );
-
-            case 16: // Diamond Center
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center overflow-hidden rounded-lg"
-                         style={{ backgroundColor: headerBg, border: `2px solid ${headerBorder}` }}>
-                        <div className="absolute inset-0 flex items-center justify-between px-8 opacity-50">
-                            <div className="w-16 h-16 rotate-45 border-2" style={{ borderColor: headerBorder }}></div>
-                            <div className="w-16 h-16 rotate-45 border-2" style={{ borderColor: headerBorder }}></div>
-                        </div>
-                        <div className="z-10 flex flex-col items-center bg-white/15 px-12 py-2 rounded-full border" style={{ borderColor: headerBorder }}>
-                            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: headerText, fontFamily: hafsFont }}>
-                                {fullSurahName}
-                            </h2>
-                        </div>
-                        <div className="absolute left-4 sm:left-12 font-bold text-xs" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</div>
-                        <div className="absolute right-4 sm:right-12 font-bold text-xs" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</div>
-                    </div>
-                );
-
-            case 19: // Traditional Book Cover
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center border-4"
-                         style={{ backgroundColor: headerBg, borderColor: cartoucheBg }}>
-                        <div className="absolute inset-1 border-2 border-dashed" style={{ borderColor: headerBorder, opacity: 0.5 }}></div>
-                        <div className="z-10 bg-white/90 dark:bg-black/90 px-8 py-1 rounded-sm border-2 shadow-inner" style={{ borderColor: cartoucheBg }}>
-                            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: cartoucheText, fontFamily: hafsFont }}>
-                                {fullSurahName}
-                            </h2>
-                        </div>
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</div>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</div>
-                    </div>
-                );
-
-            case 20: // Royal Emblem
-                return (
-                    <div className="surah-header-visual relative h-14 w-full flex items-center justify-center">
-                        <div className="absolute inset-x-8 inset-y-1 rounded-full shadow-lg border-2" style={{ backgroundColor: headerBg, borderColor: headerBorder }}></div>
-                        <div className="absolute left-4 sm:left-12 w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-md z-10" style={{ backgroundColor: cartoucheBg, borderColor: headerBorder }}>
-                            <span className="text-[10px] font-bold text-center leading-tight" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displaySurahType}</span>
-                        </div>
-                        <div className="absolute right-4 sm:right-12 w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-md z-10" style={{ backgroundColor: cartoucheBg, borderColor: headerBorder }}>
-                            <span className="text-[10px] font-bold text-center leading-tight" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displayAyahCount.replace(' ', '\n')}</span>
-                        </div>
-                        <h2 className="text-2xl sm:text-3xl font-bold z-20 drop-shadow-xl" style={{ color: headerText, fontFamily: hafsFont }}>
-                            {fullSurahName}
-                        </h2>
-                    </div>
-                );
-
-            default:
-                return (
-                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-1' : 'px-2 sm:px-6'} rounded-xl border-0 overflow-hidden`}
-                         style={{ 
-                             background: headerBg,
-                             boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.16), 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 1px 1.5px rgba(255, 255, 255, 0.85), inset 0 -1.5px 2px rgba(0, 0, 0, 0.08)'
-                         }}>
-                        <div className="font-bold text-sm sm:text-lg z-10 whitespace-nowrap" style={{ color: headerText, textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}>
-                            {displayAyahCount}
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-0 max-w-[50%] sm:max-w-none"
-                                 style={{ 
-                                     borderRadius: '50px / 50px', 
-                                     minWidth: '140px',
-                                     backgroundColor: cartoucheBg,
-                                     boxShadow: '0 2.5px 6px -1px rgba(0, 0, 0, 0.14), inset 0 1px 1.5px rgba(255, 255, 255, 0.9), inset 0 -1px 2px rgba(0, 0, 0, 0.08)'
-                                 }}>
-                                <h2 className="text-base sm:text-xl font-bold whitespace-nowrap w-full text-center mb-0" style={{ color: cartoucheText, transform: 'translateY(-4px)', textShadow: '0 1px 1px rgba(0,0,0,0.12)' }}>
-                                    {fullSurahName}
-                                </h2>
-                            </div>
-                        </div>
-                        <div className="font-bold text-sm sm:text-lg z-10 whitespace-nowrap" style={{ color: headerText, textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}>
-                            {displaySurahType}
-                        </div>
-                    </div>
-                );
-        }
-    };
+    const quranFont = isEn ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : "var(--font-cairo, 'Cairo'), sans-serif";
+    const hafsFont = isEn ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : "var(--font-cairo, 'Cairo'), sans-serif";
 
     return (
         <div id="surah-header-container" data-tour="surah-header" className={`surah-header-container surah-header surah-header-container-wrapper w-full block ${compact ? 'px-0 pt-1 pb-0' : 'px-0 pt-2 pb-0'}`}
@@ -447,7 +133,18 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
              onTouchEnd={handleTouchEnd}
              onTouchCancel={handleTouchEnd}
              onContextMenu={(e) => { if (onLongPress) e.preventDefault(); }}>
-            {renderDesign()}
+            <IslamicSurahHeaderView
+                design={resolvedDesign}
+                palette={palette}
+                isDark={isDark}
+                fullSurahName={fullSurahName}
+                displayAyahCount={displayAyahCount}
+                displaySurahType={displaySurahType}
+                quranFont={quranFont}
+                hafsFont={hafsFont}
+                compact={compact}
+                isEnglishDisplay={isEn || isBilingualMode}
+            />
         </div>
     );
 };

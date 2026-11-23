@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
-import { toArabic, SURAH_INFO, SURAH_NAMES_AR, SURAH_NAMES_EN, SAJDAH_LOCATIONS, getBilingualEnglishFont, getEffectiveWordHighlightColor } from './constants';
+import { ChevronUp, ChevronDown, BookOpen, Share2, Copy, Check, ZoomIn } from 'lucide-react';
+import { toArabic, SURAH_INFO, SURAH_NAMES_AR, SURAH_NAMES_EN, SAJDAH_LOCATIONS, getBilingualEnglishFont, getEffectiveWordHighlightColor, isDarkQuranTheme } from './constants';
 import SurahHeader from './SurahHeader';
 import { getClusterForLanguage, syncClusterSettings } from '../../utils/quranClusterSync';
 import { useLanguage } from '../../context/LanguageContext';
+import { shareAsImage } from '../../utils/shareAsImage';
 
 interface VerticalReadingViewProps {
     quranData: any;
@@ -13,6 +15,9 @@ interface VerticalReadingViewProps {
     currentAyah: { s: number; a: number };
     highlightedAyahId?: string | null;
     onAyahClick: (s: number, a: number) => void;
+    onNavigateAyah?: (s: number, a: number) => void;
+    onZoomAyahCard?: (s: number, a: number, explanationText?: string) => void;
+    showToast?: (msg: string) => void;
     onAyahLongPress?: (s: number, a: number, x: number, y: number) => void;
     onVisibleAyahChange?: (s: number, a: number) => void;
     showMarkerNotification?: (type: 'quarter' | 'sajda' | 'surah', text: string) => void;
@@ -50,6 +55,9 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     currentAyah,
     highlightedAyahId,
     onAyahClick,
+    onNavigateAyah,
+    onZoomAyahCard,
+    showToast,
     onAyahLongPress,
     onVisibleAyahChange,
     showMarkerNotification,
@@ -93,11 +101,20 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     const onInteractionStartRef = useRef(onInteractionStart);
     const onInteractionEndRef = useRef(onInteractionEnd);
     const onVisibleAyahChangeRef = useRef(onVisibleAyahChange);
+    const onNavigateAyahRef = useRef(onNavigateAyah);
+    const onZoomAyahCardRef = useRef(onZoomAyahCard);
+    const showToastRef = useRef(showToast);
+    const arrowNavTimerRef = useRef<number | null>(null);
+    const copyResetTimerRef = useRef<number | null>(null);
+    const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
     useEffect(() => {
         onInteractionStartRef.current = onInteractionStart;
         onInteractionEndRef.current = onInteractionEnd;
         onVisibleAyahChangeRef.current = onVisibleAyahChange;
-    }, [onInteractionStart, onInteractionEnd, onVisibleAyahChange]);
+        onNavigateAyahRef.current = onNavigateAyah;
+        onZoomAyahCardRef.current = onZoomAyahCard;
+        showToastRef.current = showToast;
+    }, [onInteractionStart, onInteractionEnd, onVisibleAyahChange, onNavigateAyah, onZoomAyahCard, showToast]);
     const lastScrolledAyahRef = useRef<{s: number, a: number} | null>(null);
     const currentVisibleAyahRef = useRef<{s: number, a: number} | null>(null);
     const lastEmittedAyahRef = useRef<{s: number, a: number} | null>(null);
@@ -433,6 +450,150 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
         return items;
     }, [quranData]);
 
+    // Map each ayah flattened index to its previous & next ayah indices
+    const ayahNavMap = useMemo(() => {
+        const map = new Map<number, { prevIndex: number; nextIndex: number }>();
+        let prevAyahIdx = -1;
+        for (let i = 0; i < flattenedItems.length; i++) {
+            if (flattenedItems[i]?.type === 'ayah') {
+                map.set(i, { prevIndex: prevAyahIdx, nextIndex: -1 });
+                if (prevAyahIdx !== -1) {
+                    const prevEntry = map.get(prevAyahIdx);
+                    if (prevEntry) prevEntry.nextIndex = i;
+                }
+                prevAyahIdx = i;
+            }
+        }
+        return map;
+    }, [flattenedItems]);
+
+    const navigateToAyahByIndex = useCallback((targetIdx: number) => {
+        if (targetIdx < 0 || targetIdx >= flattenedItems.length) return;
+        const targetItem = flattenedItems[targetIdx];
+        if (!targetItem || targetItem.type !== 'ayah') return;
+
+        const targetKey = `${targetItem.surahNumber}-${targetItem.ayahNumber}`;
+        recentVisibleAyahsRef.current.set(targetKey, Date.now());
+        if (recentVisibleAyahsRef.current.size > 40) {
+            const first = recentVisibleAyahsRef.current.keys().next().value;
+            if (first) recentVisibleAyahsRef.current.delete(first);
+        }
+        lastScrolledAyahRef.current = { s: targetItem.surahNumber, a: targetItem.ayahNumber };
+        lastEmittedAyahRef.current = { s: targetItem.surahNumber, a: targetItem.ayahNumber };
+        currentVisibleAyahRef.current = { s: targetItem.surahNumber, a: targetItem.ayahNumber };
+
+        if (onNavigateAyahRef.current) {
+            onNavigateAyahRef.current(targetItem.surahNumber, targetItem.ayahNumber);
+        } else {
+            onVisibleAyahChangeRef.current?.(targetItem.surahNumber, targetItem.ayahNumber);
+        }
+
+        if (virtuosoRef.current) {
+            virtuosoRef.current.scrollToIndex({
+                index: targetIdx,
+                align: 'center',
+                behavior: 'smooth',
+            });
+        }
+
+        if (arrowNavTimerRef.current) {
+            window.clearTimeout(arrowNavTimerRef.current);
+        }
+        arrowNavTimerRef.current = window.setTimeout(() => {
+            arrowNavTimerRef.current = null;
+            if (isUserInteractingRef.current) return;
+            const targetEl = document.getElementById(`ayah-${targetItem.surahNumber}-${targetItem.ayahNumber}`);
+            const containerEl = document.getElementById('mushaf-content');
+            if (targetEl && containerEl) {
+                const cRect = containerEl.getBoundingClientRect();
+                const tRect = targetEl.getBoundingClientRect();
+                const cCenter = cRect.top + cRect.height / 2;
+                const tCenter = tRect.top + tRect.height / 2;
+                const delta = tCenter - cCenter;
+                if (Math.abs(delta) > 10) {
+                    containerEl.scrollTo({
+                        top: Math.max(0, containerEl.scrollTop + delta),
+                        behavior: 'smooth',
+                    });
+                }
+            }
+        }, 220);
+    }, [flattenedItems]);
+
+    useEffect(() => {
+        return () => {
+            if (arrowNavTimerRef.current) {
+                window.clearTimeout(arrowNavTimerRef.current);
+            }
+            if (copyResetTimerRef.current) {
+                window.clearTimeout(copyResetTimerRef.current);
+            }
+        };
+    }, []);
+
+    const handleCardCopy = useCallback(async (cardKey: string, ayahText: string, ayahNum: number, surahTitle: string, explanation?: string) => {
+        const cleanExplanation = (explanation || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
+        const ayahLine = `${(ayahText || '').trim()} ﴿${toArabic(ayahNum)}﴾`;
+        const refLine = `[${surahTitle} - آية ${toArabic(ayahNum)}]`;
+        const fullCopyText = cleanExplanation
+            ? `${ayahLine}\n\n${cleanExplanation}\n\n${refLine}`
+            : `${ayahLine}\n\n${refLine}`;
+
+        let success = false;
+        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+            try {
+                await navigator.clipboard.writeText(fullCopyText);
+                success = true;
+            } catch {
+                success = false;
+            }
+        }
+        if (!success && typeof document !== 'undefined') {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = fullCopyText;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                success = document.execCommand('copy');
+                document.body.removeChild(ta);
+            } catch {
+                success = false;
+            }
+        }
+
+        if (success) {
+            setCopiedCardKey(cardKey);
+            if (copyResetTimerRef.current) window.clearTimeout(copyResetTimerRef.current);
+            copyResetTimerRef.current = window.setTimeout(() => {
+                setCopiedCardKey((prev) => (prev === cardKey ? null : prev));
+                copyResetTimerRef.current = null;
+            }, 2000);
+            showToastRef.current?.(language === 'en' ? 'Copied to clipboard' : 'تم النسخ إلى الحافظة');
+        }
+    }, [language]);
+
+    const handleCardShare = useCallback(async (ayahText: string, ayahNum: number, surahTitle: string, explanation?: string) => {
+        const cleanExplanation = (explanation || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
+        const ayahLine = `${(ayahText || '').trim()} ﴿${toArabic(ayahNum)}﴾`;
+        const fullShareText = cleanExplanation ? `${ayahLine}\n\n${cleanExplanation}` : ayahLine;
+        const categoryLabel = readingMode === 'tafseer' ? 'تفسير الآية' : 'معاني القرآن';
+        const sourceRef = `${surahTitle} - آية ${toArabic(ayahNum)}`;
+
+        await shareAsImage({
+            text: fullShareText,
+            title: categoryLabel,
+            source: sourceRef,
+            category: categoryLabel,
+            theme: currentTheme,
+            isEn: false,
+            language: 'ar',
+            setToastMessage: showToastRef.current,
+        });
+    }, [readingMode, currentTheme]);
+
     // Find the index of the current ayah in the flattened list
     const initialIndex = useMemo(() => {
         const targetId = `${currentAyah.s}-${currentAyah.a}`;
@@ -600,7 +761,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                             }}
                         >
                             <span 
-                                className="inline-flex items-center justify-center font-bold text-xs rounded-md mr-2.5 align-middle select-none px-2 py-0.5 cursor-pointer active:scale-95 transition-transform"
+                                className="inline-flex items-center justify-center font-bold text-xs rounded-md mr-2.5 align-middle select-none px-2 py-0.5 cursor-pointer active:opacity-75 transition-opacity"
                                 style={{ 
                                     minWidth: '26px',
                                     backgroundColor: isHighlighted 
@@ -680,6 +841,397 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
             }
         }
 
+        // Helper to render the Quranic Ayah text & verse medallion
+        const renderAyahArabicText = () => (
+            <div className="ayah-text mb-0 text-right leading-loose"
+                 style={{
+                     fontSize: `${localFontSize}rem`,
+                     fontFamily: settings.fontFamily,
+                     fontWeight: settings.isBold ? '900' : 'normal',
+                     paddingTop: (readingMode === 'tafseer' || readingMode === 'meanings') ? '2px' : '4px',
+                     paddingBottom: '2px',
+                     WebkitTextStroke: settings.isBold ? '0.5px currentColor' : '0px',
+                     color: shouldHide ? 'transparent' : (isHighlighted ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent) : (settings.textColor || currentTheme.text)),
+                     backgroundColor: shouldHide
+                         ? `${settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent}33`
+                         : 'transparent',
+                     borderRadius: '0',
+                     paddingLeft: '0',
+                     paddingRight: '0',
+                     letterSpacing: 0,
+                     fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
+                     textRendering: 'optimizeLegibility',
+                     opacity: shouldHide ? 0.6 : 1,
+                     cursor: hideVerses ? 'pointer' : 'default',
+                     userSelect: shouldHide ? 'none' : 'auto'
+                 }}>
+                {(() => {
+                    const cleanAyahText = (item.text || '').replace(/\s+/g, ' ').trim();
+                    const words = cleanAyahText.split(' ');
+                    const isWordHighlightActive = isHighlighted && isPlaying && settings?.wordHighlightEnabled && audioProgress && audioProgress.duration > 0;
+
+                    const ayahHighlightColor = settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent || '#d97706';
+                    const wordColors = getEffectiveWordHighlightColor(
+                        ayahHighlightColor,
+                        settings?.wordHighlightColor,
+                        currentTheme?.id
+                    );
+
+                    if (isWordHighlightActive && words.length > 0) {
+                        const progressRatio = Math.min(1, Math.max(0, audioProgress.currentTime / audioProgress.duration));
+                        const activeWordIdx = Math.min(words.length - 1, Math.floor(progressRatio * words.length));
+
+                        return (
+                            <span style={{ display: 'contents' }}>
+                                {words.map((word: string, wIdx: number) => {
+                                    const isCurrentWord = wIdx === activeWordIdx;
+                                    return (
+                                        <React.Fragment key={wIdx}>
+                                            <span
+                                                className={`quran-word-span ${isCurrentWord ? 'active-word-highlight' : 'ayah-highlight-word'}`}
+                                                style={{
+                                                    color: isCurrentWord ? (wordColors.bg || '#dc2626') : ayahHighlightColor,
+                                                    transition: 'color 0.1s ease-in-out'
+                                                }}
+                                            >
+                                                {word}
+                                            </span>
+                                            {wIdx < words.length - 1 ? ' ' : ''}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </span>
+                        );
+                    }
+
+                    return item.text;
+                })()}
+                {(() => {
+                    const digitCount = String(item.ayahNumber).length;
+                    const themeId = currentTheme?.id;
+                    const bracketColor = currentTheme?.verseBracket || (
+                        themeId === 'deep_black'
+                            ? '#fbbf24'
+                            : (themeId === 'gold' ? '#d4af37' : '#059669')
+                    );
+                    const numColor = currentTheme?.verseNumber || (
+                        themeId === 'deep_black'
+                            ? '#38bdf8'
+                            : '#b91c1c'
+                    );
+
+                    return (
+                        <span className={`verse-container verse-digits-${digitCount} ${isHighlighted ? 'highlighted' : ''} cursor-pointer active:opacity-75 transition-opacity`}
+                              onPointerDown={(e) => handleNumberPointerDown(item.surahNumber, item.ayahNumber, e)}
+                              onPointerUp={handleNumberPointerUp}
+                              onPointerMove={handleNumberPointerMove}
+                              onPointerLeave={handleNumberPointerUp}
+                              onPointerCancel={handleNumberPointerUp}
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (readingMode === 'bilingual') {
+                                      if (onAyahNumberClick) {
+                                          onAyahNumberClick(item.surahNumber, item.ayahNumber);
+                                      } else if (onAyahNumberLongPress) {
+                                          onAyahNumberLongPress(item.surahNumber, item.ayahNumber);
+                                      } else {
+                                          onAyahClick(item.surahNumber, item.ayahNumber);
+                                      }
+                                      return;
+                                  }
+                                  onAyahClick(item.surahNumber, item.ayahNumber);
+                              }}
+                              title="اضغط لعرض التفسير • Click to view Tafsir"
+                        >
+                            <span className="verse-bracket" style={{ color: bracketColor }}>﴿</span>
+                            <span className="verse-num-inner" style={{ color: numColor }}>{toArabic(item.ayahNumber)}</span>
+                            <span className="verse-bracket" style={{ color: bracketColor }}>﴾</span>
+                        </span>
+                    );
+                })()}
+            </div>
+        );
+
+        // Redesigned Independent Ayah Card Layout for Tafseer and Meanings pages
+        if (readingMode === 'tafseer' || readingMode === 'meanings') {
+            const isDark = isDarkQuranTheme(currentTheme) || currentTheme?.id === 'deep_black';
+            const cardAccent = isDark
+                ? (currentTheme?.sajdah || '#fbbf24')
+                : (currentTheme?.id === 'gold'
+                    ? (currentTheme?.barText || '#b45309')
+                    : (currentTheme?.accent && currentTheme.accent !== '#000000' ? currentTheme.accent : '#10b981'));
+            const activeAccent = settings.highlightTextColor || currentTheme?.highlightText || cardAccent;
+            const hasCustomBg = Boolean(settings.bgColor && currentTheme?.bg && settings.bgColor.toLowerCase() !== currentTheme.bg.toLowerCase());
+            const cardBg = isHighlighted
+                ? (isDark ? '#1c1d24' : '#ffffff')
+                : hasCustomBg
+                    ? (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.85)')
+                    : (isDark ? '#141418' : '#ffffff');
+            const cardBorderColor = isHighlighted
+                ? activeAccent
+                : (isDark ? 'rgba(255, 255, 255, 0.22)' : `${cardAccent}55`);
+            const surahNameAr = SURAH_NAMES_AR[item.surahNumber - 1] || '';
+            const formattedSurahTitle = surahNameAr.includes('سورة') ? surahNameAr : `سورة ${surahNameAr}`;
+            const explanationText = readingMode === 'tafseer'
+                ? getTafseer(item.surahNumber, item.ayahNumber)
+                : getMeaning(item.surahNumber, item.ayahNumber);
+            const navInfo = ayahNavMap.get(index) || { prevIndex: -1, nextIndex: -1 };
+            const hasPrevAyah = navInfo.prevIndex !== -1;
+            const hasNextAyah = navInfo.nextIndex !== -1;
+
+            return (
+                <div className={`${isLandscape ? 'flex justify-center' : ''} px-3 py-2`}>
+                    <div
+                        id={`ayah-${item.surahNumber}-${item.ayahNumber}`}
+                        className={`ayah-item tafseer-ayah-card block rounded-2xl overflow-hidden transition-all ${isHighlighted ? 'highlighted' : ''} ${isLandscape ? 'max-w-3xl w-full' : 'w-full'}`}
+                        style={{
+                            display: 'block',
+                            backgroundColor: cardBg,
+                            border: `${isHighlighted ? '2px' : '1.5px'} solid ${cardBorderColor}`,
+                            boxShadow: 'none',
+                        }}
+                        onPointerDown={(e) => handlePointerDown(item.surahNumber, item.ayahNumber, e)}
+                        onPointerMove={handlePointerMoveItem}
+                        onPointerUp={handlePointerUpItem}
+                        onPointerLeave={handlePointerLeaveItem}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (isLongPressTriggered.current) return;
+                            isInternalClickRef.current = true;
+                            onAyahClick(item.surahNumber, item.ayahNumber);
+                        }}
+                    >
+                        {/* Card Top Meta Header */}
+                        <div
+                            className="px-3.5 py-2 flex items-center justify-between gap-2 text-[11px] font-bold"
+                            style={{
+                                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : `${cardAccent}12`,
+                                borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.10)' : `${cardAccent}28`}`,
+                                color: isDark ? '#e4e4e7' : cardAccent,
+                                direction: 'rtl',
+                            }}
+                        >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="truncate">{formattedSurahTitle}</span>
+                                <span className="opacity-45">•</span>
+                                <span className="shrink-0">آية {toArabic(item.ayahNumber)}</span>
+                                {item.sajda && (
+                                    <span
+                                        className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold shrink-0"
+                                        style={{
+                                            backgroundColor: `${currentTheme?.sajdah || '#d97706'}22`,
+                                            color: currentTheme?.sajdah || '#d97706',
+                                        }}
+                                    >
+                                        ۩ سجدة
+                                    </span>
+                                )}
+                            </div>
+                            <span
+                                className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                                style={{
+                                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#ffffff',
+                                    color: isDark ? '#d4d4d8' : cardAccent,
+                                    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : `${cardAccent}30`}`,
+                                }}
+                            >
+                                ص {toArabic(item.page)}
+                            </span>
+                        </div>
+
+                        {/* Quranic Ayah Text Section */}
+                        <div className="px-3.5 pt-3 pb-2.5">
+                            <div
+                                className={`ayah-text-block ${isHighlighted ? 'highlighted' : ''}`}
+                                style={{ display: 'block' }}
+                            >
+                                {renderAyahArabicText()}
+                            </div>
+                        </div>
+
+                        {/* Tafseer / Meanings Inner Explanation Box */}
+                        <div
+                            className="mx-3.5 mb-3 p-3 rounded-xl"
+                            style={{
+                                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : `${cardAccent}0a`,
+                                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.10)' : `${cardAccent}26`}`,
+                                direction: 'rtl',
+                            }}
+                        >
+                            <div className="flex items-center justify-between mb-1.5">
+                                <span
+                                    className="inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-md"
+                                    style={{
+                                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : `${cardAccent}16`,
+                                        color: isDark ? cardAccent : cardAccent,
+                                    }}
+                                >
+                                    <BookOpen size={11} />
+                                    <span>{readingMode === 'tafseer' ? 'التفسير' : 'معاني الكلمات'}</span>
+                                </span>
+                            </div>
+
+                            <div
+                                className="explanation-text text-right leading-relaxed"
+                                style={{
+                                    fontSize: `${localFontSize * 0.8}rem`,
+                                    color: isHighlighted
+                                        ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent)
+                                        : (settings.textColor || currentTheme.text),
+                                    opacity: explanationText ? 0.92 : 0.65,
+                                    direction: 'rtl',
+                                    textAlign: 'right',
+                                }}
+                            >
+                                {explanationText || (
+                                    readingMode === 'meanings'
+                                        ? 'ألفاظ هذه الآية الكريمة واضحة الدلالة والمعنى.'
+                                        : 'جاري تحميل التفسير...'
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Bottom Card Footer: Up/Down Navigation, Share/Copy/Zoom Actions, and Compare button in Tafseer mode */}
+                        <div
+                            className="px-3.5 py-2 flex flex-wrap items-center justify-between gap-2"
+                            style={{
+                                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : `${cardAccent}07`,
+                                borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.10)' : `${cardAccent}22`}`,
+                                direction: 'rtl',
+                            }}
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    disabled={!hasPrevAyah}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (hasPrevAyah) navigateToAyahByIndex(navInfo.prevIndex);
+                                    }}
+                                    className={`w-8 h-7 rounded-lg flex items-center justify-center transition-opacity ${
+                                        hasPrevAyah ? 'cursor-pointer active:opacity-75' : 'opacity-30 cursor-not-allowed'
+                                    }`}
+                                    style={{
+                                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#ffffff',
+                                        color: isDark ? '#f8fafc' : cardAccent,
+                                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.16)' : `${cardAccent}40`}`,
+                                    }}
+                                    title="الآية السابقة"
+                                    aria-label="الآية السابقة"
+                                >
+                                    <ChevronUp size={16} strokeWidth={2.5} />
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={!hasNextAyah}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (hasNextAyah) navigateToAyahByIndex(navInfo.nextIndex);
+                                    }}
+                                    className={`w-8 h-7 rounded-lg flex items-center justify-center transition-opacity ${
+                                        hasNextAyah ? 'cursor-pointer active:opacity-75' : 'opacity-30 cursor-not-allowed'
+                                    }`}
+                                    style={{
+                                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#ffffff',
+                                        color: isDark ? '#f8fafc' : cardAccent,
+                                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.16)' : `${cardAccent}40`}`,
+                                    }}
+                                    title="الآية التالية"
+                                    aria-label="الآية التالية"
+                                >
+                                    <ChevronDown size={16} strokeWidth={2.5} />
+                                </button>
+                            </div>
+
+                            {(() => {
+                                const cardKey = `${item.surahNumber}-${item.ayahNumber}`;
+                                const isCopied = copiedCardKey === cardKey;
+                                const actionBtnStyle = {
+                                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#ffffff',
+                                    color: isDark ? '#f8fafc' : cardAccent,
+                                    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.16)' : `${cardAccent}40`}`,
+                                };
+                                return (
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onPointerDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCardShare(item.text, item.ayahNumber, formattedSurahTitle, explanationText);
+                                            }}
+                                            className="w-8 h-7 rounded-lg flex items-center justify-center transition-opacity active:opacity-75 cursor-pointer"
+                                            style={actionBtnStyle}
+                                            title="مشاركة"
+                                            aria-label="مشاركة"
+                                        >
+                                            <Share2 size={14} strokeWidth={2.2} />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onPointerDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCardCopy(cardKey, item.text, item.ayahNumber, formattedSurahTitle, explanationText);
+                                            }}
+                                            className="w-8 h-7 rounded-lg flex items-center justify-center transition-opacity active:opacity-75 cursor-pointer"
+                                            style={isCopied ? {
+                                                backgroundColor: '#10b981',
+                                                color: '#ffffff',
+                                                border: '1px solid #10b981',
+                                            } : actionBtnStyle}
+                                            title="نسخ"
+                                            aria-label="نسخ"
+                                        >
+                                            {isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} strokeWidth={2.2} />}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onPointerDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onZoomAyahCardRef.current?.(item.surahNumber, item.ayahNumber, explanationText);
+                                            }}
+                                            className="w-8 h-7 rounded-lg flex items-center justify-center transition-opacity active:opacity-75 cursor-pointer"
+                                            style={actionBtnStyle}
+                                            title="تكبير"
+                                            aria-label="تكبير"
+                                        >
+                                            <ZoomIn size={14} strokeWidth={2.2} />
+                                        </button>
+                                    </div>
+                                );
+                            })()}
+
+                            {readingMode === 'tafseer' && (
+                                <button
+                                    type="button"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_multi_tafseer' } }));
+                                    }}
+                                    className="text-[11px] font-bold px-3 py-1 rounded-lg transition-opacity active:opacity-75 cursor-pointer"
+                                    style={{
+                                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#ffffff',
+                                        color: isDark ? '#f8fafc' : cardAccent,
+                                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.16)' : `${cardAccent}40`}`,
+                                    }}
+                                >
+                                    مقارنة
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className={`${isLandscape ? 'flex justify-center' : ''} px-1`}>
                 <div 
@@ -700,113 +1252,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                         onAyahClick(item.surahNumber, item.ayahNumber);
                     }}
                 >
-                    <div className="ayah-text mb-0 text-right leading-loose" 
-                         style={{ 
-                             fontSize: `${localFontSize}rem`, 
-                             fontFamily: settings.fontFamily,
-                             fontWeight: settings.isBold ? '900' : 'normal',
-                             paddingTop: '4px',
-                             paddingBottom: '2px',
-                             WebkitTextStroke: settings.isBold ? '0.5px currentColor' : '0px',
-                             color: shouldHide ? 'transparent' : (isHighlighted ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent) : (settings.textColor || currentTheme.text)),
-                             backgroundColor: shouldHide 
-                                 ? `${settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent}33` 
-                                 : 'transparent',
-                             borderRadius: '0',
-                             paddingLeft: '0',
-                             paddingRight: '0',
-                             letterSpacing: 0,
-                             fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
-                             textRendering: 'optimizeLegibility',
-                             opacity: shouldHide ? 0.6 : 1,
-                             cursor: hideVerses ? 'pointer' : 'default',
-                             userSelect: shouldHide ? 'none' : 'auto'
-                         }}>
-                        {(() => {
-                            const cleanAyahText = (item.text || '').replace(/\s+/g, ' ').trim();
-                            const words = cleanAyahText.split(' ');
-                            const isWordHighlightActive = isHighlighted && isPlaying && settings?.wordHighlightEnabled && audioProgress && audioProgress.duration > 0;
-
-                            const ayahHighlightColor = settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent || '#d97706';
-                            const wordColors = getEffectiveWordHighlightColor(
-                                ayahHighlightColor,
-                                settings?.wordHighlightColor,
-                                currentTheme?.id
-                            );
-
-                            if (isWordHighlightActive && words.length > 0) {
-                                const progressRatio = Math.min(1, Math.max(0, audioProgress.currentTime / audioProgress.duration));
-                                const activeWordIdx = Math.min(words.length - 1, Math.floor(progressRatio * words.length));
-
-                                return (
-                                    <span style={{ display: 'contents' }}>
-                                        {words.map((word: string, wIdx: number) => {
-                                            const isCurrentWord = wIdx === activeWordIdx;
-                                            return (
-                                                <React.Fragment key={wIdx}>
-                                                    <span 
-                                                        className={`quran-word-span ${isCurrentWord ? 'active-word-highlight' : 'ayah-highlight-word'}`}
-                                                        style={{
-                                                            color: isCurrentWord ? (wordColors.bg || '#dc2626') : ayahHighlightColor,
-                                                            transition: 'color 0.1s ease-in-out'
-                                                        }}
-                                                    >
-                                                        {word}
-                                                    </span>
-                                                    {wIdx < words.length - 1 ? ' ' : ''}
-                                                </React.Fragment>
-                                            );
-                                        })}
-                                    </span>
-                                );
-                            }
-
-                            return item.text;
-                        })()}
-                        {(() => {
-                            const digitCount = String(item.ayahNumber).length;
-                            const themeId = currentTheme?.id;
-                            const bracketColor = currentTheme?.verseBracket || (
-                                themeId === 'deep_black' 
-                                    ? '#fbbf24' 
-                                    : (themeId === 'gold' ? '#d4af37' : '#059669')
-                            );
-                            const numColor = currentTheme?.verseNumber || (
-                                themeId === 'deep_black' 
-                                    ? '#38bdf8' 
-                                    : '#b91c1c'
-                            );
-
-                            return (
-                                <span className={`verse-container verse-digits-${digitCount} ${isHighlighted ? 'highlighted' : ''} cursor-pointer active:scale-95 transition-transform`}
-                                      onPointerDown={(e) => handleNumberPointerDown(item.surahNumber, item.ayahNumber, e)}
-                                      onPointerUp={handleNumberPointerUp}
-                                      onPointerMove={handleNumberPointerMove}
-                                      onPointerLeave={handleNumberPointerUp}
-                                      onPointerCancel={handleNumberPointerUp}
-                                      onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (readingMode === 'bilingual') {
-                                              if (onAyahNumberClick) {
-                                                  onAyahNumberClick(item.surahNumber, item.ayahNumber);
-                                              } else if (onAyahNumberLongPress) {
-                                                  onAyahNumberLongPress(item.surahNumber, item.ayahNumber);
-                                              } else {
-                                                  onAyahClick(item.surahNumber, item.ayahNumber);
-                                              }
-                                              return;
-                                          }
-                                          onAyahClick(item.surahNumber, item.ayahNumber);
-                                      }}
-                                      title="اضغط لعرض التفسير • Click to view Tafsir"
-                                >
-                                    <span className="verse-bracket" style={{ color: bracketColor }}>﴿</span>
-                                    <span className="verse-num-inner" style={{ color: numColor }}>{toArabic(item.ayahNumber)}</span>
-                                    <span className="verse-bracket" style={{ color: bracketColor }}>﴾</span>
-                                </span>
-                            );
-                        })()}
-                    </div>
+                    {renderAyahArabicText()}
                     
                     {readingMode === 'bilingual' ? (
                         <div 
@@ -822,7 +1268,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                         >
                             <div className="flex items-start gap-2.5">
                                 <span 
-                                    className="inline-flex items-center justify-center font-bold text-xs rounded-md select-none px-2 py-0.5 mt-0.5 shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                    className="inline-flex items-center justify-center font-bold text-xs rounded-md select-none px-2 py-0.5 mt-0.5 shrink-0 cursor-pointer active:opacity-75 transition-opacity"
                                     style={{ 
                                         minWidth: '26px',
                                         backgroundColor: isHighlighted 
@@ -866,38 +1312,11 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                                 </p>
                             </div>
                         </div>
-                    ) : (readingMode === 'tafseer' || readingMode === 'meanings') ? (
-                        <div className="explanation-text text-right opacity-90 leading-relaxed pb-2"
-                             style={{ 
-                                 fontSize: `${localFontSize * 0.8}rem`, 
-                                 marginTop: '-2px',
-                                 color: isHighlighted ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent) : (settings.textColor || currentTheme.text),
-                                 direction: 'rtl',
-                                 textAlign: 'right'
-                             }}>
-                            {readingMode === 'tafseer' ? getTafseer(item.surahNumber, item.ayahNumber) : 
-                             getMeaning(item.surahNumber, item.ayahNumber)}
-                            {readingMode === 'tafseer' && (
-                                <div className="mt-2.5 flex items-center justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_multi_tafseer' } }));
-                                        }}
-                                        className="quran-raised-btn unified-3d-btn border-0 text-[11px] font-bold px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 flex items-center gap-1.5 cursor-pointer"
-                                    >
-                                        <i className="fa-solid fa-columns text-[10px] quran-3d-icon"></i>
-                                        <span>مقارنة التفاسير ⇄</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
                     ) : null}
                 </div>
             </div>
         );
-    }, [highlightedAyahId, currentTheme, settings, readingMode, onAyahClick, onAyahNumberClick, onAyahNumberLongPress, meaningsData, tafseerData, translationData, hideVerses, memorizationSettings, localFontSize, isPlaying, audioProgress]);
+    }, [highlightedAyahId, currentTheme, settings, readingMode, onAyahClick, onAyahNumberClick, onAyahNumberLongPress, meaningsData, tafseerData, translationData, hideVerses, memorizationSettings, localFontSize, isPlaying, audioProgress, isLandscape, ayahNavMap, navigateToAyahByIndex, copiedCardKey, handleCardCopy, handleCardShare]);
 
     if (isLoading) {
         return (
@@ -947,7 +1366,8 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                         highlightedAyahId,
                         readingMode,
                         localFontSize,
-                        currentAyah
+                        currentAyah,
+                        copiedCardKey
                     }}
                     initialTopMostItemIndex={{ index: initialIndex, align: 'center' }}
                     increaseViewportBy={{ top: 450, bottom: 750 }}

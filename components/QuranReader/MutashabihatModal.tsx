@@ -292,7 +292,9 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = React.memo(({
               style={{
                 backgroundColor: p.cardBg,
                 fontSize: `${fontSize}px`,
-                fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif",
+                fontFamily: isEn
+                  ? "'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', serif"
+                  : "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif",
                 color: amberVerseColor
               }}
               dir="rtl"
@@ -453,7 +455,9 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = React.memo(({
                       className="font-normal leading-[2.2] select-text text-right my-1.5" 
                       style={{ 
                         fontSize: `${Math.max(14, fontSize - 1)}px`,
-                        fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif",
+                        fontFamily: isEn
+                          ? "'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', serif"
+                          : "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif",
                         color: amberVerseColor
                       }} 
                       dir="rtl"

@@ -1,5 +1,10 @@
 import React from 'react';
 import { Bookmark, ChevronDown, Pause, Home, Share2 } from 'lucide-react';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
+import {
+    normalizeMadinahFrameDesign,
+    MadinahHeaderCircleSVG,
+} from './madinahFrameDesigns';
 
 interface QuranFooterProps {
     currentTheme: any;
@@ -20,18 +25,20 @@ interface QuranFooterProps {
     autoScrollState: { isActive: boolean; isPaused: boolean; elapsedTime: number };
     onBack: () => void;
     isEn?: boolean;
+    madinahFrameDesign?: number;
+    isCurrentBookmarked?: boolean;
 }
 
 const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
     currentTheme,
-    getToolbarStyle,
-    setIsFloatingMenuOpen,
-    isFloatingMenuOpen,
+    getToolbarStyle: _getToolbarStyle,
+    setIsFloatingMenuOpen: _setIsFloatingMenuOpen,
+    isFloatingMenuOpen: _isFloatingMenuOpen,
     isAnyMenuOpen,
     hideShareButton = false,
     hideAutoScrollButton = false,
     openModal,
-    menuButtonRef,
+    menuButtonRef: _menuButtonRef,
     handleBookmarkButtonPointerDown,
     handleBookmarkButtonPointerUp,
     handleBookmarkButtonPointerLeave,
@@ -40,19 +47,38 @@ const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
     handleAutoScrollButtonPointerLeave,
     autoScrollState,
     onBack,
-    isEn = false
+    isEn = false,
+    madinahFrameDesign,
+    isCurrentBookmarked = false
 }) => {
+    const madinahPalette = getMadinahThemePalette(currentTheme);
+    const resolvedFrameDesign = normalizeMadinahFrameDesign(madinahFrameDesign);
+
+    const renderCircleFrame = () => (
+        <MadinahHeaderCircleSVG design={resolvedFrameDesign} palette={madinahPalette} />
+    );
+
     return (
-        <footer id="bottom-bar" className={`footer-default flex-none border-0 shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.12)] z-50 flex justify-evenly items-center py-1 w-full ${isAnyMenuOpen ? 'pointer-events-none opacity-50' : ''}`} style={getToolbarStyle('bottom-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
+        <footer
+            id="bottom-bar"
+            className={`footer-default flex-none border-0 quran-flat-footer madinah-flat-footer z-50 flex justify-evenly items-center w-full gap-1 ${isAnyMenuOpen ? 'pointer-events-none opacity-50' : ''}`}
+            style={{
+                backgroundColor: madinahPalette.frameBg,
+                color: madinahPalette.bannerText,
+                boxShadow: 'none',
+                borderTop: `1.5px solid ${madinahPalette.primary}`,
+            }}
+        >
             {!hideShareButton && (
                 <button 
                     id="btn-share" 
                     onClick={() => openModal('share-ayah')} 
-                    className={`bottom-bar-button btn-green !rounded-full !w-12 !h-12 !p-0 flex items-center justify-center mx-1 ${isAnyMenuOpen ? 'pointer-events-none' : 'pointer-events-auto'}`} 
-                    style={getToolbarStyle('btn-share', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg)}
+                    className={`bottom-bar-button madinah-footer-btn madinah-header-btn relative !w-[42px] !h-[42px] !p-0 flex items-center justify-center flex-shrink-0 aspect-square ${isAnyMenuOpen ? 'pointer-events-none' : 'pointer-events-auto'}`} 
+                    style={{ backgroundColor: 'transparent', color: madinahPalette.bannerText, boxShadow: 'none', border: 'none' }}
                     title={isEn ? "Share" : "مشاركة"}
                 >
-                    <Share2 size={24} className="quran-3d-icon" strokeWidth={2.4} />
+                    {renderCircleFrame()}
+                    <Share2 size={18} className="relative z-10" strokeWidth={2.3} />
                 </button>
             )}
             <button 
@@ -63,11 +89,23 @@ const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
                 onTouchStart={handleBookmarkButtonPointerDown}
                 onTouchEnd={handleBookmarkButtonPointerUp}
                 onTouchCancel={handleBookmarkButtonPointerLeave}
-                className="bottom-bar-button btn-green !rounded-full !w-12 !h-12 !p-0 flex items-center justify-center mx-1" 
-                style={{...getToolbarStyle('btn-bookmark', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg), touchAction: 'none'}}
+                className="bottom-bar-button madinah-footer-btn madinah-header-btn relative !w-[42px] !h-[42px] !p-0 flex items-center justify-center flex-shrink-0 aspect-square" 
+                style={{
+                    backgroundColor: 'transparent',
+                    color: isCurrentBookmarked ? madinahPalette.gold : madinahPalette.bannerText,
+                    boxShadow: 'none',
+                    border: 'none',
+                    touchAction: 'none'
+                }}
                 title={isEn ? "Save Bookmark" : "حفظ العلامة"}
             >
-                <Bookmark size={24} className="quran-3d-icon" strokeWidth={2.4} />
+                {renderCircleFrame()}
+                <Bookmark
+                    size={18}
+                    strokeWidth={2.2}
+                    fill={isCurrentBookmarked ? 'currentColor' : 'none'}
+                    className="relative z-10"
+                />
             </button>
             {!hideAutoScrollButton && (
                 <button 
@@ -78,21 +116,27 @@ const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
                     onTouchStart={handleAutoScrollButtonPointerDown}
                     onTouchEnd={handleAutoScrollButtonPointerUp}
                     onTouchCancel={handleAutoScrollButtonPointerLeave}
-                    className="bottom-bar-button btn-purple !rounded-full !w-12 !h-12 !p-0 flex items-center justify-center mx-1" 
-                    style={{...getToolbarStyle('btn-autoscroll', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg), touchAction: 'none'}}
+                    className="bottom-bar-button madinah-footer-btn madinah-header-btn relative !w-[42px] !h-[42px] !p-0 flex items-center justify-center flex-shrink-0 aspect-square" 
+                    style={{ backgroundColor: 'transparent', color: madinahPalette.bannerText, boxShadow: 'none', border: 'none', touchAction: 'none' }}
                     title={isEn ? "Auto-scroll" : "التمرير التلقائي"}
                 >
-                    {autoScrollState.isActive ? <Pause size={24} className="quran-3d-icon" strokeWidth={2.4} /> : <ChevronDown size={24} className="quran-3d-icon" strokeWidth={2.4} />}
+                    {renderCircleFrame()}
+                    {autoScrollState.isActive ? (
+                        <Pause size={18} className="relative z-10" strokeWidth={2.3} />
+                    ) : (
+                        <ChevronDown size={18} className="relative z-10" strokeWidth={2.3} />
+                    )}
                 </button>
             )}
             <button 
                 id="btn-home" 
                 onClick={onBack} 
-                className="bottom-bar-button btn-green !rounded-full !w-12 !h-12 !p-0 flex items-center justify-center mx-1" 
-                style={getToolbarStyle('btn-home', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg)}
+                className="bottom-bar-button madinah-footer-btn madinah-header-btn relative !w-[42px] !h-[42px] !p-0 flex items-center justify-center flex-shrink-0 aspect-square" 
+                style={{ backgroundColor: 'transparent', color: madinahPalette.bannerText, boxShadow: 'none', border: 'none' }}
                 title={isEn ? "Home" : "الرئيسية"}
             >
-                <Home size={24} className="quran-3d-icon" strokeWidth={2.4} />
+                {renderCircleFrame()}
+                <Home size={18} className="relative z-10" strokeWidth={2.3} />
             </button>
         </footer>
     );

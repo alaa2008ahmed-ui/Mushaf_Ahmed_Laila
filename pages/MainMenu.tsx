@@ -41,6 +41,9 @@ We are delighted to present an exceptional and brand-new release, completely red
 🌍 Full Arabic & English Bilingual Support:
 A seamless bilingual experience with full Arabic and English language support across all app sections and interfaces.
 
+📖 Horizontal Reading Page (New):
+Browse the authentic 15-line Uthmani Madinah Mushaf with smooth horizontal page swiping, ornamental frames, and independent reading settings.
+
 📜 Prophetic Seerah (New):
 An inspiring and interactive journey through the life of the Prophet ﷺ with a detailed timeline of key milestones and events.
 
@@ -74,6 +77,9 @@ export const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق 
 
 🌍 دعم اللغتين العربية والإنجليزية بالكامل:
 تجربة متكاملة تدعم اللغتين العربية والإنجليزية بشكل كامل لكافة أقسام وواجهات التطبيق ومحتواه.
+
+📖 صفحة القراءة الأفقية (جديد):
+تصفح مصحف المدينة النبوية بالرسم العثماني المعتمد (15 سطراً) مع تقليب الصفحات أفقياً يميناً ويساراً وإطارات زخرفية مميزة وإعدادات مستقلة.
 
 📜 صفحة السيرة النبوية (جديد):
 رحلة ملهمة وتفاعلية في سيرة خير الأنام ﷺ عبر خط زمني مفصل يوثق أهم المحطات والغزوات والأحداث النبوية الشريفة بأسلوب عصري وميسر.

@@ -252,7 +252,7 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = React.memo(({
         >
             <div 
                 className={`quran-modal-sheet-panel zoom-modal-sheet modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} flex flex-col overflow-hidden relative shadow-2xl border-0 ${
-                    isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%] rounded-3xl' : 'w-full max-w-xl mx-auto rounded-t-[32px] max-h-[88dvh]'
+                    isLandscape ? 'w-[62%] max-w-[430px] max-h-[84%] rounded-3xl' : 'w-full max-w-md mx-auto rounded-t-[28px] max-h-[78dvh]'
                 }`}
                 style={{ 
                     backgroundColor: p.modalBg, 
@@ -263,7 +263,7 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = React.memo(({
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Canonical Raised 3D Header */}
+                {/* Canonical Raised Header */}
                 <div className={`${isLandscape ? 'pt-2.5 px-3 pb-1.5' : 'pt-3 px-4 sm:px-5 pb-2.5'} shrink-0 flex flex-col`}>
                     {!isLandscape && (
                         <div className="app-3d-drag-handle w-12 h-1.5 rounded-full mb-2.5 bg-slate-300/80 dark:bg-zinc-600/80 mx-auto" />
@@ -320,7 +320,9 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = React.memo(({
                                 backgroundColor: p.cardBg,
                                 color: p.cardText,
                                 fontSize: `${fontSize + 2}px`,
-                                fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
+                                fontFamily: isEn
+                                    ? "'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', serif"
+                                    : "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
                             }}
                             dir="rtl"
                         >

@@ -1139,8 +1139,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
       try {
         let savedGlobal: string | null = null;
         if (isEn) {
-          // Reading position from Translation mode
-          savedGlobal = localStorage.getItem('last_read_pos_translation') 
+          // Reading position from Bilingual / English mode
+          savedGlobal = localStorage.getItem('last_read_pos_bilingual')
+                     || localStorage.getItem('last_pos_bilingual_v')
+                     || localStorage.getItem('last_pos_bilingual_h')
+                     || localStorage.getItem('last_read_pos_translation') 
                      || localStorage.getItem('last_pos_translation_v') 
                      || localStorage.getItem('last_pos_translation_h')
                      || localStorage.getItem('last_read_ayah_global') 
@@ -1235,6 +1238,14 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     return getLocalizedLocationName(rawCityName, isEn ? 'en' : 'ar');
   }, [config.location, isEn]);
 
+  const getResolvedEnglishQuranMode = useCallback((orient: 'v' | 'h' = 'v') => {
+    const saved = localStorage.getItem(`quran_reading_mode_en_v2_${orient}`);
+    if (saved === 'bilingual' || saved === 'translation' || saved === 'madinah') {
+      return saved;
+    }
+    return 'translation';
+  }, []);
+
   const handleOpenQuranFromCard = useCallback(() => {
     if (isEn) {
       onNavigate('quran', {
@@ -1242,12 +1253,12 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
         surah: lastReadQuran.surah,
         ayah: lastReadQuran.ayah,
         page: lastReadQuran.page,
-        readingMode: 'translation',
+        readingMode: getResolvedEnglishQuranMode('v'),
       });
       return;
     }
     const savedMode = localStorage.getItem('quran_reading_mode_ar_v') || localStorage.getItem('last_arabic_reading_mode_v');
-    const resolvedMode = savedMode === 'madinah' || !savedMode ? 'mushaf' : savedMode;
+    const resolvedMode = savedMode === 'madinah' || !savedMode || savedMode === 'tafseer' || savedMode === 'meanings' || savedMode === 'translation' ? 'mushaf' : savedMode;
     onNavigate('quran', {
       from: 'modern_home',
       surah: lastReadQuran.surah,
@@ -1643,6 +1654,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
 
             <div className="flex items-center gap-1.5 shrink-0 -mt-0.5">
               <button
+                id="home-quran-vertical-btn"
                 type="button"
                 onClick={handleOpenQuranFromCard}
                 className="px-2.5 sm:px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
@@ -1651,6 +1663,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                 <span>{isEn ? 'Vertical' : 'رأسي'}</span>
               </button>
               <button
+                id="home-quran-madinah-btn"
                 type="button"
                 onClick={() => onNavigate('quran', { from: 'modern_home', readingMode: 'madinah' })}
                 className="px-2.5 sm:px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
@@ -1659,8 +1672,9 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                 <span>{isEn ? 'Madinah' : 'أفقي'}</span>
               </button>
               <button
+                id="home-quran-landscape-btn"
                 type="button"
-                onClick={() => onNavigate('quran-landscape', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
+                onClick={() => onNavigate('quran-landscape', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: getResolvedEnglishQuranMode('h') } : {}) })}
                 className="px-2.5 sm:px-4 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
                 title={isEn ? 'Landscape Reading' : 'تلاوة عرضية للمصحف'}
               >
@@ -2040,7 +2054,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                     onClick={() => {
                       markPageAsSeen(service.id);
                       recordAppVisit(service.id);
-                      onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: 'translation' } : {}) } : undefined);
+                      onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: getResolvedEnglishQuranMode(service.id === 'quran-landscape' ? 'h' : 'v') } : {}) } : undefined);
                     }}
                     className="snap-start shrink-0 flex flex-col items-center justify-start p-0.5 group cursor-pointer active:scale-90 hover:scale-105 transition-all duration-200 w-[66px] sm:w-[74px] min-h-[66px] sm:min-h-[74px] select-none focus:outline-none"
                   >
@@ -2216,7 +2230,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                       onClick={() => {
                         markPageAsSeen(service.id);
                         recordAppVisit(service.id);
-                        onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: 'translation' } : {}) } : undefined);
+                        onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: getResolvedEnglishQuranMode(service.id === 'quran-landscape' ? 'h' : 'v') } : {}) } : undefined);
                       }}
                       className="flex flex-col items-center justify-between p-1.5 sm:p-2 group cursor-pointer active:scale-90 hover:scale-105 transition-all duration-200 w-full min-h-[92px] select-none focus:outline-none"
                     >

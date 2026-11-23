@@ -231,7 +231,9 @@ const AsbabNuzulModal: React.FC<AsbabNuzulModalProps> = React.memo(({
                 backgroundColor: p.cardBg,
                 color: p.cardText,
                 fontSize: `${fontSize + 4}px`,
-                fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
+                fontFamily: isEn
+                  ? "'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', serif"
+                  : "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
               }}
               dir="rtl"
             >

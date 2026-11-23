@@ -21,7 +21,7 @@ const triggerJuzStartVibration = () => {
     }
 };
 
-const JuzNotification: FC<{isVisible: boolean, text: string, currentTheme: any}> = ({isVisible, text, currentTheme}) => {
+const JuzNotification: FC<{isVisible: boolean, text: string, currentTheme: any, isFlat?: boolean}> = ({isVisible, text, currentTheme, isFlat = false}) => {
     const lastVibratedTextRef = useRef<string>('');
 
     useEffect(() => {
@@ -46,13 +46,15 @@ const JuzNotification: FC<{isVisible: boolean, text: string, currentTheme: any}>
 
     return (
         <div 
-            className={`juz-notification app-3d-toast fixed z-[3000] transition-all duration-500 pointer-events-none flex items-center gap-3 px-4 py-2.5 rounded-2xl border-0`}
+            dir="rtl"
+            className={`juz-notification ${isFlat ? '' : 'app-3d-toast border-0'} fixed z-[3000] transition-all duration-500 pointer-events-none flex items-center gap-3 px-4 py-2.5 rounded-2xl`}
             style={{ 
                 bottom: 'calc(5rem + var(--app-safe-bottom, 0px) + 5rem)', 
                 right: isVisible ? 'calc(16px + env(safe-area-inset-right, 0px))' : '-400px',
                 backgroundColor: bg,
                 color: textColor,
-                fontFamily: currentTheme.font || 'var(--font-amiri)'
+                fontFamily: currentTheme?.font || 'var(--font-amiri)',
+                ...(isFlat ? { boxShadow: 'none' } : {}),
             }}
         >
             <div
@@ -60,7 +62,9 @@ const JuzNotification: FC<{isVisible: boolean, text: string, currentTheme: any}>
                 style={{
                     backgroundColor: iconBg,
                     color: iconColor,
-                    boxShadow: '0 3px 0 rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.16), inset 0 1.5px 1px rgba(255, 255, 255, 0.48), inset 0 -1.5px 2px rgba(0, 0, 0, 0.18)'
+                    boxShadow: isFlat
+                        ? 'none'
+                        : '0 3px 0 rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.16), inset 0 1.5px 1px rgba(255, 255, 255, 0.48), inset 0 -1.5px 2px rgba(0, 0, 0, 0.18)'
                 }}
             >
                 <BookOpen size={20} />

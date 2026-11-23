@@ -141,8 +141,8 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/65 flex items-center justify-center ${isLandscape ? 'p-2.5' : 'p-0 sm:p-4'}`} dir="rtl" onClick={onClose}>
             <div
-                className={`modal-skinned ${isLandscape ? 'compact-landscape-modal w-[62%] max-w-[430px] h-auto max-h-[86%] rounded-3xl' : 'w-full max-w-lg h-full sm:h-auto max-h-[100dvh] sm:max-h-[90dvh] rounded-none sm:rounded-3xl'} ${isDarkTheme ? 'quran-3d-dark' : ''} bg-white shadow-2xl overflow-hidden flex flex-col border-0`}
-                style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}
+                className={`modal-skinned font-cairo ${isLandscape ? 'compact-landscape-modal w-[62%] max-w-[430px] h-auto max-h-[86%] rounded-3xl' : 'w-full max-w-lg h-full sm:h-auto max-h-[100dvh] sm:max-h-[90dvh] rounded-none sm:rounded-3xl'} ${isDarkTheme ? 'quran-3d-dark' : ''} bg-white shadow-2xl overflow-hidden flex flex-col border-0`}
+                style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, fontFamily: "'Cairo', sans-serif", border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}

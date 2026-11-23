@@ -48,6 +48,13 @@ interface UpdateEntry {
 
 const NEW_PAGES_ITEMS: UpdateEntry[] = [
   {
+    id: 'vertical-reading',
+    titleAr: 'القراءة الرأسية للمصحف',
+    titleEn: 'Vertical Quran Reading',
+    descAr: 'تصفح وتلاوة القرآن الكريم بالتمرير الرأسي السلس من الأعلى للأسفل مع حفظ موضع القراءة وتخصيص الخطوط والألوان.',
+    descEn: 'Read the Holy Quran with smooth top-to-bottom vertical scrolling, automatic position saving, and customizable fonts and themes.',
+  },
+  {
     id: 'seerah',
     titleAr: 'صفحة السيرة النبوية',
     titleEn: 'Prophetic Seerah Page',

@@ -85,6 +85,6 @@ export const resolveQuranModalPalette = (currentTheme?: any): QuranModalPalette 
         selectedBg,
         selectedText,
         mutedText,
-        fontFamily: currentTheme?.font,
+        fontFamily: "'Cairo', sans-serif",
     };
 };

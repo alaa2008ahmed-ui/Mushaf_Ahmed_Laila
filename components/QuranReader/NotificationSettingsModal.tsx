@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Smartphone, AppWindow, ShieldCheck, Zap } from 'lucide-react';
-import { toArabic } from './constants';
+import { toArabic, THEMES, isDarkQuranTheme } from './constants';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
 import { IslamicTimePickerModal } from '../Common/IslamicTimePickerModal';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
 import PrayerAlertVolumeSlider from '../PrayerTimes/PrayerAlertVolumeSlider';
@@ -143,7 +144,30 @@ interface NotificationSettingsModalProps {
     hidePhoneTab?: boolean;
     hideTabsBar?: boolean;
     phoneTabTitle?: string;
+    isFromQuranReader?: boolean;
+    currentTheme?: any;
 }
+
+const isNotifHexDark = (color?: string): boolean => {
+    if (!color || typeof color !== 'string') return false;
+    const c = color.trim().toLowerCase();
+    const hex = c.startsWith('#') ? c.slice(1) : '';
+    if (!hex) return false;
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+    } else if (hex.length === 6) {
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+    } else {
+        return false;
+    }
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.45;
+};
 
 const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ 
     onClose, 
@@ -154,7 +178,9 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
     hideAppTab = false,
     hidePhoneTab = false,
     hideTabsBar = false,
-    phoneTabTitle
+    phoneTabTitle,
+    isFromQuranReader = false,
+    currentTheme: propCurrentTheme
 }) => {
     const { language, dir, isRTL } = useLanguage();
     const isEn = language === 'en';
@@ -173,9 +199,35 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
     }, []);
 
     const { theme, themeKey, homeThemeVariant, isNightMode } = useTheme();
-    const isBlackTheme = themeKey === 'deep_black' || theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black';
+    const activeReaderTheme = isFromQuranReader ? (propCurrentTheme || THEMES.black) : null;
+    const readerPalette = activeReaderTheme ? getMadinahThemePalette(activeReaderTheme) : null;
+    const readerIsDark = activeReaderTheme ? isDarkQuranTheme(activeReaderTheme) : false;
+    const readerIsDeepBlack = activeReaderTheme?.id === 'deep_black';
+    const isBlackTheme = isFromQuranReader
+        ? readerIsDark
+        : (themeKey === 'deep_black' || theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black');
 
     const themeStyles = (() => {
+        if (isFromQuranReader && activeReaderTheme && readerPalette) {
+            const accent = readerIsDeepBlack
+                ? '#e4e4e7'
+                : (readerPalette.primary || activeReaderTheme?.accent || '#b45309');
+            const selectedBg = readerIsDeepBlack ? '#3f3f46' : accent;
+            const selectedText = isNotifHexDark(selectedBg) ? '#ffffff' : '#09090b';
+            return {
+                modalBg: readerPalette.frameBg,
+                modalText: readerIsDark ? '#f8fafc' : readerPalette.bannerText,
+                cardBg: readerIsDark
+                    ? (activeReaderTheme?.cardBg && !activeReaderTheme.cardBg.startsWith('rgba') ? activeReaderTheme.cardBg : '#141418')
+                    : (readerPalette.cartoucheFill || '#ffffff'),
+                cardBorder: readerIsDark ? 'rgba(255, 255, 255, 0.16)' : `${accent}44`,
+                text: readerIsDark ? '#f8fafc' : readerPalette.bannerText,
+                subtext: readerIsDark ? '#a1a1aa' : readerPalette.metaText,
+                accent: accent,
+                btnBg: selectedBg,
+                btnText: selectedText
+            };
+        }
         if (isBlackTheme || themeKey === 'deep_black') {
             return {
                 modalBg: '#121214',
@@ -513,24 +565,68 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                     ? '#881337' 
                     : '#b45309')));
 
-    const notifPageBg = isBlackTheme 
-        ? '#000000' 
-        : (theme?.bgColor && theme.bgColor.toLowerCase() !== '#ffffff' 
-            ? theme.bgColor 
-            : (homeThemeVariant === 'sky' 
-                ? '#F0F9FF' 
-                : (homeThemeVariant === 'emerald' 
-                    ? '#F0FDF4' 
-                    : (homeThemeVariant === 'burgundy' 
-                        ? '#FFF1F2' 
-                        : '#FEF9C3'))));
+    const notifPageBg = isFromQuranReader && readerPalette
+        ? readerPalette.frameBg
+        : (isBlackTheme 
+            ? '#000000' 
+            : (theme?.bgColor && theme.bgColor.toLowerCase() !== '#ffffff' 
+                ? theme.bgColor 
+                : (homeThemeVariant === 'sky' 
+                    ? '#F0F9FF' 
+                    : (homeThemeVariant === 'emerald' 
+                        ? '#F0FDF4' 
+                        : (homeThemeVariant === 'burgundy' 
+                            ? '#FFF1F2' 
+                            : '#FEF9C3')))));
 
-    const cardSurfaceBg = isBlackTheme ? '#18181b' : '#ffffff';
-    const cardTextColor = isBlackTheme ? '#ffffff' : '#0f172a';
-    const cardSubTextColor = isBlackTheme ? '#a1a1aa' : '#475569';
-    const innerBtnBg = isBlackTheme ? '#27272a' : '#f8fafc';
+    const topBarBg = isFromQuranReader && readerPalette ? readerPalette.frameBg : themeTopBarBg;
+    const topBarText = isFromQuranReader && readerPalette
+        ? (readerIsDark ? '#f8fafc' : readerPalette.bannerText)
+        : undefined;
+
+    const cardSurfaceBg = isFromQuranReader
+        ? themeStyles.cardBg
+        : (isBlackTheme ? '#18181b' : '#ffffff');
+    const cardTextColor = isFromQuranReader
+        ? themeStyles.text
+        : (isBlackTheme ? '#ffffff' : '#0f172a');
+    const cardSubTextColor = isFromQuranReader
+        ? themeStyles.subtext
+        : (isBlackTheme ? '#a1a1aa' : '#475569');
+    const innerBtnBg = isFromQuranReader
+        ? (readerIsDark ? '#18181b' : '#ffffff')
+        : (isBlackTheme ? '#27272a' : '#f8fafc');
     const checkCircleOffBg = isBlackTheme ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
-    const checkIconColor = isBlackTheme ? '#000000' : '#ffffff';
+    const checkIconColor = isFromQuranReader
+        ? themeStyles.btnText
+        : (isBlackTheme ? '#000000' : '#ffffff');
+
+    const readerCssVars: React.CSSProperties = isFromQuranReader && readerPalette
+        ? ({
+              '--qr-bg': notifPageBg,
+              '--qr-modal-bg': topBarBg,
+              '--qr-modal-text': topBarText,
+              '--qr-header-bg': topBarBg,
+              '--qr-header-text': topBarText,
+              '--qr-text': cardTextColor,
+              '--qr-card-bg': cardSurfaceBg,
+              '--qr-card-text': cardTextColor,
+              '--qr-accent': themeStyles.accent,
+              '--qr-accent-text': themeStyles.btnText,
+              '--qr-flat-accent': themeStyles.accent,
+              '--qr-flat-surface': cardSurfaceBg,
+              '--qr-flat-border-strong': readerIsDark ? 'rgba(255, 255, 255, 0.28)' : `${themeStyles.accent}99`,
+              '--qr-flat-border-subtle': readerIsDark ? 'rgba(255, 255, 255, 0.16)' : `${themeStyles.accent}44`,
+              '--madinah-menu-bg': notifPageBg,
+              '--madinah-topbar-bg': topBarBg,
+              '--madinah-menu-surface': cardSurfaceBg,
+              '--madinah-menu-text': topBarText,
+              '--madinah-menu-border': themeStyles.accent,
+              '--madinah-menu-border-strong': readerIsDark ? 'rgba(255, 255, 255, 0.28)' : `${themeStyles.accent}99`,
+              '--madinah-menu-border-subtle': readerIsDark ? 'rgba(255, 255, 255, 0.16)' : `${themeStyles.accent}44`,
+              '--madinah-menu-accent': themeStyles.accent,
+          } as React.CSSProperties)
+        : {};
 
     return (
         <div 
@@ -540,7 +636,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                 ? `settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} fixed inset-0 z-[9999999] bg-black/55 flex items-center justify-center p-2.5 font-cairo select-none overflow-hidden animate-fadeIn`
                 : `quran-fullscreen-modal-backdrop settings-3d-adia-scope ${isBlackTheme ? 'settings-3d-dark' : ''} fixed inset-0 z-[9999999] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn`
             }
-            style={isLandscape ? undefined : { backgroundColor: notifPageBg }}
+            style={isLandscape ? readerCssVars : { ...readerCssVars, backgroundColor: notifPageBg }}
             onClick={isLandscape ? onClose : undefined}
         >
             <div
@@ -548,23 +644,23 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                     ? `modal-skinned compact-landscape-modal ${isBlackTheme ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
                     : "quran-fullscreen-modal-panel flex-1 min-h-0 w-full flex flex-col overflow-hidden"
                 }
-                style={isLandscape ? { backgroundColor: notifPageBg, border: 'none', outline: 'none' } : undefined}
+                style={{ backgroundColor: notifPageBg, border: 'none', outline: 'none' }}
                 onClick={isLandscape ? e => e.stopPropagation() : undefined}
             >
             {isLandscape ? (
                 <div className="pt-2.5 px-3 pb-1.5 shrink-0">
                     <div
                         className="py-1.5 px-3 rounded-xl flex items-center justify-between gap-2 quran-raised-card border-0"
-                        style={{ backgroundColor: cardSurfaceBg, color: cardTextColor }}
+                        style={{ backgroundColor: isFromQuranReader ? topBarBg : cardSurfaceBg, color: isFromQuranReader ? topBarText : cardTextColor }}
                     >
-                        <h1 className="text-xs font-extrabold truncate">
+                        <h1 className="text-xs font-extrabold truncate font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }}>
                             {activeTab === 'app' ? (isEn ? 'App Notifications' : 'إشعارات التطبيق') : (phoneTabTitle || (isEn ? 'Phone Notifications' : 'إشعارات الهاتف'))}
                         </h1>
                         <button
                             type="button"
                             onClick={onClose}
                             className="w-7 h-7 rounded-full quran-raised-btn flex items-center justify-center border-0 shrink-0 cursor-pointer"
-                            style={{ backgroundColor: innerBtnBg, color: cardTextColor }}
+                            style={{ backgroundColor: innerBtnBg, color: isFromQuranReader ? topBarText : cardTextColor }}
                             title={isEn ? "Close" : "إغلاق"}
                             aria-label={isEn ? "Close" : "إغلاق"}
                         >
@@ -574,7 +670,11 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                 </div>
             ) : (
             /* Standard Page Header - Identical to Adia */
-            <header className="app-top-bar settings-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
+            <header
+                className={`app-top-bar settings-top-bar ${isFromQuranReader ? 'quran-context' : ''}`}
+                dir={isEn ? 'ltr' : 'rtl'}
+                style={isFromQuranReader ? { backgroundColor: topBarBg, color: topBarText } : undefined}
+            >
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
                         {/* Back button */}
@@ -582,6 +682,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                             <button
                                 onClick={onClose}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={isFromQuranReader ? { color: topBarText } : undefined}
                                 title={isEn ? "Go Back" : "رجوع للخلف"}
                                 aria-label={isEn ? "Go Back" : "رجوع للخلف"}
                             >
@@ -591,21 +692,12 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
 
                         {/* Title in center */}
                         <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                            <h1
+                                className="app-top-bar__title text-lg sm:text-xl font-cairo truncate"
+                                style={isFromQuranReader ? { color: topBarText, fontFamily: "'Cairo', sans-serif" } : { fontFamily: "'Cairo', sans-serif" }}
+                            >
                                 {activeTab === 'app' ? (isEn ? 'App Notifications' : 'إشعارات التطبيق') : (phoneTabTitle || (isEn ? 'Phone Notifications' : 'إشعارات الهاتف'))}
                             </h1>
-                        </div>
-
-                        {/* Home button */}
-                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                            <button
-                                onClick={onClose}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title={isEn ? "Home" : "الصفحة الرئيسية"}
-                                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
-                            >
-                                <i className="fa-solid fa-house text-xl"></i>
-                            </button>
                         </div>
                     </div>
                 </div>

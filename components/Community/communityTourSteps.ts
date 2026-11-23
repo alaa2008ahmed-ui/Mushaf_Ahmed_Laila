@@ -1858,8 +1858,8 @@ export const SMART_HOME_QURAN_STEP: SpotlightStep = {
   targetSelector: '#modern-card-container-quran',
   titleAr: 'بطاقة القرآن الكريم والوصول السريع',
   titleEn: 'Holy Quran & Quick Reading',
-  descAr: 'تصفح القرآن الكريم بالقراءة الرأسية أو العرضية، واستكمل قراءتك من آخر موضع وصلت إليه بلمسة واحدة، مع متابعة الشريط التفاعلي المتحرك للآية وقراءة السورة بسهولة.',
-  descEn: 'Browse the Holy Quran in portrait or landscape mode, resume your last read position in one tap, and track your daily wird and memorization.',
+  descAr: 'تعرض آخر موضع توقفت عنده في المصحف (السورة، الآية، الجزء، والصفحة) مع الشريط التفاعلي المتحرك للآية الكريمة، وتوفر أزراراً سريعة لاختيار وضع القراءة المناسب لك بلمسة واحدة.',
+  descEn: 'Displays your last read position (Surah, Ayah, Juz, and Page) with the animated verse ticker bar, plus quick buttons to open your preferred reading mode in one tap.',
   badgeAr: 'المصحف الشريف',
   badgeEn: 'Holy Quran',
   iconName: 'quran',
@@ -1867,6 +1867,52 @@ export const SMART_HOME_QURAN_STEP: SpotlightStep = {
   gradient: 'from-amber-500 to-amber-600',
   preferredPlacement: 'bottom'
 };
+
+export const SMART_HOME_QURAN_STEPS: SpotlightStep[] = [
+  SMART_HOME_QURAN_STEP,
+  {
+    id: 'smart_home_quran_vertical_btn',
+    targetSelector: '#home-quran-vertical-btn',
+    titleAr: 'زر القراءة الرأسية (رأسي)',
+    titleEn: 'Vertical Reading Button',
+    descAr: 'اضغط هنا لفتح المصحف في الوضع الرأسي العمودي مع تمرير الصفحات للأعلى والأسفل، واستكمال التلاوة مباشرة من آخر موضع وصلت إليه، مع تحكم كامل في الخطوط والتفاسير والألوان.',
+    descEn: 'Tap here to open the Mushaf in portrait vertical reading mode with smooth vertical scrolling, resuming directly from your last read verse with full font and Tafseer controls.',
+    badgeAr: 'الوضع الرأسي',
+    badgeEn: 'Vertical Mode',
+    iconName: 'quran',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_quran_madinah_btn',
+    targetSelector: '#home-quran-madinah-btn',
+    titleAr: 'زر مصحف المدينة (أفقي)',
+    titleEn: 'Madinah Mushaf Button',
+    descAr: 'اضغط هنا لفتح مصحف المدينة المنورة ذي الـ 15 سطراً بالرسم العثماني المعتمد، مع تقليب الصفحات أفقياً يميناً ويساراً وإطارات زخرفية مميزة وإعدادات مستقلة.',
+    descEn: 'Tap here to open the authentic 15-line Uthmani Madinah Mushaf with horizontal page swiping, ornamental page frames, and independent reading settings.',
+    badgeAr: 'مصحف المدينة',
+    badgeEn: 'Madinah Mushaf',
+    iconName: 'quran',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_quran_landscape_btn',
+    targetSelector: '#home-quran-landscape-btn',
+    titleAr: 'زر القراءة العرضية (عرضي)',
+    titleEn: 'Landscape Reading Button',
+    descAr: 'اضغط هنا لفتح المصحف بالوضع العرضي على كامل عرض الشاشة لوضوح أكبر للخط والآيات، واستئناف القراءة من موضع توقفك بمساحة عرض مريحة وهادئة.',
+    descEn: 'Tap here to open the Quran in widescreen landscape mode for larger, clearer verse typography and a spacious, comfortable reading view.',
+    badgeAr: 'الوضع العرضي',
+    badgeEn: 'Landscape Mode',
+    iconName: 'quran',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  }
+];
 
 export const SMART_HOME_LISTEN_QURAN_STEP: SpotlightStep = {
   id: 'smart_home_listen_quran_card',
@@ -2078,7 +2124,7 @@ export const SMART_HOME_SHARE_STEP: SpotlightStep = {
 };
 
 export const MODERN_CARD_STEPS_MAP: Record<string, SpotlightStep[]> = {
-  'quran': [SMART_HOME_QURAN_STEP],
+  'quran': SMART_HOME_QURAN_STEPS,
   'listen-quran': [SMART_HOME_LISTEN_QURAN_STEP],
   'seasonal': [SMART_HOME_SEASONAL_STEP],
   'prayer': SMART_HOME_PRAYER_STEPS,
@@ -2181,7 +2227,7 @@ export const getDynamicSmartHomeSteps = (): SpotlightStep[] => {
 
 export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
   ...SMART_HOME_HEADER_STEPS,
-  SMART_HOME_QURAN_STEP,
+  ...SMART_HOME_QURAN_STEPS,
   SMART_HOME_LISTEN_QURAN_STEP,
   SMART_HOME_SEASONAL_STEP,
   ...SMART_HOME_PRAYER_STEPS,

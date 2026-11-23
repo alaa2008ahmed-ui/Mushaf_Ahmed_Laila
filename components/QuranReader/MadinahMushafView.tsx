@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import MadinahFrameSVG from './MadinahFrameSVG';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import MadinahFrameSVG, { getMadinahThemePalette } from './MadinahFrameSVG';
 import MadinahPageContent from './MadinahPageContent';
 
 interface MadinahMushafViewProps {
@@ -32,11 +32,268 @@ interface MadinahMushafViewProps {
     onBottomPageInputChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onBottomPageInputBlur?: () => void;
     onBottomPageInputKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+    isVerticalMode?: boolean;
+    scrollContainerRef?: React.MutableRefObject<HTMLDivElement | null>;
+    onScrollContainerClick?: () => void;
+    verticalJumpTarget?: { page: number; seq: number } | null;
+    autoScrollState?: { isActive: boolean; isPaused: boolean; elapsedTime: number };
+    onAutoScrollButtonPointerDown?: (e: React.SyntheticEvent) => void;
+    onAutoScrollButtonPointerUp?: (e: React.PointerEvent | React.TouchEvent) => void;
+    onAutoScrollButtonPointerLeave?: () => void;
 }
 
 const TOTAL_PAGES = 604;
 
-const MadinahMushafView: React.FC<MadinahMushafViewProps> = ({
+const MadinahVerticalReader: React.FC<MadinahMushafViewProps> = ({
+    currentPage,
+    getPageData,
+    highlightedAyahId,
+    onAyahClick,
+    onVerseClick,
+    onVerseLongPress,
+    onAyahLongPress,
+    onInteractionStart,
+    onInteractionEnd,
+    onSurahHeaderLongPress,
+    settings,
+    currentTheme,
+    hideVerses,
+    memorizationSettings,
+    isPlaying,
+    isRecording,
+    revealedAyahs,
+    tempRevealedAyah,
+    audioProgress,
+    isLandscape = false,
+    isBottomPageInputActive = false,
+    bottomPageInputRef,
+    bottomPageInput = '',
+    onBottomPageButtonClick,
+    onBottomPageInputChange,
+    onBottomPageInputBlur,
+    onBottomPageInputKeyDown,
+    scrollContainerRef,
+    onScrollContainerClick,
+    verticalJumpTarget,
+    autoScrollState,
+    onAutoScrollButtonPointerDown,
+    onAutoScrollButtonPointerUp,
+    onAutoScrollButtonPointerLeave,
+}) => {
+    const clampedPage = Math.max(1, Math.min(TOTAL_PAGES, currentPage || 1));
+    const localScrollerRef = useRef<HTMLDivElement | null>(null);
+    const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+    const [renderCenterPage, setRenderCenterPage] = useState<number>(clampedPage);
+    const hasInitializedScrollRef = useRef(false);
+    const lastJumpSeqRef = useRef<number | null>(null);
+    const prevStrideRef = useRef<number>(0);
+
+    const setScrollerNode = useCallback(
+        (node: HTMLDivElement | null) => {
+            localScrollerRef.current = node;
+            if (scrollContainerRef) {
+                scrollContainerRef.current = node;
+            }
+        },
+        [scrollContainerRef]
+    );
+
+    useLayoutEffect(() => {
+        const el = localScrollerRef.current;
+        if (!el) return;
+
+        const updateSize = () => {
+            if (typeof document !== 'undefined' && document.getElementById('madinah-bottom-page-input')) {
+                return;
+            }
+            const w = Math.round(el.clientWidth);
+            const h = Math.round(el.clientHeight);
+            if (w > 40 && h > 40) {
+                setStageSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+            }
+        };
+
+        updateSize();
+
+        const ro = new ResizeObserver(updateSize);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    const pageGap = isLandscape ? 12 : 14;
+    const pageHeight = useMemo(() => {
+        if (stageSize.h <= 40 || stageSize.w <= 40) return 600;
+        if (isLandscape) {
+            return Math.max(stageSize.h, Math.min(820, Math.round(stageSize.w * 1.15)));
+        }
+        return stageSize.h;
+    }, [stageSize.w, stageSize.h, isLandscape]);
+
+    const stride = pageHeight + pageGap;
+
+    useLayoutEffect(() => {
+        const el = localScrollerRef.current;
+        if (!el || stageSize.h <= 40) return;
+
+        if (!hasInitializedScrollRef.current) {
+            hasInitializedScrollRef.current = true;
+            prevStrideRef.current = stride;
+            el.scrollTop = (clampedPage - 1) * stride;
+            setRenderCenterPage(clampedPage);
+            return;
+        }
+
+        if (prevStrideRef.current !== stride) {
+            prevStrideRef.current = stride;
+            el.scrollTop = (clampedPage - 1) * stride;
+            setRenderCenterPage(clampedPage);
+        }
+    }, [stageSize.h, stride, clampedPage]);
+
+    useLayoutEffect(() => {
+        const el = localScrollerRef.current;
+        if (!el || stageSize.h <= 40 || !verticalJumpTarget) return;
+        if (lastJumpSeqRef.current === verticalJumpTarget.seq) return;
+        lastJumpSeqRef.current = verticalJumpTarget.seq;
+
+        const targetPage = Math.max(1, Math.min(TOTAL_PAGES, verticalJumpTarget.page));
+        el.scrollTop = (targetPage - 1) * stride;
+        setRenderCenterPage(targetPage);
+    }, [verticalJumpTarget, stageSize.h, stride]);
+
+    const handleScrollerScroll = useCallback(() => {
+        const el = localScrollerRef.current;
+        if (!el || stride <= 0) return;
+        const approxPage = Math.max(
+            1,
+            Math.min(TOTAL_PAGES, Math.floor((el.scrollTop + el.clientHeight * 0.45) / stride) + 1)
+        );
+        setRenderCenterPage((prev) => (prev === approxPage ? prev : approxPage));
+    }, [stride]);
+
+    const visiblePageNumbers = useMemo(() => {
+        const start = Math.max(1, renderCenterPage - 3);
+        const end = Math.min(TOTAL_PAGES, renderCenterPage + 4);
+        const list: number[] = [];
+        for (let p = start; p <= end; p++) {
+            list.push(p);
+        }
+        return list;
+    }, [renderCenterPage]);
+
+    const palette = getMadinahThemePalette(currentTheme);
+    const pageBg = settings?.bgColor || currentTheme?.bg || '#ffffff';
+
+    return (
+        <div className="madinah-vertical-viewport" dir="rtl">
+            <MadinahFrameSVG
+                currentTheme={currentTheme}
+                bgColor={settings?.bgColor}
+                frameDesign={settings?.madinahFrameDesign}
+                pageNum={clampedPage}
+                isCurrent={true}
+                isLandscape={isLandscape}
+                isPageInputActive={isBottomPageInputActive}
+                pageInputRef={bottomPageInputRef}
+                pageInput={bottomPageInput}
+                onPageButtonClick={onBottomPageButtonClick}
+                onPageInputChange={onBottomPageInputChange}
+                onPageInputBlur={onBottomPageInputBlur}
+                onPageInputKeyDown={onBottomPageInputKeyDown}
+                showAutoScrollButton={true}
+                autoScrollState={autoScrollState}
+                onAutoScrollButtonPointerDown={onAutoScrollButtonPointerDown}
+                onAutoScrollButtonPointerUp={onAutoScrollButtonPointerUp}
+                onAutoScrollButtonPointerLeave={onAutoScrollButtonPointerLeave}
+                innerStageClassName="madinah-vertical-inner-stage"
+            >
+                <div
+                    id="mushaf-content"
+                    ref={setScrollerNode}
+                    onClick={onScrollContainerClick}
+                    onScroll={handleScrollerScroll}
+                    className="madinah-vertical-scroller"
+                    style={{ backgroundColor: pageBg }}
+                    dir="rtl"
+                >
+                    <div
+                        style={{
+                            position: 'relative',
+                            width: '100%',
+                            height: `${TOTAL_PAGES * stride - pageGap}px`,
+                        }}
+                    >
+                        {visiblePageNumbers.map((pageNum) => {
+                            const topPx = (pageNum - 1) * stride;
+                            return (
+                                <React.Fragment key={`madinah-vpage-${pageNum}`}>
+                                    <div
+                                        id={`madinah-page-${pageNum}`}
+                                        data-page={pageNum}
+                                        className="madinah-vertical-page"
+                                        style={{
+                                            top: `${topPx}px`,
+                                            height: `${pageHeight}px`,
+                                            backgroundColor: pageBg,
+                                        }}
+                                    >
+                                        <MadinahPageContent
+                                            pageNum={pageNum}
+                                            pageData={getPageData(pageNum)}
+                                            isActiveSlide={pageNum === clampedPage}
+                                            highlightedAyahId={highlightedAyahId}
+                                            onAyahClick={onAyahClick}
+                                            onVerseClick={onVerseClick}
+                                            onVerseLongPress={onVerseLongPress}
+                                            onAyahLongPress={onAyahLongPress}
+                                            onInteractionStart={onInteractionStart}
+                                            onInteractionEnd={onInteractionEnd}
+                                            onSurahHeaderLongPress={onSurahHeaderLongPress}
+                                            settings={settings}
+                                            currentTheme={currentTheme}
+                                            hideVerses={hideVerses}
+                                            memorizationSettings={memorizationSettings}
+                                            isPlaying={isPlaying}
+                                            isRecording={isRecording}
+                                            revealedAyahs={revealedAyahs}
+                                            tempRevealedAyah={tempRevealedAyah}
+                                            audioProgress={audioProgress}
+                                        />
+                                    </div>
+                                    {pageNum < TOTAL_PAGES && (
+                                        <div
+                                            className="madinah-vertical-divider"
+                                            style={{
+                                                top: `${topPx + pageHeight}px`,
+                                                height: `${pageGap}px`,
+                                            }}
+                                            aria-hidden="true"
+                                        >
+                                            <span
+                                                className="madinah-vertical-divider-line"
+                                                style={{ backgroundColor: palette.gold }}
+                                            />
+                                            <span
+                                                className="madinah-vertical-divider-gem"
+                                                style={{ backgroundColor: palette.gold }}
+                                            />
+                                            <span
+                                                className="madinah-vertical-divider-line"
+                                                style={{ backgroundColor: palette.gold }}
+                                            />
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                </div>
+            </MadinahFrameSVG>
+        </div>
+    );
+};
+
+const MadinahHorizontalReader: React.FC<MadinahMushafViewProps> = ({
     currentPage,
     getPageData,
     highlightedAyahId,
@@ -466,11 +723,13 @@ const MadinahMushafView: React.FC<MadinahMushafViewProps> = ({
 
                     return (
                         <div key={`slide-${pageNum}`} className="madinah-pager-slide">
-                            <MadinahFrameSVG
+                                <MadinahFrameSVG
                                 currentTheme={currentTheme}
                                 bgColor={settings?.bgColor}
                                 frameDesign={settings?.madinahFrameDesign}
                                 pageNum={pageNum}
+                                isCurrent={isCurrent}
+                                isLandscape={isLandscape}
                                 isPageInputActive={isCurrent && isBottomPageInputActive}
                                 pageInputRef={isCurrent ? bottomPageInputRef : undefined}
                                 pageInput={isCurrent ? bottomPageInput : ''}
@@ -508,6 +767,13 @@ const MadinahMushafView: React.FC<MadinahMushafViewProps> = ({
             </div>
         </div>
     );
+};
+
+const MadinahMushafView: React.FC<MadinahMushafViewProps> = (props) => {
+    if (props.isVerticalMode) {
+        return <MadinahVerticalReader {...props} />;
+    }
+    return <MadinahHorizontalReader {...props} />;
 };
 
 export default MadinahMushafView;

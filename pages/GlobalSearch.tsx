@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { quranData } from '../utils/quranData';
-import { THEMES, toArabic, SURAH_NAMES_EN } from '../components/QuranReader/constants';
+import { THEMES, toArabic, SURAH_NAMES_EN, isDarkQuranTheme } from '../components/QuranReader/constants';
 import { HISN_ALMUSLIM_CATEGORIES, HISN_ALMUSLIM_DATA } from '../data/hisnAlmuslimData';
 import { HISN_CATEGORIES_EN, HISN_ITEMS_EN } from '../data/hisnAlmuslimTranslationsEn';
 import { NAWAWI_DATA } from '../data/nawawiData';
@@ -85,6 +85,28 @@ const loadMeaningsMap = async (): Promise<Map<string, string> | null> => {
     return null;
 };
 
+const isHexColorDark = (color?: string): boolean => {
+    if (!color || typeof color !== 'string') return false;
+    const c = color.trim().toLowerCase();
+    if (c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return false;
+    const hex = c.startsWith('#') ? c.slice(1) : '';
+    if (!hex) return false;
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+    } else if (hex.length === 6) {
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+    } else {
+        return false;
+    }
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.45;
+};
+
 // Helper to get reader theme
 const getReaderTheme = (isLandscape = false, readingMode = 'mushaf') => {
     try {
@@ -102,10 +124,13 @@ const getReaderTheme = (isLandscape = false, readingMode = 'mushaf') => {
             textColor.toLowerCase() === '#ffffff' ||
             isDeepBlack ||
             themeId.startsWith('i_') ||
+            isHexColorDark(bgColor) ||
             ['#000000', '#0a0a0a', '#18181b', '#09090b', '#022c22', '#450a0a', '#1e3a8a', '#422006', '#78350f', '#4c1d95', '#280a1e', '#041e3a', '#1e1b4b', '#0f172a', '#064e3b', '#134e4a', '#334155'].includes(bgColor.toLowerCase());
 
         return {
             ...originalTheme,
+            rawBgColor: quranSettings.bgColor || '',
+            originalBg: originalTheme.bg || '#ffffff',
             bgColor,
             textColor,
             text: textColor,
@@ -122,6 +147,8 @@ const getReaderTheme = (isLandscape = false, readingMode = 'mushaf') => {
         const defaultTheme = THEMES.black;
         return {
             ...defaultTheme,
+            rawBgColor: '',
+            originalBg: '#ffffff',
             bgColor: '#ffffff',
             textColor: '#000000',
             text: '#000000',
@@ -309,80 +336,103 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         isDark: appIsDark,
     };
 
-    const isMadinahFlatSearch = isFromQuran && sourceReadingMode === 'madinah';
-    const madinahPalette = React.useMemo(
-        () => (isMadinahFlatSearch ? getMadinahThemePalette(readerTheme) : null),
-        [isMadinahFlatSearch, readerTheme]
+    const isQuranFlatSearch = isFromQuran;
+    const ornamentPalette = React.useMemo(
+        () => (isFromQuran ? getMadinahThemePalette(readerTheme) : null),
+        [isFromQuran, readerTheme]
     );
 
-    const theme = isMadinahFlatSearch && madinahPalette
+    const rawReaderBg = (readerTheme.rawBgColor || '').trim();
+    const normRawReaderBg = rawReaderBg.toLowerCase();
+    const normOrigBg = (readerTheme.originalBg || '#ffffff').trim().toLowerCase();
+    const hasCustomReaderBg =
+        Boolean(normRawReaderBg) &&
+        normRawReaderBg !== 'transparent' &&
+        normRawReaderBg !== 'rgba(0, 0, 0, 0)' &&
+        normRawReaderBg !== normOrigBg;
+
+    const quranResolvedBg = ornamentPalette
+        ? (hasCustomReaderBg ? rawReaderBg : ornamentPalette.frameBg)
+        : appSearchTheme.bgColor;
+    const quranThemeIsDark = isDarkQuranTheme(readerTheme);
+    const quranResolvedIsDark = Boolean(readerTheme.isDark) || quranThemeIsDark || isHexColorDark(quranResolvedBg);
+    const quranTopBarBg = ornamentPalette ? ornamentPalette.frameBg : appSearchTheme.bgColor;
+    const quranTopBarText = ornamentPalette
+        ? (quranThemeIsDark ? '#f8fafc' : ornamentPalette.bannerText)
+        : appSearchTheme.textColor;
+    const quranBodyText = ornamentPalette
+        ? (quranResolvedIsDark ? '#f8fafc' : ornamentPalette.bannerText)
+        : appSearchTheme.textColor;
+
+    const theme = isFromQuran && ornamentPalette
         ? {
               ...readerTheme,
-              bgColor: madinahPalette.frameBg,
-              bg: madinahPalette.frameBg,
-              textColor: readerTheme.isDark ? '#f8fafc' : madinahPalette.bannerText,
-              text: readerTheme.isDark ? '#f8fafc' : madinahPalette.bannerText,
-              accent: madinahPalette.primary,
-              btnBg: madinahPalette.cartoucheFill,
+              bgColor: quranResolvedBg,
+              bg: quranResolvedBg,
+              textColor: quranBodyText,
+              text: quranBodyText,
+              accent: quranThemeIsDark && readerTheme.id === 'deep_black' ? '#e4e4e7' : ornamentPalette.primary,
+              btnBg: quranResolvedIsDark ? '#141418' : (ornamentPalette.cartoucheFill || '#ffffff'),
+              isDark: quranResolvedIsDark,
               palette: [
-                  madinahPalette.primary,
-                  ...(readerTheme.palette?.slice(1) || [madinahPalette.secondary, madinahPalette.cartoucheFill]),
+                  ornamentPalette.primary,
+                  ...(readerTheme.palette?.slice(1) || [ornamentPalette.secondary, ornamentPalette.cartoucheFill]),
               ],
           }
         : (isFromQuran ? readerTheme : appSearchTheme);
 
-    const madinahAccent = madinahPalette ? madinahPalette.primary : (theme.accent || theme.palette[0]);
-    const madinahBorderSubtle = `${madinahAccent}44`;
-    const madinahBorderStrong = `${madinahAccent}99`;
-    const madinahVars: React.CSSProperties = isMadinahFlatSearch
+    const flatAccent = ornamentPalette
+        ? (quranThemeIsDark && readerTheme.id === 'deep_black' ? '#e4e4e7' : ornamentPalette.primary)
+        : (theme.isDark && (theme.accent === '#27272a' || theme.accent === '#000000')
+            ? '#e4e4e7'
+            : (theme.id === 'gold' ? '#b45309' : (theme.accent || theme.palette[0] || '#10b981')));
+    const flatBorderSubtle = theme.isDark
+        ? 'rgba(255, 255, 255, 0.16)'
+        : `${flatAccent}44`;
+    const flatBorderStrong = theme.isDark
+        ? 'rgba(255, 255, 255, 0.28)'
+        : `${flatAccent}99`;
+    const madinahVars: React.CSSProperties = isQuranFlatSearch
         ? ({
-              '--madinah-menu-bg': theme.bgColor,
+              '--madinah-menu-bg': quranTopBarBg,
               '--madinah-menu-surface': theme.btnBg || (theme.isDark ? '#0a0a0c' : '#ffffff'),
-              '--madinah-menu-header-bg': theme.isDark ? 'rgba(255, 255, 255, 0.06)' : theme.bgColor,
-              '--madinah-menu-text': theme.textColor,
-              '--madinah-menu-border': madinahAccent,
-              '--madinah-menu-border-strong': madinahBorderStrong,
-              '--madinah-menu-border-subtle': madinahBorderSubtle,
-              '--madinah-menu-accent': madinahAccent,
-              '--madinah-menu-icon-text': madinahAccent.toUpperCase() === '#FFFFFF' ? '#000000' : '#ffffff',
+              '--madinah-menu-header-bg': quranTopBarBg,
+              '--madinah-menu-text': quranTopBarText,
+              '--madinah-menu-border': flatAccent,
+              '--madinah-menu-border-strong': flatBorderStrong,
+              '--madinah-menu-border-subtle': flatBorderSubtle,
+              '--madinah-menu-accent': flatAccent,
+              '--madinah-menu-icon-text': flatAccent.toUpperCase() === '#FFFFFF' || flatAccent.toUpperCase() === '#E4E4E7' ? '#09090b' : '#ffffff',
           } as React.CSSProperties)
         : {};
 
-    const accentBadgeText = (theme.accent || theme.palette?.[0] || '').toUpperCase() === '#FFFFFF' ? '#000000' : '#ffffff';
+    const accentBadgeText = (flatAccent.toUpperCase() === '#FFFFFF' || flatAccent.toUpperCase() === '#E4E4E7') ? '#09090b' : '#ffffff';
 
-    const card3DClass = isMadinahFlatSearch
+    const card3DClass = isQuranFlatSearch
         ? 'madinah-flat-card'
-        : (isFromQuran ? 'quran-raised-card' : `app-page-card ${s3d.surfaceCardClass}`);
-    const btn3DClass = isMadinahFlatSearch
+        : `app-page-card ${s3d.surfaceCardClass}`;
+    const btn3DClass = isQuranFlatSearch
         ? 'madinah-flat-btn'
-        : (isFromQuran ? 'quran-raised-btn' : `app-page-card ${s3d.surfaceCardClass}`);
-    const inner3DClass = isMadinahFlatSearch
+        : `app-page-card ${s3d.surfaceCardClass}`;
+    const inner3DClass = isQuranFlatSearch
         ? 'madinah-flat-badge'
-        : (isFromQuran ? 'quran-raised-card' : 'app-3d-badge');
-    const icon3DClass = isMadinahFlatSearch ? '' : 'quran-3d-icon';
+        : 'app-3d-badge';
+    const icon3DClass = isQuranFlatSearch ? '' : 'quran-3d-icon';
 
-    const badge3DStyle: React.CSSProperties = isMadinahFlatSearch
-        ? { backgroundColor: madinahAccent, color: accentBadgeText, border: `1px solid ${madinahAccent}` }
-        : isFromQuran
-            ? { backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }
-            : { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor, border: 'none' };
+    const badge3DStyle: React.CSSProperties = isQuranFlatSearch
+        ? { backgroundColor: flatAccent, color: accentBadgeText, border: `1px solid ${flatAccent}` }
+        : { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor, border: 'none' };
     const itemCardStyle = (darkAlpha = 'rgba(255,255,255,0.05)'): React.CSSProperties =>
-        isMadinahFlatSearch
-            ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: `1.5px solid ${madinahBorderSubtle}` }
-            : isFromQuran
-                ? { backgroundColor: theme.isDark ? darkAlpha : '#ffffff', color: theme.textColor, border: 'none' }
-                : { color: s3d.textColor };
+        isQuranFlatSearch
+            ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: `1.5px solid ${flatBorderSubtle}` }
+            : { color: s3d.textColor };
     const headerCardStyle = (darkAlpha = 'rgba(255,255,255,0.06)'): React.CSSProperties =>
-        isMadinahFlatSearch
-            ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: `1.5px solid ${madinahBorderSubtle}` }
-            : isFromQuran
-                ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }
-                : { color: s3d.textColor };
-    const sectionIconStyle: React.CSSProperties = isMadinahFlatSearch
-        ? { backgroundColor: `${madinahAccent}14`, color: madinahAccent, border: `1px solid ${madinahBorderSubtle}` }
-        : isFromQuran
-            ? { backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }
-            : { backgroundColor: s3d.softResultBg, color: s3d.noticeAccent, border: 'none' };
+        isQuranFlatSearch
+            ? { backgroundColor: theme.isDark ? darkAlpha : (theme.btnBg || '#ffffff'), color: theme.textColor, border: `1.5px solid ${flatBorderSubtle}` }
+            : { color: s3d.textColor };
+    const sectionIconStyle: React.CSSProperties = isQuranFlatSearch
+        ? { backgroundColor: `${flatAccent}14`, color: flatAccent, border: `1px solid ${flatBorderSubtle}` }
+        : { backgroundColor: s3d.softResultBg, color: s3d.noticeAccent, border: 'none' };
     
     const [query, setQuery] = useState(searchCache.query);
     const [selectedSections, setSelectedSections] = useState<string[]>(() => {
@@ -2465,21 +2515,27 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     return (
         <div
             id="global-search-page"
-            className={`h-[100dvh] w-full flex flex-col relative overflow-hidden transition-colors ${isMadinahFlatSearch ? 'madinah-flat-search' : ''} ${isQuranLandscape ? 'global-search-landscape' : ''} ${theme.isDark ? 'dark' : ''}`}
+            className={`h-[100dvh] w-full flex flex-col relative overflow-hidden transition-colors ${isQuranFlatSearch ? 'madinah-flat-search font-cairo' : ''} ${isQuranLandscape ? 'global-search-landscape' : ''} ${theme.isDark ? 'dark' : ''}`}
             dir={isEn ? "ltr" : "rtl"}
             style={{
                 backgroundColor: theme.bgColor,
+                ...(isQuranFlatSearch ? { fontFamily: "'Cairo', sans-serif" } : {}),
                 ...madinahVars
             }}
         >
-            <header className="app-top-bar shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
+            <header
+                className={`app-top-bar shrink-0 ${isQuranFlatSearch ? 'quran-context' : ''}`}
+                dir={isEn ? 'ltr' : 'rtl'}
+                style={isQuranFlatSearch ? { backgroundColor: quranTopBarBg, color: quranTopBarText } : undefined}
+            >
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
                         {/* Back button */}
                         <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                             <button
                                 onClick={handleBack}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 ${isMadinahFlatSearch ? 'active:opacity-70' : 'active:scale-90'} cursor-pointer`}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 ${isQuranFlatSearch ? 'active:opacity-70' : 'active:scale-90'} cursor-pointer`}
+                                style={isQuranFlatSearch ? { color: quranTopBarText } : undefined}
                                 title={isEn ? "Go Back" : "رجوع للخلف"}
                                 aria-label={isEn ? "Go Back" : "رجوع للخلف"}
                             >
@@ -2489,22 +2545,27 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
                         {/* Title in center */}
                         <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate">
+                            <h1
+                                className="app-top-bar__title text-lg sm:text-xl font-cairo truncate"
+                                style={isQuranFlatSearch ? { color: quranTopBarText, fontFamily: "'Cairo', sans-serif" } : { fontFamily: "'Cairo', sans-serif" }}
+                            >
                                 {pageTitle}
                             </h1>
                         </div>
 
-                        {/* Home button */}
-                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                            <button
-                                onClick={handleGoHome}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 ${isMadinahFlatSearch ? 'active:opacity-70' : 'active:scale-90'} cursor-pointer`}
-                                title={isEn ? "Home" : "الصفحة الرئيسية"}
-                                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
-                            >
-                                <i className="fa-solid fa-house text-xl"></i>
-                            </button>
-                        </div>
+                        {/* Home button (hidden when opened from QuranReader menus) */}
+                        {!isQuranFlatSearch && (
+                            <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                                <button
+                                    onClick={handleGoHome}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                    title={isEn ? "Home" : "الصفحة الرئيسية"}
+                                    aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
+                                >
+                                    <i className="fa-solid fa-house text-xl"></i>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
@@ -2526,17 +2587,12 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         ? "Search in selected sections..." 
                                         : "ابحث في الأقسام المحددة...")
                             } 
-                            className={`w-full py-3 px-3 rounded-2xl focus:outline-none text-xs sm:text-sm font-bold ${card3DClass} ${isMadinahFlatSearch ? '' : 'border-0'} transition-all ${isEn ? 'pl-12 pr-11 text-left' : 'pr-12 pl-11 text-right'}`}
+                            className={`w-full py-3 px-3 rounded-2xl focus:outline-none text-xs sm:text-sm font-bold ${card3DClass} ${isQuranFlatSearch ? '' : 'border-0'} transition-all ${isEn ? 'pl-12 pr-11 text-left' : 'pr-12 pl-11 text-right'}`}
                             dir={isEn ? "ltr" : "rtl"}
-                            style={isMadinahFlatSearch ? {
+                            style={isQuranFlatSearch ? {
                                 backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'),
                                 color: theme.textColor,
-                                border: `1.5px solid ${madinahBorderStrong}`,
-                                outline: 'none'
-                            } : isFromQuran ? {
-                                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.07)' : (theme.btnBg || '#ffffff'), 
-                                color: theme.textColor,
-                                border: 'none',
+                                border: `1.5px solid ${flatBorderStrong}`,
                                 outline: 'none'
                             } : {
                                 color: s3d.textColor,
@@ -2544,20 +2600,20 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             }}
                         />
                         <span
-                            className={`absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full ${isMadinahFlatSearch ? 'madinah-flat-badge' : (isFromQuran ? 'quran-3d-badge border-0' : 'app-3d-badge border-0')} pointer-events-none flex items-center justify-center`}
+                            className={`absolute ${isEn ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full ${isQuranFlatSearch ? 'madinah-flat-badge' : 'app-3d-badge border-0'} pointer-events-none flex items-center justify-center`}
                             style={sectionIconStyle}
                             aria-hidden="true"
                         >
-                            <Search className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />
+                            <Search className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? flatAccent : s3d.noticeAccent }} />
                         </span>
                         {query && (
                             <button 
                                 onClick={() => { setQuery(''); setTimeout(() => (document.querySelector('input') as HTMLElement)?.focus(), 10); }} 
-                                className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-full ${isMadinahFlatSearch ? 'madinah-flat-icon-btn' : (isFromQuran ? 'quran-raised-card border-0' : `app-page-card ${s3d.surfaceCardClass} border-0`)} cursor-pointer flex items-center justify-center`}
-                                style={isMadinahFlatSearch ? { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : '#f3f4f6', border: `1px solid ${madinahBorderSubtle}` } : isFromQuran ? { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : '#f3f4f6', border: 'none' } : undefined}
+                                className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-full ${isQuranFlatSearch ? 'madinah-flat-icon-btn' : `app-page-card ${s3d.surfaceCardClass} border-0`} cursor-pointer flex items-center justify-center`}
+                                style={isQuranFlatSearch ? { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: `1px solid ${flatBorderSubtle}` } : undefined}
                                 title={isEn ? "Clear" : "مسح"}
                             >
-                                <X className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? (theme.accent || theme.palette[0]) : s3d.noticeAccent }} />
+                                <X className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? flatAccent : s3d.noticeAccent }} />
                             </button>
                         )}
                     </div>
@@ -2577,17 +2633,17 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     <button 
                                         key="all"
                                         onClick={() => handleToggleSection('all')}
-                                        className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-bold transition-all ${isMadinahFlatSearch ? '' : 'border-0'} cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                                        className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-bold transition-all ${isQuranFlatSearch ? '' : 'border-0'} cursor-pointer shrink-0 flex items-center gap-1.5 ${
                                             isAllSelected 
-                                                ? (isMadinahFlatSearch ? 'madinah-flat-btn-selected' : (isFromQuran ? 'quran-raised-btn-selected shadow-md scale-[1.02]' : 'app-page-card'))
-                                                : (isMadinahFlatSearch ? 'madinah-flat-btn opacity-90 hover:opacity-100' : (isFromQuran ? 'quran-raised-btn opacity-85 hover:opacity-100' : `${btn3DClass}`))
+                                                ? (isQuranFlatSearch ? 'madinah-flat-btn-selected' : 'app-page-card')
+                                                : (isQuranFlatSearch ? 'madinah-flat-btn opacity-90 hover:opacity-100' : `${btn3DClass}`)
                                         }`}
                                         style={isAllSelected ? badge3DStyle : headerCardStyle('rgba(255,255,255,0.06)')}
                                     >
                                         <span>{isEn ? "All Sections" : "كل الأقسام"}</span>
                                         {query && totalResults > 0 && (
                                             <span 
-                                                className={`${isMadinahFlatSearch ? 'madinah-flat-badge' : (isFromQuran ? 'quran-3d-badge border-0' : 'app-3d-badge border-0')} text-[10px] px-1.5 py-0.2 rounded-full font-extrabold`}
+                                                className={`${isQuranFlatSearch ? 'madinah-flat-badge' : 'app-3d-badge border-0'} text-[10px] px-1.5 py-0.2 rounded-full font-extrabold`}
                                                 style={{ 
                                                     backgroundColor: isAllSelected ? 'rgba(0,0,0,0.2)' : (theme.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'),
                                                     color: isAllSelected ? (isFromQuran ? accentBadgeText : s3d.btnTextColor) : theme.textColor
@@ -2622,17 +2678,17 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                             <button 
                                                 key={sec.id}
                                                 onClick={() => handleToggleSection(sec.id)}
-                                                className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-bold transition-all ${isMadinahFlatSearch ? '' : 'border-0'} cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                                                className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-bold transition-all ${isQuranFlatSearch ? '' : 'border-0'} cursor-pointer flex items-center gap-1.5 shrink-0 ${
                                                     isSelected 
-                                                        ? (isMadinahFlatSearch ? 'madinah-flat-btn-selected' : (isFromQuran ? 'quran-raised-btn-selected shadow-md scale-[1.02]' : 'app-page-card'))
-                                                        : (isMadinahFlatSearch ? 'madinah-flat-btn opacity-90 hover:opacity-100' : (isFromQuran ? 'quran-raised-btn opacity-85 hover:opacity-100' : `${btn3DClass}`))
+                                                        ? (isQuranFlatSearch ? 'madinah-flat-btn-selected' : 'app-page-card')
+                                                        : (isQuranFlatSearch ? 'madinah-flat-btn opacity-90 hover:opacity-100' : `${btn3DClass}`)
                                                 }`}
                                                 style={isSelected ? badge3DStyle : headerCardStyle('rgba(255,255,255,0.06)')}
                                             >
                                                 <span>{sec.label}</span>
                                                 {query && totalResults > 0 && count > 0 && (
                                                     <span 
-                                                        className={`${isMadinahFlatSearch ? 'madinah-flat-badge' : (isFromQuran ? 'quran-3d-badge border-0' : 'app-3d-badge border-0')} text-[10px] px-1.5 py-0.2 rounded-full font-extrabold`}
+                                                        className={`${isQuranFlatSearch ? 'madinah-flat-badge' : 'app-3d-badge border-0'} text-[10px] px-1.5 py-0.2 rounded-full font-extrabold`}
                                                         style={{ 
                                                             backgroundColor: isSelected ? 'rgba(0,0,0,0.2)' : (theme.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'),
                                                             color: isSelected ? (isFromQuran ? accentBadgeText : s3d.btnTextColor) : theme.textColor

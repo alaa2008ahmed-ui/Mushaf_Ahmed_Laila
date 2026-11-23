@@ -300,10 +300,10 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
         >
             <div
                 className={isLandscape
-                    ? `modal-skinned compact-landscape-modal ${isDarkTheme ? 'quran-3d-dark' : ''} w-[62%] max-w-[440px] h-[86%] max-h-[86%] rounded-3xl flex flex-col overflow-hidden shadow-2xl border-0`
-                    : "quran-fullscreen-modal-panel w-full h-full flex flex-col overflow-hidden shadow-2xl border-0"
+                    ? `modal-skinned compact-landscape-modal font-cairo ${isDarkTheme ? 'quran-3d-dark' : ''} w-[62%] max-w-[440px] h-[86%] max-h-[86%] rounded-3xl flex flex-col overflow-hidden shadow-2xl border-0`
+                    : "quran-fullscreen-modal-panel font-cairo w-full h-full flex flex-col overflow-hidden shadow-2xl border-0"
                 }
-                style={{ backgroundColor: currentTheme?.bg || '#ffffff', border: 'none', outline: 'none' }}
+                style={{ backgroundColor: currentTheme?.bg || '#ffffff', fontFamily: "'Cairo', sans-serif", border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex-1 min-h-0 w-full flex flex-col overflow-hidden" style={{ color: currentTheme?.text || '#000000' }}>

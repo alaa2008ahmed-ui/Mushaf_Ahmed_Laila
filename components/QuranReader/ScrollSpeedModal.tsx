@@ -62,7 +62,7 @@ const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({
             dir={isEn ? 'ltr' : 'rtl'}
         >
             <div
-                className={`modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} ${isLandscape ? 'w-[56%] max-w-[360px] max-h-[84%] rounded-3xl' : 'w-full max-w-sm sm:max-w-2xl rounded-3xl max-h-[88dvh]'} flex flex-col border-0 overflow-hidden`}
+                className={`modal-skinned scroll-speed-modal-popup settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} ${isLandscape ? 'w-[56%] max-w-[360px] max-h-[84%] rounded-3xl' : 'w-full max-w-sm sm:max-w-2xl rounded-3xl max-h-[88dvh]'} flex flex-col border-0 overflow-hidden`}
                 style={{
                     fontFamily: p.fontFamily,
                     backgroundColor: p.modalBg,

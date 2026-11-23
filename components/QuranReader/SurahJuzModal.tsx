@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { JUZ_MAP, toArabic, SURAH_INFO, HIZB_QUARTERS, SURAH_NAMES_EN } from './constants';
+import { JUZ_MAP, toArabic, SURAH_INFO, HIZB_QUARTERS, SURAH_NAMES_EN, isDarkQuranTheme } from './constants';
 import SurahInfoModal from './SurahInfoModal';
 import { useLanguage } from '../../context/LanguageContext';
 import { useShowPageGuides } from '../../utils/guideManager';
 import { loadMadinahPageFont, preloadAdjacentMadinahFonts } from '../../utils/qpcMadinahData';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
 
 interface SurahJuzModalProps {
     type: 'surah' | 'juz' | 'hizb';
@@ -36,6 +37,42 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
     const isEnglishMode = isEn || readingMode === 'bilingual' || readingMode === 'translation';
+    const isMadinahOrMushaf = readingMode === 'madinah' || readingMode === 'mushaf';
+
+    const ornamentPalette = getMadinahThemePalette(currentTheme);
+    const isDarkTheme = isDarkQuranTheme(currentTheme);
+    const isDeepBlack = currentTheme?.id === 'deep_black';
+
+    const isHexDark = (color?: string): boolean => {
+        if (!color || typeof color !== 'string') return false;
+        const clean = color.trim().replace(/^#/, '');
+        if (clean.length !== 3 && clean.length !== 6) return false;
+        const full = clean.length === 3
+            ? clean.split('').map(c => c + c).join('')
+            : clean;
+        const r = parseInt(full.slice(0, 2), 16);
+        const g = parseInt(full.slice(2, 4), 16);
+        const b = parseInt(full.slice(4, 6), 16);
+        if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55;
+    };
+
+    const modalBg = ornamentPalette.frameBg;
+    const bodyTextColor = isDarkTheme ? '#f8fafc' : ornamentPalette.bannerText;
+    const accentColor = isDeepBlack
+        ? '#e4e4e7'
+        : (ornamentPalette.primary || currentTheme?.accent || '#b45309');
+    const selectedControlBg = isDeepBlack ? '#3f3f46' : accentColor;
+    const selectedControlText = isHexDark(selectedControlBg) ? '#ffffff' : '#09090b';
+    const cardSurfaceBg = isDarkTheme
+        ? (currentTheme?.cardBg && !currentTheme.cardBg.startsWith('rgba') ? currentTheme.cardBg : '#18181b')
+        : (ornamentPalette.cartoucheFill || '#ffffff');
+    const borderSubtle = isDarkTheme
+        ? 'rgba(255, 255, 255, 0.16)'
+        : `${accentColor}44`;
+    const borderStrong = isDarkTheme
+        ? 'rgba(255, 255, 255, 0.28)'
+        : `${accentColor}99`;
     // Helper to find Juz for a given (Surah, Ayah)
     const getJuzForAyah = useCallback((s: number, a: number) => {
         for (let i = JUZ_MAP.length - 1; i >= 0; i--) {
@@ -284,11 +321,34 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
     };
 
     const listsContent = useMemo(() => {
+        const listContainerClass = isMadinahOrMushaf
+            ? 'flex flex-1 overflow-hidden relative'
+            : 'flex flex-1 overflow-hidden themed-card-bg relative';
+        const getRowStyle = (isSelected: boolean): React.CSSProperties | undefined => {
+            if (!isMadinahOrMushaf) return undefined;
+            return isSelected
+                ? { backgroundColor: selectedControlBg, color: selectedControlText, borderColor: selectedControlBg }
+                : { backgroundColor: cardSurfaceBg, color: bodyTextColor, borderColor: borderSubtle };
+        };
+        const getRowClass = (isSelected: boolean, extraClass: string) => {
+            if (isMadinahOrMushaf) {
+                return `${extraClass} ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`;
+            }
+            return `${extraClass} ${isSelected ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`;
+        };
+
         return (
-            <div className="flex flex-1 overflow-hidden themed-card-bg relative" dir={isRTL ? "rtl" : "ltr"}>
+            <div
+                className={listContainerClass}
+                style={isMadinahOrMushaf ? { backgroundColor: modalBg, color: bodyTextColor } : undefined}
+                dir={isRTL ? "rtl" : "ltr"}
+            >
                 {/* Juz Column */}
                 <div className="flex-[0.55] flex flex-col border-0">
-                    <div className={`${isLandscape ? 'p-1.5 text-[11px]' : 'p-2 text-xs'} text-center font-bold opacity-70 border-0`}>
+                    <div
+                        className={`${isLandscape ? 'p-1.5 text-[11px]' : 'p-2 text-xs'} text-center font-bold opacity-75 border-0`}
+                        style={isMadinahOrMushaf ? { color: bodyTextColor } : undefined}
+                    >
                         {isEn ? "Juz" : "الجزء"}
                     </div>
                     <div className={`flex-1 overflow-y-auto ${isLandscape ? 'p-1 space-y-1' : 'p-1.5 space-y-1.5'} min-h-0 overscroll-contain`} style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -298,7 +358,8 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                 id={j === 1 ? 'juz-item-1' : undefined}
                                 ref={el => { juzRefs.current[j] = el; }}
                                 onClick={() => handleJuzClick(j)}
-                                className={`w-full ${isLandscape ? 'py-1.5 px-1 text-xs rounded-lg' : 'p-2.5 text-sm rounded-xl'} font-bold transition border-0 ${j === 1 ? 'surah-juz-first-row-item' : ''} ${selectedJuz === j ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                className={getRowClass(selectedJuz === j, `w-full ${isLandscape ? 'py-1.5 px-1 text-xs rounded-lg' : 'p-2.5 text-sm rounded-xl'} font-bold transition border-0 ${j === 1 ? 'surah-juz-first-row-item' : ''}`)}
+                                style={getRowStyle(selectedJuz === j)}
                             >
                                 {isEn ? j : toArabic(j)}
                             </button>
@@ -308,7 +369,10 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
 
                 {/* Surah Column */}
                 <div className="flex-[2] flex flex-col border-0">
-                    <div className={`${isLandscape ? 'p-1.5 text-[11px]' : 'p-2 text-xs'} text-center font-bold opacity-70 border-0`}>
+                    <div
+                        className={`${isLandscape ? 'p-1.5 text-[11px]' : 'p-2 text-xs'} text-center font-bold opacity-75 border-0`}
+                        style={isMadinahOrMushaf ? { color: bodyTextColor } : undefined}
+                    >
                         {isEn ? "Surah" : "السورة"}
                     </div>
                     <div className={`flex-1 overflow-y-auto ${isLandscape ? 'p-1 space-y-1' : 'p-1.5 space-y-1.5'} min-h-0 overscroll-contain`} style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -316,6 +380,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                             const surahNameAr = s.name.replace('سورة', '').trim();
                             const surahDisplayName = isEn ? (SURAH_NAMES_EN[s.number - 1] || surahNameAr) : surahNameAr;
                             const isFirstSurah = s.number === 1;
+                            const isSelected = selectedSurah === s.number;
                             return (
                                 <button
                                     key={s.number}
@@ -325,9 +390,15 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                     onPointerDown={() => handleSurahPointerDown(s.number, surahNameAr)}
                                     onPointerUp={handleSurahPointerUp}
                                     onPointerLeave={handleSurahPointerUp}
-                                    className={`w-full ${isLandscape ? 'py-1.5 px-1.5 text-xs rounded-lg gap-1' : 'p-2.5 text-sm rounded-xl gap-2'} font-bold text-center flex justify-center items-center transition select-none border-0 ${isFirstSurah ? 'surah-juz-first-row-item' : ''} ${selectedSurah === s.number ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                    className={getRowClass(isSelected, `w-full ${isLandscape ? 'py-1.5 px-1.5 text-xs rounded-lg gap-1' : 'p-2.5 text-sm rounded-xl gap-2'} font-bold text-center flex justify-center items-center transition select-none border-0 ${isFirstSurah ? 'surah-juz-first-row-item' : ''}`)}
+                                    style={getRowStyle(isSelected)}
                                 >
-                                    <span className={`${isLandscape ? 'text-[10px]' : 'text-xs'} ${selectedSurah === s.number ? 'text-white' : 'opacity-60'}`}>{isEn ? s.number : toArabic(s.number)} -</span>
+                                    <span
+                                        className={`${isLandscape ? 'text-[10px]' : 'text-xs'} ${isSelected ? '' : 'opacity-65'}`}
+                                        style={isMadinahOrMushaf ? { color: isSelected ? selectedControlText : bodyTextColor } : (isSelected ? { color: '#ffffff' } : undefined)}
+                                    >
+                                        {isEn ? s.number : toArabic(s.number)} -
+                                    </span>
                                     <span className="truncate" style={{ fontFamily: isEn ? 'inherit' : 'var(--font-amiri)' }}>{surahDisplayName}</span>
                                 </button>
                             );
@@ -342,7 +413,10 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
 
                 {/* Ayah Column */}
                 <div className="flex-[0.55] flex flex-col border-0">
-                    <div className={`${isLandscape ? 'p-1.5 text-[11px]' : 'p-2 text-xs'} text-center font-bold opacity-70 border-0`}>
+                    <div
+                        className={`${isLandscape ? 'p-1.5 text-[11px]' : 'p-2 text-xs'} text-center font-bold opacity-75 border-0`}
+                        style={isMadinahOrMushaf ? { color: bodyTextColor } : undefined}
+                    >
                         {isEn ? "Ayah" : "الآية"}
                     </div>
                     <div className={`flex-1 overflow-y-auto ${isLandscape ? 'p-1 space-y-1' : 'p-1.5 space-y-1.5'} min-h-0 overscroll-contain`} style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -352,7 +426,8 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                 id={a === 1 ? 'ayah-item-1' : undefined}
                                 ref={el => { ayahRefs.current[a] = el; }}
                                 onClick={() => handleAyahClick(a)}
-                                className={`w-full ${isLandscape ? 'py-1.5 px-1 text-xs rounded-lg' : 'p-2.5 text-sm rounded-xl'} font-bold transition border-0 ${a === 1 ? 'surah-juz-first-row-item' : ''} ${selectedAyah === a ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                className={getRowClass(selectedAyah === a, `w-full ${isLandscape ? 'py-1.5 px-1 text-xs rounded-lg' : 'p-2.5 text-sm rounded-xl'} font-bold transition border-0 ${a === 1 ? 'surah-juz-first-row-item' : ''}`)}
+                                style={getRowStyle(selectedAyah === a)}
                             >
                                 {isEn ? a : toArabic(a)}
                             </button>
@@ -362,7 +437,10 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
 
                 {/* Hizb Quarter Column */}
                 <div className="flex-[1.5] flex flex-col border-0">
-                    <div className={`${isLandscape ? 'p-1.5 text-[11px]' : 'p-2 text-xs'} text-center font-bold opacity-70 border-0`}>
+                    <div
+                        className={`${isLandscape ? 'p-1.5 text-[11px]' : 'p-2 text-xs'} text-center font-bold opacity-75 border-0`}
+                        style={isMadinahOrMushaf ? { color: bodyTextColor } : undefined}
+                    >
                         {isEn ? "Hizb" : "الحزب"}
                     </div>
                     <div className={`flex-1 overflow-y-auto ${isLandscape ? 'p-1 space-y-1' : 'p-1.5 space-y-1.5'} min-h-0 overscroll-contain`} style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -372,7 +450,8 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                 id={hq === 1 ? 'hizb-item-1' : undefined}
                                 ref={el => { hizbRefs.current[hq] = el; }}
                                 onClick={() => handleHizbQuarterClick(hq)}
-                                className={`w-full ${isLandscape ? 'py-1.5 px-1 text-[11px] rounded-lg' : 'p-2.5 text-xs rounded-xl'} font-bold transition border-0 ${hq === 1 ? 'surah-juz-first-row-item' : ''} ${selectedHizbQuarter === hq ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                className={getRowClass(selectedHizbQuarter === hq, `w-full ${isLandscape ? 'py-1.5 px-1 text-[11px] rounded-lg' : 'p-2.5 text-xs rounded-xl'} font-bold transition border-0 ${hq === 1 ? 'surah-juz-first-row-item' : ''}`)}
+                                style={getRowStyle(selectedHizbQuarter === hq)}
                             >
                                 {formatHizbQuarter(hq)}
                             </button>
@@ -381,21 +460,48 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                 </div>
             </div>
         );
-    }, [selectedJuz, selectedSurah, selectedAyah, selectedHizbQuarter, filteredSurahs, ayahsCount, isEn, isRTL, isLandscape]);
+    }, [selectedJuz, selectedSurah, selectedAyah, selectedHizbQuarter, filteredSurahs, ayahsCount, isEn, isRTL, isLandscape, isMadinahOrMushaf, modalBg, bodyTextColor, cardSurfaceBg, selectedControlBg, selectedControlText, borderSubtle]);
 
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/50 flex justify-center items-center ${isLandscape ? 'p-2' : 'p-4'}`} 
              dir={isRTL ? "rtl" : "ltr"}
              onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div 
-                className={`modal-skinned surah-juz-modal ${isLandscape ? 'w-[62%] max-w-[430px] h-[86%] max-h-[86%] rounded-3xl' : 'w-full max-w-4xl rounded-3xl max-h-[90dvh]'} shadow-2xl overflow-hidden flex flex-col border-0`}
-                style={{ border: 'none', outline: 'none' }}
+                className={`modal-skinned surah-juz-modal font-cairo ${isLandscape ? 'w-[62%] max-w-[430px] h-[86%] max-h-[86%] rounded-3xl' : 'w-full max-w-4xl rounded-3xl max-h-[90dvh]'} shadow-2xl overflow-hidden flex flex-col border-0`}
+                style={
+                    isMadinahOrMushaf
+                        ? ({
+                              fontFamily: "'Cairo', sans-serif",
+                              backgroundColor: modalBg,
+                              color: bodyTextColor,
+                              border: `2px solid ${borderStrong}`,
+                              outline: 'none',
+                              '--madinah-menu-bg': modalBg,
+                              '--madinah-menu-surface': cardSurfaceBg,
+                              '--madinah-menu-text': bodyTextColor,
+                              '--madinah-menu-accent': selectedControlBg,
+                              '--madinah-menu-border-subtle': borderSubtle,
+                              '--madinah-menu-border-strong': borderStrong,
+                              '--qr-flat-accent': selectedControlBg,
+                              '--qr-flat-border-subtle': borderSubtle,
+                              '--qr-flat-border-strong': borderStrong,
+                          } as React.CSSProperties)
+                        : { fontFamily: "'Cairo', sans-serif", border: 'none', outline: 'none' }
+                }
                 onClick={e => e.stopPropagation()}
             >
                 {!isLandscape && (
-                    <div className="p-4 theme-header-bg flex flex-col gap-3 border-0" onClick={e => e.stopPropagation()}>
+                    <div
+                        className={`p-4 flex flex-col gap-3 border-0 ${isMadinahOrMushaf ? '' : 'theme-header-bg'}`}
+                        style={isMadinahOrMushaf ? { backgroundColor: modalBg, color: bodyTextColor, borderBottom: `1.5px solid ${borderSubtle}` } : undefined}
+                        onClick={e => e.stopPropagation()}
+                    >
                         <div className="flex items-center gap-2">
-                            <div id="surah-juz-search-box" className="relative flex-1 quran-raised-card rounded-2xl overflow-hidden border-0">
+                            <div
+                                id="surah-juz-search-box"
+                                className="relative flex-1 quran-raised-card rounded-2xl overflow-hidden border-0"
+                                style={isMadinahOrMushaf ? { backgroundColor: cardSurfaceBg, borderColor: borderSubtle } : undefined}
+                            >
                                 <input
                                     id="surah-juz-search-input"
                                     type="text"
@@ -406,9 +512,13 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                     onFocus={e => e.stopPropagation()}
                                     onMouseDown={e => e.stopPropagation()}
                                     onTouchStart={e => e.stopPropagation()}
-                                    className={`w-full p-2.5 ${isRTL ? 'pr-10' : 'pl-10'} rounded-2xl theme-card-bg border-0 theme-card-text placeholder:opacity-50 text-sm font-bold focus:outline-none transition-all`}
+                                    className={`w-full p-2.5 ${isRTL ? 'pr-10' : 'pl-10'} rounded-2xl border-0 placeholder:opacity-55 text-sm font-bold focus:outline-none transition-all ${isMadinahOrMushaf ? '' : 'theme-card-bg theme-card-text'}`}
+                                    style={isMadinahOrMushaf ? { backgroundColor: cardSurfaceBg, color: bodyTextColor } : undefined}
                                 />
-                                <i className={`fas fa-search absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-sm opacity-60`}></i>
+                                <i
+                                    className={`fas fa-search absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-sm opacity-70`}
+                                    style={isMadinahOrMushaf ? { color: accentColor } : undefined}
+                                ></i>
                             </div>
                             {!isLandscape && onOpenGuide && showPageGuides && (
                                 <button
@@ -417,13 +527,16 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                         e.stopPropagation();
                                         onOpenGuide();
                                     }}
-                                    className="w-10 h-10 rounded-2xl flex items-center justify-center theme-btn-bg text-sm quran-raised-btn border-0 active:scale-95 transition-all cursor-pointer"
+                                    className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm quran-raised-btn border-0 active:scale-95 transition-all cursor-pointer ${isMadinahOrMushaf ? '' : 'theme-btn-bg'}`}
+                                    style={isMadinahOrMushaf ? { backgroundColor: cardSurfaceBg, color: accentColor, borderColor: borderSubtle } : undefined}
                                     title={isEn ? "Surah Index Guide" : "إرشاد فهرس السور"}
                                 >
                                     <i
                                         className="fas fa-question-circle text-lg quran-3d-icon"
                                         style={{
-                                            color: currentTheme?.id === 'deep_black'
+                                            color: isMadinahOrMushaf
+                                                ? accentColor
+                                                : currentTheme?.id === 'deep_black'
                                                 ? '#ffffff'
                                                 : (currentTheme?.accent || 'var(--qr-accent, #10b981)')
                                         }}
@@ -436,20 +549,28 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
 
                 {listsContent}
 
-                <div className={`${isLandscape ? 'p-2.5 gap-3' : 'p-4 gap-4'} theme-header-bg flex justify-center border-0`}>
+                <div
+                    className={`${isLandscape ? 'p-2.5 gap-3' : 'p-4 gap-4'} flex justify-center border-0 ${isMadinahOrMushaf ? '' : 'theme-header-bg'}`}
+                    style={isMadinahOrMushaf ? { backgroundColor: modalBg, color: bodyTextColor, borderTop: `1.5px solid ${borderSubtle}` } : undefined}
+                >
                     <button 
                         onClick={() => onSelect(selectedSurah, selectedAyah)}
-                        className={`theme-accent-btn ${isLandscape ? 'px-6 py-1.5 text-xs rounded-xl' : 'px-8 py-2.5 rounded-2xl'} font-bold border-0 quran-raised-btn-selected active:scale-95 transition`}
+                        className={`${isMadinahOrMushaf ? '' : 'theme-accent-btn'} ${isLandscape ? 'px-6 py-1.5 text-xs rounded-xl' : 'px-8 py-2.5 rounded-2xl'} font-bold border-0 quran-raised-btn-selected active:scale-95 transition`}
+                        style={isMadinahOrMushaf ? { backgroundColor: selectedControlBg, color: selectedControlText, borderColor: selectedControlBg } : undefined}
                     >
                         {isEn ? "View" : "عرض"}
                     </button>
                     <button 
                         onClick={onClose}
-                        className={`theme-btn-bg theme-btn-text ${isLandscape ? 'px-6 py-1.5 text-xs rounded-xl' : 'px-8 py-2.5 rounded-2xl'} font-bold border-0 quran-raised-btn active:scale-95 transition`}
-                        style={{ 
-                            color: currentTheme?.id === 'black' ? (currentTheme?.btnText || '#000000') : (currentTheme?.btnText || '#000000'),
-                            backgroundColor: currentTheme?.id === 'black' ? (currentTheme?.btnBg || '#ffffff') : (currentTheme?.btnBg || '#ffffff')
-                        }}
+                        className={`${isMadinahOrMushaf ? '' : 'theme-btn-bg theme-btn-text'} ${isLandscape ? 'px-6 py-1.5 text-xs rounded-xl' : 'px-8 py-2.5 rounded-2xl'} font-bold border-0 quran-raised-btn active:scale-95 transition`}
+                        style={
+                            isMadinahOrMushaf
+                                ? { backgroundColor: cardSurfaceBg, color: bodyTextColor, borderColor: borderSubtle }
+                                : {
+                                      color: currentTheme?.id === 'black' ? (currentTheme?.btnText || '#000000') : (currentTheme?.btnText || '#000000'),
+                                      backgroundColor: currentTheme?.id === 'black' ? (currentTheme?.btnBg || '#ffffff') : (currentTheme?.btnBg || '#ffffff')
+                                  }
+                        }
                     >
                         {isEn ? "Close" : "إغلاق"}
                     </button>

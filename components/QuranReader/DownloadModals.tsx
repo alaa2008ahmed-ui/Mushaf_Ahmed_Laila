@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { READERS, TAFSEERS, JUZ_MAP, SURAH_INFO, getTafseerDisplayName } from './constants';
+import { READERS, TAFSEERS, JUZ_MAP, SURAH_INFO, THEMES, isDarkQuranTheme, getTafseerDisplayName } from './constants';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
 import { SURAH_LIST } from '../../data/listenQuranData';
 import { normalizeArabic } from '../../utils/voiceParser';
 import { getAvailableSurahsForReader, getSurahsForJuz } from '../../utils/listenQuranUtils';
@@ -20,7 +21,193 @@ interface DownloadModalProps {
     zIndexClass?: string;
     title?: string;
     isFromHomeScreenSettings?: boolean;
+    isFromQuranReader?: boolean;
+    currentTheme?: any;
+    readingMode?: string;
+    readerBgColor?: string;
 }
+
+const isHexDark = (color?: string): boolean => {
+    if (!color || typeof color !== 'string') return false;
+    const c = color.trim().toLowerCase();
+    if (c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return false;
+    const hex = c.startsWith('#') ? c.slice(1) : '';
+    if (!hex) return false;
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+    } else if (hex.length === 6) {
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+    } else {
+        return false;
+    }
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.45;
+};
+
+const resolveDownloadModalTheme = ({
+    theme,
+    themeKey,
+    isNightMode,
+    homeThemeVariant,
+    isFromHomeScreenSettings,
+    isFromQuranReader,
+    propCurrentTheme,
+    readerBgColor,
+}: {
+    theme: any;
+    themeKey: string;
+    isNightMode: boolean;
+    homeThemeVariant: string;
+    isFromHomeScreenSettings?: boolean;
+    isFromQuranReader?: boolean;
+    propCurrentTheme?: any;
+    readerBgColor?: string;
+}) => {
+    if (isFromQuranReader && !isFromHomeScreenSettings) {
+        const activeTheme = propCurrentTheme || THEMES.black;
+        const ornamentPalette = getMadinahThemePalette(activeTheme);
+        const isThemeDark = isDarkQuranTheme(activeTheme);
+        const rawBg = (readerBgColor || '').trim();
+        const normRawBg = rawBg.toLowerCase();
+        const normThemeBg = (activeTheme?.bg || '#ffffff').trim().toLowerCase();
+        const hasCustomBg =
+            Boolean(normRawBg) &&
+            normRawBg !== 'transparent' &&
+            normRawBg !== 'rgba(0, 0, 0, 0)' &&
+            normRawBg !== normThemeBg;
+
+        const resolvedBg = hasCustomBg ? rawBg : ornamentPalette.frameBg;
+        const isDark = isThemeDark || isHexDark(resolvedBg);
+        const isDeepBlack = activeTheme?.id === 'deep_black';
+
+        const topBarBg = ornamentPalette.frameBg;
+        const topBarText = isThemeDark ? '#f8fafc' : ornamentPalette.bannerText;
+        const bodyText = isDark ? '#f8fafc' : ornamentPalette.bannerText;
+        const accentColor = isDeepBlack
+            ? '#e4e4e7'
+            : (ornamentPalette.primary || activeTheme?.accent || '#b45309');
+        const resolvedAccent = isDeepBlack ? '#3f3f46' : accentColor;
+        const resolvedAccentText = isHexDark(resolvedAccent) ? '#ffffff' : '#09090b';
+        const fgAccent = isDark ? '#ffffff' : accentColor;
+        const borderSubtle = isDark ? 'rgba(255, 255, 255, 0.16)' : `${accentColor}44`;
+        const borderStrong = isDark ? 'rgba(255, 255, 255, 0.28)' : `${accentColor}99`;
+
+        const cardSurfaceBg = isDark
+            ? (activeTheme?.cardBg && !activeTheme.cardBg.startsWith('rgba') ? activeTheme.cardBg : '#141418')
+            : (ornamentPalette.cartoucheFill || '#ffffff');
+        const cardTextColor = isDark ? '#ffffff' : ornamentPalette.bannerText;
+        const containerSurfaceBg = isDark ? '#111116' : 'rgba(255, 255, 255, 0.6)';
+
+        const modalStyle = {
+            '--qr-bg': resolvedBg,
+            '--qr-text': bodyText,
+            '--qr-card-bg': cardSurfaceBg,
+            '--qr-card-text': cardTextColor,
+            '--qr-card-border': borderSubtle,
+            '--qr-modal-bg': topBarBg,
+            '--qr-modal-text': topBarText,
+            '--qr-header-bg': topBarBg,
+            '--qr-header-text': topBarText,
+            '--qr-accent': resolvedAccent,
+            '--qr-accent-text': resolvedAccentText,
+            '--qr-flat-accent': accentColor,
+            '--qr-flat-surface': cardSurfaceBg,
+            '--qr-flat-border-strong': borderStrong,
+            '--qr-flat-border-subtle': borderSubtle,
+            '--madinah-menu-bg': resolvedBg,
+            '--madinah-topbar-bg': topBarBg,
+            '--madinah-menu-surface': cardSurfaceBg,
+            '--madinah-menu-text': topBarText,
+            '--madinah-menu-border': accentColor,
+            '--madinah-menu-border-strong': borderStrong,
+            '--madinah-menu-border-subtle': borderSubtle,
+            '--madinah-menu-accent': accentColor,
+        } as React.CSSProperties;
+
+        return {
+            isDark,
+            isDeepBlack,
+            fgAccent,
+            resolvedBg,
+            topBarBg,
+            topBarText,
+            cardSurfaceBg,
+            cardTextColor,
+            containerSurfaceBg,
+            modalStyle,
+        };
+    }
+
+    const isDark = isNightMode || Boolean(theme.isDark) || themeKey === 'deep_black' || !theme.bgColor ||
+        ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#022C22'].includes(theme.bgColor.toUpperCase());
+
+    const isDeepBlack = isNightMode || themeKey === 'deep_black' || (theme.bg || theme.bgColor || '').toLowerCase() === '#000000';
+    const fgAccent = isDeepBlack ? '#ffffff' : 'var(--qr-accent)';
+
+    const resolvedBg = isDeepBlack
+        ? '#000000'
+        : (theme.bg || (theme.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
+            ? theme.bgColor
+            : (homeThemeVariant === 'sky'
+                ? '#F0F9FF'
+                : (homeThemeVariant === 'emerald'
+                    ? '#F0FDF4'
+                    : (homeThemeVariant === 'burgundy'
+                        ? '#FFF1F2'
+                        : (isDark ? '#0f172a' : '#FEF9C3'))))));
+
+    let resolvedAccent = isDeepBlack
+        ? '#ffffff'
+        : (isFromHomeScreenSettings
+            ? (homeThemeVariant === 'sky'
+                ? '#0284c7'
+                : homeThemeVariant === 'emerald'
+                    ? '#047857'
+                    : homeThemeVariant === 'burgundy'
+                        ? '#881337'
+                        : (theme.accent || theme.palette?.[0] || '#ca8a04'))
+            : (theme.accent || theme.palette?.[0] || '#ca8a04'));
+    if (resolvedAccent.toLowerCase() === '#000000' && isDark) {
+        resolvedAccent = '#ffffff';
+    }
+    const resolvedAccentText = isDeepBlack ? '#000000' : (theme.accentText === '#000000' && resolvedAccent !== '#ffffff' ? '#ffffff' : (theme.accentText || '#ffffff'));
+
+    const cardSurfaceBg = isDark ? '#1a1a22' : '#ffffff';
+    const cardTextColor = isDark ? '#ffffff' : '#0f172a';
+    const containerSurfaceBg = isDark ? '#111116' : 'rgba(255, 255, 255, 0.55)';
+
+    const modalStyle = {
+        '--qr-bg': resolvedBg,
+        '--qr-text': isDark ? '#ffffff' : (theme.text || theme.textColor || '#000000'),
+        '--qr-card-bg': cardSurfaceBg,
+        '--qr-card-text': cardTextColor,
+        '--qr-card-border': isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)',
+        '--qr-modal-bg': resolvedBg,
+        '--qr-modal-text': isDark ? '#ffffff' : (theme.modalText || theme.text || theme.textColor || '#000000'),
+        '--qr-header-bg': theme.headerBg || resolvedBg,
+        '--qr-header-text': isDark ? '#ffffff' : (theme.headerText || theme.text || '#000000'),
+        '--qr-accent': resolvedAccent,
+        '--qr-accent-text': resolvedAccentText,
+    } as React.CSSProperties;
+
+    return {
+        isDark,
+        isDeepBlack,
+        fgAccent,
+        resolvedBg,
+        topBarBg: cardSurfaceBg,
+        topBarText: cardTextColor,
+        cardSurfaceBg,
+        cardTextColor,
+        containerSurfaceBg,
+        modalStyle,
+    };
+};
 
 // --- Helper Functions ---
 
@@ -195,7 +382,10 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
     getAvailableSurahs,
     zIndexClass = 'z-[1200]',
     title,
-    isFromHomeScreenSettings = false
+    isFromHomeScreenSettings = false,
+    isFromQuranReader = false,
+    currentTheme: propCurrentTheme,
+    readerBgColor,
 }) => {
     const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
@@ -702,57 +892,26 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
         return () => window.removeEventListener('voice-command', handleVoiceCommand);
     }, [selectedReader, selectedSurahs, selectedJuzs, isDownloading, toggleSurah, toggleJuz, downloadSelected, stopDownload, onClose]);
 
-    const isDark = isNightMode || Boolean(theme.isDark) || themeKey === 'deep_black' || !theme.bgColor || 
-        ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#022C22'].includes(theme.bgColor.toUpperCase());
-
-    const isDeepBlack = isNightMode || themeKey === 'deep_black' || (theme.bg || theme.bgColor || '').toLowerCase() === '#000000';
-    const fgAccent = isDeepBlack ? '#ffffff' : 'var(--qr-accent)';
-
-    const resolvedBg = isDeepBlack
-        ? '#000000'
-        : (theme.bg || (theme.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
-            ? theme.bgColor
-            : (homeThemeVariant === 'sky'
-                ? '#F0F9FF'
-                : (homeThemeVariant === 'emerald'
-                    ? '#F0FDF4'
-                    : (homeThemeVariant === 'burgundy'
-                        ? '#FFF1F2'
-                        : (isDark ? '#0f172a' : '#FEF9C3'))))));
-
-    let resolvedAccent = isDeepBlack
-        ? '#ffffff'
-        : (isFromHomeScreenSettings
-            ? (homeThemeVariant === 'sky'
-                ? '#0284c7'
-                : homeThemeVariant === 'emerald'
-                    ? '#047857'
-                    : homeThemeVariant === 'burgundy'
-                        ? '#881337'
-                        : (theme.accent || theme.palette?.[0] || '#ca8a04'))
-            : (theme.accent || theme.palette?.[0] || '#ca8a04'));
-    if (resolvedAccent.toLowerCase() === '#000000' && isDark) {
-        resolvedAccent = '#ffffff';
-    }
-    const resolvedAccentText = isDeepBlack ? '#000000' : (theme.accentText === '#000000' && resolvedAccent !== '#ffffff' ? '#ffffff' : (theme.accentText || '#ffffff'));
-
-    const cardSurfaceBg = isDark ? '#1a1a22' : '#ffffff';
-    const cardTextColor = isDark ? '#ffffff' : '#0f172a';
-    const containerSurfaceBg = isDark ? '#111116' : 'rgba(255, 255, 255, 0.55)';
-
-    const modalStyle = {
-        '--qr-bg': resolvedBg,
-        '--qr-text': isDark ? '#ffffff' : (theme.text || theme.textColor || '#000000'),
-        '--qr-card-bg': cardSurfaceBg,
-        '--qr-card-text': cardTextColor,
-        '--qr-card-border': isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)',
-        '--qr-modal-bg': resolvedBg,
-        '--qr-modal-text': isDark ? '#ffffff' : (theme.modalText || theme.text || theme.textColor || '#000000'),
-        '--qr-header-bg': theme.headerBg || resolvedBg,
-        '--qr-header-text': isDark ? '#ffffff' : (theme.headerText || theme.text || '#000000'),
-        '--qr-accent': resolvedAccent,
-        '--qr-accent-text': resolvedAccentText,
-    } as React.CSSProperties;
+    const {
+        isDark,
+        isDeepBlack,
+        fgAccent,
+        topBarBg,
+        topBarText,
+        cardSurfaceBg,
+        cardTextColor,
+        containerSurfaceBg,
+        modalStyle,
+    } = resolveDownloadModalTheme({
+        theme,
+        themeKey,
+        isNightMode,
+        homeThemeVariant,
+        isFromHomeScreenSettings,
+        isFromQuranReader,
+        propCurrentTheme,
+        readerBgColor,
+    });
 
     const isEn = language === 'en';
 
@@ -771,23 +930,23 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                     ? `modal-skinned compact-landscape-modal madinah-download-modal-panel ${isDark ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
                     : "quran-fullscreen-modal-panel madinah-download-modal-panel flex-1 min-h-0 w-full flex flex-col overflow-hidden"
                 }
-                style={isLandscape ? { backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' } : undefined}
+                style={{ backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' }}
                 onClick={isLandscape ? e => e.stopPropagation() : undefined}
             >
             {isLandscape ? (
                 <div className="pt-2.5 px-3 pb-1.5 shrink-0">
                     <div
                         className="py-1.5 px-3 rounded-xl flex items-center justify-between gap-2 quran-raised-card border-0"
-                        style={{ backgroundColor: cardSurfaceBg, color: cardTextColor }}
+                        style={{ backgroundColor: isFromQuranReader && !isFromHomeScreenSettings ? topBarBg : cardSurfaceBg, color: isFromQuranReader && !isFromHomeScreenSettings ? topBarText : cardTextColor }}
                     >
-                        <h1 className="text-xs font-extrabold truncate">
+                        <h1 className="text-xs font-extrabold truncate font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }}>
                             {title || (isEn ? 'Downloads' : 'التحميلات')}
                         </h1>
                         <button
                             type="button"
                             onClick={onClose}
                             className="w-7 h-7 rounded-full quran-raised-btn flex items-center justify-center border-0 shrink-0 cursor-pointer"
-                            style={{ backgroundColor: containerSurfaceBg, color: cardTextColor }}
+                            style={{ backgroundColor: isFromQuranReader && !isFromHomeScreenSettings ? cardSurfaceBg : containerSurfaceBg, color: isFromQuranReader && !isFromHomeScreenSettings ? topBarText : cardTextColor }}
                             title={isEn ? 'Close' : 'إغلاق'}
                             aria-label={isEn ? 'Close' : 'إغلاق'}
                         >
@@ -797,7 +956,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                 </div>
             ) : (
             /* Standard Page Header */
-            <header className="app-top-bar settings-top-bar shrink-0 w-full" dir={dir}>
+            <header className={`app-top-bar settings-top-bar shrink-0 w-full ${isFromQuranReader && !isFromHomeScreenSettings ? 'quran-context' : ''}`} dir={dir} style={isFromQuranReader && !isFromHomeScreenSettings ? { backgroundColor: topBarBg, color: topBarText } : undefined}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
                         <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
@@ -805,6 +964,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                 type="button"
                                 onClick={onClose}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={isFromQuranReader && !isFromHomeScreenSettings ? { color: topBarText } : undefined}
                                 title={isEn ? 'Go Back' : 'رجوع للخلف'}
                                 aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
                             >
@@ -813,21 +973,9 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                         </div>
 
                         <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate" style={isFromQuranReader && !isFromHomeScreenSettings ? { color: topBarText, fontFamily: "'Cairo', sans-serif" } : { fontFamily: "'Cairo', sans-serif" }}>
                                 {title || (isEn ? 'Downloads' : 'التحميلات')}
                             </h1>
-                        </div>
-
-                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title={isEn ? 'Close' : 'إغلاق'}
-                                aria-label={isEn ? 'Close' : 'إغلاق'}
-                            >
-                                <i className="fa-solid fa-house text-xl"></i>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1054,7 +1202,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     ];
                                     if (allSelection.length === 0) return false;
                                     return allSelection.every(s => downloadedSurahs.includes(s));
-                                })()) ? 'opacity-50 cursor-not-allowed grayscale quran-raised-card' : 'quran-raised-btn quran-raised-btn-selected'}`}
+                                })()) ? 'opacity-65 cursor-not-allowed quran-raised-card' : 'quran-raised-btn quran-raised-btn-selected'}`}
                                 style={{
                                     backgroundColor: 'var(--qr-accent)',
                                     color: 'var(--qr-accent-text, #fff)',
@@ -1108,7 +1256,10 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({
     isLandscape, 
     zIndexClass = 'z-[1200]', 
     title,
-    isFromHomeScreenSettings = false 
+    isFromHomeScreenSettings = false,
+    isFromQuranReader = false,
+    currentTheme: propCurrentTheme,
+    readerBgColor,
 }) => {
     const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
@@ -1345,57 +1496,25 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({
         return () => window.removeEventListener('voice-command', handleVoiceCommand);
     }, [selectedTafsir, selectedSurahs, selectedJuzs, isDownloading, toggleSurah, toggleJuz, downloadSelected, stopDownload, onClose, isEn]);
 
-    const isDark = isNightMode || Boolean(theme.isDark) || themeKey === 'deep_black' || !theme.bgColor || 
-        ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#022C22'].includes(theme.bgColor.toUpperCase());
-
-    const isDeepBlack = isNightMode || themeKey === 'deep_black' || (theme.bg || theme.bgColor || '').toLowerCase() === '#000000';
-    const fgAccent = isDeepBlack ? '#ffffff' : 'var(--qr-accent)';
-
-    const resolvedBg = isDeepBlack
-        ? '#000000'
-        : (theme.bg || (theme.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
-            ? theme.bgColor
-            : (homeThemeVariant === 'sky'
-                ? '#F0F9FF'
-                : (homeThemeVariant === 'emerald'
-                    ? '#F0FDF4'
-                    : (homeThemeVariant === 'burgundy'
-                        ? '#FFF1F2'
-                        : (isDark ? '#0f172a' : '#FEF9C3'))))));
-
-    let resolvedAccent = isDeepBlack
-        ? '#ffffff'
-        : (isFromHomeScreenSettings
-            ? (homeThemeVariant === 'sky'
-                ? '#0284c7'
-                : homeThemeVariant === 'emerald'
-                    ? '#047857'
-                    : homeThemeVariant === 'burgundy'
-                        ? '#881337'
-                        : (theme.accent || theme.palette?.[0] || '#ca8a04'))
-            : (theme.accent || theme.palette?.[0] || '#ca8a04'));
-    if (resolvedAccent.toLowerCase() === '#000000' && isDark) {
-        resolvedAccent = '#ffffff';
-    }
-    const resolvedAccentText = isDeepBlack ? '#000000' : (theme.accentText === '#000000' && resolvedAccent !== '#ffffff' ? '#ffffff' : (theme.accentText || '#ffffff'));
-
-    const cardSurfaceBg = isDark ? '#1a1a22' : '#ffffff';
-    const cardTextColor = isDark ? '#ffffff' : '#0f172a';
-    const containerSurfaceBg = isDark ? '#111116' : 'rgba(255, 255, 255, 0.55)';
-
-    const modalStyle = {
-        '--qr-bg': resolvedBg,
-        '--qr-text': isDark ? '#ffffff' : (theme.text || theme.textColor || '#000000'),
-        '--qr-card-bg': cardSurfaceBg,
-        '--qr-card-text': cardTextColor,
-        '--qr-card-border': isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)',
-        '--qr-modal-bg': resolvedBg,
-        '--qr-modal-text': isDark ? '#ffffff' : (theme.modalText || theme.text || theme.textColor || '#000000'),
-        '--qr-header-bg': theme.headerBg || resolvedBg,
-        '--qr-header-text': isDark ? '#ffffff' : (theme.headerText || theme.text || '#000000'),
-        '--qr-accent': resolvedAccent,
-        '--qr-accent-text': resolvedAccentText,
-     } as React.CSSProperties;
+    const {
+        isDark,
+        fgAccent,
+        topBarBg,
+        topBarText,
+        cardSurfaceBg,
+        cardTextColor,
+        containerSurfaceBg,
+        modalStyle,
+    } = resolveDownloadModalTheme({
+        theme,
+        themeKey,
+        isNightMode,
+        homeThemeVariant,
+        isFromHomeScreenSettings,
+        isFromQuranReader,
+        propCurrentTheme,
+        readerBgColor,
+    });
 
     return (
         <div
@@ -1412,23 +1531,23 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({
                     ? `modal-skinned compact-landscape-modal madinah-download-modal-panel ${isDark ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
                     : "quran-fullscreen-modal-panel madinah-download-modal-panel flex-1 min-h-0 w-full flex flex-col overflow-hidden"
                 }
-                style={isLandscape ? { backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' } : undefined}
+                style={{ backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' }}
                 onClick={isLandscape ? e => e.stopPropagation() : undefined}
             >
             {isLandscape ? (
                 <div className="pt-2.5 px-3 pb-1.5 shrink-0">
                     <div
                         className="py-1.5 px-3 rounded-xl flex items-center justify-between gap-2 quran-raised-card border-0"
-                        style={{ backgroundColor: cardSurfaceBg, color: cardTextColor }}
+                        style={{ backgroundColor: isFromQuranReader && !isFromHomeScreenSettings ? topBarBg : cardSurfaceBg, color: isFromQuranReader && !isFromHomeScreenSettings ? topBarText : cardTextColor }}
                     >
-                        <h1 className="text-xs font-extrabold truncate">
+                        <h1 className="text-xs font-extrabold truncate font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }}>
                             {title || (isEn ? 'Download Tafseers' : 'تحميل التفاسير')}
                         </h1>
                         <button
                             type="button"
                             onClick={onClose}
                             className="w-7 h-7 rounded-full quran-raised-btn flex items-center justify-center border-0 shrink-0 cursor-pointer"
-                            style={{ backgroundColor: containerSurfaceBg, color: cardTextColor }}
+                            style={{ backgroundColor: isFromQuranReader && !isFromHomeScreenSettings ? cardSurfaceBg : containerSurfaceBg, color: isFromQuranReader && !isFromHomeScreenSettings ? topBarText : cardTextColor }}
                             title={isEn ? 'Close' : 'إغلاق'}
                             aria-label={isEn ? 'Close' : 'إغلاق'}
                         >
@@ -1438,7 +1557,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({
                 </div>
             ) : (
             /* Standard Page Header */
-            <header className="app-top-bar settings-top-bar shrink-0 w-full" dir={dir}>
+            <header className={`app-top-bar settings-top-bar shrink-0 w-full ${isFromQuranReader && !isFromHomeScreenSettings ? 'quran-context' : ''}`} dir={dir} style={isFromQuranReader && !isFromHomeScreenSettings ? { backgroundColor: topBarBg, color: topBarText } : undefined}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
                         <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
@@ -1446,6 +1565,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({
                                 type="button"
                                 onClick={onClose}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={isFromQuranReader && !isFromHomeScreenSettings ? { color: topBarText } : undefined}
                                 title={isEn ? 'Go Back' : 'رجوع للخلف'}
                                 aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
                             >
@@ -1454,21 +1574,9 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({
                         </div>
 
                         <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate" style={isFromQuranReader && !isFromHomeScreenSettings ? { color: topBarText, fontFamily: "'Cairo', sans-serif" } : { fontFamily: "'Cairo', sans-serif" }}>
                                 {title || (isEn ? 'Download Tafseers' : 'تحميل التفاسير')}
                             </h1>
-                        </div>
-
-                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title={isEn ? 'Close' : 'إغلاق'}
-                                aria-label={isEn ? 'Close' : 'إغلاق'}
-                            >
-                                <i className="fa-solid fa-house text-xl"></i>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1583,7 +1691,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({
                                     const allSelection = Array.from(new Set([...selectedSurahs.filter(s => s !== 'all'), ...surahsFromJuz]));
                                     if (allSelection.length === 0) return false;
                                     return allSelection.every(s => downloadedSurahs.includes(s));
-                                })()) ? 'opacity-50 cursor-not-allowed grayscale quran-raised-card' : 'quran-raised-btn quran-raised-btn-selected'}`}
+                                })()) ? 'opacity-65 cursor-not-allowed quran-raised-card' : 'quran-raised-btn quran-raised-btn-selected'}`}
                                 style={{
                                     backgroundColor: 'var(--qr-accent)',
                                     color: 'var(--qr-accent-text, #fff)',

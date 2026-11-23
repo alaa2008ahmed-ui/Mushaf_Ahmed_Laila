@@ -44,8 +44,8 @@ const SurahInfoModal: React.FC<SurahInfoModalProps> = ({ surahName, surahNumber,
   return (
     <div className={`fixed inset-0 z-[1300] flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'} bg-black/55`} onClick={onClose}>
       <div 
-        className={`modal-skinned ${isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%]' : 'w-full max-w-2xl max-h-[88dvh]'} rounded-3xl shadow-2xl overflow-hidden flex flex-col border-0`}
-        style={{ border: 'none', outline: 'none' }}
+        className={`modal-skinned font-cairo ${isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%]' : 'w-full max-w-2xl max-h-[88dvh]'} rounded-3xl shadow-2xl overflow-hidden flex flex-col border-0`}
+        style={{ fontFamily: "'Cairo', sans-serif", border: 'none', outline: 'none' }}
         onClick={e => e.stopPropagation()}
         dir={isEnglishMode ? "ltr" : "rtl"}
       >
@@ -58,7 +58,7 @@ const SurahInfoModal: React.FC<SurahInfoModalProps> = ({ surahName, surahNumber,
 
           {/* Centered Title */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <h2 className={`${isLandscape ? 'text-lg' : 'text-2xl'} font-bold theme-header-text leading-tight`} style={{ fontFamily: isEnglishMode ? 'system-ui, sans-serif' : 'var(--font-amiri)' }}>
+            <h2 className={`${isLandscape ? 'text-lg' : 'text-2xl'} font-bold theme-header-text leading-tight font-cairo`} style={{ fontFamily: isEnglishMode ? 'system-ui, sans-serif' : "'Cairo', sans-serif" }}>
               {isEnglishMode ? `Surah ${enSurahName}` : surahName}
             </h2>
             <p className="text-[10px] opacity-60 font-bold theme-header-text">

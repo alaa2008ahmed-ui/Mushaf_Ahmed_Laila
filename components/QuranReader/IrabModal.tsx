@@ -211,7 +211,9 @@ const IrabModal: React.FC<IrabModalProps> = React.memo(({
                 backgroundColor: p.cardBg,
                 color: p.cardText,
                 fontSize: `${fontSize + 4}px`,
-                fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
+                fontFamily: isEn
+                  ? "'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', serif"
+                  : "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
               }}
               dir="rtl"
             >
@@ -249,7 +251,9 @@ const IrabModal: React.FC<IrabModalProps> = React.memo(({
                       className="font-extrabold" 
                       style={{ 
                         fontSize: `${fontSize + 2}px`,
-                        fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif",
+                        fontFamily: isEn
+                          ? "'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', serif"
+                          : "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif",
                         color: isSelected ? p.selectedText : (p.isDark ? '#34d399' : '#059669')
                       }}
                     >
@@ -277,7 +281,7 @@ const IrabModal: React.FC<IrabModalProps> = React.memo(({
               >
                 <div className="font-extrabold mb-1.5" style={{ fontSize: `${fontSize}px`, color: p.headerAccent }}>
                   {isEn ? `Grammatical detail: «` : `إعراب كلمة: «`}
-                  <span style={{ fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif" }}>
+                  <span style={{ fontFamily: isEn ? "'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', serif" : "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif" }}>
                     {syntaxEntry.words[selectedWordIdx].word}
                   </span>
                   »

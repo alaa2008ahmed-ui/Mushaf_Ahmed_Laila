@@ -12,7 +12,7 @@ import {
     MadinahFrameMiniPreview,
     normalizeMadinahFrameDesign,
 } from './madinahFrameDesigns';
-import { getClusterForLanguage, syncClusterSettings } from '../../utils/quranClusterSync';
+import { getClusterForLanguage, syncClusterSettings, getMadinahSettings, saveMadinahSettings, getClusterSettings } from '../../utils/quranClusterSync';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 interface SettingsModalProps {
@@ -60,9 +60,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         return num.toFixed(2);
     };
 
-    const [settings, setSettings] = useState(() => {
+    const readSettingsForMode = () => {
+        if (isMadinahMode) {
+            const madinahSaved = getMadinahSettings(isLandscape);
+            if (madinahSaved) return madinahSaved;
+            const savedMadinah = modeSuffix ? localStorage.getItem('quran_settings' + modeSuffix) : null;
+            return savedMadinah ? JSON.parse(savedMadinah) : {};
+        }
         const saved = localStorage.getItem('quran_settings' + modeSuffix);
-        const baseSettings = saved ? JSON.parse(saved) : {};
+        if (saved) return JSON.parse(saved);
+        return getClusterSettings(getClusterForLanguage(language), readingMode as ReadingMode, isLandscape) || {};
+    };
+
+    const [settings, setSettings] = useState(() => {
+        const baseSettings = readSettingsForMode();
         if (baseSettings.fontSize !== undefined) {
             baseSettings.fontSize = parseFloat(Number(baseSettings.fontSize).toFixed(2));
         }
@@ -75,8 +86,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     
     useEffect(() => {
         const handleSettingsUpdate = () => {
-            const saved = localStorage.getItem('quran_settings' + modeSuffix);
-            const baseSettings = saved ? JSON.parse(saved) : {};
+            const baseSettings = readSettingsForMode();
             if (baseSettings.fontSize !== undefined) {
                 baseSettings.fontSize = parseFloat(Number(baseSettings.fontSize).toFixed(2));
             }
@@ -88,7 +98,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             window.removeEventListener('theme-change', handleSettingsUpdate);
             window.removeEventListener('settings-change', handleSettingsUpdate);
         };
-    }, [modeSuffix]);
+    }, [modeSuffix, isMadinahMode, isLandscape, language, readingMode]);
 
     const [showSajdahCard, setShowSajdahCard] = useState(() => {
         const saved = localStorage.getItem('show_sajdah_card' + modeSuffix);
@@ -104,6 +114,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const currentDesign = Number(settings.surahHeaderDesign) || 1;
 
     const [activeColorField, setActiveColorField] = useState<'textColor' | 'bgColor' | 'highlightTextColor' | null>(null);
+    const [isFrameMenuOpen, setIsFrameMenuOpen] = useState(false);
+    const frameSectionRef = useRef<HTMLDivElement>(null);
 
     const PREDEFINED_COLORS = [
         '#ffffff', '#f3f4f6', '#9ca3af', '#4b5563', '#000000',
@@ -129,6 +141,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const updateSetting = (key: string, value: any) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
+        if (isMadinahMode) {
+            saveMadinahSettings(newSettings, {
+                markCustomColors: ['textColor', 'bgColor', 'highlightTextColor', 'theme'].includes(key),
+            });
+            return;
+        }
         localStorage.setItem('quran_settings' + modeSuffix, JSON.stringify(newSettings));
         syncClusterSettings(cluster, newSettings, isLandscape);
     };
@@ -180,32 +198,93 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         return fontMap[val] || (isEn ? "Default" : "افتراضي");
     };
 
+    const isHexDark = (color?: string): boolean => {
+        if (!color || typeof color !== 'string') return false;
+        const c = color.trim().toLowerCase();
+        if (c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return false;
+        const hex = c.startsWith('#') ? c.slice(1) : '';
+        if (!hex) return false;
+        let r = 0, g = 0, b = 0;
+        if (hex.length === 3) {
+            r = parseInt(hex[0] + hex[0], 16);
+            g = parseInt(hex[1] + hex[1], 16);
+            b = parseInt(hex[2] + hex[2], 16);
+        } else if (hex.length === 6) {
+            r = parseInt(hex.slice(0, 2), 16);
+            g = parseInt(hex.slice(2, 4), 16);
+            b = parseInt(hex.slice(4, 6), 16);
+        } else {
+            return false;
+        }
+        if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.45;
+    };
+
     const currentTheme = modalTheme || THEMES[settings.theme as keyof typeof THEMES] || Object.values(THEMES)[0];
-    const isBlackTheme = isNightMode || themeKey === 'deep_black' || theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black';
-    const isDarkTheme = isDarkQuranTheme(currentTheme) || isBlackTheme;
+    const ornamentPalette = getMadinahThemePalette(currentTheme);
+    const isThemeDark = isDarkQuranTheme(currentTheme);
+    const rawBgColor = (settings.bgColor || '').trim();
+    const normRawBg = rawBgColor.toLowerCase();
+    const normThemeBg = (currentTheme?.bg || '#ffffff').trim().toLowerCase();
+    const hasCustomPageBg =
+        Boolean(normRawBg) &&
+        normRawBg !== 'transparent' &&
+        normRawBg !== 'rgba(0, 0, 0, 0)' &&
+        normRawBg !== normThemeBg;
 
-    const pageBgColor = isBlackTheme
-        ? '#000000'
-        : (theme?.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
-            ? theme.bgColor
-            : (homeThemeVariant === 'sky'
-                ? '#F0F9FF'
-                : (homeThemeVariant === 'emerald'
-                    ? '#F0FDF4'
-                    : (homeThemeVariant === 'burgundy'
-                        ? '#FFF1F2'
-                        : '#FEF9C3'))));
+    const resolvedPageBg = hasCustomPageBg ? rawBgColor : ornamentPalette.frameBg;
+    const isDarkTheme = isThemeDark || isHexDark(resolvedPageBg);
+    const isDeepBlack = currentTheme?.id === 'deep_black';
 
-    const resolvedPageBg = (!modeSuffix || !currentTheme.bg || currentTheme.bg.toLowerCase() === '#ffffff')
-        ? pageBgColor
-        : currentTheme.bg;
+    const topBarBg = ornamentPalette.frameBg;
+    const topBarText = isThemeDark ? '#f8fafc' : ornamentPalette.bannerText;
+    const bodyTextColor = isDarkTheme ? '#f8fafc' : ornamentPalette.bannerText;
+
+    const accentColor = isDeepBlack
+        ? '#e4e4e7'
+        : (ornamentPalette.primary || currentTheme?.accent || '#b45309');
+    const accentTextColor = isHexDark(accentColor) ? '#ffffff' : '#09090b';
+    const selectedControlBg = isDeepBlack ? '#3f3f46' : accentColor;
+    const selectedControlText = isHexDark(selectedControlBg) ? '#ffffff' : '#09090b';
+
+    const borderSubtle = isDarkTheme
+        ? 'rgba(255, 255, 255, 0.16)'
+        : `${accentColor}44`;
+    const borderStrong = isDarkTheme
+        ? 'rgba(255, 255, 255, 0.28)'
+        : `${accentColor}99`;
 
     const cardSurfaceBg = isDarkTheme
-        ? (currentTheme?.cardBg && !currentTheme.cardBg.startsWith('rgba') ? currentTheme.cardBg : '#1E293B')
-        : '#ffffff';
+        ? (currentTheme?.cardBg && !currentTheme.cardBg.startsWith('rgba') ? currentTheme.cardBg : '#141418')
+        : (ornamentPalette.cartoucheFill || '#ffffff');
     const btnSurfaceBg = isDarkTheme
-        ? (currentTheme?.btnBg && !currentTheme.btnBg.startsWith('rgba') ? currentTheme.btnBg : '#1E293B')
-        : '#ffffff';
+        ? (currentTheme?.btnBg && !currentTheme.btnBg.startsWith('rgba') ? currentTheme.btnBg : '#18181b')
+        : (ornamentPalette.cartoucheFill || '#ffffff');
+
+    const modalThemeVars = {
+        '--qr-bg': resolvedPageBg,
+        '--qr-modal-bg': topBarBg,
+        '--qr-modal-text': topBarText,
+        '--qr-header-bg': topBarBg,
+        '--qr-header-text': topBarText,
+        '--qr-text': bodyTextColor,
+        '--qr-card-bg': cardSurfaceBg,
+        '--qr-card-text': bodyTextColor,
+        '--qr-accent': accentColor,
+        '--qr-accent-text': accentTextColor,
+        '--qr-flat-accent': accentColor,
+        '--qr-flat-surface': cardSurfaceBg,
+        '--qr-flat-border-strong': borderStrong,
+        '--qr-flat-border-subtle': borderSubtle,
+        '--madinah-menu-bg': resolvedPageBg,
+        '--madinah-topbar-bg': topBarBg,
+        '--madinah-menu-surface': cardSurfaceBg,
+        '--madinah-menu-text': topBarText,
+        '--madinah-menu-border': accentColor,
+        '--madinah-menu-border-strong': borderStrong,
+        '--madinah-menu-border-subtle': borderSubtle,
+        '--madinah-menu-accent': accentColor,
+    } as React.CSSProperties;
 
     return (
         <div 
@@ -214,7 +293,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 : `quran-fullscreen-modal-backdrop fixed inset-0 z-[1200] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDarkTheme ? 'settings-3d-dark' : ''}`
             }
             dir={isEn ? "ltr" : "rtl"} 
-            style={isLandscape ? undefined : { backgroundColor: resolvedPageBg }}
+            style={isLandscape ? modalThemeVars : { ...modalThemeVars, backgroundColor: resolvedPageBg }}
             onClick={isLandscape ? handleClose : undefined}
         >
             <div
@@ -222,23 +301,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     ? `modal-skinned compact-landscape-modal madinah-settings-modal-panel ${isDarkTheme ? 'quran-3d-dark' : ''} w-[64%] max-w-[450px] h-[86%] max-h-[86%] rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0`
                     : "quran-fullscreen-modal-panel madinah-settings-modal-panel flex-1 min-h-0 w-full flex flex-col overflow-hidden"
                 }
-                style={isLandscape ? { backgroundColor: resolvedPageBg, border: 'none', outline: 'none' } : undefined}
+                style={{ backgroundColor: resolvedPageBg, border: 'none', outline: 'none' }}
                 onClick={isLandscape ? e => e.stopPropagation() : undefined}
             >
             {isLandscape ? (
                 <div className="pt-2.5 px-3 pb-1.5 shrink-0">
                     <div
                         className="py-1.5 px-3 rounded-xl flex items-center justify-between gap-2 quran-raised-card border-0"
-                        style={{ backgroundColor: cardSurfaceBg, color: isBlackTheme ? '#ffffff' : (currentTheme.text || '#000000') }}
+                        style={{ backgroundColor: topBarBg, color: topBarText }}
                     >
-                        <h1 className="text-xs font-extrabold truncate">
+                        <h1 className="text-xs font-extrabold truncate font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }}>
                             {isEn ? 'Quran Page Settings' : 'إعدادات صفحة القرآن'}
                         </h1>
                         <button
                             type="button"
                             onClick={handleClose}
                             className="w-7 h-7 rounded-full quran-raised-btn flex items-center justify-center border-0 shrink-0 cursor-pointer"
-                            style={{ backgroundColor: btnSurfaceBg, color: isDarkTheme ? '#ffffff' : (currentTheme.text || '#000000') }}
+                            style={{ backgroundColor: btnSurfaceBg, color: topBarText }}
                             title={isEn ? "Close" : "إغلاق"}
                             aria-label={isEn ? "Close" : "إغلاق"}
                         >
@@ -248,7 +327,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
             ) : (
             /* Standard Page Header - Identical to Adia and all pages */
-            <header className="app-top-bar settings-top-bar shrink-0 w-full" dir={isEn ? 'ltr' : 'rtl'} style={{ display: 'block' }}>
+            <header className="app-top-bar settings-top-bar quran-context shrink-0 w-full" dir={isEn ? 'ltr' : 'rtl'} style={{ display: 'block', backgroundColor: topBarBg, color: topBarText }}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
                         {/* Back button */}
@@ -257,6 +336,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="button"
                                 onClick={handleClose}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: topBarText }}
                                 title={isEn ? "Go Back" : "رجوع للخلف"}
                                 aria-label={isEn ? "Go Back" : "رجوع للخلف"}
                             >
@@ -266,29 +346,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {/* Title in center */}
                         <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-cairo truncate" style={{ color: topBarText, fontFamily: "'Cairo', sans-serif" }}>
                                 {isEn ? 'Quran Page Settings' : 'إعدادات صفحة القرآن'}
                             </h1>
-                        </div>
-
-                        {/* Home button */}
-                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                            <button
-                                type="button"
-                                onClick={handleClose}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title={isEn ? "Home" : "الصفحة الرئيسية"}
-                                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
-                            >
-                                <i className="fa-solid fa-house text-xl"></i>
-                            </button>
                         </div>
                     </div>
                 </div>
             </header>
             )}
 
-            <div className={`flex-1 min-h-0 w-full flex flex-col overflow-hidden ${isLandscape ? '' : 'max-w-2xl mx-auto'}`} style={{ color: isBlackTheme ? '#ffffff' : (currentTheme.text || '#000000') }}>
+            <div className={`flex-1 min-h-0 w-full flex flex-col overflow-hidden ${isLandscape ? '' : 'max-w-2xl mx-auto'}`} style={{ color: bodyTextColor }}>
                 <div 
                     className={`${isLandscape ? 'p-3 pt-1.5 pb-3.5 space-y-2.5' : 'p-3.5 sm:p-4 space-y-4 app-scroll-safe'} overflow-y-auto text-center flex-1 min-h-0 scrollbar-hide`}
                 >
@@ -314,7 +381,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     showToast(isEn ? `Font size: ${val}` : `حجم الخط: ${val}`);
                                 }} 
                                 className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer" 
-                                style={{ accentColor: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || 'var(--qr-accent)') }} 
+                                style={{ accentColor: accentColor }} 
                             />
                         </div>
                     </div>
@@ -336,10 +403,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         updateSetting('isBold', nextBold);
                                         showToast(nextBold ? (isEn ? 'Bold font enabled' : 'تم تفعيل سماكة الخط') : (isEn ? 'Bold font disabled' : 'تم إيقاف سماكة الخط'));
                                     }} 
-                                    className={`col-span-4 p-1.5 text-xs h-10 rounded-xl app-page-card border-0 flex justify-center items-center font-bold transition-all cursor-pointer ${settings.isBold ? 'text-white' : ''}`} 
+                                    className={`col-span-4 p-1.5 text-xs h-10 rounded-xl app-page-card border-0 flex justify-center items-center font-bold transition-all cursor-pointer ${settings.isBold ? 'quran-raised-btn-selected' : ''}`} 
                                     style={{ 
-                                        backgroundColor: settings.isBold ? (currentTheme?.accent || '#10b981') : btnSurfaceBg,
-                                        color: settings.isBold ? '#ffffff' : (isDarkTheme ? '#ffffff' : currentTheme?.text),
+                                        backgroundColor: settings.isBold ? selectedControlBg : btnSurfaceBg,
+                                        color: settings.isBold ? selectedControlText : bodyTextColor,
                                     }}
                                     title={isEn ? "Toggle bold font weight" : "تفعيل/إلاء سماكة الخط (Bold)"}
                                 >
@@ -352,7 +419,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     className="col-span-8 p-1.5 text-xs h-10 rounded-xl app-page-card border-0 flex justify-center items-center px-3 font-bold cursor-pointer"
                                     style={{ 
                                         backgroundColor: btnSurfaceBg,
-                                        color: isDarkTheme ? '#ffffff' : currentTheme?.text,
+                                        color: bodyTextColor,
                                     }}
                                 >
                                     <span className="truncate text-center">{getFontName(settings.fontFamily)}</span>
@@ -414,13 +481,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         {activeColorField && (
                             <div className="p-3.5 pb-4 rounded-2xl app-page-card border-0 mt-4 animate-fadeIn overflow-visible" style={{ backgroundColor: cardSurfaceBg }}>
                                 <div className="flex justify-between items-center mb-2.5 overflow-visible">
-                                    <span className="text-xs font-bold" style={{ color: isDarkTheme ? '#ffffff' : currentTheme?.text }}>
+                                    <span className="text-xs font-bold" style={{ color: bodyTextColor }}>
                                         {isEn 
                                             ? `Select ${activeColorField === 'bgColor' ? 'Background' : activeColorField === 'textColor' ? 'Text' : 'Highlight'} Color` 
                                             : `اختر لون ${activeColorField === 'bgColor' ? 'الخلفية' : activeColorField === 'textColor' ? 'النص' : 'التحديد'}`
                                         }
                                     </span>
-                                    <button type="button" onClick={() => setActiveColorField(null)} className="app-page-card border-0 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer" style={{ backgroundColor: btnSurfaceBg }}>
+                                    <button type="button" onClick={() => setActiveColorField(null)} className="app-page-card border-0 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer" style={{ backgroundColor: btnSurfaceBg, color: bodyTextColor }}>
                                         <i className="fa-solid fa-times text-xs quran-3d-icon"></i>
                                     </button>
                                 </div>
@@ -436,8 +503,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 const fieldName = isEn ? fieldEn[activeColorField] : fieldAr[activeColorField];
                                                 showToast(isEn ? `${fieldName} updated` : `تم تغيير ${fieldName}`);
                                             }}
-                                            className={`h-8 rounded-xl app-page-card border-0 transition-transform cursor-pointer ${settings[activeColorField] === c ? 'ring-2 ring-emerald-500 scale-110' : ''}`}
-                                            style={{ ...renderCheckerboard(c) }}
+                                            className={`h-8 rounded-xl app-page-card border-0 transition-transform cursor-pointer ${settings[activeColorField] === c ? 'ring-2 scale-110' : ''}`}
+                                            style={{ ...renderCheckerboard(c), ...(settings[activeColorField] === c ? { '--tw-ring-color': accentColor } as React.CSSProperties : {}) }}
                                             title={c}
                                         />
                                     ))}
@@ -456,7 +523,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 className={`w-full ${isLandscape ? 'min-h-[40px] py-1.5 px-2.5 text-[11.5px] leading-tight' : 'p-2.5 text-xs h-10 px-3'} rounded-2xl app-page-card border-0 flex justify-center items-center font-bold cursor-pointer`}
                                 style={{ 
                                     backgroundColor: btnSurfaceBg, 
-                                    color: isDarkTheme ? (currentTheme?.btnText || currentTheme?.text || '#ffffff') : currentTheme?.text, 
+                                    color: bodyTextColor, 
                                 }}
                             >
                                 <span className={`${isLandscape ? 'text-center leading-tight' : 'truncate text-center'}`}>{getReaderName(settings.reader)}</span>
@@ -470,7 +537,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 className={`w-full ${isLandscape ? 'min-h-[40px] py-1.5 px-2.5 text-[11.5px] leading-tight' : 'p-2.5 text-xs h-10 px-3'} rounded-2xl app-page-card border-0 flex justify-center items-center font-bold cursor-pointer`}
                                 style={{ 
                                     backgroundColor: btnSurfaceBg, 
-                                    color: isDarkTheme ? (currentTheme?.btnText || currentTheme?.text || '#ffffff') : currentTheme?.text, 
+                                    color: bodyTextColor, 
                                 }}
                             >
                                 <span className={`${isLandscape ? 'text-center leading-tight' : 'truncate text-center'}`}>{getTafseerName(settings.tafseer)}</span>
@@ -496,10 +563,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         }}
                                         className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all app-page-card border-0 cursor-pointer ${
                                             settings.ayahRepeatCount === num 
-                                            ? 'text-white font-black' 
+                                            ? 'quran-raised-btn-selected font-black' 
                                             : 'opacity-90 hover:opacity-100'
                                         }`}
-                                        style={settings.ayahRepeatCount === num ? { backgroundColor: currentTheme?.accent || '#10b981', color: '#ffffff' } : { backgroundColor: btnSurfaceBg, color: isDarkTheme ? '#ffffff' : (currentTheme?.text || '#0f172a') }}
+                                        style={settings.ayahRepeatCount === num ? { backgroundColor: selectedControlBg, color: selectedControlText } : { backgroundColor: btnSurfaceBg, color: bodyTextColor }}
                                         title={`${isEn ? "Repeat" : "تكرار"} ${num}`}
                                     >
                                         {isEn ? num : toArabic(num)}
@@ -549,7 +616,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="button"
                                 onClick={() => onOpenModal('scroll-speed-modal')} 
                                 className="w-full p-2.5 text-xs h-10 rounded-2xl app-page-card border-0 flex justify-center items-center px-3 font-bold cursor-pointer"
-                                style={{ backgroundColor: btnSurfaceBg, color: isDarkTheme ? '#ffffff' : currentTheme?.text }}
+                                style={{ backgroundColor: btnSurfaceBg, color: bodyTextColor }}
                             >
                                 <span className={`${isLandscape ? 'text-center' : 'truncate text-center'}`}>{settings.scrollMinutes} {isEn ? "min" : "دقيقة"}</span>
                             </button>
@@ -576,7 +643,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 />
                                 <div
                                     className="app-3d-switch-track border-0 relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 p-0.5"
-                                    style={{ backgroundColor: isHideToolbarsEnabled ? (currentTheme?.accent || 'var(--qr-accent)') : (isDarkTheme ? '#3f3f46' : '#d1d5db') }}
+                                    style={{ backgroundColor: isHideToolbarsEnabled ? selectedControlBg : (isDarkTheme ? '#3f3f46' : '#d1d5db') }}
                                 >
                                     <div
                                         className={`app-3d-switch-thumb w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
@@ -584,6 +651,60 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         }`}
                                     />
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    )}
+
+                    {isMadinahMode && (
+                    <div id="madinah-reading-direction-section" className="py-0.5 overflow-visible">
+                        <div className={`flex flex-col ${isEn ? 'text-left' : 'text-right'} w-full overflow-visible`}>
+                            <label className="text-xs font-bold opacity-85 mb-1.5 truncate">
+                                {isEn ? "Reading Mode" : "وضع القراءة"}
+                            </label>
+                            <div className={`grid grid-cols-2 ${isLandscape ? 'gap-2.5' : 'gap-3'} overflow-visible`}>
+                                <button
+                                    type="button"
+                                    id="madinah-mode-horizontal-btn"
+                                    onClick={() => {
+                                        if ((settings.madinahReadingDirection || 'horizontal') !== 'horizontal') {
+                                            updateSetting('madinahReadingDirection', 'horizontal');
+                                            showToast(isEn ? 'Horizontal reading mode enabled' : 'تم التبديل إلى الوضع الأفقي');
+                                        }
+                                    }}
+                                    className={`h-10 px-3 rounded-2xl app-page-card border-0 flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
+                                        (settings.madinahReadingDirection || 'horizontal') === 'horizontal'
+                                            ? 'quran-raised-btn-selected font-black'
+                                            : 'opacity-90 hover:opacity-100'
+                                    }`}
+                                    style={(settings.madinahReadingDirection || 'horizontal') === 'horizontal'
+                                        ? { backgroundColor: selectedControlBg, color: selectedControlText }
+                                        : { backgroundColor: btnSurfaceBg, color: bodyTextColor }}
+                                >
+                                    <i className="fa-solid fa-arrows-left-right text-xs"></i>
+                                    <span>{isEn ? "Horizontal" : "الوضع الأفقي"}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    id="madinah-mode-vertical-btn"
+                                    onClick={() => {
+                                        if (settings.madinahReadingDirection !== 'vertical') {
+                                            updateSetting('madinahReadingDirection', 'vertical');
+                                            showToast(isEn ? 'Vertical reading mode enabled' : 'تم التبديل إلى الوضع الرأسي');
+                                        }
+                                    }}
+                                    className={`h-10 px-3 rounded-2xl app-page-card border-0 flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
+                                        settings.madinahReadingDirection === 'vertical'
+                                            ? 'quran-raised-btn-selected font-black'
+                                            : 'opacity-90 hover:opacity-100'
+                                    }`}
+                                    style={settings.madinahReadingDirection === 'vertical'
+                                        ? { backgroundColor: selectedControlBg, color: selectedControlText }
+                                        : { backgroundColor: btnSurfaceBg, color: bodyTextColor }}
+                                >
+                                    <i className="fa-solid fa-arrows-up-down text-xs"></i>
+                                    <span>{isEn ? "Vertical" : "الوضع الرأسي"}</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -614,7 +735,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         />
                                         <div
                                             className="app-3d-switch-track border-0 relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 p-0.5"
-                                            style={{ backgroundColor: showSajdahCard ? (currentTheme?.accent || 'var(--qr-accent)') : (isDarkTheme ? '#3f3f46' : '#d1d5db') }}
+                                            style={{ backgroundColor: showSajdahCard ? selectedControlBg : (isDarkTheme ? '#3f3f46' : '#d1d5db') }}
                                         >
                                             <div
                                                 className={`app-3d-switch-thumb w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
@@ -655,7 +776,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         />
                                         <div
                                             className="app-3d-switch-track border-0 relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 p-0.5"
-                                            style={{ backgroundColor: settings.wordHighlightEnabled ? (currentTheme?.accent || 'var(--qr-accent)') : (isDarkTheme ? '#3f3f46' : '#d1d5db') }}
+                                            style={{ backgroundColor: settings.wordHighlightEnabled ? selectedControlBg : (isDarkTheme ? '#3f3f46' : '#d1d5db') }}
                                         >
                                             <div
                                                 className={`app-3d-switch-thumb w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
@@ -670,8 +791,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 {settings.wordHighlightEnabled && (
                                     <div className={`${isMadinahMode ? 'col-span-1' : 'col-span-2'} mt-2 p-3.5 pb-4 rounded-2xl space-y-3 app-page-card border-0 transition-all overflow-visible`} style={{ backgroundColor: cardSurfaceBg }}>
                                             <div className="flex items-center justify-between text-[11px] font-bold">
-                                                <span style={{ color: isDarkTheme ? '#ffffff' : currentTheme?.text }}>{isEn ? "Spoken Word Color" : "لون الكلمة المنطوقة"}</span>
-                                                <span className="text-[10px] opacity-80" style={{ color: currentTheme?.accent || 'var(--qr-accent)' }}>
+                                                <span style={{ color: bodyTextColor }}>{isEn ? "Spoken Word Color" : "لون الكلمة المنطوقة"}</span>
+                                                <span className="text-[10px] opacity-80" style={{ color: accentColor }}>
                                                     {WORD_HIGHLIGHT_COLOR_OPTIONS.find(o => o.id === (settings.wordHighlightColor || 'auto'))?.[isEn ? 'nameEn' : 'nameAr'] || (isEn ? "Custom" : "مخصص")}
                                                 </span>
                                             </div>
@@ -748,11 +869,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
                         </div>
 
-                    {isMadinahMode && (() => {
+                    {(() => {
                         const activeFrameDesign = normalizeMadinahFrameDesign(settings.madinahFrameDesign);
+                        const activeFrameMeta = MADINAH_FRAME_DESIGNS.find((d) => d.id === activeFrameDesign) || MADINAH_FRAME_DESIGNS[0];
+                        const activeFrameName = activeFrameMeta?.[isEn ? 'nameEn' : 'nameAr'];
                         const framePalette = getMadinahThemePalette(currentTheme);
+                        const isMushafMode = readingMode === 'mushaf';
+                        const showMushafFrame = settings.showMushafFrame !== false;
+                        const handleToggleMushafFrame = (checked: boolean) => {
+                            updateSetting('showMushafFrame', checked);
+                            showToast(
+                                checked
+                                    ? (isEn ? 'Page frame enabled' : 'تم إظهار إطار الصفحة')
+                                    : (isEn ? 'Page frame hidden' : 'تم إخفاء إطار الصفحة')
+                            );
+                        };
                         return (
                             <div
+                                ref={frameSectionRef}
                                 id="madinah-frame-design-section"
                                 className={`${isLandscape ? 'p-2.5 pb-3 rounded-xl' : 'p-3.5 pb-4 rounded-2xl'} app-page-card border-0 overflow-visible`}
                                 style={{ backgroundColor: cardSurfaceBg }}
@@ -763,58 +897,128 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </label>
                                     <span
                                         className="text-[11px] font-bold opacity-80"
-                                        style={{ color: currentTheme?.accent || framePalette.primary }}
+                                        style={{ color: accentColor }}
                                     >
-                                        {MADINAH_FRAME_DESIGNS.find((d) => d.id === activeFrameDesign)?.[isEn ? 'nameEn' : 'nameAr']}
+                                        {activeFrameName}
                                     </span>
                                 </div>
-                                <div className={`grid ${isLandscape ? 'grid-cols-3 gap-2' : 'grid-cols-2 gap-2.5'} overflow-visible`}>
-                                    {MADINAH_FRAME_DESIGNS.map((designMeta) => {
-                                        const isSelected = activeFrameDesign === designMeta.id;
-                                        return (
-                                            <button
-                                                key={designMeta.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    updateSetting('madinahFrameDesign', designMeta.id);
-                                                    showToast(
-                                                        isEn
-                                                            ? `Frame changed to ${designMeta.nameEn}`
-                                                            : `تم اختيار إطار: ${designMeta.nameAr}`
-                                                    );
-                                                }}
-                                                className={`relative rounded-xl p-1.5 flex flex-col items-center gap-1.5 transition-all app-page-card border-0 cursor-pointer ${
-                                                    isSelected
-                                                        ? 'ring-2 ring-emerald-500 scale-[1.02]'
-                                                        : 'opacity-90 hover:opacity-100'
-                                                }`}
-                                                style={{
-                                                    backgroundColor: btnSurfaceBg,
-                                                    color: isDarkTheme ? '#ffffff' : (currentTheme?.text || '#0f172a'),
-                                                }}
-                                                title={isEn ? designMeta.nameEn : designMeta.nameAr}
+                                {isMushafMode && (
+                                    <div
+                                        id="mushaf-frame-visibility-toggle"
+                                        role="switch"
+                                        aria-checked={showMushafFrame}
+                                        tabIndex={0}
+                                        onClick={() => handleToggleMushafFrame(!showMushafFrame)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                handleToggleMushafFrame(!showMushafFrame);
+                                            }
+                                        }}
+                                        className="h-10 mb-2.5 flex items-center justify-between gap-2 px-3.5 rounded-2xl app-page-card tasbeeh-pressable border-0 cursor-pointer overflow-visible"
+                                        style={{ backgroundColor: btnSurfaceBg, color: bodyTextColor }}
+                                    >
+                                        <span className="text-xs font-bold">
+                                            {isEn ? 'Show Page Frame' : 'إظهار إطار الصفحة'}
+                                        </span>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-[11px] opacity-80 font-bold whitespace-nowrap">
+                                                {showMushafFrame ? (isEn ? 'Enabled' : 'مفعّل') : (isEn ? 'Disabled' : 'معطّل')}
+                                            </span>
+                                            <div
+                                                className="app-3d-switch-track border-0 relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 p-0.5"
+                                                style={{ backgroundColor: showMushafFrame ? selectedControlBg : (isDarkTheme ? '#3f3f46' : '#d1d5db') }}
                                             >
-                                                <div className="w-full relative pointer-events-none">
-                                                    <MadinahFrameMiniPreview
-                                                        design={designMeta.id}
-                                                        palette={framePalette}
-                                                    />
-                                                    {isSelected && (
-                                                        <span
-                                                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] text-white shadow"
-                                                            style={{ backgroundColor: '#10b981' }}
-                                                        >
-                                                            <i className="fa-solid fa-check"></i>
+                                                <div
+                                                    className={`app-3d-switch-thumb w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
+                                                        showMushafFrame ? (isEn ? 'translate-x-5' : '-translate-x-5') : 'translate-x-0'
+                                                    }`}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <button
+                                    id="madinah-frame-dropdown-trigger"
+                                    type="button"
+                                    aria-expanded={isFrameMenuOpen}
+                                    onClick={() => {
+                                        const next = !isFrameMenuOpen;
+                                        setIsFrameMenuOpen(next);
+                                        if (next) {
+                                            setTimeout(() => {
+                                                frameSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                            }, 60);
+                                        }
+                                    }}
+                                    className={`w-full h-10 px-3.5 rounded-2xl app-page-card border-0 flex items-center justify-between gap-2 text-xs font-bold transition-all cursor-pointer ${isMushafMode && !showMushafFrame ? 'opacity-65' : ''}`}
+                                    style={{ backgroundColor: btnSurfaceBg, color: bodyTextColor }}
+                                >
+                                    <span className="flex items-center gap-2 min-w-0 truncate">
+                                        <i className="fa-solid fa-swatchbook text-xs shrink-0" style={{ color: accentColor }}></i>
+                                        <span className="truncate">{activeFrameName}</span>
+                                    </span>
+                                    <i
+                                        className={`fa-solid fa-chevron-down text-[11px] shrink-0 opacity-75 transition-transform duration-200 ${isFrameMenuOpen ? 'rotate-180' : ''}`}
+                                    ></i>
+                                </button>
+                                {isFrameMenuOpen && (
+                                    <div
+                                        id="madinah-frame-dropdown-list"
+                                        className={`mt-2.5 p-2.5 rounded-2xl app-page-card border-0 animate-fadeIn overflow-visible ${isMushafMode && !showMushafFrame ? 'opacity-65' : ''}`}
+                                        style={{ backgroundColor: resolvedPageBg }}
+                                    >
+                                        <div className={`grid ${isLandscape ? 'grid-cols-3 gap-2' : 'grid-cols-2 gap-2.5'} overflow-visible`}>
+                                            {MADINAH_FRAME_DESIGNS.map((designMeta) => {
+                                                const isSelected = activeFrameDesign === designMeta.id;
+                                                return (
+                                                    <button
+                                                        key={designMeta.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            updateSetting('madinahFrameDesign', designMeta.id);
+                                                            setIsFrameMenuOpen(false);
+                                                            showToast(
+                                                                isEn
+                                                                    ? `Frame changed to ${designMeta.nameEn}`
+                                                                    : `تم اختيار إطار: ${designMeta.nameAr}`
+                                                            );
+                                                        }}
+                                                        className={`relative rounded-xl p-1.5 flex flex-col items-center gap-1.5 transition-all app-page-card border-0 cursor-pointer ${
+                                                            isSelected
+                                                                ? 'quran-raised-btn-selected ring-2 scale-[1.02]'
+                                                                : 'opacity-90 hover:opacity-100'
+                                                        }`}
+                                                        style={{
+                                                            backgroundColor: btnSurfaceBg,
+                                                            color: bodyTextColor,
+                                                            ...(isSelected ? { '--tw-ring-color': accentColor } as React.CSSProperties : {}),
+                                                        }}
+                                                        title={isEn ? designMeta.nameEn : designMeta.nameAr}
+                                                    >
+                                                        <div className="w-full relative pointer-events-none">
+                                                            <MadinahFrameMiniPreview
+                                                                design={designMeta.id}
+                                                                palette={framePalette}
+                                                            />
+                                                            {isSelected && (
+                                                                <span
+                                                                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] shadow"
+                                                                    style={{ backgroundColor: selectedControlBg, color: selectedControlText }}
+                                                                >
+                                                                    <i className="fa-solid fa-check"></i>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-[11px] font-bold leading-tight truncate w-full text-center">
+                                                            {isEn ? designMeta.nameEn : designMeta.nameAr}
                                                         </span>
-                                                    )}
-                                                </div>
-                                                <span className="text-[11px] font-bold leading-tight truncate w-full text-center">
-                                                    {isEn ? designMeta.nameEn : designMeta.nameAr}
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         );
                     })()}
@@ -828,7 +1032,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     id="quran-download-btn" 
                                     onClick={() => onOpenModal('quran-download-modal')} 
                                     className={`text-xs ${isLandscape ? 'min-h-[40px] py-1.5 px-2.5 text-[11.5px]' : 'h-10 px-3'} w-full text-center flex items-center justify-center rounded-2xl app-page-card border-0 font-bold cursor-pointer`}
-                                    style={{ backgroundColor: btnSurfaceBg, color: isDarkTheme ? '#ffffff' : currentTheme?.text }}
+                                    style={{ backgroundColor: btnSurfaceBg, color: bodyTextColor }}
                                 >
                                     <span className={`${isLandscape ? 'text-center leading-tight' : 'truncate text-center'}`}>{isEn ? "Download Quran" : "تحميل القرآن الكريم"}</span>
                                 </button>
@@ -838,7 +1042,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     id="tafseer-download-btn" 
                                     onClick={() => onOpenModal('tafsir-download-modal')} 
                                     className={`text-xs ${isLandscape ? 'min-h-[40px] py-1.5 px-2.5 text-[11.5px]' : 'h-10 px-3'} w-full text-center flex items-center justify-center rounded-2xl app-page-card border-0 font-bold cursor-pointer`}
-                                    style={{ backgroundColor: btnSurfaceBg, color: isDarkTheme ? '#ffffff' : currentTheme?.text }}
+                                    style={{ backgroundColor: btnSurfaceBg, color: bodyTextColor }}
                                 >
                                     <span className={`${isLandscape ? 'text-center leading-tight' : 'truncate text-center'}`}>{isEn ? "Download Tafseer" : "تحميل التفسير"}</span>
                                 </button>

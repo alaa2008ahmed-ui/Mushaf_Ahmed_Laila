@@ -93,34 +93,64 @@ export const GlobalAppToast: React.FC = () => {
 
   if (!visible || !message) return null;
 
-  const madinahContainer =
+  const quranReaderContainer =
     typeof document !== 'undefined' && isQuranPage
-      ? (document.querySelector('#app-container.quran-reader-container.madinah-mode') as HTMLElement | null)
+      ? (document.querySelector('#app-container.quran-reader-container') as HTMLElement | null)
       : null;
 
-  const madinahStyles = madinahContainer
+  const isMadinahToast = Boolean(
+    quranReaderContainer?.classList.contains('madinah-mode') ||
+    quranReaderContainer?.classList.contains('mushaf-mode')
+  );
+
+  const quranFlatStyles = quranReaderContainer
     ? (() => {
-        const inlineStyle = madinahContainer.style;
-        const computed = window.getComputedStyle(madinahContainer);
+        const inlineStyle = quranReaderContainer.style;
+        const computed = window.getComputedStyle(quranReaderContainer);
+        const rootComputed = window.getComputedStyle(document.documentElement);
+        if (isMadinahToast) {
+          const bg =
+            inlineStyle.getPropertyValue('--madinah-menu-bg').trim() ||
+            computed.getPropertyValue('--madinah-menu-bg').trim() ||
+            '#fdf8ea';
+          const text =
+            inlineStyle.getPropertyValue('--madinah-menu-text').trim() ||
+            computed.getPropertyValue('--madinah-menu-text').trim() ||
+            '#78350f';
+          const border =
+            inlineStyle.getPropertyValue('--madinah-menu-border-strong').trim() ||
+            computed.getPropertyValue('--madinah-menu-border-strong').trim() ||
+            'rgba(180, 83, 9, 0.6)';
+          const accent =
+            inlineStyle.getPropertyValue('--madinah-menu-accent').trim() ||
+            computed.getPropertyValue('--madinah-menu-accent').trim() ||
+            '#b45309';
+          const iconText =
+            inlineStyle.getPropertyValue('--madinah-menu-icon-text').trim() ||
+            computed.getPropertyValue('--madinah-menu-icon-text').trim() ||
+            '#ffffff';
+          return { bg, text, border, accent, iconText };
+        }
+
         const bg =
-          inlineStyle.getPropertyValue('--madinah-menu-bg').trim() ||
-          computed.getPropertyValue('--madinah-menu-bg').trim() ||
-          '#fdf8ea';
+          rootComputed.getPropertyValue('--qr-modal-bg').trim() ||
+          computed.getPropertyValue('--qr-modal-bg').trim() ||
+          '#ffffff';
         const text =
-          inlineStyle.getPropertyValue('--madinah-menu-text').trim() ||
-          computed.getPropertyValue('--madinah-menu-text').trim() ||
-          '#78350f';
+          rootComputed.getPropertyValue('--qr-modal-text').trim() ||
+          computed.getPropertyValue('--qr-modal-text').trim() ||
+          '#0f172a';
         const border =
-          inlineStyle.getPropertyValue('--madinah-menu-border-strong').trim() ||
-          computed.getPropertyValue('--madinah-menu-border-strong').trim() ||
-          'rgba(180, 83, 9, 0.6)';
+          inlineStyle.getPropertyValue('--qr-flat-border-strong').trim() ||
+          computed.getPropertyValue('--qr-flat-border-strong').trim() ||
+          'rgba(15, 23, 42, 0.26)';
         const accent =
-          inlineStyle.getPropertyValue('--madinah-menu-accent').trim() ||
-          computed.getPropertyValue('--madinah-menu-accent').trim() ||
-          '#b45309';
+          inlineStyle.getPropertyValue('--qr-flat-accent').trim() ||
+          computed.getPropertyValue('--qr-flat-accent').trim() ||
+          '#10b981';
         const iconText =
-          inlineStyle.getPropertyValue('--madinah-menu-icon-text').trim() ||
-          computed.getPropertyValue('--madinah-menu-icon-text').trim() ||
+          inlineStyle.getPropertyValue('--qr-flat-icon-text').trim() ||
+          computed.getPropertyValue('--qr-flat-icon-text').trim() ||
           '#ffffff';
         return { bg, text, border, accent, iconText };
       })()
@@ -142,16 +172,16 @@ export const GlobalAppToast: React.FC = () => {
     >
       <div 
         className={
-          madinahStyles
+          quranFlatStyles
             ? "rounded-xl px-3.5 py-2 flex items-center justify-center gap-2 text-center text-xs sm:text-sm font-bold leading-normal break-words max-w-[88vw] w-max"
             : "app-3d-toast border-0 rounded-2xl px-4 py-2.5 flex items-center justify-center gap-2.5 text-center text-xs sm:text-sm font-bold leading-normal break-words max-w-[88vw] w-max"
         }
         style={
-          madinahStyles
+          quranFlatStyles
             ? {
-                backgroundColor: madinahStyles.bg,
-                color: madinahStyles.text,
-                border: `1.5px solid ${madinahStyles.border}`,
+                backgroundColor: quranFlatStyles.bg,
+                color: quranFlatStyles.text,
+                border: `1.5px solid ${quranFlatStyles.border}`,
                 boxShadow: 'none',
                 backgroundImage: 'none',
               }
@@ -161,10 +191,10 @@ export const GlobalAppToast: React.FC = () => {
         <span
           className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
           style={
-            madinahStyles
+            quranFlatStyles
               ? {
-                  backgroundColor: madinahStyles.accent,
-                  color: madinahStyles.iconText,
+                  backgroundColor: quranFlatStyles.accent,
+                  color: quranFlatStyles.iconText,
                   boxShadow: 'none',
                   backgroundImage: 'none',
                 }

@@ -501,8 +501,10 @@ export const DEFAULT_SETTINGS = {
     lockHighlightColor: false,
     ayahRepeatCount: 1,
     showPageBorder: false,
+    showMushafFrame: true,
     surahHeaderDesign: 1,
     madinahFrameDesign: 1,
+    madinahReadingDirection: 'horizontal',
     wordHighlightEnabled: false,
     wordHighlightColor: 'auto'
 };
@@ -578,19 +580,37 @@ export const applyQuranThemeForHomeVariant = (variant: 'gold' | 'sky' | 'emerald
                 const scopedSettingsKey = `quran_settings_modern_${m}_${orient === '_h' ? 'h' : 'v'}`;
                 const generalSettingsKey = `quran_settings${scopedSuffix}`;
                 
-                const existingScoped = localStorage.getItem(scopedSettingsKey);
+                const existingScoped = (m === 'madinah' ? localStorage.getItem('quran_settings_madinah') : null)
+                    || localStorage.getItem(scopedSettingsKey)
+                    || localStorage.getItem(generalSettingsKey);
                 const baseScoped = existingScoped ? JSON.parse(existingScoped) : {};
-                const updatedScoped = {
-                    ...DEFAULT_SETTINGS,
-                    ...baseScoped,
-                    bgColor: theme.bg,
-                    textColor: theme.text,
-                    fontFamily: baseScoped.fontFamily || theme.font,
-                    ...(baseScoped.lockHighlightColor ? {} : { highlightTextColor: theme.highlightText || theme.accent }),
-                    theme: theme.id
-                };
+                const preserveMadinahCustomColors =
+                    m === 'madinah' && localStorage.getItem('quran_settings_madinah_colors_custom') === 'true';
+
+                const updatedScoped = preserveMadinahCustomColors
+                    ? {
+                        ...DEFAULT_SETTINGS,
+                        ...baseScoped,
+                        bgColor: baseScoped.bgColor || theme.bg,
+                        textColor: baseScoped.textColor || theme.text,
+                        fontFamily: baseScoped.fontFamily || theme.font,
+                        highlightTextColor: baseScoped.highlightTextColor || (theme.highlightText || theme.accent),
+                        theme: baseScoped.theme || theme.id
+                    }
+                    : {
+                        ...DEFAULT_SETTINGS,
+                        ...baseScoped,
+                        bgColor: theme.bg,
+                        textColor: theme.text,
+                        fontFamily: baseScoped.fontFamily || theme.font,
+                        ...(baseScoped.lockHighlightColor ? {} : { highlightTextColor: theme.highlightText || theme.accent }),
+                        theme: theme.id
+                    };
                 localStorage.setItem(scopedSettingsKey, JSON.stringify(updatedScoped));
                 localStorage.setItem(generalSettingsKey, JSON.stringify(updatedScoped));
+                if (m === 'madinah') {
+                    localStorage.setItem('quran_settings_madinah', JSON.stringify(updatedScoped));
+                }
             }
         }
         

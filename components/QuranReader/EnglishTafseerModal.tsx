@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Copy, Check, ZoomIn, RefreshCw, Layers, ChevronDown, Share2, Volume2, VolumeX } from 'lucide-react';
+import { X, Copy, Check, ZoomIn, RefreshCw, ChevronDown, Share2, Volume2, VolumeX } from 'lucide-react';
 import { SURAH_NAMES_EN, toArabic } from './constants';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
@@ -269,7 +269,7 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = React.memo(({
         >
             <div 
                 className={`quran-modal-sheet-panel zoom-modal-sheet modal-skinned settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} flex flex-col overflow-hidden relative shadow-2xl border-0 ${
-                    isLandscape ? 'w-[62%] max-w-[430px] max-h-[86%] rounded-3xl' : 'w-full max-w-xl mx-auto rounded-t-[32px] max-h-[88dvh]'
+                    isLandscape ? 'w-[62%] max-w-[430px] max-h-[84%] rounded-3xl' : 'w-full max-w-md mx-auto rounded-t-[28px] max-h-[78dvh]'
                 }`}
                 style={{ 
                     backgroundColor: p.modalBg, 
@@ -280,7 +280,7 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = React.memo(({
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Canonical Raised 3D Header */}
+                {/* Canonical Raised Header */}
                 <div className={`${isLandscape ? 'pt-2.5 px-3 pb-1.5' : 'pt-3 px-4 sm:px-5 pb-2'} shrink-0 flex flex-col`}>
                     {!isLandscape && (
                         <div className="app-3d-drag-handle w-12 h-1.5 rounded-full mb-2.5 bg-slate-300/80 dark:bg-zinc-600/80 mx-auto" />
@@ -314,10 +314,6 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = React.memo(({
                 <div 
                     className={`${isLandscape ? 'px-3 pt-1 pb-2 gap-1.5' : 'px-4 sm:px-5 pt-1.5 pb-3.5 gap-2.5'} flex items-center overflow-x-auto custom-scrollbar shrink-0`}
                 >
-                    <span className="text-[11px] font-bold mr-0.5 flex items-center gap-1 shrink-0" style={{ color: p.mutedText }}>
-                        <Layers size={12} className="quran-3d-icon" />
-                        Edition:
-                    </span>
                     {ENGLISH_TAFSIR_EDITIONS.map(ed => {
                         const isSelected = selectedEdition === ed.id;
                         return (
@@ -354,15 +350,18 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = React.memo(({
                         >
                             {!isTranslationOnly && verseText.ar && (
                                 <p 
-                                    className="text-right text-base sm:text-lg mb-1.5 leading-relaxed select-text"
-                                    style={{ fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif" }}
+                                    className="text-right text-lg sm:text-xl mb-2 leading-[2.0] font-semibold select-text"
+                                    style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', serif" }}
                                     dir="rtl"
                                 >
                                     {verseText.ar} <span style={{ color: p.headerAccent }}>﴿{toArabic(ayahNumber)}﴾</span>
                                 </p>
                             )}
                             {verseText.en && (
-                                <p className="text-xs sm:text-sm font-serif italic opacity-85 leading-normal select-text">
+                                <p 
+                                    className="text-sm sm:text-base font-medium leading-relaxed select-text"
+                                    style={{ fontFamily: "'Lora', 'Merriweather', Georgia, serif", color: p.cardText }}
+                                >
                                     "{verseText.en}"
                                 </p>
                             )}

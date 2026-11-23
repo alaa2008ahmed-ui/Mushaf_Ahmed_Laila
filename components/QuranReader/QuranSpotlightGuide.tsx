@@ -25,6 +25,9 @@ import {
 } from 'lucide-react';
 import { QuranGuideStep } from './quranGuideSteps';
 import { useTheme } from '../../context/ThemeContext';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
+import { isDarkQuranTheme } from './constants';
+import { resolveQuranModalPalette } from './modalThemeUtils';
 
 interface QuranSpotlightGuideProps {
   guideKey: string;
@@ -33,6 +36,8 @@ interface QuranSpotlightGuideProps {
   onClose: () => void;
   isEn?: boolean;
   onStepChange?: (stepIndex: number, step: QuranGuideStep) => void;
+  currentTheme?: any;
+  isMadinahMode?: boolean;
 }
 
 export const getQuranGuideSeen = (_guideKey: string): boolean => {
@@ -49,7 +54,10 @@ export const resetQuranGuides = (): void => {
   try {
     const keys = [
       'main_reader',
+      'madinah_reader',
       'sidebar_menu',
+      'sidebar_menu_v2',
+      'madinah_sidebar_menu_v2',
       'surah_juz_modal',
       'surah_juz_modal_v2',
       'bookmarks_modal',
@@ -59,8 +67,8 @@ export const resetQuranGuides = (): void => {
   } catch (e) {}
 };
 
-const renderStepIcon = (type?: string, accentColor?: string) => {
-  const iconProps = { size: 18, className: "text-white drop-shadow-sm" };
+const renderStepIcon = (type?: string, size = 18, flat = false) => {
+  const iconProps = { size, className: flat ? 'text-white' : 'text-white drop-shadow-sm' };
   switch (type) {
     case 'menu':
       return <Menu {...iconProps} />;
@@ -116,11 +124,19 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
   onClose,
   isEn = false,
   onStepChange,
+  currentTheme,
+  isMadinahMode,
 }) => {
-  const { isNightMode, homeThemeVariant, themeKey } = useTheme();
+  const { theme: appTheme, isNightMode, homeThemeVariant, themeKey } = useTheme();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const isMadinah = Boolean(
+    isMadinahMode ||
+    guideKey.startsWith('madinah_') ||
+    (typeof document !== 'undefined' && document.querySelector('#app-container.quran-reader-container.madinah-mode'))
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -195,15 +211,29 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
             visibleElements.length === 1 ||
             step.id === 'surah_header_style' ||
             step.id === 'ayah_text_touch' ||
-            step.id === 'verse_num_bracket';
+            step.id === 'verse_num_bracket' ||
+            step.id === 'madinah_ayah_text' ||
+            step.id === 'madinah_verse_end' ||
+            step.id === 'madinah_bottom_page' ||
+            step.id === 'madinah_autoscroll' ||
+            step.id === 'madinah_menu_button' ||
+            step.id === 'madinah_surah_header' ||
+            step.id === 'madinah_header_bookmark' ||
+            step.id === 'madinah_play_audio' ||
+            step.id === 'madinah_swipe_nav';
 
           if (isSingleTargetStep) {
             let chosen = visibleElements[0];
             
-            // Dynamically select the best element on the current visible page
+            // Dynamically select the best element on the current visible page (horizontal + vertical bounds)
             const inViewport = visibleElements.filter(el => {
               const r = el.getBoundingClientRect();
-              return r.top >= -20 && r.bottom <= window.innerHeight + 50;
+              return (
+                r.top >= -20 &&
+                r.bottom <= window.innerHeight + 50 &&
+                r.left >= -10 &&
+                r.right <= window.innerWidth + 10
+              );
             });
             if (inViewport.length > 0) {
               chosen = inViewport[0];
@@ -211,8 +241,8 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
 
             const rawRect = chosen.getBoundingClientRect();
             if (rawRect.width > 0 && rawRect.height > 0) {
-              // For verse number brackets, apply full child union and generous padding so the spotlight circle frames the ornamental brackets ﴿ ﴾ and verse number cleanly without clipping
-              if (step.id === 'verse_num_bracket' || chosen.classList.contains('verse-container')) {
+              // For verse number brackets/rosettes, apply full child union and generous padding so the spotlight circle frames them cleanly without clipping
+              if (step.id === 'verse_num_bracket' || step.id === 'madinah_verse_end' || chosen.classList.contains('verse-container')) {
                 let minLeft = rawRect.left;
                 let minTop = rawRect.top;
                 let maxRight = rawRect.right;
@@ -270,6 +300,19 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
           }
         }
       }
+
+      if (step.id === 'madinah_autoscroll') {
+        const pageBadge = document.querySelector('#madinah-bottom-page-btn, .madinah-bottom-page-badge') as HTMLElement | null;
+        if (pageBadge) {
+          const r = pageBadge.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            const centerX = r.left + r.width / 2;
+            const btnSize = 22;
+            setTargetRect(new DOMRect(centerX + 37, r.bottom - btnSize, btnSize, btnSize));
+            return;
+          }
+        }
+      }
     } catch (e) {}
 
     setTargetRect(null);
@@ -280,7 +323,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
     try {
       const scrollParent = findScrollParent(chosen);
       if (scrollParent) {
-        const isSidebarGuide = guideKey.startsWith('sidebar_menu') || scrollParent.id === 'floating-menu-scroll-container';
+        const isSidebarGuide = guideKey.includes('sidebar_menu') || scrollParent.id === 'floating-menu-scroll-container';
 
         // Step 0 in sidebar menu: reset to top
         if (isSidebarGuide && currentStepIndex === 0) {
@@ -317,6 +360,9 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         }
       } else {
         // Fallback for standard elements in window
+        if (step?.id === 'madinah_bottom_page' || step?.id === 'madinah_autoscroll') {
+          return;
+        }
         const viewportH = window.innerHeight;
         const elRect = chosen.getBoundingClientRect();
         if (elRect.top < 70 || elRect.bottom > viewportH - 70) {
@@ -345,7 +391,12 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         let toScroll = visible[0];
         const inViewport = visible.filter(el => {
           const r = el.getBoundingClientRect();
-          return r.top >= -20 && r.bottom <= window.innerHeight + 50;
+          return (
+            r.top >= -20 &&
+            r.bottom <= window.innerHeight + 50 &&
+            r.left >= -10 &&
+            r.right <= window.innerWidth + 10
+          );
         });
         if (inViewport.length > 0) {
           toScroll = inViewport[0];
@@ -416,17 +467,21 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
     onClose();
   };
 
-  // Compute position for tooltip card
+  // Compute position for tooltip card (20% smaller across all Quran pages)
   let cardPositionStyle: React.CSSProperties = {};
   let pointerPlacement: 'top' | 'bottom' | 'center' = 'center';
+  const isCompact = true;
 
   const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 700;
   const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 380;
-  const cardWidth = Math.min(380, screenWidth - 28);
-  const margin = 14;
-  const cardHeight = cardRef.current?.offsetHeight || 240;
+  const cardWidth = isCompact
+    ? Math.min(304, Math.round((screenWidth - 28) * 0.8))
+    : Math.min(380, screenWidth - 28);
+  const margin = isCompact ? 11 : 14;
+  const cardHeight = cardRef.current?.offsetHeight || (isCompact ? 192 : 240);
+  const beakHalf = isCompact ? 6 : 8;
 
-  let beakLeft = Math.round(cardWidth / 2 - 8);
+  let beakLeft = Math.round(cardWidth / 2 - beakHalf);
 
   if (targetRect) {
     const targetCenterX = targetRect.left + targetRect.width / 2;
@@ -435,7 +490,10 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
     const isTargetVeryLarge = targetRect.height > screenHeight * 0.45;
 
     const computedLeft = Math.max(14, Math.min(screenWidth - cardWidth - 14, Math.round(targetCenterX - cardWidth / 2)));
-    beakLeft = Math.max(20, Math.min(cardWidth - 28, Math.round(targetCenterX - computedLeft - 8)));
+    beakLeft = Math.max(
+      isCompact ? 16 : 20,
+      Math.min(cardWidth - (isCompact ? 22 : 28), Math.round(targetCenterX - computedLeft - beakHalf))
+    );
 
     if (!isTargetVeryLarge && spaceBelow >= cardHeight + margin + 10) {
       pointerPlacement = 'top';
@@ -472,50 +530,173 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
     };
   }
 
-  const currentAccent = step.accentColor || '#10b981';
-  const isDarkCard = isNightMode || themeKey === 'deep_black' || themeKey === 'black_gold';
+  // Always match the active Quran / Madinah theme colors
+  const hasQuranTheme = Boolean(currentTheme);
+  const isDarkCard = hasQuranTheme
+    ? (isDarkQuranTheme(currentTheme) || currentTheme?.id === 'deep_black')
+    : (isNightMode || themeKey === 'deep_black' || themeKey === 'black_gold');
+
+  const madinahPalette = isMadinah ? getMadinahThemePalette(currentTheme) : null;
+  const quranModalPalette = !isMadinah && hasQuranTheme ? resolveQuranModalPalette(currentTheme) : null;
+
+  const hasColoredDarkAccent =
+    isDarkCard &&
+    typeof currentTheme?.accent === 'string' &&
+    currentTheme.accent.toLowerCase() !== '#27272a' &&
+    currentTheme.accent.toLowerCase() !== '#000000';
+
+  const currentAccent = madinahPalette
+    ? madinahPalette.primary
+    : quranModalPalette
+      ? (quranModalPalette.isDeepBlack
+          ? (hasColoredDarkAccent ? quranModalPalette.accentColor : '#71717a')
+          : quranModalPalette.headerAccent)
+      : (appTheme?.primaryColor || '#10b981');
 
   const cardSurface = (() => {
-    if (isDarkCard) {
+    if (madinahPalette) {
+      const solidFillBg = isDarkCard && !hasColoredDarkAccent ? '#27272a' : madinahPalette.primary;
+      const borderStrong = `${madinahPalette.primary}99`;
+      const borderSubtle = `${madinahPalette.primary}44`;
       return {
-        bg: 'linear-gradient(168deg, #252530 0%, #15151e 100%)',
-        beakTopBg: '#24242f',
-        beakBottomBg: '#16161f',
-        lip: '#07070b',
-        outerShadow: '0 22px 48px rgba(0, 0, 0, 0.85)',
-        inset: 'rgba(255, 255, 255, 0.16)',
-        text: '#ffffff',
-        descText: '#e4e4e7',
-        divider: 'rgba(255, 255, 255, 0.12)',
-        dotInactive: 'rgba(255, 255, 255, 0.28)',
-        pillBg: 'linear-gradient(180deg, #32323e 0%, #24242e 100%)',
-        pillLip: '#09090d',
-        pillText: '#e4e4e7',
-        pillBorder: 'rgba(255, 255, 255, 0.16)',
+        bg: madinahPalette.frameBg,
+        beakTopBg: madinahPalette.frameBg,
+        beakBottomBg: madinahPalette.frameBg,
+        borderColor: borderStrong,
+        lip: 'transparent',
+        outerShadow: isDarkCard ? '0 10px 28px rgba(0, 0, 0, 0.55)' : '0 10px 26px rgba(15, 23, 42, 0.14)',
+        inset: 'transparent',
+        text: isDarkCard ? '#f8fafc' : madinahPalette.bannerText,
+        titleColor: isDarkCard ? '#f8fafc' : madinahPalette.primary,
+        descText: isDarkCard ? '#e4e4e7' : madinahPalette.metaText,
+        divider: borderSubtle,
+        dotInactive: `${madinahPalette.primary}38`,
+        pillBg: madinahPalette.cartoucheFill,
+        pillLip: 'transparent',
+        pillText: isDarkCard ? '#f8fafc' : madinahPalette.bannerText,
+        pillBorder: borderSubtle,
+        badgeBg: isDarkCard ? 'rgba(255, 255, 255, 0.08)' : `${madinahPalette.primary}16`,
+        badgeText: isDarkCard ? '#f8fafc' : madinahPalette.bannerText,
+        badgeBorder: borderSubtle,
+        solidFillBg,
+        solidFillBorder: isDarkCard && !hasColoredDarkAccent ? borderStrong : 'transparent',
       };
     }
-    const tintBottom =
-      homeThemeVariant === 'sky' ? '#eff8ff' :
-      homeThemeVariant === 'emerald' ? '#ecfdf5' :
-      homeThemeVariant === 'burgundy' ? '#fff1f2' :
-      '#fffbeb';
+
+    if (quranModalPalette) {
+      const solidFillBg = quranModalPalette.isDeepBlack && !hasColoredDarkAccent ? '#27272a' : currentAccent;
+      const flatBorderStrong = quranModalPalette.isDark
+        ? 'rgba(255, 255, 255, 0.28)'
+        : `${currentAccent}88`;
+      const flatBorderSubtle = quranModalPalette.isDark
+        ? 'rgba(255, 255, 255, 0.16)'
+        : `${currentAccent}38`;
+      if (quranModalPalette.isDark) {
+        const opaqueDarkCard = quranModalPalette.cardBg?.startsWith('#') ? quranModalPalette.cardBg : '#18181f';
+        const opaqueDarkModal = quranModalPalette.modalBg?.startsWith('#') ? quranModalPalette.modalBg : '#0e0e14';
+        return {
+          bg: 'none',
+          beakTopBg: opaqueDarkCard,
+          beakBottomBg: opaqueDarkModal,
+          borderColor: flatBorderStrong,
+          lip: 'transparent',
+          outerShadow: 'none',
+          inset: 'transparent',
+          text: quranModalPalette.modalText,
+          titleColor: quranModalPalette.isDeepBlack ? '#f8fafc' : currentAccent,
+          descText: quranModalPalette.mutedText,
+          divider: flatBorderSubtle,
+          dotInactive: 'rgba(255, 255, 255, 0.28)',
+          pillBg: quranModalPalette.closeBg,
+          pillLip: 'transparent',
+          pillText: quranModalPalette.modalText,
+          pillBorder: flatBorderSubtle,
+          badgeBg: `${currentAccent}22`,
+          badgeText: '#f8fafc',
+          badgeBorder: flatBorderSubtle,
+          solidFillBg,
+          solidFillBorder: quranModalPalette.isDeepBlack && !hasColoredDarkAccent ? flatBorderStrong : 'transparent',
+        };
+      }
+      const lightBg = quranModalPalette.modalBg || '#ffffff';
+      return {
+        bg: 'none',
+        beakTopBg: lightBg,
+        beakBottomBg: lightBg,
+        borderColor: flatBorderStrong,
+        lip: 'transparent',
+        outerShadow: 'none',
+        inset: 'transparent',
+        text: quranModalPalette.modalText,
+        titleColor: currentAccent,
+        descText: quranModalPalette.mutedText,
+        divider: flatBorderSubtle,
+        dotInactive: `${currentAccent}33`,
+        pillBg: quranModalPalette.closeBg,
+        pillLip: 'transparent',
+        pillText: quranModalPalette.cardText,
+        pillBorder: flatBorderSubtle,
+        badgeBg: `${currentAccent}16`,
+        badgeText: quranModalPalette.cardText,
+        badgeBorder: flatBorderSubtle,
+        solidFillBg,
+        solidFillBorder: 'transparent',
+      };
+    }
+
+    if (isDarkCard) {
+      return {
+        bg: 'none',
+        beakTopBg: '#1c1c24',
+        beakBottomBg: '#1c1c24',
+        borderColor: 'rgba(255, 255, 255, 0.28)',
+        lip: 'transparent',
+        outerShadow: 'none',
+        inset: 'transparent',
+        text: '#ffffff',
+        titleColor: currentAccent,
+        descText: '#e4e4e7',
+        divider: 'rgba(255, 255, 255, 0.14)',
+        dotInactive: 'rgba(255, 255, 255, 0.28)',
+        pillBg: '#27272f',
+        pillLip: 'transparent',
+        pillText: '#e4e4e7',
+        pillBorder: 'rgba(255, 255, 255, 0.16)',
+        badgeBg: `${currentAccent}22`,
+        badgeText: '#f8fafc',
+        badgeBorder: `${currentAccent}48`,
+        solidFillBg: currentAccent,
+        solidFillBorder: 'transparent',
+      };
+    }
+
     return {
-      bg: `linear-gradient(180deg, #ffffff 0%, ${tintBottom} 100%)`,
+      bg: 'none',
       beakTopBg: '#ffffff',
-      beakBottomBg: tintBottom,
-      lip: `${currentAccent}55`,
-      outerShadow: '0 22px 44px rgba(15, 23, 42, 0.30)',
-      inset: 'rgba(255, 255, 255, 0.98)',
+      beakBottomBg: '#ffffff',
+      borderColor: `${currentAccent}88`,
+      lip: 'transparent',
+      outerShadow: 'none',
+      inset: 'transparent',
       text: '#0f172a',
+      titleColor: '#0f172a',
       descText: '#334155',
-      divider: 'rgba(15, 23, 42, 0.10)',
+      divider: 'rgba(15, 23, 42, 0.12)',
       dotInactive: 'rgba(15, 23, 42, 0.18)',
-      pillBg: 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
-      pillLip: 'rgba(15, 23, 42, 0.18)',
+      pillBg: '#f8fafc',
+      pillLip: 'transparent',
       pillText: '#1e293b',
-      pillBorder: 'rgba(15, 23, 42, 0.14)',
+      pillBorder: 'rgba(15, 23, 42, 0.16)',
+      badgeBg: `${currentAccent}16`,
+      badgeText: '#0f172a',
+      badgeBorder: `${currentAccent}48`,
+      solidFillBg: currentAccent,
+      solidFillBorder: 'transparent',
     };
   })();
+
+  const spotlightPad = isCompact ? 3 : 4;
+  const spotlightRadius = isCompact ? 13 : 16;
 
   return (
     <div
@@ -524,7 +705,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
       dir={isEn ? 'ltr' : 'rtl'}
     >
       {/* Subtle, crystal-clear dismiss backdrop with spotlight mask cutout */}
-      {targetRect ? (
+      {targetRect && !step.hideSpotlight ? (
         <svg
           className="absolute inset-0 w-full h-full pointer-events-auto transition-opacity duration-300"
           onClick={handleSkip}
@@ -533,12 +714,12 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
             <mask id={`spotlight-mask-${step.id}`}>
               <rect x="0" y="0" width="100%" height="100%" fill="white" />
               <rect
-                x={Math.max(0, targetRect.left - 4)}
-                y={Math.max(0, targetRect.top - 4)}
-                width={targetRect.width + 8}
-                height={targetRect.height + 8}
-                rx="16"
-                ry="16"
+                x={Math.max(0, targetRect.left - spotlightPad)}
+                y={Math.max(0, targetRect.top - spotlightPad)}
+                width={targetRect.width + spotlightPad * 2}
+                height={targetRect.height + spotlightPad * 2}
+                rx={spotlightRadius}
+                ry={spotlightRadius}
                 fill="black"
               />
             </mask>
@@ -554,50 +735,50 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         </svg>
       ) : (
         <div
-          className="absolute inset-0 bg-black/55 pointer-events-auto"
+          className={`absolute inset-0 pointer-events-auto ${step.hideSpotlight ? 'bg-black/45' : 'bg-black/55'}`}
           onClick={handleSkip}
         />
       )}
 
       {/* Target Element Luminous Spotlight Highlight Frame */}
-      {targetRect && (
+      {targetRect && !step.hideSpotlight && (
         <motion.div
           key={`spotlight-${step.id}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.2 }}
-          className="absolute pointer-events-none rounded-2xl transition-all duration-300"
+          className={`absolute pointer-events-none transition-all duration-300 ${isCompact ? 'rounded-[13px]' : 'rounded-2xl'}`}
           style={{
-            top: Math.max(0, targetRect.top - 4),
-            left: Math.max(0, targetRect.left - 4),
-            width: targetRect.width + 8,
-            height: targetRect.height + 8,
-            boxShadow: `0 0 0 3px ${currentAccent}, 0 0 28px ${currentAccent}80, inset 0 0 14px ${currentAccent}25`,
+            top: Math.max(0, targetRect.top - spotlightPad),
+            left: Math.max(0, targetRect.left - spotlightPad),
+            width: targetRect.width + spotlightPad * 2,
+            height: targetRect.height + spotlightPad * 2,
+            boxShadow: `0 0 0 2px ${currentAccent}`,
             border: `2px solid ${currentAccent}`,
             zIndex: 100001
           }}
         >
           {/* Pulsing corner beacons */}
           <span
-            className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full animate-ping"
+            className={`absolute -top-1.5 -right-1.5 rounded-full animate-ping ${isCompact ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`}
             style={{ backgroundColor: currentAccent }}
           />
           <span
-            className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full shadow-md"
+            className={`absolute -top-1.5 -right-1.5 rounded-full ${isCompact ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`}
             style={{ backgroundColor: currentAccent }}
           />
           <span
-            className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 rounded-full animate-ping"
+            className={`absolute -bottom-1.5 -left-1.5 rounded-full animate-ping ${isCompact ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`}
             style={{ backgroundColor: currentAccent }}
           />
           <span
-            className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 rounded-full shadow-md"
+            className={`absolute -bottom-1.5 -left-1.5 rounded-full ${isCompact ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'}`}
             style={{ backgroundColor: currentAccent }}
           />
         </motion.div>
       )}
 
-      {/* Floating Tooltip Card — Unified 3D Elevated Style */}
+      {/* Floating Tooltip Card — Flat across all Quran reading modes */}
       <motion.div
         key={`card-${step.id}`}
         ref={cardRef}
@@ -606,13 +787,16 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93 }}
         transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="fixed z-[100002] pointer-events-auto rounded-3xl p-4 sm:p-5 flex flex-col border-2 overflow-visible box-border max-w-[calc(100vw-28px)]"
+        className={`fixed z-[100002] pointer-events-auto flex flex-col border-2 overflow-visible box-border max-w-[calc(100vw-28px)] ${
+          isCompact ? 'rounded-[19px] p-3 sm:p-4' : 'rounded-3xl p-4 sm:p-5'
+        }`}
         style={{
           ...cardPositionStyle,
-          background: cardSurface.bg,
+          backgroundColor: cardSurface.beakTopBg,
+          backgroundImage: cardSurface.bg,
           color: cardSurface.text,
-          borderColor: currentAccent,
-          boxShadow: `0 7px 0 ${cardSurface.lip}, ${cardSurface.outerShadow}, inset 0 2px 2px ${cardSurface.inset}`
+          borderColor: cardSurface.borderColor,
+          boxShadow: 'none'
         }}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -623,57 +807,65 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         {/* Pointer Beak */}
         {pointerPlacement === 'top' && (
           <div
-            className="absolute -top-2.5 w-4 h-4 rotate-45 border-t-2 border-l-2"
+            className={`absolute rotate-45 border-t-2 border-l-2 ${isCompact ? '-top-[7px] w-3 h-3' : '-top-2.5 w-4 h-4'}`}
             style={{
               backgroundColor: cardSurface.beakTopBg,
-              borderColor: currentAccent,
+              borderColor: cardSurface.borderColor,
               left: beakLeft
             }}
           />
         )}
         {pointerPlacement === 'bottom' && (
           <div
-            className="absolute -bottom-2.5 w-4 h-4 rotate-45 border-b-2 border-r-2"
+            className={`absolute rotate-45 border-b-2 border-r-2 ${isCompact ? '-bottom-[7px] w-3 h-3' : '-bottom-2.5 w-4 h-4'}`}
             style={{
               backgroundColor: cardSurface.beakBottomBg,
-              borderColor: currentAccent,
+              borderColor: cardSurface.borderColor,
               left: beakLeft
             }}
           />
         )}
 
-        {/* Top Accent Bevel Bar */}
+        {/* Top Accent Bar */}
         <div
-          className="absolute top-0 inset-x-10 h-1 rounded-b-full opacity-90 pointer-events-none"
+          className={`absolute top-0 rounded-b-full opacity-90 pointer-events-none ${isCompact ? 'inset-x-8 h-[3px]' : 'inset-x-10 h-1'}`}
           style={{
-            backgroundImage: `linear-gradient(to right, ${currentAccent}, #ffffff, ${currentAccent})`
+            backgroundColor: currentAccent,
+            backgroundImage: 'none'
           }}
         />
 
         {/* Scrollable Content Container */}
-        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar mb-2.5 pe-0.5">
+        <div className={`flex-1 min-h-0 overflow-y-auto hide-scrollbar pe-0.5 ${isCompact ? 'mb-2' : 'mb-2.5'}`}>
           {/* Header: Step Icon, Badge & Close Button */}
-          <div className="flex items-center justify-between gap-2 mb-2.5">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className={`flex items-center justify-between ${isCompact ? 'gap-1.5 mb-2' : 'gap-2 mb-2.5'}`}>
+            <div className={`flex items-center min-w-0 ${isCompact ? 'gap-1.5' : 'gap-2'}`}>
               <div
-                className="w-9 h-9 rounded-2xl flex items-center justify-center font-bold shrink-0"
+                className={`flex items-center justify-center font-bold shrink-0 ${
+                  isCompact ? 'w-7 h-7 rounded-[11px]' : 'w-9 h-9 rounded-2xl'
+                }`}
                 style={{
-                  backgroundColor: currentAccent,
-                  backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(0,0,0,0.12) 100%)',
+                  backgroundColor: cardSurface.solidFillBg,
+                  backgroundImage: 'none',
                   color: '#ffffff',
-                  boxShadow: `0 3.5px 0 rgba(0,0,0,0.28), 0 6px 12px ${currentAccent}45, inset 0 1.5px 1px rgba(255,255,255,0.45)`
+                  border: `1px solid ${cardSurface.solidFillBorder}`,
+                  boxShadow: 'none'
                 }}
               >
-                {renderStepIcon(step.iconType, currentAccent)}
+                {renderStepIcon(step.iconType, isCompact ? 14 : 18, true)}
               </div>
 
               <span
-                className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider truncate max-w-[180px]"
+                className={`font-extrabold rounded-full uppercase tracking-wider truncate ${
+                  isCompact
+                    ? 'text-[9px] px-2 py-[1px] max-w-[144px]'
+                    : 'text-[11px] px-2.5 py-0.5 max-w-[180px]'
+                }`}
                 style={{
-                  backgroundColor: isDarkCard ? `${currentAccent}28` : `${currentAccent}1a`,
-                  color: isDarkCard ? '#f8fafc' : '#0f172a',
-                  border: `1px solid ${currentAccent}55`,
-                  boxShadow: `0 2px 0 ${currentAccent}30, inset 0 1px 1px rgba(255,255,255,${isDarkCard ? '0.15' : '0.6'})`
+                  backgroundColor: cardSurface.badgeBg,
+                  color: cardSurface.badgeText,
+                  border: `1px solid ${cardSurface.badgeBorder}`,
+                  boxShadow: 'none'
                 }}
               >
                 {isEn
@@ -685,67 +877,78 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
             <button
               type="button"
               onClick={handleSkip}
-              className="unified-3d-btn w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 cursor-pointer shrink-0"
+              className={`rounded-full flex items-center justify-center hover:text-red-500 cursor-pointer shrink-0 ${
+                isCompact ? 'w-[26px] h-[26px]' : 'w-8 h-8'
+              }`}
               style={{
                 background: cardSurface.pillBg,
                 color: cardSurface.pillText,
-                border: `1px solid ${cardSurface.pillBorder}`,
-                boxShadow: `0 2.5px 0 ${cardSurface.pillLip}, 0 4px 8px rgba(0,0,0,0.14), inset 0 1px 1px ${cardSurface.inset}`
+                border: `1.5px solid ${cardSurface.pillBorder}`,
+                boxShadow: 'none'
               }}
               title={isEn ? "Skip Tour" : "تخطي الإرشاد"}
             >
-              <X size={15} strokeWidth={2.5} />
+              <X size={isCompact ? 12 : 15} strokeWidth={2.5} />
             </button>
           </div>
 
           {/* Step Title */}
-          <h3 className="text-base sm:text-lg font-black font-cairo mb-1.5 flex items-center gap-1.5 leading-snug">
-            <span style={{ color: isDarkCard ? currentAccent : '#0f172a' }}>
+          <h3 className={`font-black font-cairo flex items-center leading-snug ${
+            isCompact ? 'text-[13px] sm:text-[14.5px] mb-1 gap-1' : 'text-base sm:text-lg mb-1.5 gap-1.5'
+          }`}>
+            <span style={{ color: cardSurface.titleColor }}>
               {isEn ? step.titleEn : step.titleAr}
             </span>
           </h3>
 
           {/* Detailed Explanation */}
-          <p className="text-xs sm:text-sm leading-relaxed font-medium" style={{ color: cardSurface.descText }}>
+          <p
+            className={`font-medium whitespace-pre-line ${isCompact ? 'text-[10px] sm:text-[11.5px] leading-[1.55]' : 'text-xs sm:text-sm leading-relaxed'}`}
+            style={{ color: cardSurface.descText }}
+          >
             {isEn ? step.descEn : step.descAr}
           </p>
         </div>
 
         {/* Bottom Actions: Progress Dots & Next/Prev */}
         <div
-          className="flex items-center justify-between gap-2 pt-2.5 shrink-0 mt-auto w-full min-w-0"
+          className={`flex items-center justify-between shrink-0 mt-auto w-full min-w-0 ${
+            isCompact ? 'gap-1.5 pt-2' : 'gap-2 pt-2.5'
+          }`}
           style={{ borderTop: `1px solid ${cardSurface.divider}` }}
         >
           {/* Progress Dots or Compact Step Indicator */}
           {steps.length <= 6 ? (
-            <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
+            <div className={`flex items-center shrink-0 overflow-hidden ${isCompact ? 'gap-1' : 'gap-1.5'}`}>
               {steps.map((_, idx) => (
                 <span
                   key={idx}
-                  className="h-1.5 rounded-full transition-all duration-300 shrink-0"
+                  className={`rounded-full transition-all duration-300 shrink-0 ${isCompact ? 'h-[5px]' : 'h-1.5'}`}
                   style={{
-                    width: idx === currentStepIndex ? '16px' : '5px',
+                    width: idx === currentStepIndex ? (isCompact ? '13px' : '16px') : (isCompact ? '4px' : '5px'),
                     backgroundColor: idx === currentStepIndex ? currentAccent : cardSurface.dotInactive
                   }}
                 />
               ))}
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 shrink min-w-0 overflow-hidden">
+            <div className={`flex items-center shrink min-w-0 overflow-hidden ${isCompact ? 'gap-1' : 'gap-1.5'}`}>
               <span
-                className="text-[11px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap shrink-0"
+                className={`font-black rounded-lg whitespace-nowrap shrink-0 ${
+                  isCompact ? 'text-[9px] px-1.5 py-[1px]' : 'text-[11px] px-2 py-0.5'
+                }`}
                 style={{
                   background: cardSurface.pillBg,
                   color: cardSurface.pillText,
                   border: `1px solid ${cardSurface.pillBorder}`,
-                  boxShadow: `0 2px 0 ${cardSurface.pillLip}, inset 0 1px 1px ${cardSurface.inset}`
+                  boxShadow: 'none'
                 }}
               >
-                <span style={{ color: isDarkCard ? currentAccent : cardSurface.pillText }}>{currentStepIndex + 1}</span>
+                <span style={{ color: isDarkCard && !isMadinah ? currentAccent : cardSurface.pillText }}>{currentStepIndex + 1}</span>
                 <span className="opacity-45 mx-0.5">/</span>
                 <span>{steps.length}</span>
               </span>
-              <div className="flex items-center gap-1 shrink-0 overflow-hidden">
+              <div className={`flex items-center shrink-0 overflow-hidden ${isCompact ? 'gap-0.5' : 'gap-1'}`}>
                 {(() => {
                   const total = steps.length;
                   let startIdx = Math.max(0, currentStepIndex - 2);
@@ -758,9 +961,9 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
                     return (
                       <span
                         key={actualIdx}
-                        className="h-1.5 rounded-full transition-all duration-300 shrink-0"
+                        className={`rounded-full transition-all duration-300 shrink-0 ${isCompact ? 'h-[5px]' : 'h-1.5'}`}
                         style={{
-                          width: actualIdx === currentStepIndex ? '14px' : '4px',
+                          width: actualIdx === currentStepIndex ? (isCompact ? '11px' : '14px') : (isCompact ? '3px' : '4px'),
                           backgroundColor: actualIdx === currentStepIndex ? currentAccent : cardSurface.dotInactive
                         }}
                       />
@@ -772,20 +975,22 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0 ms-auto">
+          <div className={`flex items-center shrink-0 ms-auto ${isCompact ? 'gap-1.5' : 'gap-2'}`}>
             {!isFirstStep && (
               <button
                 type="button"
                 onClick={handlePrev}
-                className="unified-3d-btn px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                className={`font-bold flex items-center cursor-pointer shrink-0 ${
+                  isCompact ? 'px-2.5 py-1 rounded-[10px] text-[10px] gap-0.5' : 'px-3 py-1.5 rounded-xl text-xs gap-1'
+                }`}
                 style={{
                   background: cardSurface.pillBg,
                   color: cardSurface.pillText,
-                  border: `1px solid ${cardSurface.pillBorder}`,
-                  boxShadow: `0 3px 0 ${cardSurface.pillLip}, 0 5px 10px rgba(0,0,0,0.14), inset 0 1.5px 1px ${cardSurface.inset}`
+                  border: `1.5px solid ${cardSurface.pillBorder}`,
+                  boxShadow: 'none'
                 }}
               >
-                {isEn ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+                {isEn ? <ChevronLeft size={isCompact ? 11 : 14} /> : <ChevronRight size={isCompact ? 11 : 14} />}
                 <span>{isEn ? 'Back' : 'السابق'}</span>
               </button>
             )}
@@ -793,12 +998,15 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="unified-3d-btn px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shrink-0 relative z-10 whitespace-nowrap"
+              className={`font-black flex items-center cursor-pointer shrink-0 relative z-10 whitespace-nowrap ${
+                isCompact ? 'px-2.5 py-1 rounded-[10px] text-[10px] gap-1' : 'px-3.5 py-1.5 rounded-xl text-xs gap-1.5'
+              }`}
               style={{
-                backgroundColor: currentAccent,
-                backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(0,0,0,0.08) 100%)',
+                backgroundColor: cardSurface.solidFillBg,
+                backgroundImage: 'none',
                 color: '#ffffff',
-                boxShadow: `0 4px 0 rgba(0,0,0,0.32), 0 8px 16px -2px ${currentAccent}55, inset 0 1.5px 1px rgba(255,255,255,0.45)`
+                border: `1px solid ${cardSurface.solidFillBorder}`,
+                boxShadow: 'none'
               }}
             >
               <span>
@@ -807,9 +1015,9 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
                   : (isEn ? 'Next' : 'التالي')}
               </span>
               {!isLastStep ? (
-                isEn ? <ChevronRight size={14} /> : <ChevronLeft size={14} />
+                isEn ? <ChevronRight size={isCompact ? 11 : 14} /> : <ChevronLeft size={isCompact ? 11 : 14} />
               ) : (
-                <Check size={14} className="stroke-[3]" />
+                <Check size={isCompact ? 11 : 14} className="stroke-[3]" />
               )}
             </button>
           </div>
@@ -818,3 +1026,4 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
     </div>
   );
 };
+

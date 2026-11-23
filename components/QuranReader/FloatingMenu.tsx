@@ -10,9 +10,6 @@ import {
   AppWindow,
   VolumeX,
   Search,
-  Book,
-  FileText,
-  Languages,
   Globe,
   Compass,
   Bookmark,
@@ -44,7 +41,7 @@ import { usePrayerTimes } from "../../context/PrayerTimesContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { setupNotifications } from "../../utils/notifications";
 import { QuranSpotlightGuide, getQuranGuideSeen } from "./QuranSpotlightGuide";
-import { QURAN_SIDEBAR_STEPS } from "./quranGuideSteps";
+import { QURAN_SIDEBAR_STEPS, MADINAH_SIDEBAR_STEPS } from "./quranGuideSteps";
 import { useShowPageGuides } from "../../utils/guideManager";
 
 interface FloatingMenuProps {
@@ -128,11 +125,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   const [isSidebarGuideOpen, setIsSidebarGuideOpen] = useState(false);
   const menuBoxRef = useRef<HTMLDivElement>(null);
   const [madinahMainSizes, setMadinahMainSizes] = useState<Record<string, { width: number; height: number }>>({});
-  const madinahSizeKey = `${isLandscape ? "land" : "port"}-${language}`;
-  const madinahLockedSize = readingMode === "madinah" ? madinahMainSizes[madinahSizeKey] : undefined;
+  const madinahSizeKey = `${isLandscape ? "land" : "port"}-${language}-${readingMode === "madinah" ? "m" : "q"}`;
+  const madinahLockedSize = madinahMainSizes[madinahSizeKey];
 
   useLayoutEffect(() => {
-    if (readingMode !== "madinah" || !isFloatingMenuOpen || currentView !== "main" || isSidebarGuideOpen) {
+    if (!isFloatingMenuOpen || currentView !== "main" || isSidebarGuideOpen) {
       return;
     }
     const el = menuBoxRef.current;
@@ -164,9 +161,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       return;
     }
     if (isFloatingMenuOpen) {
-      setCurrentView(initialView as MenuView);
+      const nextView = readingMode === "madinah" && initialView === "font" ? "main" : initialView;
+      setCurrentView(nextView as MenuView);
 
-      if (!getQuranGuideSeen("sidebar_menu_v2")) {
+      const sidebarGuideKey = readingMode === "madinah" ? "madinah_sidebar_menu_v2" : "sidebar_menu_v2";
+      if (!getQuranGuideSeen(sidebarGuideKey)) {
         const timer = setTimeout(() => {
           setIsSidebarGuideOpen(true);
         }, 400);
@@ -175,7 +174,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     } else {
       setIsSidebarGuideOpen(false);
     }
-  }, [isFloatingMenuOpen, initialView, isLandscape]);
+  }, [isFloatingMenuOpen, initialView, isLandscape, readingMode]);
+
+  useEffect(() => {
+    if (readingMode === "madinah" && currentView === "font") {
+      setCurrentView("main");
+    }
+  }, [readingMode, currentView]);
 
   useEffect(() => {
     if (currentView !== "main" || isLandscape || !showPageGuides) {
@@ -256,7 +261,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       )}
       <div
         ref={floatingMenuRef}
-        className={`fixed ${isLandscape ? (readingMode === "madinah" ? "top-[calc(0.5rem+var(--logical-safe-top))] bottom-[calc(1rem+var(--logical-safe-bottom))]" : "top-[calc(0.5rem+var(--logical-safe-top))] bottom-[calc(0.5rem+var(--logical-safe-bottom))]") : readingMode === "madinah" ? "top-[calc(3.5rem+var(--logical-safe-top))] bottom-[calc(1.15rem+var(--logical-safe-bottom))]" : "top-[calc(3.5rem+var(--logical-safe-top))] bottom-[calc(3.5rem+var(--logical-safe-bottom))]"} ${isRTL ? (isLandscape ? "right-[calc(1rem+var(--logical-safe-right))]" : "right-0") : (isLandscape ? "left-[calc(1rem+var(--logical-safe-left))]" : "left-0")} z-[1060] flex items-start gap-4 pointer-events-none`}
+        className={`fixed ${isLandscape ? "top-[calc(0.5rem+var(--logical-safe-top))] bottom-[calc(1rem+var(--logical-safe-bottom))]" : readingMode === "madinah" ? "top-[calc(3.5rem+var(--logical-safe-top))] bottom-[calc(1.15rem+var(--logical-safe-bottom))]" : "top-[calc(3.5rem+var(--logical-safe-top))] bottom-[calc(3.5rem+var(--logical-safe-bottom))]"} ${isRTL ? (isLandscape ? "right-[calc(1rem+var(--logical-safe-right))]" : "right-0") : (isLandscape ? "left-[calc(1rem+var(--logical-safe-left))]" : "left-0")} z-[1060] flex items-start gap-4 pointer-events-none`}
         dir={isRTL ? "rtl" : "ltr"}
       >
         {/* The Main Menu Container */}
@@ -266,24 +271,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           data-view={currentView}
           className={`${
             isLandscape
-              ? `${currentView === "main" || readingMode === "madinah" ? "w-max min-w-[235px] max-w-[295px]" : "w-[250px]"} rounded-2xl`
-              : `${currentView === "main" || readingMode === "madinah" ? "w-max max-w-[85vw]" : "w-[200px] max-w-[85vw]"} ${isRTL ? "rounded-l-2xl" : "rounded-r-2xl"}`
-          } ${readingMode === "madinah" ? "madinah-flat-floating-menu" : "shadow-2xl"} ${readingMode === "madinah" && currentView !== "main" && madinahLockedSize ? "madinah-submenu-locked" : ""} ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full overflow-hidden ${isFloatingMenuOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none hidden"}`}
+              ? "w-max min-w-[235px] max-w-[295px] rounded-2xl"
+              : `w-max max-w-[85vw] ${isRTL ? "rounded-l-2xl" : "rounded-r-2xl"}`
+          } ${readingMode === "madinah" ? "madinah-flat-floating-menu" : "quran-flat-floating-menu"} ${currentView !== "main" && madinahLockedSize ? "madinah-submenu-locked" : ""} ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full overflow-hidden ${isFloatingMenuOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none hidden"}`}
           style={{
-            fontFamily: currentTheme.font || "var(--font-amiri)",
+            fontFamily: "'Cairo', sans-serif",
             backgroundColor: currentTheme.bg || "#ffffff",
             color: currentTheme.text || "#000000",
             borderTop: "none",
             borderBottom: "none",
             borderLeft: "none",
             borderRight: "none",
-            boxShadow:
-              readingMode === "madinah"
-                ? "none"
-                : isRTL
-                  ? "-6px 0 25px -4px rgba(0, 0, 0, 0.22), 0 10px 20px -3px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8), inset 1px 0 2px rgba(255, 255, 255, 0.6)"
-                  : "6px 0 25px -4px rgba(0, 0, 0, 0.22), 0 10px 20px -3px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8), inset -1px 0 2px rgba(255, 255, 255, 0.6)",
-            ...(readingMode === "madinah" && currentView !== "main" && madinahLockedSize
+            boxShadow: "none",
+            ...(currentView !== "main" && madinahLockedSize
               ? ({
                   "--madinah-locked-width": `${madinahLockedSize.width}px`,
                   "--madinah-locked-height": `${madinahLockedSize.height}px`,
@@ -684,41 +684,21 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       currentTheme={currentTheme}
                       isRTL={isRTL}
                     />
-                    <MenuItem
-                      data-id="menu-item-tafseer"
-                      icon={<Book size={18} />}
-                      label="التفسير"
-                      onClick={() => handleAction(() => setReadingMode("tafseer"))}
-                      iconColor={sidebarIconColor}
-                      isActive={readingMode === "tafseer"}
-                      currentTheme={currentTheme}
-                      isRTL={isRTL}
-                    />
-                    <MenuItem
-                      data-id="menu-item-meanings"
-                      icon={<FileText size={18} />}
-                      label="المعاني"
-                      onClick={() => handleAction(() => setReadingMode("meanings"))}
-                      iconColor={sidebarIconColor}
-                      isActive={readingMode === "meanings"}
-                      currentTheme={currentTheme}
-                      isRTL={isRTL}
-                    />
-                    <MenuItem
-                      data-id="menu-item-bilingual"
-                      icon={<Globe size={18} />}
-                      label="التلاوة والترجمة"
-                      onClick={() =>
-                        handleAction(() => setReadingMode("bilingual"))
-                      }
-                      iconColor={sidebarIconColor}
-                      isActive={readingMode === "bilingual"}
-                      currentTheme={currentTheme}
-                      isRTL={isRTL}
-                    />
                   </>
                 ) : (
                   <>
+                    <MenuItem
+                      data-id="menu-item-translation"
+                      icon={<BookText size={18} />}
+                      label="English Translation"
+                      onClick={() =>
+                        handleAction(() => setReadingMode("translation"))
+                      }
+                      iconColor={sidebarIconColor}
+                      isActive={readingMode === "translation"}
+                      currentTheme={currentTheme}
+                      isRTL={isRTL}
+                    />
                     <MenuItem
                       data-id="menu-item-bilingual"
                       icon={<Globe size={18} />}
@@ -728,18 +708,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       }
                       iconColor={sidebarIconColor}
                       isActive={readingMode === "bilingual"}
-                      currentTheme={currentTheme}
-                      isRTL={isRTL}
-                    />
-                    <MenuItem
-                      data-id="menu-item-translation"
-                      icon={<Languages size={18} />}
-                      label="Translation"
-                      onClick={() =>
-                        handleAction(() => setReadingMode("translation"))
-                      }
-                      iconColor={sidebarIconColor}
-                      isActive={readingMode === "translation"}
                       currentTheme={currentTheme}
                       isRTL={isRTL}
                     />
@@ -788,6 +756,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
               {/* علوم القرآن والتدبر والسكينة */}
               <MenuSection
+                dataId="menu-section-quran-sciences"
                 title={isEn ? "Quranic Sciences & Serenity" : "علوم القرآن والتدبر والسكينة"}
                 iconColor={sidebarIconColor}
                 titleColor="#8b5cf6"
@@ -820,7 +789,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 <MenuItem
                   data-id="menu-item-mutashabihat"
                   icon={<GitCompare size={18} />}
-                  label={isEn ? "Mutashabihat Concordance" : "محرك المتشابهات اللفظية"}
+                  label={isEn ? "Mutashabihat Concordance" : "المتشابهات اللفظية"}
                   onClick={() =>
                     handleAction(() => openModal("mutashabihat-modal"))
                   }
@@ -842,7 +811,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 <MenuItem
                   data-id="menu-item-irab"
                   icon={<BookText size={18} />}
-                  label={isEn ? "Quran Syntax & I'rab" : "إعراب القرآن وبيانه النحوي"}
+                  label={isEn ? "Quran Syntax & I'rab" : "إعراب القرآن وبيانه"}
                   onClick={() =>
                     handleAction(() => openModal("irab-modal"))
                   }
@@ -861,10 +830,9 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 isRTL={isRTL}
               >
                 {ALL_SHORTCUTS.filter((s) =>
-                  selectedShortcuts.includes(s.id),
-                ).map((shortcut) => {
-                  const isFontLocked = shortcut.id === "font-type" && readingMode === "madinah";
-                  return (
+                  selectedShortcuts.includes(s.id) &&
+                  !(readingMode === "madinah" && s.id === "font-type"),
+                ).map((shortcut) => (
                   <React.Fragment key={shortcut.id}>
                     <MenuItem
                       data-id={`menu-item-${shortcut.id}`}
@@ -875,10 +843,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       label={translateMenuItem(shortcut.id, shortcut.label)}
                       onClick={() => {
                         if (shortcut.id === "font-type") {
-                          if (readingMode === "madinah") {
-                            showToast(isEn ? "Font is fixed in Madinah Mushaf" : "نوع وحجم الخط ثابتان في مصحف المدينة");
-                            return;
-                          }
                           setCurrentView("font");
                         } else if (shortcut.id === "notification-settings") {
                           setCurrentView("notifications");
@@ -901,13 +865,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       iconColor={sidebarIconColor}
                       showChevron={false}
                       isActive={page === shortcut.id}
-                      isDisabled={isFontLocked}
                       currentTheme={currentTheme}
                       isRTL={isRTL}
                     />
                   </React.Fragment>
-                  );
-                })}
+                ))}
               </MenuSection>
               {!isLandscape && showPageGuides && (
                 <div className="pt-2 pb-1 px-1 flex items-center justify-around gap-2.5">
@@ -958,11 +920,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         </div>
       </div>
       <QuranSpotlightGuide
-        guideKey="sidebar_menu_v2"
-        steps={QURAN_SIDEBAR_STEPS}
+        guideKey={readingMode === "madinah" ? "madinah_sidebar_menu_v2" : "sidebar_menu_v2"}
+        steps={readingMode === "madinah" ? MADINAH_SIDEBAR_STEPS : QURAN_SIDEBAR_STEPS}
         isOpen={isSidebarGuideOpen && !isLandscape && showPageGuides}
         onClose={() => setIsSidebarGuideOpen(false)}
         isEn={isEn}
+        currentTheme={currentTheme}
+        isMadinahMode={readingMode === "madinah"}
       />
     </>
   );
@@ -1094,8 +1058,8 @@ const NotificationSettingsContent: React.FC<{
 
   return (
     <div
-      className="flex flex-col h-full"
-      style={{ fontFamily: currentTheme.font }}
+      className="flex flex-col h-full font-cairo"
+      style={{ fontFamily: "'Cairo', sans-serif" }}
       dir={isRTL ? "rtl" : "ltr"}
     >
       <div
@@ -1174,7 +1138,7 @@ const NotificationSettingsContent: React.FC<{
               <div
                 key={item.id}
                 onClick={() => toggleAppSetting(settingKey)}
-                className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${appSettings[settingKey] ? "shadow-sm" : "opacity-75"}`}
+                className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-opacity cursor-pointer border-0 ${appSettings[settingKey] ? "" : "opacity-75"}`}
                 style={{
                   backgroundColor: appSettings[settingKey]
                     ? `${currentTheme.accent}15`
@@ -1238,7 +1202,7 @@ const NotificationSettingsContent: React.FC<{
                         item.id as "firstThird" | "midnight" | "lastThird",
                       )
                     }
-                    className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${isEnabled ? "shadow-sm" : "opacity-75"}`}
+                    className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-opacity cursor-pointer border-0 ${isEnabled ? "" : "opacity-75"}`}
                     style={{
                       backgroundColor: isEnabled
                         ? `${currentTheme.accent}15`
@@ -1311,7 +1275,7 @@ const NotificationSettingsContent: React.FC<{
                 <div
                   key={item.id}
                   onClick={() => togglePhoneSetting(item.id)}
-                  className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${phoneSettings[item.id as keyof typeof phoneSettings] ? "shadow-sm" : "opacity-75"}`}
+                  className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-opacity cursor-pointer border-0 ${phoneSettings[item.id as keyof typeof phoneSettings] ? "" : "opacity-75"}`}
                   style={{
                     backgroundColor: phoneSettings[
                       item.id as keyof typeof phoneSettings
@@ -1406,14 +1370,15 @@ const NotificationSettingsContent: React.FC<{
 };
 
 const MenuSection: React.FC<{
+  dataId?: string;
   title: string;
   children: React.ReactNode;
   iconColor: string;
   titleColor?: string;
   currentTheme?: any;
   isRTL?: boolean;
-}> = ({ title, children, iconColor, titleColor = "#000000", currentTheme, isRTL = true }) => (
-  <div className="flex flex-col flex-grow mb-1">
+}> = ({ dataId, title, children, iconColor, titleColor = "#000000", currentTheme, isRTL = true }) => (
+  <div data-id={dataId} className="flex flex-col flex-grow mb-1">
     <div
       className={`py-1 px-2.5 rounded-xl mb-1 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap quran-raised-card border-0`}
       style={{

@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { ChevronDown, Pause } from 'lucide-react';
 import { isDarkQuranTheme, toArabic } from './constants';
 import { useLanguage } from '../../context/LanguageContext';
 import {
@@ -7,6 +8,7 @@ import {
     MadinahHorizontalPatternContent,
     MadinahCornerRosetteSVG,
     MadinahBottomBadgeSVG,
+    MadinahHeaderCircleSVG,
 } from './madinahFrameDesigns';
 
 export interface MadinahThemePalette {
@@ -215,11 +217,117 @@ export const MadinahShellSideFrames: React.FC<{ currentTheme?: any; frameDesign?
     );
 };
 
+export const MushafPageFrameOverlay: React.FC<{ currentTheme?: any; frameDesign?: number }> = ({
+    currentTheme,
+    frameDesign,
+}) => {
+    const uid = useId().replace(/:/g, '');
+    const palette = getMadinahThemePalette(currentTheme);
+    const design = normalizeMadinahFrameDesign(frameDesign);
+    const vPatternId = `mushaf-frame-v-pat-${uid}`;
+    const hPatternId = `mushaf-frame-h-pat-${uid}`;
+
+    return (
+        <>
+            <div
+                className="mushaf-frame-safe-cover mushaf-frame-safe-top pointer-events-none"
+                style={{ backgroundColor: palette.frameBg }}
+                aria-hidden="true"
+            />
+            <div
+                className="mushaf-frame-safe-cover mushaf-frame-safe-bottom pointer-events-none"
+                style={{ backgroundColor: palette.frameBg }}
+                aria-hidden="true"
+            />
+            <div
+                className="mushaf-frame-safe-cover mushaf-frame-safe-left pointer-events-none"
+                style={{ backgroundColor: palette.frameBg }}
+                aria-hidden="true"
+            />
+            <div
+                className="mushaf-frame-safe-cover mushaf-frame-safe-right pointer-events-none"
+                style={{ backgroundColor: palette.frameBg }}
+                aria-hidden="true"
+            />
+
+            {/* Top Ornamental SVG Edge */}
+            <div className="mushaf-frame-edge mushaf-frame-edge-top pointer-events-none" aria-hidden="true">
+                <div className="mushaf-frame-edge-h-inner">
+                    <svg className="w-full h-full block" preserveAspectRatio="none">
+                        <defs>
+                            <pattern id={hPatternId} width="36" height="16" patternUnits="userSpaceOnUse">
+                                <MadinahHorizontalPatternContent design={design} palette={palette} />
+                            </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill={`url(#${hPatternId})`} />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Bottom Ornamental SVG Edge */}
+            <div className="mushaf-frame-edge mushaf-frame-edge-bottom pointer-events-none" aria-hidden="true">
+                <div className="mushaf-frame-edge-h-inner">
+                    <svg
+                        className="w-full h-full block"
+                        preserveAspectRatio="none"
+                        style={{ transform: 'scaleY(-1)' }}
+                    >
+                        <rect width="100%" height="100%" fill={`url(#${hPatternId})`} />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Left Ornamental SVG Edge */}
+            <div className="mushaf-frame-side mushaf-frame-side-left pointer-events-none" aria-hidden="true">
+                <div className="mushaf-frame-side-inner">
+                    <svg className="w-full h-full block" preserveAspectRatio="none">
+                        <defs>
+                            <pattern id={vPatternId} width="16" height="36" patternUnits="userSpaceOnUse">
+                                <MadinahVerticalPatternContent design={design} palette={palette} />
+                            </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill={`url(#${vPatternId})`} />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Right Ornamental SVG Edge */}
+            <div className="mushaf-frame-side mushaf-frame-side-right pointer-events-none" aria-hidden="true">
+                <div className="mushaf-frame-side-inner">
+                    <svg
+                        className="w-full h-full block"
+                        preserveAspectRatio="none"
+                        style={{ transform: 'scaleX(-1)' }}
+                    >
+                        <rect width="100%" height="100%" fill={`url(#${vPatternId})`} />
+                    </svg>
+                </div>
+            </div>
+
+            {/* 4 Corner Rosettes */}
+            <div className="mushaf-frame-corner mushaf-frame-corner-tl pointer-events-none" aria-hidden="true">
+                <MadinahCornerRosetteSVG design={design} palette={palette} />
+            </div>
+            <div className="mushaf-frame-corner mushaf-frame-corner-tr pointer-events-none" aria-hidden="true">
+                <MadinahCornerRosetteSVG design={design} palette={palette} />
+            </div>
+            <div className="mushaf-frame-corner mushaf-frame-corner-bl pointer-events-none" aria-hidden="true">
+                <MadinahCornerRosetteSVG design={design} palette={palette} />
+            </div>
+            <div className="mushaf-frame-corner mushaf-frame-corner-br pointer-events-none" aria-hidden="true">
+                <MadinahCornerRosetteSVG design={design} palette={palette} />
+            </div>
+        </>
+    );
+};
+
 interface MadinahFrameSVGProps {
     currentTheme?: any;
     bgColor?: string;
     frameDesign?: number;
     pageNum?: number;
+    isCurrent?: boolean;
+    isLandscape?: boolean;
     isPageInputActive?: boolean;
     pageInputRef?: React.RefObject<HTMLInputElement>;
     pageInput?: string;
@@ -227,6 +335,12 @@ interface MadinahFrameSVGProps {
     onPageInputChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onPageInputBlur?: () => void;
     onPageInputKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+    showAutoScrollButton?: boolean;
+    autoScrollState?: { isActive: boolean; isPaused: boolean; elapsedTime: number };
+    onAutoScrollButtonPointerDown?: (e: React.SyntheticEvent) => void;
+    onAutoScrollButtonPointerUp?: (e: React.PointerEvent | React.TouchEvent) => void;
+    onAutoScrollButtonPointerLeave?: () => void;
+    innerStageClassName?: string;
     children: React.ReactNode;
 }
 
@@ -235,6 +349,8 @@ const MadinahFrameSVG: React.FC<MadinahFrameSVGProps> = ({
     bgColor,
     frameDesign,
     pageNum,
+    isCurrent = true,
+    isLandscape = false,
     isPageInputActive = false,
     pageInputRef,
     pageInput = '',
@@ -242,6 +358,12 @@ const MadinahFrameSVG: React.FC<MadinahFrameSVGProps> = ({
     onPageInputChange,
     onPageInputBlur,
     onPageInputKeyDown,
+    showAutoScrollButton = false,
+    autoScrollState,
+    onAutoScrollButtonPointerDown,
+    onAutoScrollButtonPointerUp,
+    onAutoScrollButtonPointerLeave,
+    innerStageClassName = '',
     children,
 }) => {
     const { language } = useLanguage();
@@ -286,7 +408,7 @@ const MadinahFrameSVG: React.FC<MadinahFrameSVGProps> = ({
                     {isPageInputActive ? (
                         <input
                             ref={pageInputRef}
-                            id="madinah-bottom-page-input"
+                            id={isCurrent ? "madinah-bottom-page-input" : undefined}
                             type="tel"
                             inputMode="numeric"
                             value={pageInput}
@@ -306,7 +428,7 @@ const MadinahFrameSVG: React.FC<MadinahFrameSVGProps> = ({
                         />
                     ) : (
                         <button
-                            id="madinah-bottom-page-btn"
+                            id={isCurrent ? "madinah-bottom-page-btn" : undefined}
                             type="button"
                             onClick={onPageButtonClick}
                             className="madinah-bottom-page-number madinah-bottom-page-control"
@@ -314,15 +436,57 @@ const MadinahFrameSVG: React.FC<MadinahFrameSVGProps> = ({
                             title={isEn ? 'Go to page' : 'الانتقال إلى صفحة'}
                             aria-label={isEn ? `Page ${pageNum}` : `صفحة ${toArabic(pageNum)}`}
                         >
-                            {isEn ? pageNum : toArabic(pageNum)}
+                            <span
+                                id={isCurrent ? "madinah-bottom-page-number-text" : undefined}
+                                className="inline-flex items-center justify-center leading-none"
+                            >
+                                {isEn ? pageNum : toArabic(pageNum)}
+                            </span>
                         </button>
                     )}
                 </div>
             )}
 
-            {/* Inner Safe Reading Area — 100% fixed height, zero scroll, open at top under header */}
+            {/* Small Auto-Scroll Button Next to Bottom Page Badge (Vertical Madinah Mode Only) */}
+            {isCurrent && showAutoScrollButton && (
+                <button
+                    id="madinah-bottom-autoscroll-btn"
+                    type="button"
+                    onPointerDown={onAutoScrollButtonPointerDown}
+                    onPointerUp={onAutoScrollButtonPointerUp}
+                    onPointerLeave={onAutoScrollButtonPointerLeave}
+                    onPointerCancel={onAutoScrollButtonPointerLeave}
+                    onTouchStart={onAutoScrollButtonPointerDown}
+                    onTouchEnd={onAutoScrollButtonPointerUp}
+                    onTouchCancel={onAutoScrollButtonPointerLeave}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }}
+                    className={`madinah-bottom-autoscroll-btn pointer-events-auto select-none ${
+                        autoScrollState?.isActive ? 'is-active' : ''
+                    }`}
+                    style={{
+                        color: autoScrollState?.isActive ? palette.primary : palette.bannerText,
+                        touchAction: 'none',
+                    }}
+                    title={isEn ? 'Auto-scroll (hold for speed)' : 'التمرير التلقائي (اضغط مطولاً لاختيار السرعة)'}
+                    aria-label={isEn ? 'Auto-scroll' : 'التمرير التلقائي'}
+                >
+                    <MadinahHeaderCircleSVG design={design} palette={palette} />
+                    {autoScrollState?.isActive ? (
+                        <Pause size={isLandscape ? 10 : 12} className="relative z-10" strokeWidth={2.5} />
+                    ) : (
+                        <ChevronDown size={isLandscape ? 10 : 12} className="relative z-10" strokeWidth={2.5} />
+                    )}
+                </button>
+            )}
+
+            {/* Inner Safe Reading Area — fixed frame height, open at top under header */}
             <div
-                className="madinah-inner-stage"
+                className={`madinah-inner-stage ${innerStageClassName}`.trim()}
                 style={{
                     backgroundColor: pageBg,
                     borderColor: palette.gold,

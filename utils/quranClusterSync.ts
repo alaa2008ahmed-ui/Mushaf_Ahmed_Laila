@@ -3,6 +3,7 @@ import { ReadingMode, THEMES, DEFAULT_SETTINGS, getToolbarColorsForTheme } from 
 export type ReadingCluster = 'unified' | 'ar' | 'en';
 
 export const ALL_READING_MODES: ReadingMode[] = ['mushaf', 'madinah', 'tafseer', 'meanings', 'translation', 'bilingual'];
+export const SETTINGS_CLUSTER_MODES: ReadingMode[] = ['mushaf', 'tafseer', 'meanings', 'translation', 'bilingual'];
 export const ARABIC_CLUSTER_MODES: ReadingMode[] = ALL_READING_MODES;
 export const ENGLISH_CLUSTER_MODES: ReadingMode[] = ALL_READING_MODES;
 
@@ -18,6 +19,58 @@ export const isModeInCluster = (_cluster: ReadingCluster | string, mode: Reading
     return ALL_READING_MODES.includes(mode as ReadingMode);
 };
 
+export const getMadinahSettings = (isLandscape: boolean = false): any => {
+    try {
+        const orient = isLandscape ? 'h' : 'v';
+        const altOrient = isLandscape ? 'v' : 'h';
+        const keysToCheck = [
+            'quran_settings_madinah',
+            `quran_settings_madinah_${orient}`,
+            `quran_settings_modern_madinah_${orient}`,
+            `quran_settings_madinah_${altOrient}`,
+            `quran_settings_modern_madinah_${altOrient}`,
+        ];
+        for (const key of keysToCheck) {
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to get Madinah settings', e);
+    }
+    return null;
+};
+
+export const saveMadinahSettings = (
+    newSettings: any,
+    options?: { markCustomColors?: boolean }
+) => {
+    try {
+        if (!newSettings || typeof newSettings !== 'object') return;
+        const existing = getMadinahSettings(false) || {};
+        const mergedSettings = { ...DEFAULT_SETTINGS, ...existing, ...newSettings };
+        const serialized = JSON.stringify(mergedSettings);
+
+        localStorage.setItem('quran_settings_madinah', serialized);
+        localStorage.setItem('quran_settings_madinah_v', serialized);
+        localStorage.setItem('quran_settings_madinah_h', serialized);
+        localStorage.setItem('quran_settings_modern_madinah_v', serialized);
+        localStorage.setItem('quran_settings_modern_madinah_h', serialized);
+        localStorage.setItem('quran_layout_modern_madinah_settings_v', serialized);
+        localStorage.setItem('quran_layout_modern_madinah_settings_h', serialized);
+        localStorage.setItem('quran_layout_modern_madinah_settings', serialized);
+
+        if (options?.markCustomColors) {
+            localStorage.setItem('quran_settings_madinah_colors_custom', 'true');
+        }
+
+        window.dispatchEvent(new Event('settings-change'));
+    } catch (e) {
+        console.warn('Failed to save Madinah settings', e);
+    }
+};
+
 export interface AyahPosition {
     s: number;
     a: number;
@@ -28,8 +81,8 @@ export interface AyahPosition {
 }
 
 /**
- * Save reading position universally across ALL 5 reading modes:
- * Mushaf, Tafseer, Meanings, Translation, Recitation & Translation (Bilingual)
+ * Save reading position universally across ALL reading modes:
+ * Mushaf, Madinah, Tafseer, Meanings, Translation, Recitation & Translation (Bilingual)
  * Whenever any page updates the position or stops on an ayah, every page stays 100% in sync.
  */
 export const saveClusterPosition = (
@@ -55,7 +108,7 @@ export const saveClusterPosition = (
         localStorage.setItem('last_pos_v', serialized);
         localStorage.setItem('last_pos_h', serialized);
 
-        // Sync across all 5 reading pages and both orientations
+        // Sync across all reading pages and both orientations
         ALL_READING_MODES.forEach(m => {
             localStorage.setItem(`last_read_pos_${m}`, serialized);
             localStorage.setItem(`last_pos_${m}_v`, serialized);
@@ -121,7 +174,8 @@ export const getClusterPosition = (
 
 /**
  * Sync reading settings (font size, text color, background color, highlight color, theme, etc.)
- * across all 5 reading pages (Mushaf, Tafseer, Meanings, Translation, Bilingual).
+ * across standard reading pages (Mushaf, Tafseer, Meanings, Translation, Bilingual),
+ * intentionally keeping Madinah Mushaf settings completely independent.
  */
 export const syncClusterSettings = (
     _cluster: ReadingCluster | string,
@@ -150,7 +204,7 @@ export const syncClusterSettings = (
         const layouts = ['modern'] as const;
         const orients = ['v', 'h'] as const;
 
-        ALL_READING_MODES.forEach(m => {
+        SETTINGS_CLUSTER_MODES.forEach(m => {
             orients.forEach(o => {
                 const modeSuffix = m === 'mushaf' ? `_${o}` : `_${m}_${o}`;
                 localStorage.setItem(`quran_settings${modeSuffix}`, serialized);
@@ -178,7 +232,7 @@ export const syncClusterSettings = (
 };
 
 /**
- * Sync theme selection across all 5 pages.
+ * Sync theme selection across standard reading pages (excluding Madinah Mushaf).
  */
 export const syncClusterTheme = (
     _cluster: ReadingCluster | string,
@@ -201,7 +255,7 @@ export const syncClusterTheme = (
         const colorsJson = JSON.stringify(colors);
         const orients = ['_v', '_h'] as const;
 
-        ALL_READING_MODES.forEach(m => {
+        SETTINGS_CLUSTER_MODES.forEach(m => {
             orients.forEach(o => {
                 const modeSuffix = m === 'mushaf' ? o : `_${m}${o}`;
                 localStorage.setItem(`current_theme_id_${m}${o}`, themeId);
@@ -234,7 +288,7 @@ export const syncClusterTheme = (
 };
 
 /**
- * Retrieve cluster settings.
+ * Retrieve cluster settings (Madinah mode always reads exclusively from its isolated settings).
  */
 export const getClusterSettings = (
     _cluster?: ReadingCluster | string,
@@ -242,6 +296,10 @@ export const getClusterSettings = (
     isLandscape: boolean = false
 ): any => {
     try {
+        if (currentMode === 'madinah') {
+            return getMadinahSettings(isLandscape);
+        }
+
         const saved = localStorage.getItem('quran_settings_unified') || 
                       localStorage.getItem('quran_settings_ar_cluster') || 
                       localStorage.getItem('quran_settings_en_cluster');

@@ -97,8 +97,9 @@
     left: 0;
     right: 0;
     z-index: 100;
-    padding-top: calc(var(--logical-safe-top) + 8px) !important;
-    height: calc(3.5rem + var(--logical-safe-top) + 8px);
+    padding-top: calc(var(--logical-safe-top, 0px) + 4px) !important;
+    padding-bottom: 4px !important;
+    height: calc(52px + var(--logical-safe-top, 0px)) !important;
 }
 
 .quran-reader-container.is-transparent-mode:not(.landscape-mode) #bottom-bar {
@@ -107,13 +108,14 @@
     left: 0;
     right: 0;
     z-index: 100;
-    padding-bottom: calc(var(--logical-safe-bottom) + 12px) !important;
-    height: calc(3.5rem + var(--logical-safe-bottom) + 12px);
+    padding-top: 4px !important;
+    padding-bottom: calc(var(--logical-safe-bottom, 0px) + 4px) !important;
+    height: calc(52px + var(--logical-safe-bottom, 0px)) !important;
 }
 
 .quran-reader-container.is-transparent-mode:not(.landscape-mode) #mushaf-content {
-    padding-top: calc(3.5rem + var(--logical-safe-top) + 8px) !important;
-    padding-bottom: calc(3.5rem + var(--logical-safe-bottom) + 12px) !important;
+    padding-top: calc(52px + var(--logical-safe-top, 0px)) !important;
+    padding-bottom: calc(52px + var(--logical-safe-bottom, 0px)) !important;
 }
 
 .quran-reader-container .header-default, .quran-reader-container .footer-default { 
@@ -1330,6 +1332,99 @@
     appearance: none;
 }
 
+.madinah-bottom-autoscroll-btn {
+    position: absolute;
+    bottom: 0;
+    left: calc(50% + 37px);
+    z-index: 16;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    margin: 0;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    overflow: visible;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.madinah-bottom-autoscroll-btn:active {
+    transform: scale(0.9);
+    opacity: 0.85;
+}
+
+.madinah-vertical-viewport {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0 0 var(--logical-safe-bottom, 0px) 0;
+}
+
+.madinah-vertical-inner-stage {
+    padding: 0 !important;
+}
+
+.madinah-vertical-scroller {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto !important;
+    touch-action: pan-y;
+    box-sizing: border-box;
+}
+
+.madinah-vertical-page {
+    position: absolute;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+    padding: 4px 5px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.madinah-vertical-divider {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.madinah-vertical-divider-line {
+    flex: 1 1 0%;
+    height: 1px;
+    opacity: 0.42;
+}
+
+.madinah-vertical-divider-gem {
+    width: 6px;
+    height: 6px;
+    transform: rotate(45deg);
+    margin: 0 8px;
+    opacity: 0.72;
+    flex-shrink: 0;
+}
+
 .madinah-corner {
     position: absolute;
     z-index: 50;
@@ -1713,17 +1808,489 @@
     font-size: 9.5px;
 }
 
+.quran-reader-container.landscape-mode .madinah-bottom-autoscroll-btn {
+    left: calc(50% + 32px);
+    width: 19px;
+    height: 19px;
+    bottom: 0;
+}
+
+.quran-reader-container.landscape-mode .madinah-vertical-page {
+    padding: 3px 6px;
+}
+
 /* =========================================================
-   Madinah Mode ONLY — 100% Flat Menus & Linked Sub-Pages
-   Zero 3D embossing / shadows + 40% reduction in width & height (scale 0.6)
-   Strictly scoped to #app-container.quran-reader-container.madinah-mode
-   so all other reading modes and app pages remain 100% untouched.
+   All Quran Reading Pages & Internal Menus — 100% Flat UI
+   Zero 3D embossing / shadows / bevels / push displacement across
+   all reading modes (Mushaf, Tafseer, Meanings, Translation, Bilingual, Madinah).
+   Strictly scoped to #app-container.quran-reader-container so
+   all pages outside QuranReader remain 100% untouched.
    ========================================================= */
 
-/* 1. Side Drawer (#floating-menu) — Flat + 40% smaller, anchored under header, expands to content or right before bottom frame */
-#app-container.quran-reader-container.madinah-mode #floating-menu {
-    background-color: var(--madinah-menu-bg, #ffffff) !important;
-    border: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+/* 1. Top Header & Bottom Footer Bars + Madinah Ornamental Buttons Across All Reading Modes */
+#app-container.quran-reader-container #header,
+#app-container.quran-reader-container.dark #header,
+#app-container.quran-reader-container.landscape-mode #header {
+    box-shadow: none !important;
+    background-image: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode):not(.landscape-mode) #header {
+    height: calc(52px + var(--logical-safe-top, 0px)) !important;
+    padding-top: calc(var(--logical-safe-top, 0px) + 4px) !important;
+    padding-bottom: 4px !important;
+    padding-left: calc(var(--logical-safe-left, 0px) + 8px) !important;
+    padding-right: calc(var(--logical-safe-right, 0px) + 8px) !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode).landscape-mode #header {
+    height: calc(40px + var(--logical-safe-top, 0px)) !important;
+    padding-top: calc(var(--logical-safe-top, 0px) + 4px) !important;
+    padding-bottom: 4px !important;
+    padding-left: calc(var(--logical-safe-left, 0px) + 8px) !important;
+    padding-right: calc(var(--logical-safe-right, 0px) + 8px) !important;
+}
+
+#app-container.quran-reader-container #bottom-bar,
+#app-container.quran-reader-container.dark #bottom-bar,
+#app-container.quran-reader-container.landscape-mode #bottom-bar {
+    box-shadow: none !important;
+    background-image: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode):not(.landscape-mode) #bottom-bar {
+    height: calc(52px + var(--logical-safe-bottom, 0px)) !important;
+    padding-top: 4px !important;
+    padding-bottom: calc(var(--logical-safe-bottom, 0px) + 4px) !important;
+    padding-left: calc(var(--logical-safe-left, 0px) + 8px) !important;
+    padding-right: calc(var(--logical-safe-right, 0px) + 8px) !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode).landscape-mode #bottom-bar {
+    height: calc(40px + var(--logical-safe-bottom, 0px)) !important;
+    padding-top: 4px !important;
+    padding-bottom: calc(var(--logical-safe-bottom, 0px) + 4px) !important;
+    padding-left: calc(var(--logical-safe-left, 0px) + 8px) !important;
+    padding-right: calc(var(--logical-safe-right, 0px) + 8px) !important;
+}
+
+#app-container.quran-reader-container #header .top-bar-text-button,
+#app-container.quran-reader-container.dark #header .top-bar-text-button,
+#app-container.quran-reader-container #bottom-bar .bottom-bar-button,
+#app-container.quran-reader-container.dark #bottom-bar .bottom-bar-button {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    transition: opacity 0.12s ease !important;
+}
+
+#app-container.quran-reader-container #header .top-bar-text-button:active,
+#app-container.quran-reader-container #bottom-bar .bottom-bar-button:active {
+    transform: none !important;
+    box-shadow: none !important;
+    opacity: 0.78 !important;
+}
+
+#app-container.quran-reader-container #header .top-bar-text-button.madinah-header-btn,
+#app-container.quran-reader-container #bottom-bar .bottom-bar-button.madinah-header-btn {
+    overflow: visible !important;
+}
+
+#app-container.quran-reader-container #header .madinah-header-btn,
+#app-container.quran-reader-container #header .madinah-header-btn *,
+#app-container.quran-reader-container #bottom-bar .madinah-header-btn,
+#app-container.quran-reader-container #bottom-bar .madinah-header-btn * {
+    filter: none !important;
+    -webkit-filter: none !important;
+    text-shadow: none !important;
+}
+
+#app-container.quran-reader-container #header #header-page.madinah-header-page-control {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    padding: 0 4px !important;
+    margin: 0 !important;
+}
+
+#app-container.quran-reader-container.landscape-mode #header #btn-menu-header,
+#app-container.quran-reader-container.landscape-mode #header #btn-play,
+#app-container.quran-reader-container.landscape-mode #bottom-bar .madinah-footer-btn {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+#app-container.quran-reader-container.landscape-mode #header .madinah-header-surah-btn {
+    height: 32px !important;
+}
+
+#app-container.quran-reader-container.landscape-mode #header .madinah-header-page-wrap {
+    width: 44px !important;
+    height: 32px !important;
+}
+
+#app-container.quran-reader-container.landscape-mode #header .madinah-header-page-control {
+    height: 32px !important;
+    font-size: 12px !important;
+}
+
+#app-container.quran-reader-container.landscape-mode #header #btn-play i {
+    font-size: 1.15rem !important;
+}
+
+#app-container.quran-reader-container #header svg,
+#app-container.quran-reader-container #header i,
+#app-container.quran-reader-container #bottom-bar svg,
+#app-container.quran-reader-container #bottom-bar i {
+    filter: none !important;
+    -webkit-filter: none !important;
+    text-shadow: none !important;
+}
+
+/* 2. Reading Surface Elements: Surah Headers & Vertical Cards */
+#app-container.quran-reader-container .surah-header-container-wrapper,
+#app-container.quran-reader-container .surah-header-container-wrapper *,
+#app-container.quran-reader-container .tafseer-ayah-card,
+#app-container.quran-reader-container .tafseer-ayah-card * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .surah-header-container-wrapper .surah-header-visual.border-0,
+#app-container.quran-reader-container:not(.madinah-mode) .surah-header-container-wrapper .surah-header-visual.border-0 > div > div.border-0 {
+    border: 1.5px solid var(--qr-flat-border-subtle, rgba(15, 23, 42, 0.16)) !important;
+}
+
+#app-container.quran-reader-container .tafseer-ayah-card button:hover,
+#app-container.quran-reader-container .tafseer-ayah-card button:active {
+    transform: none !important;
+}
+
+#app-container.quran-reader-container .tafseer-ayah-card button:active {
+    opacity: 0.78 !important;
+}
+
+/* 3. Side Drawer (#floating-menu) for all non-Madinah modes */
+#app-container.quran-reader-container:not(.madinah-mode) #floating-menu {
+    box-shadow: none !important;
+    background-image: none !important;
+    border: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+}
+
+/* 4. Centered Modals, Sub-Modals, Bottom Sheets & Full-Screen Panels (Unified Madinah Dimensions Across All Modes) */
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned:not(.toast-element):not(.quran-modal-sheet-panel):not(.quran-reader-fullscreen-overlay),
+#app-container.quran-reader-container:not(.madinah-mode) .madinah-flat-submodal {
+    box-shadow: none !important;
+    background-image: none !important;
+    border: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel.modal-skinned:not(.toast-element) {
+    box-shadow: none !important;
+    background-image: none !important;
+    border-top: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+    border-left: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+    border-right: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+    border-bottom: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode).landscape-mode .quran-modal-sheet-panel,
+#app-container.quran-reader-container:not(.madinah-mode).landscape-mode .quran-modal-sheet-panel.modal-skinned:not(.toast-element) {
+    border: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .zoom-modal-action-bar-3d,
+#app-container.quran-reader-container:not(.madinah-mode).dark .quran-modal-sheet-panel .zoom-modal-action-bar-3d {
+    box-shadow: none !important;
+    border-top: 1px solid var(--qr-flat-border-subtle, rgba(15, 23, 42, 0.16)) !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel {
+    box-shadow: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel:not(.madinah-share-studio-flat):not(.quran-share-studio-flat) {
+    border: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .app-top-bar,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .app-top-bar.settings-top-bar,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar.quran-context {
+    background: var(--qr-modal-bg, #ffffff) !important;
+    background-color: var(--qr-modal-bg, #ffffff) !important;
+    background-image: none !important;
+    color: var(--qr-modal-text, #0f172a) !important;
+    -webkit-text-fill-color: var(--qr-modal-text, #0f172a) !important;
+    border-bottom: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+    box-shadow: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar button,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar button i,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar button svg,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar i,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar svg,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar .app-top-bar__title,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar:not(#_none) * {
+    color: var(--qr-modal-text, #0f172a) !important;
+    -webkit-text-fill-color: var(--qr-modal-text, #0f172a) !important;
+    text-shadow: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar .app-top-bar__title {
+    font-family: 'Cairo', sans-serif !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar svg {
+    stroke: var(--qr-modal-text, #0f172a) !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel header.app-top-bar svg[fill="none"] {
+    fill: none !important;
+}
+
+/* 5. Zero Shadows / Filters / Embossing on All Internal Menu Descendants (Preserve Share Artboard Image Content) */
+#app-container.quran-reader-container #floating-menu *,
+#app-container.quran-reader-container .modal-skinned:not(.toast-element) *,
+#app-container.quran-reader-container .madinah-flat-submodal *,
+#app-container.quran-reader-container .quran-modal-sheet-panel *,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel *:not(.share-preview-artboard-wrap):not(.share-preview-artboard-wrap *),
+#app-container.quran-reader-container .share-preview-artboard-wrap {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+}
+
+/* 6. Flatten Raised Buttons, Cards, Controls & Disable 3D Hover/Press Displacement */
+#app-container.quran-reader-container:not(.madinah-mode) #floating-menu .quran-raised-btn,
+#app-container.quran-reader-container:not(.madinah-mode) #floating-menu .quran-raised-btn-selected,
+#app-container.quran-reader-container:not(.madinah-mode) #floating-menu .quran-raised-card,
+#app-container.quran-reader-container:not(.madinah-mode) #floating-menu .quran-raised-card-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .quran-raised-btn,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .quran-raised-btn-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .quran-raised-card,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .quran-raised-card-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .app-page-card,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .app-inner-3d-box,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .scroll-speed-3d-header,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .scroll-speed-3d-close,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .scroll-speed-3d-btn,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .color-option-btn,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .quran-raised-btn,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .quran-raised-btn-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .quran-raised-card,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .quran-raised-card-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .app-page-card,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .app-inner-3d-box,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .quran-raised-btn,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .quran-raised-btn-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .quran-raised-card,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .quran-raised-card-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .app-page-card,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .app-inner-3d-box,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .unified-3d-btn,
+#app-container.quran-reader-container:not(.madinah-mode) .madinah-flat-submodal button {
+    border: 1.5px solid var(--qr-flat-border-subtle, rgba(15, 23, 42, 0.16)) !important;
+    box-shadow: none !important;
+    transition: opacity 0.12s ease, background-color 0.12s ease !important;
+}
+
+#app-container.quran-reader-container #floating-menu button:hover,
+#app-container.quran-reader-container #floating-menu button:active,
+#app-container.quran-reader-container #floating-menu .quran-raised-btn:hover,
+#app-container.quran-reader-container #floating-menu .quran-raised-btn:active,
+#app-container.quran-reader-container #floating-menu .quran-raised-btn-selected:hover,
+#app-container.quran-reader-container #floating-menu .quran-raised-btn-selected:active,
+#app-container.quran-reader-container .modal-skinned button:hover,
+#app-container.quran-reader-container .modal-skinned button:active,
+#app-container.quran-reader-container .modal-skinned .quran-raised-btn:hover,
+#app-container.quran-reader-container .modal-skinned .quran-raised-btn:active,
+#app-container.quran-reader-container .modal-skinned .quran-raised-btn-selected:hover,
+#app-container.quran-reader-container .modal-skinned .quran-raised-btn-selected:active,
+#app-container.quran-reader-container .modal-skinned .app-page-card:hover,
+#app-container.quran-reader-container .modal-skinned .app-page-card:active,
+#app-container.quran-reader-container .modal-skinned .scroll-speed-3d-btn:hover,
+#app-container.quran-reader-container .modal-skinned .scroll-speed-3d-btn:active,
+#app-container.quran-reader-container .modal-skinned .scroll-speed-3d-close:hover,
+#app-container.quran-reader-container .modal-skinned .scroll-speed-3d-close:active,
+#app-container.quran-reader-container .madinah-flat-submodal button:hover,
+#app-container.quran-reader-container .madinah-flat-submodal button:active,
+#app-container.quran-reader-container .quran-modal-sheet-panel button:hover,
+#app-container.quran-reader-container .quran-modal-sheet-panel button:active,
+#app-container.quran-reader-container .quran-modal-sheet-panel .quran-raised-btn:hover,
+#app-container.quran-reader-container .quran-modal-sheet-panel .quran-raised-btn:active,
+#app-container.quran-reader-container .quran-modal-sheet-panel .app-page-card:hover,
+#app-container.quran-reader-container .quran-modal-sheet-panel .app-page-card:active,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .quran-raised-btn:hover,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .quran-raised-btn:active,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .quran-raised-btn-selected:hover,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .quran-raised-btn-selected:active,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .app-page-card:hover,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .app-page-card:active,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .unified-3d-btn:hover,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .unified-3d-btn:active,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel button:hover,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel button:active {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+#app-container.quran-reader-container #floating-menu button:active,
+#app-container.quran-reader-container #floating-menu .quran-raised-btn:active,
+#app-container.quran-reader-container .modal-skinned button:active,
+#app-container.quran-reader-container .modal-skinned .quran-raised-btn:active,
+#app-container.quran-reader-container .modal-skinned .scroll-speed-3d-btn:active,
+#app-container.quran-reader-container .modal-skinned .scroll-speed-3d-close:active,
+#app-container.quran-reader-container .madinah-flat-submodal button:active,
+#app-container.quran-reader-container .quran-modal-sheet-panel button:active,
+#app-container.quran-reader-container .quran-modal-sheet-panel .quran-raised-btn:active,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .quran-raised-btn:active,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .app-page-card:active,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel .unified-3d-btn:active {
+    opacity: 0.82 !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) #floating-menu .quran-raised-btn-selected,
+#app-container.quran-reader-container:not(.madinah-mode) #floating-menu .quran-raised-card-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .quran-raised-btn-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .quran-raised-card-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .scroll-speed-3d-btn.is-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .modal-skinned .color-option-btn.active,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .quran-raised-btn-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-modal-sheet-panel .quran-raised-card-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .quran-raised-btn-selected,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-fullscreen-modal-panel .quran-raised-card-selected {
+    border: 1.5px solid var(--qr-flat-accent, #10b981) !important;
+}
+
+/* Flat controls: switches, checkboxes, recessed fields, progress bars, badges, dividers & sliders */
+#app-container.quran-reader-container .app-3d-recessed-field,
+#app-container.quran-reader-container .app-3d-switch-track,
+#app-container.quran-reader-container .app-3d-checkbox,
+#app-container.quran-reader-container .app-3d-progress-track,
+#app-container.quran-reader-container .app-3d-badge,
+#app-container.quran-reader-container .quran-3d-badge {
+    box-shadow: none !important;
+    background-image: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .app-3d-recessed-field,
+#app-container.quran-reader-container:not(.madinah-mode) .app-3d-switch-track,
+#app-container.quran-reader-container:not(.madinah-mode) .app-3d-checkbox,
+#app-container.quran-reader-container:not(.madinah-mode) .app-3d-progress-track,
+#app-container.quran-reader-container:not(.madinah-mode) .app-3d-badge,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-3d-badge {
+    border: 1px solid var(--qr-flat-border-subtle, rgba(15, 23, 42, 0.16)) !important;
+}
+
+#app-container.quran-reader-container .app-3d-switch-thumb,
+#app-container.quran-reader-container .app-3d-progress-fill,
+#app-container.quran-reader-container .app-3d-drag-handle,
+#app-container.quran-reader-container .color-preview-dot {
+    box-shadow: none !important;
+    background-image: none !important;
+}
+
+#app-container.quran-reader-container .app-3d-divider {
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--qr-flat-border-subtle, rgba(15, 23, 42, 0.14)) !important;
+}
+
+#app-container.quran-reader-container .app-3d-divider-top {
+    box-shadow: none !important;
+    border-top: 1px solid var(--qr-flat-border-subtle, rgba(15, 23, 42, 0.14)) !important;
+}
+
+#app-container.quran-reader-container .quran-slider,
+#app-container.quran-reader-container .app-3d-range {
+    box-shadow: none !important;
+}
+
+#app-container.quran-reader-container .quran-slider::-webkit-slider-thumb,
+#app-container.quran-reader-container .app-3d-range::-webkit-slider-thumb {
+    box-shadow: none !important;
+    background: var(--qr-flat-surface, #ffffff) !important;
+    border: 2px solid var(--qr-flat-accent, #10b981) !important;
+    transform: none !important;
+}
+
+#app-container.quran-reader-container .quran-slider::-moz-range-thumb,
+#app-container.quran-reader-container .app-3d-range::-moz-range-thumb {
+    box-shadow: none !important;
+    background: var(--qr-flat-surface, #ffffff) !important;
+    border: 2px solid var(--qr-flat-accent, #10b981) !important;
+}
+
+/* 7. Flat Toasts, Marker Notifications, Juz Notification, Reading Timer & Memorization FABs */
+#app-container.quran-reader-container .app-3d-toast,
+#app-container.quran-reader-container .marker-notification,
+#app-container.quran-reader-container .juz-notification,
+#app-container.quran-reader-container .reading-timer,
+#app-container.quran-reader-container #message-toast {
+    box-shadow: none !important;
+    background-image: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode):not(.mushaf-mode) .app-3d-toast,
+#app-container.quran-reader-container:not(.madinah-mode):not(.mushaf-mode) .marker-notification,
+#app-container.quran-reader-container:not(.madinah-mode):not(.mushaf-mode) .juz-notification,
+#app-container.quran-reader-container:not(.madinah-mode):not(.mushaf-mode) .reading-timer,
+#app-container.quran-reader-container:not(.madinah-mode):not(.mushaf-mode) #message-toast {
+    border: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+}
+
+#app-container.quran-reader-container .app-3d-toast *,
+#app-container.quran-reader-container .marker-notification *,
+#app-container.quran-reader-container .juz-notification *,
+#app-container.quran-reader-container .reading-timer *,
+#app-container.quran-reader-container #message-toast * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+}
+
+#app-container.quran-reader-container .marker-icon,
+#app-container.quran-reader-container .juz-notification-icon {
+    box-shadow: none !important;
+    background-image: none !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .unified-3d-fab {
+    box-shadow: none !important;
+    border: 1.5px solid var(--qr-flat-border-strong, rgba(15, 23, 42, 0.26)) !important;
+    transform: scale(0.6) !important;
+    transform-origin: center center !important;
+}
+
+#app-container.quran-reader-container:not(.madinah-mode) .unified-3d-fab:hover,
+#app-container.quran-reader-container:not(.madinah-mode) .unified-3d-fab:active {
+    transform: scale(0.6) !important;
+}
+
+/* =========================================================
+   Unified Menu & Modal Sizing Across ALL Reading Modes (Matching Madinah Mode)
+   40% reduction in width & height (scale 0.6 / 0.72 / 0.78) + identical typography/radii.
+   Strictly scoped to #app-container.quran-reader-container so
+   all pages outside QuranReader remain 100% untouched.
+   ========================================================= */
+
+/* 1. Side Drawer (#floating-menu) — Exact Madinah dimensions across all reading modes */
+#app-container.quran-reader-container #floating-menu {
     box-shadow: none !important;
     border-radius: 16px !important;
     height: auto !important;
@@ -1732,7 +2299,7 @@
     transform: scale(0.6) !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu.madinah-submenu-locked {
+#app-container.quran-reader-container #floating-menu.madinah-submenu-locked {
     width: var(--madinah-locked-width) !important;
     min-width: var(--madinah-locked-width) !important;
     max-width: var(--madinah-locked-width) !important;
@@ -1741,139 +2308,149 @@
     max-height: min(var(--madinah-locked-height), 166.6667%) !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-section-title {
+#app-container.quran-reader-container #floating-menu .floating-menu-section-title {
     font-size: 15px !important;
     line-height: 1.3 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-item-label {
+#app-container.quran-reader-container #floating-menu .floating-menu-item-label {
     font-size: 16.5px !important;
     line-height: 1.3 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subitem-label {
+#app-container.quran-reader-container #floating-menu .floating-menu-subitem-label {
     font-size: 15px !important;
     line-height: 1.3 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-title,
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-btn-text,
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-item-title {
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-title,
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-btn-text,
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-item-title {
     font-size: 16.5px !important;
     line-height: 1.35 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-section-title,
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-tab,
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-item-meta,
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-chip {
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-section-title,
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-tab,
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-item-meta,
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-chip {
     font-size: 15px !important;
     line-height: 1.35 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-item-meta i {
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-item-meta i {
     font-size: 13px !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-check {
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-check {
     width: 22px !important;
     height: 22px !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-subview-check svg {
+#app-container.quran-reader-container #floating-menu .floating-menu-subview-check svg {
     width: 13px !important;
     height: 13px !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-item-btn {
+#app-container.quran-reader-container #floating-menu .floating-menu-item-btn {
     padding-top: 6px !important;
     padding-bottom: 6px !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu > div {
+#app-container.quran-reader-container.mushaf-mode #floating-menu .floating-menu-item-btn,
+#app-container.quran-reader-container.madinah-mode #floating-menu .floating-menu-item-btn {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    min-height: 45px !important;
+}
+
+#app-container.quran-reader-container #floating-menu > div {
     height: auto !important;
     min-height: 0 !important;
     flex: 0 1 auto !important;
 }
 
-#app-container.quran-reader-container.madinah-mode #floating-menu.madinah-submenu-locked > div {
+#app-container.quran-reader-container #floating-menu.madinah-submenu-locked > div {
     height: 100% !important;
     min-height: 0 !important;
     flex: 1 1 0% !important;
 }
 
-#app-container.quran-reader-container.madinah-mode [dir="rtl"] #floating-menu {
+#app-container.quran-reader-container [dir="rtl"] #floating-menu {
     transform-origin: top right !important;
 }
 
-#app-container.quran-reader-container.madinah-mode [dir="ltr"] #floating-menu {
+#app-container.quran-reader-container [dir="ltr"] #floating-menu {
     transform-origin: top left !important;
 }
 
 /* 2. Centered Popups & Linked Sub-Modals (.modal-skinned / .madinah-flat-submodal) */
-#app-container.quran-reader-container.madinah-mode .modal-skinned:not(.toast-element),
-#app-container.quran-reader-container.madinah-mode .madinah-flat-submodal {
-    background-color: var(--madinah-menu-bg, #ffffff) !important;
-    border: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+#app-container.quran-reader-container .modal-skinned:not(.toast-element),
+#app-container.quran-reader-container .madinah-flat-submodal {
     box-shadow: none !important;
     border-radius: 18px !important;
     transform: scale(0.6) !important;
     transform-origin: center center !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .modal-skinned.surah-juz-modal {
+#app-container.quran-reader-container .modal-skinned.surah-juz-modal {
     transform: none !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .modal-skinned.madinah-enlarged-popup:not(.toast-element) {
+#app-container.quran-reader-container .modal-skinned.madinah-enlarged-popup:not(.toast-element) {
     transform: scale(0.72) !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .modal-skinned.madinah-settings-modal-panel:not(.toast-element),
-#app-container.quran-reader-container.madinah-mode .modal-skinned.madinah-download-modal-panel:not(.toast-element) {
+#app-container.quran-reader-container .modal-skinned.madinah-settings-modal-panel:not(.toast-element),
+#app-container.quran-reader-container .modal-skinned.madinah-download-modal-panel:not(.toast-element) {
     transform: scale(0.78) !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .ayah-context-menu .ayah-context-title {
+#app-container.quran-reader-container.mushaf-mode .modal-skinned.madinah-settings-modal-panel:not(.toast-element),
+#app-container.quran-reader-container.madinah-mode .modal-skinned.madinah-settings-modal-panel:not(.toast-element) {
+    transform: scale(0.897) !important;
+}
+
+#app-container.quran-reader-container.mushaf-mode .modal-skinned.scroll-speed-modal-popup:not(.toast-element),
+#app-container.quran-reader-container.madinah-mode .modal-skinned.scroll-speed-modal-popup:not(.toast-element) {
+    transform: scale(0.78) !important;
+}
+
+#app-container.quran-reader-container.mushaf-mode .modal-skinned.bookmarks-modal-popup:not(.toast-element),
+#app-container.quran-reader-container.madinah-mode .modal-skinned.bookmarks-modal-popup:not(.toast-element) {
+    transform: scale(0.936) !important;
+}
+
+#app-container.quran-reader-container .ayah-context-menu .ayah-context-title {
     font-size: 20px !important;
     line-height: 1.3 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .ayah-context-menu .ayah-context-field-label {
+#app-container.quran-reader-container .ayah-context-menu .ayah-context-field-label {
     font-size: 18px !important;
     line-height: 1.3 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .ayah-context-menu .ayah-context-picker-title {
+#app-container.quran-reader-container .ayah-context-menu .ayah-context-picker-title {
     font-size: 17px !important;
     line-height: 1.3 !important;
 }
 
 /* 3. Bottom-Sheet Linked Pages (Tafseer, MultiTafseer, EnglishTafseer, AsbabNuzul, Irab, Mutashabihat, WaqfGuide, Encyclopedia, SajdahCard) */
-#app-container.quran-reader-container.madinah-mode .quran-modal-sheet-panel,
-#app-container.quran-reader-container.madinah-mode .quran-modal-sheet-panel.modal-skinned:not(.toast-element) {
-    background-color: var(--madinah-menu-bg, #ffffff) !important;
+#app-container.quran-reader-container .quran-modal-sheet-panel,
+#app-container.quran-reader-container .quran-modal-sheet-panel.modal-skinned:not(.toast-element) {
     box-shadow: none !important;
     transform: none !important;
-    border-top: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
-    border-left: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
-    border-right: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
-    border-bottom: none !important;
     border-radius: 32px 32px 0 0 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode.landscape-mode .quran-modal-sheet-panel,
-#app-container.quran-reader-container.madinah-mode.landscape-mode .quran-modal-sheet-panel.modal-skinned:not(.toast-element) {
-    border: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+#app-container.quran-reader-container.landscape-mode .quran-modal-sheet-panel,
+#app-container.quran-reader-container.landscape-mode .quran-modal-sheet-panel.modal-skinned:not(.toast-element) {
     border-radius: 24px !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .quran-modal-sheet-panel .zoom-modal-action-bar-3d {
-    border-top: 1px solid var(--madinah-menu-border-subtle, rgba(180, 83, 9, 0.28)) !important;
-}
-
 /* 4. Full-Screen Portrait Linked Pages (Settings, Notifications, Downloads, Search, ShareStudio) */
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-backdrop {
+#app-container.quran-reader-container .quran-fullscreen-modal-backdrop {
     background-color: rgba(0, 0, 0, 0.52) !important;
     display: flex !important;
     flex-direction: column !important;
@@ -1882,12 +2459,10 @@
     padding: 0 !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel:not(.madinah-share-studio-flat) {
+#app-container.quran-reader-container .quran-fullscreen-modal-panel:not(.madinah-share-studio-flat):not(.quran-share-studio-flat) {
     flex: none !important;
     width: 100% !important;
     height: 100% !important;
-    background-color: var(--madinah-menu-bg, #ffffff) !important;
-    border: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
     box-shadow: none !important;
     border-radius: 18px !important;
     transform: scale(0.6) !important;
@@ -1898,12 +2473,18 @@
     --logical-safe-bottom: 0px !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel.madinah-settings-modal-panel:not(.madinah-share-studio-flat),
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel.madinah-download-modal-panel:not(.madinah-share-studio-flat) {
+#app-container.quran-reader-container .quran-fullscreen-modal-panel.madinah-settings-modal-panel:not(.madinah-share-studio-flat):not(.quran-share-studio-flat),
+#app-container.quran-reader-container .quran-fullscreen-modal-panel.madinah-download-modal-panel:not(.madinah-share-studio-flat):not(.quran-share-studio-flat) {
     transform: scale(0.78) !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel.madinah-share-studio-flat {
+#app-container.quran-reader-container.mushaf-mode .quran-fullscreen-modal-panel.madinah-settings-modal-panel:not(.madinah-share-studio-flat):not(.quran-share-studio-flat),
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel.madinah-settings-modal-panel:not(.madinah-share-studio-flat):not(.quran-share-studio-flat) {
+    transform: scale(0.897) !important;
+}
+
+#app-container.quran-reader-container .quran-fullscreen-modal-panel.madinah-share-studio-flat,
+#app-container.quran-reader-container .quran-fullscreen-modal-panel.quran-share-studio-flat {
     flex: 1 1 auto !important;
     width: 100% !important;
     height: 100% !important;
@@ -1913,14 +2494,79 @@
     transform: none !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .madinah-share-studio-flat ~ div .madinah-flat-submodal {
+#app-container.quran-reader-container .madinah-share-studio-flat ~ div .madinah-flat-submodal,
+#app-container.quran-reader-container .quran-share-studio-flat ~ div .madinah-flat-submodal {
     transform: none !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar,
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar.settings-top-bar {
-    background: var(--madinah-menu-bg, #ffffff) !important;
+#app-container.quran-reader-container .quran-reader-fullscreen-overlay,
+#app-container.quran-reader-container .quran-reader-fullscreen-overlay.modal-skinned:not(.toast-element),
+#app-container.quran-reader-container:not(.madinah-mode) .quran-reader-fullscreen-overlay,
+#app-container.quran-reader-container:not(.madinah-mode) .quran-reader-fullscreen-overlay.modal-skinned:not(.toast-element),
+#app-container.quran-reader-container.madinah-mode .quran-reader-fullscreen-overlay,
+#app-container.quran-reader-container.madinah-mode .quran-reader-fullscreen-overlay.modal-skinned:not(.toast-element),
+#app-container.quran-reader-container.landscape-mode .quran-reader-fullscreen-overlay,
+#app-container.quran-reader-container.landscape-mode .quran-reader-fullscreen-overlay.modal-skinned:not(.toast-element),
+#app-container.quran-reader-container:not(.madinah-mode).landscape-mode .quran-reader-fullscreen-overlay,
+#app-container.quran-reader-container:not(.madinah-mode).landscape-mode .quran-reader-fullscreen-overlay.modal-skinned:not(.toast-element),
+#app-container.quran-reader-container.madinah-mode.landscape-mode .quran-reader-fullscreen-overlay,
+#app-container.quran-reader-container.madinah-mode.landscape-mode .quran-reader-fullscreen-overlay.modal-skinned:not(.toast-element) {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+}
+
+/* =========================================================
+   Madinah Mode ONLY — Palette Colors, Header Frames & Madinah Theme Tokens
+   ========================================================= */
+
+#app-container.quran-reader-container.madinah-mode #floating-menu {
     background-color: var(--madinah-menu-bg, #ffffff) !important;
+    border: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+}
+
+#app-container.quran-reader-container.madinah-mode .modal-skinned:not(.toast-element),
+#app-container.quran-reader-container.madinah-mode .madinah-flat-submodal,
+#app-container.quran-reader-container.mushaf-mode .modal-skinned.surah-juz-modal {
+    background-color: var(--madinah-menu-bg, #ffffff) !important;
+    border: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+}
+
+#app-container.quran-reader-container.madinah-mode .quran-modal-sheet-panel,
+#app-container.quran-reader-container.madinah-mode .quran-modal-sheet-panel.modal-skinned:not(.toast-element) {
+    background-color: var(--madinah-menu-bg, #ffffff) !important;
+    border-top: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+    border-left: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+    border-right: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+    border-bottom: none !important;
+}
+
+#app-container.quran-reader-container.madinah-mode.landscape-mode .quran-modal-sheet-panel,
+#app-container.quran-reader-container.madinah-mode.landscape-mode .quran-modal-sheet-panel.modal-skinned:not(.toast-element) {
+    border: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+}
+
+#app-container.quran-reader-container.madinah-mode .quran-modal-sheet-panel .zoom-modal-action-bar-3d {
+    border-top: 1px solid var(--madinah-menu-border-subtle, rgba(180, 83, 9, 0.28)) !important;
+}
+
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel:not(.madinah-share-studio-flat) {
+    background-color: var(--madinah-menu-bg, #ffffff) !important;
+    border: 2px solid var(--madinah-menu-border-strong, rgba(180, 83, 9, 0.55)) !important;
+}
+
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar,
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar.settings-top-bar,
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar.quran-context {
+    background: var(--madinah-topbar-bg, var(--madinah-menu-bg, #ffffff)) !important;
+    background-color: var(--madinah-topbar-bg, var(--madinah-menu-bg, #ffffff)) !important;
     background-image: none !important;
     color: var(--madinah-menu-text, #1f2937) !important;
     -webkit-text-fill-color: var(--madinah-menu-text, #1f2937) !important;
@@ -1928,23 +2574,27 @@
     box-shadow: none !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar button,
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar button i,
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar button svg,
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar i,
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar svg,
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar__title,
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar * {
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar button,
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar button i,
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar button svg,
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar i,
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar svg,
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar .app-top-bar__title,
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar:not(#_none) * {
     color: var(--madinah-menu-text, #1f2937) !important;
     -webkit-text-fill-color: var(--madinah-menu-text, #1f2937) !important;
     text-shadow: none !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar svg {
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar .app-top-bar__title {
+    font-family: 'Cairo', sans-serif !important;
+}
+
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar svg {
     stroke: var(--madinah-menu-text, #1f2937) !important;
 }
 
-#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel .app-top-bar svg[fill="none"] {
+#app-container.quran-reader-container.madinah-mode .quran-fullscreen-modal-panel header.app-top-bar svg[fill="none"] {
     fill: none !important;
 }
 
@@ -2086,12 +2736,17 @@
     border: 2px solid var(--madinah-menu-accent, #b45309) !important;
 }
 
-/* Flat toasts, marker notifications, juz notification, reading timer, reciter toast & memorization FABs in Madinah mode */
+/* Flat toasts, marker notifications, juz notification, reading timer, reciter toast & memorization FABs in Madinah & Mushaf modes */
 #app-container.quran-reader-container.madinah-mode .app-3d-toast,
 #app-container.quran-reader-container.madinah-mode .marker-notification,
 #app-container.quran-reader-container.madinah-mode .juz-notification,
 #app-container.quran-reader-container.madinah-mode .reading-timer,
-#app-container.quran-reader-container.madinah-mode #message-toast {
+#app-container.quran-reader-container.madinah-mode #message-toast,
+#app-container.quran-reader-container.mushaf-mode .app-3d-toast,
+#app-container.quran-reader-container.mushaf-mode .marker-notification,
+#app-container.quran-reader-container.mushaf-mode .juz-notification,
+#app-container.quran-reader-container.mushaf-mode .reading-timer,
+#app-container.quran-reader-container.mushaf-mode #message-toast {
     box-shadow: none !important;
     background-image: none !important;
     background-color: var(--madinah-menu-bg, #ffffff) !important;
@@ -2103,7 +2758,12 @@
 #app-container.quran-reader-container.madinah-mode .marker-notification *,
 #app-container.quran-reader-container.madinah-mode .juz-notification *,
 #app-container.quran-reader-container.madinah-mode .reading-timer *,
-#app-container.quran-reader-container.madinah-mode #message-toast * {
+#app-container.quran-reader-container.madinah-mode #message-toast *,
+#app-container.quran-reader-container.mushaf-mode .app-3d-toast *,
+#app-container.quran-reader-container.mushaf-mode .marker-notification *,
+#app-container.quran-reader-container.mushaf-mode .juz-notification *,
+#app-container.quran-reader-container.mushaf-mode .reading-timer *,
+#app-container.quran-reader-container.mushaf-mode #message-toast * {
     box-shadow: none !important;
     text-shadow: none !important;
     filter: none !important;
@@ -2111,11 +2771,25 @@
 }
 
 #app-container.quran-reader-container.madinah-mode .marker-icon,
-#app-container.quran-reader-container.madinah-mode .juz-notification-icon {
+#app-container.quran-reader-container.madinah-mode .juz-notification-icon,
+#app-container.quran-reader-container.mushaf-mode .marker-icon,
+#app-container.quran-reader-container.mushaf-mode .juz-notification-icon {
     box-shadow: none !important;
     background-image: none !important;
     background-color: var(--madinah-menu-accent, #b45309) !important;
     color: var(--madinah-menu-icon-text, #ffffff) !important;
+}
+
+#app-container.quran-reader-container.madinah-mode .juz-notification,
+#app-container.quran-reader-container.mushaf-mode .juz-notification {
+    transform: scale(0.64) !important;
+    transform-origin: center right !important;
+}
+
+#app-container.quran-reader-container.madinah-mode .marker-notification,
+#app-container.quran-reader-container.mushaf-mode .marker-notification {
+    transform: scale(0.8) !important;
+    transform-origin: center right !important;
 }
 
 #app-container.quran-reader-container.madinah-mode .unified-3d-fab {
@@ -2226,6 +2900,7 @@
 }
 
 #global-search-page.madinah-flat-search header.app-top-bar,
+#global-search-page.madinah-flat-search header.app-top-bar.quran-context,
 .madinah-flat-search .app-top-bar {
     background: var(--madinah-menu-bg, #ffffff) !important;
     background-color: var(--madinah-menu-bg, #ffffff) !important;
@@ -2236,7 +2911,7 @@
     box-shadow: none !important;
 }
 
-#global-search-page.madinah-flat-search header.app-top-bar *,
+#global-search-page.madinah-flat-search header.app-top-bar:not(#_none) *,
 #global-search-page.madinah-flat-search header.app-top-bar button,
 #global-search-page.madinah-flat-search header.app-top-bar button i,
 #global-search-page.madinah-flat-search header.app-top-bar button svg,
@@ -2249,6 +2924,10 @@
     color: var(--madinah-menu-text, #1f2937) !important;
     -webkit-text-fill-color: var(--madinah-menu-text, #1f2937) !important;
     text-shadow: none !important;
+}
+
+#global-search-page.madinah-flat-search header.app-top-bar .app-top-bar__title {
+    font-family: 'Cairo', sans-serif !important;
 }
 
 #global-search-page.madinah-flat-search header.app-top-bar svg,
@@ -2291,3 +2970,246 @@
 .madinah-flat-search .madinah-flat-icon-btn:active {
     opacity: 0.8 !important;
 }
+
+/* =========================================================
+   Mushaf Mode Full-Page Ornamental Frame (Including Header & Footer)
+   Matches Madinah Mushaf outer shell frame proportions
+   ========================================================= */
+.mushaf-frame-safe-cover {
+    position: absolute;
+    z-index: 44;
+}
+
+.mushaf-frame-safe-top {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--logical-safe-top, 0px);
+}
+
+.mushaf-frame-safe-bottom {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--logical-safe-bottom, 0px);
+}
+
+.mushaf-frame-safe-left {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--logical-safe-left, 0px);
+}
+
+.mushaf-frame-safe-right {
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: var(--logical-safe-right, 0px);
+}
+
+.mushaf-frame-edge {
+    position: absolute;
+    left: calc(10px + var(--logical-safe-left, 0px));
+    right: calc(10px + var(--logical-safe-right, 0px));
+    height: 10px;
+    z-index: 45;
+    overflow: hidden;
+}
+
+.mushaf-frame-edge-top {
+    top: var(--logical-safe-top, 0px);
+}
+
+.mushaf-frame-edge-bottom {
+    bottom: var(--logical-safe-bottom, 0px);
+}
+
+.mushaf-frame-edge-h-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 16px;
+    transform-origin: left top;
+    transform: scaleY(0.625);
+}
+
+.mushaf-frame-side {
+    position: absolute;
+    top: var(--logical-safe-top, 0px);
+    bottom: var(--logical-safe-bottom, 0px);
+    width: 10px;
+    z-index: 45;
+    overflow: hidden;
+}
+
+.mushaf-frame-side-left {
+    left: var(--logical-safe-left, 0px);
+}
+
+.mushaf-frame-side-right {
+    right: var(--logical-safe-right, 0px);
+}
+
+.mushaf-frame-side-inner {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 16px;
+}
+
+.mushaf-frame-side-left .mushaf-frame-side-inner {
+    left: 0;
+    transform-origin: left top;
+    transform: scaleX(0.625);
+}
+
+.mushaf-frame-side-right .mushaf-frame-side-inner {
+    right: 0;
+    transform-origin: right top;
+    transform: scaleX(0.625);
+}
+
+.mushaf-frame-corner {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    z-index: 52;
+}
+
+.mushaf-frame-corner-tl {
+    top: var(--logical-safe-top, 0px);
+    left: var(--logical-safe-left, 0px);
+}
+
+.mushaf-frame-corner-tr {
+    top: var(--logical-safe-top, 0px);
+    right: var(--logical-safe-right, 0px);
+}
+
+.mushaf-frame-corner-bl {
+    bottom: var(--logical-safe-bottom, 0px);
+    left: var(--logical-safe-left, 0px);
+}
+
+.mushaf-frame-corner-br {
+    bottom: var(--logical-safe-bottom, 0px);
+    right: var(--logical-safe-right, 0px);
+}
+
+/* Portrait standard: inset #header, #mushaf-content, and #bottom-bar inside the 10px ornamental frame */
+#app-container.quran-reader-container.mushaf-framed-page:not(.landscape-mode):not(.is-transparent-mode) #header {
+    width: auto !important;
+    height: 52px !important;
+    margin-top: calc(var(--logical-safe-top, 0px) + 10px) !important;
+    margin-left: calc(var(--logical-safe-left, 0px) + 10px) !important;
+    margin-right: calc(var(--logical-safe-right, 0px) + 10px) !important;
+    padding: 4px 8px !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page:not(.landscape-mode):not(.is-transparent-mode) #bottom-bar {
+    width: auto !important;
+    height: 52px !important;
+    margin-bottom: calc(var(--logical-safe-bottom, 0px) + 10px) !important;
+    margin-left: calc(var(--logical-safe-left, 0px) + 10px) !important;
+    margin-right: calc(var(--logical-safe-right, 0px) + 10px) !important;
+    padding: 4px 8px !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page:not(.landscape-mode):not(.is-transparent-mode) #mushaf-content {
+    width: auto !important;
+    margin-left: calc(var(--logical-safe-left, 0px) + 10px) !important;
+    margin-right: calc(var(--logical-safe-right, 0px) + 10px) !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page .mushaf-page.first-page {
+    padding-top: 8px !important;
+}
+
+/* Portrait transparent mode: #header and #bottom-bar float inside the 10px frame */
+#app-container.quran-reader-container.mushaf-framed-page.is-transparent-mode:not(.landscape-mode) #header {
+    top: calc(var(--logical-safe-top, 0px) + 10px) !important;
+    left: calc(var(--logical-safe-left, 0px) + 10px) !important;
+    right: calc(var(--logical-safe-right, 0px) + 10px) !important;
+    width: auto !important;
+    height: 52px !important;
+    padding: 4px 8px !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.is-transparent-mode:not(.landscape-mode) #bottom-bar {
+    bottom: calc(var(--logical-safe-bottom, 0px) + 10px) !important;
+    left: calc(var(--logical-safe-left, 0px) + 10px) !important;
+    right: calc(var(--logical-safe-right, 0px) + 10px) !important;
+    width: auto !important;
+    height: 52px !important;
+    padding: 4px 8px !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.is-transparent-mode:not(.landscape-mode) #mushaf-content {
+    padding-top: calc(62px + var(--logical-safe-top, 0px)) !important;
+    padding-bottom: calc(62px + var(--logical-safe-bottom, 0px)) !important;
+    padding-left: calc(var(--logical-safe-left, 0px) + 10px) !important;
+    padding-right: calc(var(--logical-safe-right, 0px) + 10px) !important;
+}
+
+/* Landscape mode: match 12px Madinah landscape frame around #header, #mushaf-content, and #bottom-bar */
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode .mushaf-frame-edge {
+    left: calc(12px + var(--logical-safe-left, 0px));
+    right: calc(12px + var(--logical-safe-right, 0px));
+    height: 12px;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode .mushaf-frame-edge-h-inner {
+    transform: scaleY(0.75);
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode .mushaf-frame-side {
+    width: 12px;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode .mushaf-frame-side-left .mushaf-frame-side-inner,
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode .mushaf-frame-side-right .mushaf-frame-side-inner {
+    transform: scaleX(0.75);
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode .mushaf-frame-corner {
+    width: 14px;
+    height: 14px;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode #header {
+    top: calc(var(--logical-safe-top, 0px) + 12px) !important;
+    left: calc(var(--logical-safe-left, 0px) + 12px) !important;
+    right: calc(var(--logical-safe-right, 0px) + 12px) !important;
+    width: auto !important;
+    height: 40px !important;
+    padding: 3px 8px !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode #bottom-bar {
+    bottom: calc(var(--logical-safe-bottom, 0px) + 12px) !important;
+    left: calc(var(--logical-safe-left, 0px) + 12px) !important;
+    right: calc(var(--logical-safe-right, 0px) + 12px) !important;
+    width: auto !important;
+    height: 40px !important;
+    padding: 3px 8px !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-mode #mushaf-content {
+    padding-top: calc(12px + var(--logical-safe-top, 0px)) !important;
+    padding-bottom: calc(12px + var(--logical-safe-bottom, 0px)) !important;
+    padding-left: calc(12px + var(--logical-safe-left, 0px)) !important;
+    padding-right: calc(12px + var(--logical-safe-right, 0px)) !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-ui-hidden #header,
+#app-container.quran-reader-container.mushaf-framed-page.hide-toolbars-autoscroll #header {
+    margin-top: calc(-3.5rem - var(--logical-safe-top, 0px) - 20px) !important;
+}
+
+#app-container.quran-reader-container.mushaf-framed-page.landscape-ui-hidden #bottom-bar,
+#app-container.quran-reader-container.mushaf-framed-page.hide-toolbars-autoscroll #bottom-bar {
+    margin-bottom: calc(-3.5rem - var(--logical-safe-bottom, 0px) - 24px) !important;
+}
+

@@ -23,11 +23,13 @@ export function getQuranThemeIdForLayout(modeSuffix: string = '_v', navParams?: 
   const isNight = isNightModeForLayout(layout);
   const mKey = readingMode || 'mushaf';
 
-  // Check unified global theme first
-  const unifiedKey = isNight ? `current_theme_id_${layout}_unified_night` : `current_theme_id_${layout}_unified`;
-  const savedUnified = localStorage.getItem(unifiedKey) || localStorage.getItem(unifiedKey + modeSuffix);
-  if (savedUnified && THEMES[savedUnified as keyof typeof THEMES]) {
-    return savedUnified;
+  // Keep Madinah theme completely isolated from unified keys
+  if (mKey !== 'madinah') {
+    const unifiedKey = isNight ? `current_theme_id_${layout}_unified_night` : `current_theme_id_${layout}_unified`;
+    const savedUnified = localStorage.getItem(unifiedKey) || localStorage.getItem(unifiedKey + modeSuffix);
+    if (savedUnified && THEMES[savedUnified as keyof typeof THEMES]) {
+      return savedUnified;
+    }
   }
 
   if (isNight) {
@@ -61,7 +63,34 @@ export function setQuranThemeIdForLayout(themeId: string, modeSuffix: string = '
   const layout = getQuranLayoutMode(navParams);
   const isNight = isNightModeForLayout(layout);
 
-  // Synchronize across all reading modes and unified keys
+  if (readingMode === 'madinah') {
+    if (isNight) {
+      const scopedNightKey = `current_theme_id_${layout}_madinah_night`;
+      localStorage.setItem(scopedNightKey + '_v', themeId);
+      localStorage.setItem(scopedNightKey + '_h', themeId);
+      localStorage.setItem(scopedNightKey, themeId);
+      localStorage.setItem('current_theme_id_madinah_night_v', themeId);
+      localStorage.setItem('current_theme_id_madinah_night_h', themeId);
+      localStorage.setItem('current_theme_id_madinah_night', themeId);
+    } else {
+      const scopedModeKey = `current_theme_id_${layout}_madinah`;
+      localStorage.setItem(scopedModeKey + '_v', themeId);
+      localStorage.setItem(scopedModeKey + '_h', themeId);
+      localStorage.setItem(scopedModeKey, themeId);
+      localStorage.setItem(`quran_layout_${layout}_madinah_theme_v`, themeId);
+      localStorage.setItem(`quran_layout_${layout}_madinah_theme_h`, themeId);
+      localStorage.setItem('current_theme_id_madinah_v', themeId);
+      localStorage.setItem('current_theme_id_madinah_h', themeId);
+      localStorage.setItem('current_theme_id_madinah', themeId);
+    }
+    localStorage.setItem(`quran_user_chosen_theme_${layout}_madinah_v`, themeId);
+    localStorage.setItem(`quran_user_chosen_theme_${layout}_madinah_h`, themeId);
+    localStorage.setItem(`quran_user_chosen_theme_${layout}_madinah`, themeId);
+    localStorage.setItem('quran_theme_changed', 'true');
+    return;
+  }
+
+  // Synchronize across all standard reading modes and unified keys
   ALL_READING_MODES.forEach(mode => {
     if (isNight) {
       const scopedNightKey = `current_theme_id_${layout}_${mode}_night`;
@@ -106,12 +135,21 @@ export function getQuranToolbarColorsForLayout(modeSuffix: string = '_v', navPar
   const layout = getQuranLayoutMode(navParams);
   const mKey = readingMode || 'mushaf';
   const layoutKey = `quran_layout_${layout}_${mKey}_toolbar_colors${modeSuffix}`;
-  const unifiedKey = `quran_layout_${layout}_unified_toolbar_colors`;
-  const saved = localStorage.getItem(unifiedKey) || localStorage.getItem(layoutKey);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {}
+  if (mKey === 'madinah') {
+    const savedMadinah = localStorage.getItem(layoutKey) || localStorage.getItem(`toolbar_colors_v2_madinah${modeSuffix}`);
+    if (savedMadinah) {
+      try {
+        return JSON.parse(savedMadinah);
+      } catch (e) {}
+    }
+  } else {
+    const unifiedKey = `quran_layout_${layout}_unified_toolbar_colors`;
+    const saved = localStorage.getItem(unifiedKey) || localStorage.getItem(layoutKey);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
   }
   
   const themeId = getQuranThemeIdForLayout(modeSuffix, navParams, readingMode);
@@ -138,6 +176,15 @@ export function getQuranToolbarColorsForLayout(modeSuffix: string = '_v', navPar
 export function setQuranToolbarColorsForLayout(colors: any, modeSuffix: string = '_v', navParams?: any, readingMode: string = 'mushaf'): void {
   const layout = getQuranLayoutMode(navParams);
   const serialized = JSON.stringify(colors);
+
+  if (readingMode === 'madinah') {
+    localStorage.setItem(`quran_layout_${layout}_madinah_toolbar_colors_v`, serialized);
+    localStorage.setItem(`quran_layout_${layout}_madinah_toolbar_colors_h`, serialized);
+    localStorage.setItem(`quran_layout_${layout}_madinah_toolbar_colors`, serialized);
+    localStorage.setItem(`toolbar_colors_v2_madinah_v`, serialized);
+    localStorage.setItem(`toolbar_colors_v2_madinah_h`, serialized);
+    return;
+  }
   
   ALL_READING_MODES.forEach(mode => {
     localStorage.setItem(`quran_layout_${layout}_${mode}_toolbar_colors_v`, serialized);
@@ -153,6 +200,20 @@ export function setQuranToolbarColorsForLayout(colors: any, modeSuffix: string =
 export function getQuranSettingsForLayout(modeSuffix: string = '_v', navParams?: any, readingMode: string = 'mushaf'): any {
   const layout = getQuranLayoutMode(navParams);
   const mKey = readingMode || 'mushaf';
+
+  if (mKey === 'madinah') {
+    const savedMadinah =
+      localStorage.getItem('quran_settings_madinah') ||
+      localStorage.getItem(`quran_settings_madinah${modeSuffix}`) ||
+      localStorage.getItem(`quran_layout_${layout}_madinah_settings${modeSuffix}`) ||
+      localStorage.getItem(`quran_layout_${layout}_madinah_settings`);
+    if (savedMadinah) {
+      try {
+        return JSON.parse(savedMadinah);
+      } catch (e) {}
+    }
+    return null;
+  }
   
   // Check unified global settings first
   const unifiedKey = `quran_layout_${layout}_unified_settings`;
@@ -176,6 +237,18 @@ export function getQuranSettingsForLayout(modeSuffix: string = '_v', navParams?:
 export function setQuranSettingsForLayout(settings: any, modeSuffix: string = '_v', navParams?: any, readingMode: string = 'mushaf'): void {
   const layout = getQuranLayoutMode(navParams);
   const serialized = JSON.stringify(settings);
+
+  if (readingMode === 'madinah') {
+    localStorage.setItem(`quran_layout_${layout}_madinah_settings_v`, serialized);
+    localStorage.setItem(`quran_layout_${layout}_madinah_settings_h`, serialized);
+    localStorage.setItem(`quran_layout_${layout}_madinah_settings`, serialized);
+    localStorage.setItem('quran_settings_madinah_v', serialized);
+    localStorage.setItem('quran_settings_madinah_h', serialized);
+    localStorage.setItem('quran_settings_madinah', serialized);
+    localStorage.setItem('quran_settings_modern_madinah_v', serialized);
+    localStorage.setItem('quran_settings_modern_madinah_h', serialized);
+    return;
+  }
 
   ALL_READING_MODES.forEach(mode => {
     localStorage.setItem(`quran_layout_${layout}_${mode}_settings_v`, serialized);
