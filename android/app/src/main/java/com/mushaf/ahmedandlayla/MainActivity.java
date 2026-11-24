@@ -33,6 +33,7 @@ public class MainActivity extends BridgeActivity {
     private static volatile boolean currentStatusBarIsDark = false;
     private static volatile Boolean lastAppliedStatusBarIsDark = null;
     private static volatile int lastAppliedWindowHash = 0;
+    private static volatile boolean splashFullscreenActive = false;
     private volatile float lastSafeTopCss = 0f;
     private volatile float lastSafeBottomCss = 0f;
     private volatile float appliedSafeTopCss = -1f;
@@ -67,13 +68,16 @@ public class MainActivity extends BridgeActivity {
         long coldSeq = 0L;
 
         if (coldTarget != null) {
+            splashFullscreenActive = false;
             coldSeq = nextShortcutSeq();
             pendingShortcut = coldTarget;
             savePendingShortcutPrefs(coldTarget, coldSeq);
         } else {
+            splashFullscreenActive = true;
             try {
                 getWindow().setBackgroundDrawableResource(R.drawable.splash_screen);
             } catch (Exception ignored) {}
+            applySplashFullscreenState(this, true);
         }
 
         // Pass genuine incomingIntent to super.onCreate so Capacitor's bridge captures getLaunchUrl and deep links
@@ -92,7 +96,11 @@ public class MainActivity extends BridgeActivity {
         android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
         String appLang = prefs.getString("app_language", "ar");
         currentStatusBarIsDark = prefs.getBoolean("status_bar_is_dark", false);
-        applyStatusBarStyle(this, currentStatusBarIsDark);
+        if (splashFullscreenActive) {
+            applySplashFullscreenState(this, true);
+        } else {
+            applySplashFullscreenState(this, false);
+        }
         AutoSilentPlugin.applyAppLocale(this, appLang);
         
         createAdhanNotificationChannels("ar".equalsIgnoreCase(appLang));
@@ -146,9 +154,95 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    public static void setSplashFullscreen(final Activity activity, final boolean fullscreen) {
+        splashFullscreenActive = fullscreen;
+        if (activity == null) return;
+        activity.runOnUiThread(() -> applySplashFullscreenState(activity, fullscreen));
+    }
+
+    private static void applySplashFullscreenState(final Activity activity, final boolean fullscreen) {
+        if (activity == null) return;
+        try {
+            Window window = activity.getWindow();
+            if (window == null) return;
+            View decorView = window.getDecorView();
+            if (decorView == null) return;
+
+            WindowCompat.setDecorFitsSystemWindows(window, false);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                WindowManager.LayoutParams lp = window.getAttributes();
+                int desiredCutout = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                    ? WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                    : WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                if (lp.layoutInDisplayCutoutMode != desiredCutout) {
+                    lp.layoutInDisplayCutoutMode = desiredCutout;
+                    window.setAttributes(lp);
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                if (fullscreen) {
+                    window.setStatusBarColor(android.graphics.Color.TRANSPARENT);
+                    window.setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+                }
+            }
+
+            WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, decorView);
+            if (fullscreen) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    if (controller != null) {
+                        controller.setSystemBarsBehavior(
+                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        );
+                        controller.hide(WindowInsetsCompat.Type.systemBars());
+                    }
+                } else {
+                    int immersiveFlags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+                    decorView.setSystemUiVisibility(immersiveFlags);
+                }
+                decorView.setPadding(0, 0, 0, 0);
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                window.setBackgroundDrawable(
+                    new android.graphics.drawable.ColorDrawable(
+                        currentStatusBarIsDark ? android.graphics.Color.BLACK : android.graphics.Color.WHITE
+                    )
+                );
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    if (controller != null) {
+                        controller.show(WindowInsetsCompat.Type.systemBars());
+                    }
+                } else {
+                    int flags = decorView.getSystemUiVisibility();
+                    flags &= ~(View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                    decorView.setSystemUiVisibility(flags);
+                }
+                lastAppliedStatusBarIsDark = null;
+                applyStatusBarStyle(activity, currentStatusBarIsDark);
+                ViewCompat.requestApplyInsets(decorView);
+            }
+        } catch (Exception ignored) {}
+    }
+
     public static void applyStatusBarStyle(final Activity activity, final boolean isDarkTheme) {
         currentStatusBarIsDark = isDarkTheme;
         if (activity == null) return;
+        if (splashFullscreenActive) {
+            lastAppliedStatusBarIsDark = null;
+            return;
+        }
         final int windowHash = System.identityHashCode(activity);
         if (lastAppliedStatusBarIsDark != null
                 && lastAppliedStatusBarIsDark.booleanValue() == isDarkTheme
@@ -243,7 +337,7 @@ public class MainActivity extends BridgeActivity {
 
         WindowInsetsCompat rootInsets = ViewCompat.getRootWindowInsets(webView);
         if (rootInsets != null) {
-            Insets sysBars = rootInsets.getInsets(
+            Insets sysBars = rootInsets.getInsetsIgnoringVisibility(
                 WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
             float density = getResources().getDisplayMetrics().density;
@@ -262,7 +356,7 @@ public class MainActivity extends BridgeActivity {
         if (!initialInsetsCaptured) {
             ViewCompat.setOnApplyWindowInsetsListener(webView, (v, windowInsets) -> {
                 if (!initialInsetsCaptured) {
-                    Insets sysBars = windowInsets.getInsets(
+                    Insets sysBars = windowInsets.getInsetsIgnoringVisibility(
                         WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
                     );
                     float density = getResources().getDisplayMetrics().density;
@@ -373,6 +467,9 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
+        if (splashFullscreenActive) {
+            applySplashFullscreenState(this, true);
+        }
         // NOTE: Never re-process getIntent() or re-dispatch shortcuts in onResume()!
         // Resuming from background/Recents must always keep the user on the exact page they left.
         android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
@@ -389,6 +486,9 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        if (hasFocus && splashFullscreenActive) {
+            applySplashFullscreenState(this, true);
+        }
     }
 
     @Override

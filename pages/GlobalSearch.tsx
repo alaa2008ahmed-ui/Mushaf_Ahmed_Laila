@@ -277,13 +277,39 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         }
     }, [sourceReadingMode]);
 
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const searchBoxRef = useRef<HTMLFormElement>(null);
+    const isKeyboardOpenRef = useRef(false);
+
+    const dismissKeyboard = useCallback((force = false) => {
+        const inputEl = searchInputRef.current;
+        const activeEl = document.activeElement;
+        const hasFocusedInput = Boolean(
+            (inputEl && activeEl === inputEl) ||
+            (activeEl instanceof HTMLElement && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA'))
+        );
+
+        if (inputEl && activeEl === inputEl) {
+            inputEl.blur();
+        } else if (activeEl instanceof HTMLElement && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+            activeEl.blur();
+        }
+
+        if (Capacitor.isNativePlatform() && (force || hasFocusedInput || isKeyboardOpenRef.current)) {
+            isKeyboardOpenRef.current = false;
+            Keyboard.hide().catch(() => {});
+        }
+    }, []);
+
     const handleBack = useCallback(() => {
+        dismissKeyboard(true);
         onBack();
-    }, [onBack]);
+    }, [dismissKeyboard, onBack]);
 
     const handleGoHome = useCallback(() => {
+        dismissKeyboard(true);
         onNavigate('home');
-    }, [onNavigate]);
+    }, [dismissKeyboard, onNavigate]);
 
     useEffect(() => {
         const interceptor = () => {
@@ -295,9 +321,36 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     }, [handleBack]);
 
     useEffect(() => {
-        if (Capacitor.isNativePlatform()) {
-            Keyboard.setScroll({ isDisabled: true });
-        }
+        if (!Capacitor.isNativePlatform()) return;
+        Keyboard.setScroll({ isDisabled: true });
+
+        let showHandle: any;
+        let hideHandle: any;
+        let cancelled = false;
+
+        Promise.resolve(Keyboard.addListener('keyboardDidShow', () => {
+            isKeyboardOpenRef.current = true;
+        }))
+            .then((h) => {
+                if (cancelled) h?.remove?.();
+                else showHandle = h;
+            })
+            .catch(() => {});
+
+        Promise.resolve(Keyboard.addListener('keyboardDidHide', () => {
+            isKeyboardOpenRef.current = false;
+        }))
+            .then((h) => {
+                if (cancelled) h?.remove?.();
+                else hideHandle = h;
+            })
+            .catch(() => {});
+
+        return () => {
+            cancelled = true;
+            showHandle?.remove?.();
+            hideHandle?.remove?.();
+        };
     }, []);
     
     useEffect(() => {
@@ -2517,6 +2570,17 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             id="global-search-page"
             className={`h-[100dvh] w-full flex flex-col relative overflow-hidden transition-colors ${isQuranFlatSearch ? 'madinah-flat-search font-cairo' : ''} ${isQuranLandscape ? 'global-search-landscape' : ''} ${theme.isDark ? 'dark' : ''}`}
             dir={isEn ? "ltr" : "rtl"}
+            onPointerDownCapture={(e) => {
+                const target = e.target as HTMLElement | null;
+                if (target && searchBoxRef.current?.contains(target)) return;
+                if (target?.closest('button, a, [role="button"], .cursor-pointer')) return;
+                dismissKeyboard();
+            }}
+            onClickCapture={(e) => {
+                const target = e.target as HTMLElement | null;
+                if (target && searchBoxRef.current?.contains(target)) return;
+                dismissKeyboard();
+            }}
             style={{
                 backgroundColor: theme.bgColor,
                 ...(isQuranFlatSearch ? { fontFamily: "'Cairo', sans-serif" } : {}),
@@ -2575,11 +2639,32 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 className={`w-full mx-auto shrink-0 z-10 border-0 overflow-visible ${isQuranLandscape ? 'global-search-subheader max-w-none pt-2 pb-1' : 'max-w-lg md:max-w-2xl px-4 pt-3 pb-2'}`}
                 style={{ backgroundColor: theme.bgColor }}
             >
-                <div className="relative overflow-visible mb-1 flex items-center">
+                <form
+                    ref={searchBoxRef}
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        dismissKeyboard(true);
+                    }}
+                    className="relative overflow-visible mb-1 flex items-center"
+                >
                         <input 
+                            ref={searchInputRef}
                             type="text" 
+                            enterKeyHint="search"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
+                            onFocus={() => {
+                                isKeyboardOpenRef.current = true;
+                            }}
+                            onBlur={() => {
+                                isKeyboardOpenRef.current = false;
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.keyCode === 13) {
+                                    e.preventDefault();
+                                    dismissKeyboard(true);
+                                }
+                            }}
                             placeholder={
                                 isAllSelected 
                                     ? (isEn ? "Search across all sections..." : "ابحث في جميع أقسام التطبيق...")
@@ -2608,7 +2693,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         </span>
                         {query && (
                             <button 
-                                onClick={() => { setQuery(''); setTimeout(() => (document.querySelector('input') as HTMLElement)?.focus(), 10); }} 
+                                type="button"
+                                onClick={() => { setQuery(''); setTimeout(() => searchInputRef.current?.focus(), 10); }} 
                                 className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-full ${isQuranFlatSearch ? 'madinah-flat-icon-btn' : `app-page-card ${s3d.surfaceCardClass} border-0`} cursor-pointer flex items-center justify-center`}
                                 style={isQuranFlatSearch ? { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: `1px solid ${flatBorderSubtle}` } : undefined}
                                 title={isEn ? "Clear" : "مسح"}
@@ -2616,7 +2702,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                 <X className={`w-3.5 h-3.5 ${icon3DClass}`} style={{ color: isFromQuran ? flatAccent : s3d.noticeAccent }} />
                             </button>
                         )}
-                    </div>
+                    </form>
 
                     {/* Pages & Sections Selector Bar */}
                     {(() => {
@@ -2710,6 +2796,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             <div 
                 className="flex-1 min-h-0 overflow-y-auto app-scroll-safe w-full" 
                 dir={isEn ? "ltr" : "rtl"} 
+                onTouchMove={() => {
+                    if (isKeyboardOpenRef.current || document.activeElement === searchInputRef.current) {
+                        dismissKeyboard();
+                    }
+                }}
                 style={{ 
                     backgroundColor: theme.bgColor
                 }}

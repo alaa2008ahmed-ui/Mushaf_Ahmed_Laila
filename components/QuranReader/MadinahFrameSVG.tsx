@@ -371,7 +371,15 @@ const MadinahFrameSVG: React.FC<MadinahFrameSVGProps> = ({
     const uid = useId().replace(/:/g, '');
     const isDark = isDarkQuranTheme(currentTheme);
 
-    const pageBg = bgColor || currentTheme?.bg || (isDark ? '#08080a' : '#ffffff');
+    const isBgLight = (() => {
+        if (!bgColor || typeof bgColor !== 'string') return false;
+        const rgb = parseHex(bgColor);
+        if (!rgb) return false;
+        return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255 >= 0.45;
+    })();
+    const pageBg = isDark
+        ? (!bgColor || isBgLight ? (currentTheme?.bg || '#000000') : bgColor)
+        : (bgColor || currentTheme?.bg || '#ffffff');
     const palette = getMadinahThemePalette(currentTheme);
     const design = normalizeMadinahFrameDesign(frameDesign);
 

@@ -1508,6 +1508,17 @@ html.theme-sky:has(body.hide-top-bars):not(:has(body.quran-context)):not(:has(bo
     color: #000000 !important;
 }
 
+/* خلفية بيضاء ناصعة لصفحة القرآن الكريم في الوضع السماوي */
+body.theme-sky.quran-page-active,
+body.theme-sky:has(.quran-reader-container),
+body.theme-sky:has(#app-container[data-quran-theme]),
+html.theme-sky:has(.quran-reader-container),
+body.theme-sky #quran-reader-wrapper,
+html.theme-sky #quran-reader-wrapper {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+}
+
 body.theme-sky #app-title {
     color: #0369a1 !important;
     text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8) !important;
@@ -1766,6 +1777,17 @@ html.theme-emerald:has(body.hide-top-bars):not(:has(body.quran-context)):not(:ha
     background-color: #FFFFFF !important;
     background-image: none !important;
     color: #000000 !important;
+}
+
+/* خلفية بيضاء ناصعة لصفحة القرآن الكريم في الوضع الزمردي */
+body.theme-emerald.quran-page-active,
+body.theme-emerald:has(.quran-reader-container),
+body.theme-emerald:has(#app-container[data-quran-theme]),
+html.theme-emerald:has(.quran-reader-container),
+body.theme-emerald #quran-reader-wrapper,
+html.theme-emerald #quran-reader-wrapper {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
 }
 
 body.theme-emerald #app-title {
@@ -2049,6 +2071,17 @@ html.theme-burgundy:has(body.hide-top-bars):not(:has(body.quran-context)):not(:h
     background-color: #FFFFFF !important;
     background-image: none !important;
     color: #000000 !important;
+}
+
+/* خلفية بيضاء ناصعة لصفحة القرآن الكريم في الوضع العنابي */
+body.theme-burgundy.quran-page-active,
+body.theme-burgundy:has(.quran-reader-container),
+body.theme-burgundy:has(#app-container[data-quran-theme]),
+html.theme-burgundy:has(.quran-reader-container),
+body.theme-burgundy #quran-reader-wrapper,
+html.theme-burgundy #quran-reader-wrapper {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
 }
 
 body.theme-burgundy #app-title {

@@ -205,12 +205,6 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
     const isTranslationMode = readingMode === 'translation';
     const isSingleReciterMode = isBilingualMode || isTranslationMode;
 
-    const modalTitle = isBilingualMode 
-        ? (isEn ? "Recitation & Translation Reciter" : "قارئ التلاوة والترجمة الإنجليزية")
-        : isTranslationMode
-            ? (isEn ? "English Translation Reciter" : "قارئ الترجمة الإنجليزية (صحيح إنترناشونال)")
-            : (isEn ? "Holy Quran Reciters" : "قراء القرآن الكريم");
-
     const modalVars = {
         '--qr-modal-bg': p.modalBg,
         '--qr-modal-text': p.cardText,
@@ -237,42 +231,11 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Canonical Raised Header with Title, Count, Close and Search */}
-                <div className={`${isLandscape ? 'p-2.5 pb-1.5 gap-2' : 'p-3.5 pb-2 gap-2.5'} flex flex-col shrink-0 border-0`}>
-                    <div 
-                        className={`${isLandscape ? 'py-1.5 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between quran-raised-card border-0`}
-                        style={{ backgroundColor: p.headerBg }}
-                    >
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span className={`${isLandscape ? 'text-xs' : 'text-xs sm:text-sm'} font-black tracking-wide truncate`} style={{ color: p.headerAccent }}>
-                                {modalTitle}
-                            </span>
-                            <span 
-                                className={`${isLandscape ? 'text-[10px]' : 'text-[11px]'} px-2 py-0.5 rounded-full font-bold border-0`} 
-                                style={{ backgroundColor: p.modalBg, color: p.headerAccent }}
-                            >
-                                {filteredReaders.length}
-                            </span>
-                            {isSingleReciterMode && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: p.selectedBg, color: p.selectedText }}>
-                                    {isBilingualMode ? 'AR + EN' : 'EN'}
-                                </span>
-                            )}
-                        </div>
-                        <button 
-                            type="button"
-                            onClick={handleClose} 
-                            className={`${isLandscape ? 'w-7 h-7' : 'w-8 h-8'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer shrink-0`}
-                            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
-                            aria-label={isEn ? "Close" : "إغلاق"}
-                        >
-                            <X size={isLandscape ? 14 : 16} />
-                        </button>
-                    </div>
-
-                    {!isSingleReciterMode && (
+                {/* Search & Close Row (Header removed as requested) */}
+                <div className={`${isLandscape ? 'p-2.5 pb-1.5 gap-2' : 'p-3.5 pb-2 gap-2.5'} flex items-center shrink-0 border-0`}>
+                    {!isSingleReciterMode ? (
                         <div 
-                            className={`relative w-full ${isLandscape ? 'rounded-xl' : 'rounded-2xl'} quran-raised-card border-0`}
+                            className={`relative flex-1 min-w-0 ${isLandscape ? 'rounded-xl' : 'rounded-2xl'} quran-raised-card border-0`}
                             style={{ backgroundColor: p.cardBg }}
                         >
                             <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-55`} style={{ color: p.cardText }} />
@@ -287,7 +250,23 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                 }}
                             />
                         </div>
+                    ) : (
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-[10px] px-2.5 py-1 rounded-full font-bold" style={{ backgroundColor: p.selectedBg, color: p.selectedText }}>
+                                {isBilingualMode ? 'AR + EN' : 'EN'}
+                            </span>
+                        </div>
                     )}
+
+                    <button 
+                        type="button"
+                        onClick={handleClose} 
+                        className={`${isLandscape ? 'w-8 h-8' : 'w-10 h-10'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer shrink-0`}
+                        style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
+                        aria-label={isEn ? "Close" : "إغلاق"}
+                    >
+                        <X size={isLandscape ? 15 : 17} />
+                    </button>
                 </div>
 
                 {/* Body: 2-column Reciters Grid + Vertical Alphabet Jump Sidebar */}

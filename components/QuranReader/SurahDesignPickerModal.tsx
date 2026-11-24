@@ -1,9 +1,14 @@
 import React, { useEffect, useRef, FC } from 'react';
 import { X } from 'lucide-react';
-import SurahHeader from './SurahHeader';
 import { useLanguage } from '../../context/LanguageContext';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import { resolveQuranModalPalette } from './modalThemeUtils';
+import { getMadinahThemePalette } from './MadinahFrameSVG';
+import {
+    MADINAH_FRAME_DESIGNS,
+    MadinahFrameMiniPreview,
+    normalizeMadinahFrameDesign,
+} from './madinahFrameDesigns';
 
 interface SurahDesignPickerModalProps {
     isOpen: boolean;
@@ -24,9 +29,9 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
 }) => {
     const { language, dir } = useLanguage();
     const isEn = language === 'en';
-    const designs = [1, 2, 3, 4, 7, 9, 10, 11, 14, 15, 16, 19, 20];
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const activeDesignRef = useRef<HTMLButtonElement>(null);
+    const activeFrameId = normalizeMadinahFrameDesign(currentDesign);
 
     useEffect(() => {
         if (isOpen) {
@@ -60,6 +65,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
     if (!isOpen) return null;
 
     const p = resolveQuranModalPalette(currentTheme);
+    const framePalette = getMadinahThemePalette(currentTheme);
 
     return (
         <div 
@@ -86,7 +92,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                     >
                         <div className="flex items-center gap-2.5">
                             <span className={`${isLandscape ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-black tracking-wide`} style={{ color: p.headerAccent }}>
-                                {isEn ? "Surah Header Design" : "تصميم رأس السورة"}
+                                {isEn ? "Page Frame & Header Design" : "إطارات وزخارف ورأس الصفحة"}
                             </span>
                             <span 
                                 className="text-[11px] px-2.5 py-0.5 rounded-full font-bold"
@@ -95,7 +101,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                                     color: p.headerAccent
                                 }}
                             >
-                                {isEn ? `${designs.length}` : `${designs.length}`}
+                                {MADINAH_FRAME_DESIGNS.length}
                             </span>
                         </div>
                         <button
@@ -110,48 +116,57 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                     </div>
                 </div>
 
-                {/* Modal Body: Scrollable list of designs */}
+                {/* Modal Body: Grid of unified frame & header designs */}
                 <div 
                     ref={scrollContainerRef}
-                    className={`flex-1 min-h-0 overflow-y-auto ${isLandscape ? 'p-3 pt-2 pb-3.5 space-y-2.5' : 'p-4 pt-2 pb-5 space-y-3.5'} scroll-smooth scrollbar-hide`}
+                    className={`flex-1 min-h-0 overflow-y-auto ${isLandscape ? 'p-3 pt-2 pb-3.5' : 'p-4 pt-2 pb-5'} scroll-smooth scrollbar-hide`}
                 >
-                    {designs.map((d) => {
-                        const isSelected = currentDesign === d;
-                        return (
-                            <button
-                                key={d}
-                                ref={isSelected ? activeDesignRef : null}
-                                type="button"
-                                onClick={() => {
-                                    onSelectDesign(d);
-                                    onClose();
-                                }}
-                                className={`relative w-full ${isLandscape ? 'rounded-xl p-2' : 'rounded-2xl p-2.5'} text-right block overflow-hidden cursor-pointer border-0 ${
-                                    isSelected 
-                                        ? 'quran-raised-card-selected scale-[1.01]' 
-                                        : 'quran-raised-btn'
-                                }`}
-                                style={{
-                                    border: 'none',
-                                    outline: 'none',
-                                    backgroundColor: isSelected ? p.headerBg : p.cardBg
-                                }}
-                            >
-                                {/* Clean header preview */}
-                                <div className="pointer-events-none w-full">
-                                    <SurahHeader
-                                        surahNumber={1}
-                                        surahName="الفاتحة"
-                                        surahType="مكية"
-                                        ayahCount={7}
-                                        currentTheme={currentTheme}
-                                        design={d}
-                                        compact={false}
-                                    />
-                                </div>
-                            </button>
-                        );
-                    })}
+                    <div className={`grid ${isLandscape ? 'grid-cols-3 gap-2.5' : 'grid-cols-2 gap-3'}`}>
+                        {MADINAH_FRAME_DESIGNS.map((designMeta) => {
+                            const isSelected = activeFrameId === designMeta.id;
+                            return (
+                                <button
+                                    key={designMeta.id}
+                                    ref={isSelected ? activeDesignRef : null}
+                                    type="button"
+                                    onClick={() => {
+                                        onSelectDesign(designMeta.id);
+                                        onClose();
+                                    }}
+                                    className={`relative rounded-2xl p-2 flex flex-col items-center gap-2 transition-all cursor-pointer border-0 ${
+                                        isSelected 
+                                            ? 'quran-raised-card-selected ring-2 scale-[1.02]' 
+                                            : 'quran-raised-btn opacity-90 hover:opacity-100'
+                                    }`}
+                                    style={{
+                                        border: 'none',
+                                        outline: 'none',
+                                        backgroundColor: isSelected ? p.headerBg : p.cardBg,
+                                        ...(isSelected ? { '--tw-ring-color': p.headerAccent } as React.CSSProperties : {}),
+                                    }}
+                                    title={isEn ? designMeta.nameEn : designMeta.nameAr}
+                                >
+                                    <div className="pointer-events-none w-full relative">
+                                        <MadinahFrameMiniPreview
+                                            design={designMeta.id}
+                                            palette={framePalette}
+                                        />
+                                        {isSelected && (
+                                            <span
+                                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] shadow"
+                                                style={{ backgroundColor: p.headerAccent, color: '#ffffff' }}
+                                            >
+                                                <i className="fa-solid fa-check"></i>
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs font-bold leading-tight truncate w-full text-center">
+                                        {isEn ? designMeta.nameEn : designMeta.nameAr}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>

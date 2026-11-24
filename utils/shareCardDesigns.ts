@@ -5,6 +5,12 @@ import {
   isExtraShareDesignId,
   getExtraDesignTypographyTheme,
 } from './shareCardDesignsExtra';
+import {
+  QuranPageShareDesignId,
+  QURAN_PAGE_SHARE_CARD_DESIGNS,
+  isQuranPageShareDesignId,
+  getQuranPageDesignTypographyTheme,
+} from './shareCardDesignsQuran';
 
 export type ShareDesignId =
   | 'classic_gold'
@@ -17,7 +23,8 @@ export type ShareDesignId =
   | 'emerald_sanctuary'
   | 'royal_amethyst'
   | 'sunset_saffron'
-  | ExtraShareDesignId;
+  | ExtraShareDesignId
+  | QuranPageShareDesignId;
 
 export const SHARE_DESIGN_STORAGE_KEY = 'app_share_card_design';
 export const SHARE_DESIGN_CHANGE_EVENT = 'app-share-card-design-changed';
@@ -125,11 +132,21 @@ const EXTRA_DARK_SHARE_CARD_DESIGNS: ShareDesignMeta[] = EXTRA_SHARE_CARD_DESIGN
   (d) => d.isDark
 ).map(({ isDark: _isDark, ...meta }) => meta);
 
+const QURAN_LIGHT_SHARE_CARD_DESIGNS: ShareDesignMeta[] = QURAN_PAGE_SHARE_CARD_DESIGNS.filter(
+  (d) => !d.isDark
+).map(({ isDark: _isDark, ...meta }) => meta);
+
+const QURAN_DARK_SHARE_CARD_DESIGNS: ShareDesignMeta[] = QURAN_PAGE_SHARE_CARD_DESIGNS.filter(
+  (d) => d.isDark
+).map(({ isDark: _isDark, ...meta }) => meta);
+
 export const SHARE_CARD_DESIGNS: ShareDesignMeta[] = [
   // Light designs first, followed by dark designs
   ...BASE_LIGHT_SHARE_CARD_DESIGNS,
+  ...QURAN_LIGHT_SHARE_CARD_DESIGNS,
   ...EXTRA_LIGHT_SHARE_CARD_DESIGNS,
   ...BASE_DARK_SHARE_CARD_DESIGNS,
+  ...QURAN_DARK_SHARE_CARD_DESIGNS,
   ...EXTRA_DARK_SHARE_CARD_DESIGNS,
 ];
 
@@ -329,6 +346,9 @@ export interface DesignTypographyTheme {
 export function getDesignTypographyTheme(designId: ShareDesignId): DesignTypographyTheme {
   if (isExtraShareDesignId(designId)) {
     return getExtraDesignTypographyTheme(designId);
+  }
+  if (isQuranPageShareDesignId(designId)) {
+    return getQuranPageDesignTypographyTheme(designId);
   }
   switch (designId) {
     case 'sanaani_qamariya':

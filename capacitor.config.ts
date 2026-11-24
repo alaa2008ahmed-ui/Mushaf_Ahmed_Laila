@@ -14,6 +14,11 @@ const config: any = {
     ]
   },
   plugins: {
+    SystemBars: {
+      hidden: true,
+      initialViewportFitValueHint: 'cover',
+      insetsHandling: 'css',
+    },
     Keyboard: {
       resize: 'native' as any,
       style: 'dark' as any,

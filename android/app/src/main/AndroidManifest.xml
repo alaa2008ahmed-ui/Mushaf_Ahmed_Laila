@@ -95,7 +95,7 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" 
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" 
             android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>

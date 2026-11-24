@@ -161,6 +161,8 @@ const get3DIconForService = (id: string): string => {
   switch (id) {
     case 'quran':
       return '/assets/3d_icons/icon_quran.png';
+    case 'quran-horizontal':
+      return '/assets/3d_icons/icon_quran_horizontal.png';
     case 'quran-landscape':
       return '/assets/3d_icons/icon_quran_landscape.png';
     case 'listen':
@@ -1294,6 +1296,14 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
       isNew: false
     },
     {
+      id: 'quran-horizontal',
+      title: isEn ? 'Horizontal Reading' : 'القراءة الأفقية',
+      category: 'library',
+      icon: BookOpen,
+      circleBg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/40',
+      isNew: !isPageSeen('quran-horizontal')
+    },
+    {
       id: 'quran-landscape',
       title: isEn ? 'Landscape Reading' : 'القراءة العرضية',
       category: 'library',
@@ -2054,7 +2064,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                     onClick={() => {
                       markPageAsSeen(service.id);
                       recordAppVisit(service.id);
-                      onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: getResolvedEnglishQuranMode(service.id === 'quran-landscape' ? 'h' : 'v') } : {}) } : undefined);
+                      if (service.id === 'quran-horizontal') {
+                        onNavigate('quran', { from: 'modern_home', readingMode: 'madinah' });
+                      } else {
+                        onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: getResolvedEnglishQuranMode(service.id === 'quran-landscape' ? 'h' : 'v') } : {}) } : undefined);
+                      }
                     }}
                     className="snap-start shrink-0 flex flex-col items-center justify-start p-0.5 group cursor-pointer active:scale-90 hover:scale-105 transition-all duration-200 w-[66px] sm:w-[74px] min-h-[66px] sm:min-h-[74px] select-none focus:outline-none"
                   >
@@ -2230,7 +2244,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                       onClick={() => {
                         markPageAsSeen(service.id);
                         recordAppVisit(service.id);
-                        onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: getResolvedEnglishQuranMode(service.id === 'quran-landscape' ? 'h' : 'v') } : {}) } : undefined);
+                        if (service.id === 'quran-horizontal') {
+                          onNavigate('quran', { from: 'modern_home', readingMode: 'madinah' });
+                        } else {
+                          onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: getResolvedEnglishQuranMode(service.id === 'quran-landscape' ? 'h' : 'v') } : {}) } : undefined);
+                        }
                       }}
                       className="flex flex-col items-center justify-between p-1.5 sm:p-2 group cursor-pointer active:scale-90 hover:scale-105 transition-all duration-200 w-full min-h-[92px] select-none focus:outline-none"
                     >

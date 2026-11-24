@@ -46,9 +46,12 @@ import BookmarksModal from '../components/QuranReader/BookmarksModal';
 import MushafPage from '../components/QuranReader/MushafPage';
 import MadinahMushafView from '../components/QuranReader/MadinahMushafView';
 import { getMadinahThemePalette, MadinahShellSideFrames, MushafPageFrameOverlay } from '../components/QuranReader/MadinahFrameSVG';
+import { normalizeMadinahFrameDesign, getSurahHeaderDesignForFrame } from '../components/QuranReader/madinahFrameDesigns';
 import {
+    isMadinahPageFontLoadedSync,
     loadMadinahPageFont,
     preloadAdjacentMadinahFonts,
+    preloadMadinahPagesForInput,
     preloadQpcAndMadinahStartup,
 } from '../utils/qpcMadinahData';
 import VerticalReadingView from '../components/QuranReader/VerticalReadingView';
@@ -121,8 +124,57 @@ import {
     QuranGuideStep
 } from '../components/QuranReader/quranGuideSteps';
 import { syncDailyWirdNotifications, getWirdDayRange } from '../utils/dailyWirdNotificationService';
+import QuranMicroHints, { markQuranMicroHintUsed } from '../components/QuranReader/QuranMicroHints';
 
 declare var window: any;
+
+const isHexLightForMadinahGuard = (color?: string): boolean => {
+    if (!color || typeof color !== 'string') return false;
+    const c = color.trim().toLowerCase();
+    if (c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return false;
+    const hex = c.startsWith('#') ? c.slice(1) : '';
+    if (!hex) return false;
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+    } else if (hex.length === 6) {
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+    } else {
+        return false;
+    }
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.45;
+};
+
+const resolveReaderSettingsWithTheme = (baseSettings: any, themeObj: any, modeKey: string = 'mushaf') => {
+    const merged = { ...DEFAULT_SETTINGS, ...(baseSettings || {}) };
+    if (isDarkQuranTheme(themeObj)) {
+        let hasCustomNightColors = false;
+        const customKey = modeKey === 'madinah'
+            ? 'quran_settings_madinah_night_colors_custom'
+            : 'quran_settings_unified_night_colors_custom';
+        try {
+            hasCustomNightColors = localStorage.getItem(customKey) === 'true';
+        } catch {}
+        if (
+            !hasCustomNightColors ||
+            isHexLightForMadinahGuard(merged.bgColor) ||
+            !isHexLightForMadinahGuard(merged.textColor)
+        ) {
+            merged.bgColor = themeObj?.bg || '#000000';
+            merged.textColor = themeObj?.text || '#ffffff';
+            merged.theme = themeObj?.id || 'deep_black';
+            if (!merged.lockHighlightColor) {
+                merged.highlightTextColor = themeObj?.highlightText || themeObj?.accent || '#f59e0b';
+            }
+        }
+    }
+    return merged;
+};
 
 const parseArabicNumber = (text: string): number | null => {
     const arabicDigits = text.match(/[٠-٩]+/g);
@@ -177,6 +229,7 @@ const AyahActionMenu = React.memo(({
     subMenuModeRef.current = subMenuMode;
     const onCloseRef = useRef(onClose);
     onCloseRef.current = onClose;
+    const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     useEffect(() => {
         if (!isOpen) {
@@ -198,33 +251,62 @@ const AyahActionMenu = React.memo(({
         return unregister;
     }, [isOpen]);
 
+    useEffect(() => {
+        if (!subMenuMode) return;
+        const timer = window.setTimeout(() => {
+            itemRefs.current[subMenuMode]?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+            });
+        }, 160);
+        return () => window.clearTimeout(timer);
+    }, [subMenuMode]);
+
     if (!isOpen) return null;
 
     const p = resolveQuranModalPalette(currentTheme);
 
-    const options = [
-        { id: 'tafseer', label: isEn ? "Quran Tafseer" : "تفسير القرآن", icon: "fa-book-open", onClick: () => setSubMenuMode('tafseer') },
-        { id: 'meanings', label: isEn ? "Quran Meanings" : "معاني القرآن", icon: "fa-language", onClick: () => setSubMenuMode('meanings') },
+    const options: Array<{
+        id: string;
+        label: string;
+        icon: string;
+        subMode?: 'tafseer' | 'meanings' | 'translation';
+        onClick: () => void;
+    }> = [
+        {
+            id: 'tafseer',
+            label: isEn ? "Quran Tafseer" : "تفسير القرآن",
+            icon: "fa-book-open",
+            subMode: 'tafseer',
+            onClick: () => setSubMenuMode((prev) => (prev === 'tafseer' ? null : 'tafseer')),
+        },
+        {
+            id: 'meanings',
+            label: isEn ? "Quran Meanings" : "معاني القرآن",
+            icon: "fa-language",
+            subMode: 'meanings',
+            onClick: () => setSubMenuMode((prev) => (prev === 'meanings' ? null : 'meanings')),
+        },
         { id: 'waqf', label: isEn ? "Waqf Signs" : "علامات الوقف في الآية", icon: "fa-compass", onClick: onWaqf },
         { id: 'mutashabihat', label: isEn ? "Mutashabihat" : "المتشابهات اللفظية", icon: "fa-code-compare", onClick: onMutashabihat },
         { id: 'asbab', label: isEn ? "Asbab Al-Nuzul" : "أسباب النزول والقصص", icon: "fa-scroll", onClick: onAsbabNuzul },
         { id: 'irab', label: isEn ? "Syntax & I'rab" : "إعراب الآية وبيانها", icon: "fa-layer-group", onClick: onIrab },
         { id: 'share-card', label: isEn ? "Share Ayah" : "مشاركة الآية", icon: "fa-palette", onClick: onShareCard },
-        { id: 'translation', label: isEn ? "Translation" : "الترجمة", icon: "fa-globe", onClick: () => setSubMenuMode('translation') },
+        {
+            id: 'translation',
+            label: isEn ? "Quran Translation" : "ترجمة القرآن",
+            icon: "fa-globe",
+            subMode: 'translation',
+            onClick: () => setSubMenuMode((prev) => (prev === 'translation' ? null : 'translation')),
+        },
     ];
 
-    const subMenuTitle = subMenuMode === 'tafseer'
-        ? (isEn ? 'Quran Tafseer' : 'تفسير القرآن')
-        : subMenuMode === 'meanings'
-        ? (isEn ? 'Quran Meanings' : 'معاني القرآن')
-        : (isEn ? 'Translation' : 'الترجمة');
-
-    const subMenuItems = subMenuMode === 'tafseer'
-        ? [
+    const subItemsByMode = {
+        tafseer: [
             {
                 id: 'ayah-tafseer',
                 label: isEn ? 'Ayah Tafseer' : 'تفسير آية',
-                icon: <ZoomIn size={17} style={{ color: p.headerAccent }} />,
+                icon: <ZoomIn size={isLandscape ? 14 : 17} style={{ color: p.headerAccent }} />,
                 onClick: () => {
                     setSubMenuMode(null);
                     onTafseer?.();
@@ -233,19 +315,18 @@ const AyahActionMenu = React.memo(({
             {
                 id: 'surah-tafseer',
                 label: isEn ? 'Surah Tafseer' : 'تفسير سورة',
-                icon: <BookOpen size={17} style={{ color: p.headerAccent }} />,
+                icon: <BookOpen size={isLandscape ? 14 : 17} style={{ color: p.headerAccent }} />,
                 onClick: () => {
                     setSubMenuMode(null);
                     onTafseerPage?.();
                 },
             },
-        ]
-        : subMenuMode === 'meanings'
-        ? [
+        ],
+        meanings: [
             {
                 id: 'ayah-meanings',
                 label: isEn ? 'Ayah Meanings' : 'معاني آية',
-                icon: <ZoomIn size={17} style={{ color: p.headerAccent }} />,
+                icon: <ZoomIn size={isLandscape ? 14 : 17} style={{ color: p.headerAccent }} />,
                 onClick: () => {
                     setSubMenuMode(null);
                     onMeanings?.();
@@ -254,18 +335,18 @@ const AyahActionMenu = React.memo(({
             {
                 id: 'surah-meanings',
                 label: isEn ? 'Surah Meanings' : 'معاني سورة',
-                icon: <BookOpen size={17} style={{ color: p.headerAccent }} />,
+                icon: <BookOpen size={isLandscape ? 14 : 17} style={{ color: p.headerAccent }} />,
                 onClick: () => {
                     setSubMenuMode(null);
                     onMeaningsPage?.();
                 },
             },
-        ]
-        : [
+        ],
+        translation: [
             {
                 id: 'ayah-translation',
                 label: isEn ? 'Ayah Translation' : 'ترجمة آية',
-                icon: <ZoomIn size={17} style={{ color: p.headerAccent }} />,
+                icon: <ZoomIn size={isLandscape ? 14 : 17} style={{ color: p.headerAccent }} />,
                 onClick: () => {
                     setSubMenuMode(null);
                     onTranslation?.();
@@ -274,19 +355,20 @@ const AyahActionMenu = React.memo(({
             {
                 id: 'surah-translation',
                 label: isEn ? 'Surah Translation' : 'ترجمة سورة',
-                icon: <BookOpen size={17} style={{ color: p.headerAccent }} />,
+                icon: <BookOpen size={isLandscape ? 14 : 17} style={{ color: p.headerAccent }} />,
                 onClick: () => {
                     setSubMenuMode(null);
                     onTranslationSurah?.();
                 },
             },
-        ];
+        ],
+    };
 
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/55 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'}`} onClick={onClose}>
             <div 
                 dir={dir} 
-                className={`modal-skinned madinah-enlarged-popup settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} ${isLandscape ? 'w-[62%] max-w-[430px] max-h-[108%] rounded-3xl' : 'w-full max-w-[310px] rounded-3xl max-h-[118dvh]'} flex flex-col overflow-hidden border-0`} 
+                className={`modal-skinned madinah-enlarged-popup ayah-options-modal-popup settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} ${isLandscape ? 'w-[62%] max-w-[430px] max-h-[108%] rounded-3xl' : 'w-full max-w-[310px] rounded-3xl max-h-[118dvh]'} flex flex-col overflow-hidden border-0`} 
                 style={{ 
                     fontFamily: p.fontFamily,
                     backgroundColor: p.modalBg, 
@@ -320,118 +402,127 @@ const AyahActionMenu = React.memo(({
                 </div>
 
                 {/* Options: compact 2-column grid in landscape, clean vertical list in portrait */}
-                <div className={isLandscape ? "p-2.5 pt-1.5 pb-3 grid grid-cols-2 gap-2 overflow-y-auto flex-1 min-h-0 custom-scrollbar" : "p-3.5 pt-2 pb-4 gap-3 overflow-y-auto flex-1 min-h-0 flex flex-col custom-scrollbar"}>
-                    {options.map((item) => (
-                        <button 
-                            key={item.id}
-                            type="button"
-                            onClick={item.onClick} 
-                            className={`w-full ${isLandscape ? 'min-h-[42px] py-2 px-2.5 text-[11.5px] leading-snug rounded-xl gap-2' : 'py-3 px-4 text-base rounded-2xl justify-between gap-3'} font-bold flex items-center cursor-pointer border-0 quran-raised-btn`}
-                            style={{ 
-                                backgroundColor: p.cardBg, 
-                                color: p.cardText 
-                            }}
-                        >
-                            {isLandscape ? (
-                                <>
-                                    <span 
-                                        className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                                        style={{ backgroundColor: p.isDark ? 'rgba(255,255,255,0.08)' : `${p.headerAccent}16`, color: p.headerAccent }}
-                                    >
-                                        <i className={`fa-solid ${item.icon} text-xs`}></i>
-                                    </span>
-                                    <span className="font-bold leading-snug text-start flex-1 min-w-0" style={{ color: p.cardText }}>
-                                        {item.label}
-                                    </span>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <i className={`fa-solid ${item.icon} text-base shrink-0`} style={{ color: p.headerAccent }}></i>
-                                        <span className="font-bold truncate text-start" style={{ color: p.cardText }}>
-                                            {item.label}
-                                        </span>
-                                    </div>
-                                    <i className={`fa-solid ${isEn ? 'fa-chevron-right' : 'fa-chevron-left'} text-xs shrink-0 opacity-40`} style={{ color: p.cardText }}></i>
-                                </>
-                            )}
-                        </button>
-                    ))}
-                </div>
-            </div>
+                <div className={isLandscape ? "p-2.5 pt-1.5 pb-3 grid grid-cols-2 gap-2 overflow-y-auto flex-1 min-h-0 custom-scrollbar items-start" : "p-3.5 pt-2 pb-4 gap-3 overflow-y-auto flex-1 min-h-0 flex flex-col custom-scrollbar"}>
+                    {options.map((item) => {
+                        const subItems = item.subMode ? subItemsByMode[item.subMode] : null;
+                        const isExpanded = Boolean(item.subMode && subMenuMode === item.subMode);
 
-            {subMenuMode && (
-                <div
-                    className="fixed inset-0 z-[1210] bg-black/45 flex items-center justify-center p-4"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setSubMenuMode(null);
-                    }}
-                >
-                    <div
-                        dir={dir}
-                        className={`modal-skinned madinah-enlarged-popup settings-3d-adia-scope ${p.isDark ? 'settings-3d-dark quran-3d-dark' : ''} w-full max-w-[265px] rounded-3xl flex flex-col overflow-hidden border-0 shadow-2xl`}
-                        style={{
-                            fontFamily: p.fontFamily,
-                            backgroundColor: p.modalBg,
-                            color: p.modalText,
-                            border: 'none',
-                            outline: 'none',
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="p-3 pb-1.5 shrink-0">
+                        return (
                             <div
-                                className="py-2 px-3 rounded-2xl flex items-center justify-between quran-raised-card border-0"
-                                style={{ backgroundColor: p.headerBg }}
+                                key={item.id}
+                                ref={(el) => {
+                                    if (item.subMode) itemRefs.current[item.subMode] = el;
+                                }}
+                                className="flex flex-col"
                             >
-                                <span className="text-xs sm:text-sm font-black tracking-wide" style={{ color: p.headerAccent }}>
-                                    {subMenuTitle}
-                                </span>
-                                <button
+                                <button 
                                     type="button"
-                                    onClick={() => setSubMenuMode(null)}
-                                    className="w-7 h-7 quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer"
-                                    style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
-                                    aria-label={isEn ? 'Close' : 'إغلاق'}
-                                >
-                                    <X size={14} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="p-3 pt-1.5 pb-3.5 flex flex-col gap-2.5">
-                            {subMenuItems.map((sub) => (
-                                <button
-                                    key={sub.id}
-                                    type="button"
-                                    onClick={sub.onClick}
-                                    className="w-full py-3 px-4 text-sm sm:text-base rounded-2xl font-bold flex items-center justify-between gap-3 cursor-pointer border-0 quran-raised-btn"
-                                    style={{
-                                        backgroundColor: p.cardBg,
-                                        color: p.cardText,
+                                    onClick={item.onClick} 
+                                    aria-expanded={item.subMode ? isExpanded : undefined}
+                                    className={`w-full ${isLandscape ? 'min-h-[42px] py-2 px-2.5 text-[11.5px] leading-snug rounded-xl gap-2' : 'py-3 px-4 text-base rounded-2xl justify-between gap-3'} font-bold flex items-center cursor-pointer border-0 quran-raised-btn`}
+                                    style={{ 
+                                        backgroundColor: p.cardBg, 
+                                        color: p.cardText 
                                     }}
                                 >
-                                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                        <span
-                                            className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-                                            style={{
-                                                backgroundColor: p.isDark ? 'rgba(255,255,255,0.08)' : `${p.headerAccent}16`,
-                                            }}
-                                        >
-                                            {sub.icon}
-                                        </span>
-                                        <span className="font-bold truncate text-start" style={{ color: p.cardText }}>
-                                            {sub.label}
-                                        </span>
-                                    </div>
-                                    <i className={`fa-solid ${isEn ? 'fa-chevron-right' : 'fa-chevron-left'} text-xs shrink-0 opacity-40`} style={{ color: p.cardText }}></i>
+                                    {isLandscape ? (
+                                        <>
+                                            <span 
+                                                className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                                                style={{ backgroundColor: p.isDark ? 'rgba(255,255,255,0.08)' : `${p.headerAccent}16`, color: p.headerAccent }}
+                                            >
+                                                <i className={`fa-solid ${item.icon} text-xs`}></i>
+                                            </span>
+                                            <span className="font-bold leading-snug text-start flex-1 min-w-0" style={{ color: p.cardText }}>
+                                                {item.label}
+                                            </span>
+                                            {item.subMode && (
+                                                <i
+                                                    className={`fa-solid ${isEn ? 'fa-chevron-right' : 'fa-chevron-left'} text-[10px] shrink-0 opacity-45 transition-transform duration-200`}
+                                                    style={{
+                                                        color: p.cardText,
+                                                        transform: isExpanded ? (isEn ? 'rotate(90deg)' : 'rotate(-90deg)') : 'none',
+                                                    }}
+                                                ></i>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <i className={`fa-solid ${item.icon} text-base shrink-0`} style={{ color: p.headerAccent }}></i>
+                                                <span className="font-bold truncate text-start" style={{ color: p.cardText }}>
+                                                    {item.label}
+                                                </span>
+                                            </div>
+                                            {item.subMode && (
+                                                <i
+                                                    className={`fa-solid ${isEn ? 'fa-chevron-right' : 'fa-chevron-left'} text-xs shrink-0 opacity-40 transition-transform duration-200`}
+                                                    style={{
+                                                        color: p.cardText,
+                                                        transform: isExpanded ? (isEn ? 'rotate(90deg)' : 'rotate(-90deg)') : 'none',
+                                                    }}
+                                                ></i>
+                                            )}
+                                        </>
+                                    )}
                                 </button>
-                            ))}
-                        </div>
-                    </div>
+
+                                {subItems && (
+                                    <div
+                                        className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                                            isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                                        }`}
+                                        style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+                                        aria-hidden={!isExpanded}
+                                    >
+                                        <div className="overflow-hidden">
+                                            <div
+                                                className={`${isLandscape ? 'pt-1.5 pb-1 px-0.5 gap-1.5' : 'pt-2 pb-1 px-1 ps-3 gap-2'} flex flex-col`}
+                                                style={
+                                                    !isLandscape
+                                                        ? {
+                                                              borderInlineStart: `2px solid ${p.headerAccent}35`,
+                                                              marginInlineStart: '0.5rem',
+                                                          }
+                                                        : undefined
+                                                }
+                                            >
+                                                {subItems.map((sub) => (
+                                                    <button
+                                                        key={sub.id}
+                                                        type="button"
+                                                        onClick={sub.onClick}
+                                                        tabIndex={isExpanded ? 0 : -1}
+                                                        className={`w-full ${isLandscape ? 'py-2 px-2.5 text-[11.5px] rounded-xl gap-2' : 'py-2.5 px-3.5 text-sm sm:text-[15px] rounded-2xl gap-2.5'} font-bold flex items-center justify-between cursor-pointer border-0 quran-raised-btn`}
+                                                        style={{
+                                                            backgroundColor: p.cardBg,
+                                                            color: p.cardText,
+                                                        }}
+                                                    >
+                                                        <div className={`flex items-center ${isLandscape ? 'gap-2' : 'gap-2.5'} flex-1 min-w-0`}>
+                                                            <span
+                                                                className={`${isLandscape ? 'w-6 h-6 rounded-lg' : 'w-7 h-7 rounded-xl'} flex items-center justify-center shrink-0`}
+                                                                style={{
+                                                                    backgroundColor: p.isDark ? 'rgba(255,255,255,0.08)' : `${p.headerAccent}16`,
+                                                                }}
+                                                            >
+                                                                {sub.icon}
+                                                            </span>
+                                                            <span className="font-bold truncate text-start" style={{ color: p.cardText }}>
+                                                                {sub.label}
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
-            )}
+            </div>
         </div>
     );
 });
@@ -1625,6 +1716,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [activeModals, setActiveModals] = useState<string[]>([]);
     const [initialSearchQuery, setInitialSearchQuery] = useState<string | undefined>(undefined);
     const [isFloatingMenuOpen, setIsFloatingMenuOpen] = useState(Boolean(navParams?.openSidebar || navParams?.openFloatingMenu || navParams?.openMenu));
+    const [floatingMenuInitialView, setFloatingMenuInitialView] = useState('main');
     const isFloatingMenuOpenRef = useRef(isFloatingMenuOpen);
     const lastFloatingMenuCloseTimeRef = useRef<number>(0);
     const prevFloatingMenuOpenRef = useRef(isFloatingMenuOpen);
@@ -1633,6 +1725,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         isFloatingMenuOpenRef.current = isFloatingMenuOpen;
         if (prevFloatingMenuOpenRef.current && !isFloatingMenuOpen) {
             lastFloatingMenuCloseTimeRef.current = Date.now();
+            setFloatingMenuInitialView('main');
         }
         prevFloatingMenuOpenRef.current = isFloatingMenuOpen;
     }, [isFloatingMenuOpen]);
@@ -1765,16 +1858,19 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         setToolbarColors(getToolbarColorsForTheme(newTheme));
         syncQuranThemeToStorage(newTheme, mode, readingMode);
 
-        const resolvedSettings = {
-            ...DEFAULT_SETTINGS,
-            ...baseSettings,
-            fontSize: effectiveFontSize,
-            reader: validatedReader,
-            bgColor: baseSettings.bgColor || newTheme.bg,
-            textColor: baseSettings.textColor || newTheme.text,
-            highlightTextColor: baseSettings.highlightTextColor || newTheme.highlightText || newTheme.accent,
-            theme: baseSettings.theme || newTheme.id
-        };
+        const resolvedSettings = resolveReaderSettingsWithTheme(
+            {
+                ...baseSettings,
+                fontSize: effectiveFontSize,
+                reader: validatedReader,
+                bgColor: baseSettings.bgColor || newTheme.bg,
+                textColor: baseSettings.textColor || newTheme.text,
+                highlightTextColor: baseSettings.highlightTextColor || newTheme.highlightText || newTheme.accent,
+                theme: baseSettings.theme || newTheme.id
+            },
+            newTheme,
+            readingMode
+        );
 
         // Guard setSettings to avoid unnecessary re-renders
         setSettings(prev => {
@@ -2131,7 +2227,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
     const [sajdahInfo, setSajdahInfo] = useState<{ show: boolean; surah?: string; ayah?: number }>({ show: false });
     const [sajdahCardInfo, setSajdahCardInfo] = useState({ show: false, surah: '', ayah: 0, juz: 0, page: 0, wasAutoscrolling: false, wasPlaying: false, openedFromMenu: false });
-    const [floatingMenuInitialView, setFloatingMenuInitialView] = useState('main');
 
     const [autoScrollState, setAutoScrollState] = useState({ isActive: false, isPaused: false, elapsedTime: 0 });
     const [showSajdahCard, setShowSajdahCard] = useState(() => {
@@ -2160,6 +2255,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const lastTap = lastAyahTapRef.current;
 
         if (lastTap && (now - lastTap.time) < 400) {
+            markQuranMicroHintUsed(readingModeRef.current, 'ayah_text');
             setIsLandscapeUIHidden(prev => !prev);
             if (landscapeAutoHideTimerRef.current) {
                 clearTimeout(landscapeAutoHideTimerRef.current);
@@ -2410,6 +2506,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [lockedMadinahHeight, setLockedMadinahHeight] = useState<number | null>(null);
     const lockedMadinahHeightTimerRef = useRef<number | null>(null);
     const isJumpingRef = useRef(true);
+    const madinahJumpTokenRef = useRef(0);
     const wasAutoscrollingBeforeModal = useRef(false);
     const wasAutoscrollingBeforeAyahContext = useRef(false);
     const wasAutoscrollingBeforeAutoScrollSettings = useRef(false);
@@ -2500,15 +2597,18 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             : localStorage.getItem('quran_settings' + mode);
         const base = clusterSettings || (saved ? JSON.parse(saved) : {});
         const validatedReader = getValidReaderForMode(readingMode, base.reader);
-        return {
-            ...DEFAULT_SETTINGS,
-            ...base,
-            reader: validatedReader,
-            fontFamily: base.fontFamily || defaultTheme.font,
-            textColor: base.textColor || defaultTheme.text,
-            bgColor: base.bgColor || defaultTheme.bg,
-            theme: base.theme || defaultTheme.id
-        };
+        return resolveReaderSettingsWithTheme(
+            {
+                ...base,
+                reader: validatedReader,
+                fontFamily: base.fontFamily || defaultTheme.font,
+                textColor: base.textColor || defaultTheme.text,
+                bgColor: base.bgColor || defaultTheme.bg,
+                theme: base.theme || defaultTheme.id
+            },
+            defaultTheme,
+            readingMode
+        );
     });
 
     const [currentTheme, setCurrentTheme] = useState(() => {
@@ -3431,6 +3531,13 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [modalParams, setModalParams] = useState<any>(null);
 
     const openModal = useCallback((modalName: string, params?: any) => { 
+        if (modalName === 'share-ayah') {
+            markQuranMicroHintUsed(readingModeRef.current, 'share_btn');
+        } else if (modalName === 'bookmarks-modal') {
+            markQuranMicroHintUsed(readingModeRef.current, 'bookmark_btn');
+        } else if (modalName === 'reciter-modal') {
+            markQuranMicroHintUsed(readingModeRef.current, 'play_btn');
+        }
         stopAudio(); 
         setIsFloatingMenuOpen(false);
         setModalParams(params);
@@ -3801,14 +3908,12 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             syncQuranThemeToStorage(theme, mode, activeMode);
             setCurrentTheme(theme);
             setToolbarColors(getToolbarColorsForTheme(theme));
-            const madinahBase = activeMode === 'madinah' ? getMadinahSettings(isLandscapeRef.current) : null;
-            setSettings(prev => ({
-                ...prev,
-                bgColor: madinahBase?.bgColor || theme.bg,
-                textColor: madinahBase?.textColor || theme.text,
-                highlightTextColor: madinahBase?.highlightTextColor || (prev.lockHighlightColor ? prev.highlightTextColor : (theme.highlightText || theme.accent)),
-                theme: madinahBase?.theme || theme.id
-            }));
+            const modeBase = activeMode === 'madinah'
+                ? getMadinahSettings(isLandscapeRef.current)
+                : getClusterSettings(getClusterForLanguage(language), activeMode, isLandscapeRef.current);
+            setSettings(prev =>
+                resolveReaderSettingsWithTheme({ ...prev, ...(modeBase || {}) }, theme, activeMode)
+            );
         }
 
         if (navParams?.openSidebar || navParams?.openFloatingMenu || navParams?.openMenu) {
@@ -3889,6 +3994,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             return;
         }
 
+        markQuranMicroHintUsed(readingModeRef.current, 'ayah_text');
         const isDoubleTap = checkDoubleTapToToggleBars(s, a);
 
         handleAyahClick(s, a);
@@ -3926,6 +4032,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             return;
         }
 
+        markQuranMicroHintUsed(readingModeRef.current, 'verse_num');
         const isDoubleTap = checkDoubleTapToToggleBars(s, a);
         handleAyahClick(s, a);
 
@@ -3962,6 +4069,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             setIsFloatingMenuOpen(false);
             return;
         }
+        markQuranMicroHintUsed(readingModeRef.current, 'verse_num');
         const wasAutoscrolling = autoScrollStateRef.current.isActive && !autoScrollStateRef.current.isPaused;
         if (wasAutoscrolling) {
             autoScrollPausedRef.current = true;
@@ -3973,6 +4081,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     }, []);
 
     const handleAyahLongPress = useCallback((s: number, a: number, x: number, y: number) => {
+        markQuranMicroHintUsed(readingModeRef.current, 'ayah_text');
         stopAudio();
         const wasAutoscrolling = autoScrollStateRef.current.isActive && !autoScrollStateRef.current.isPaused;
         if (wasAutoscrolling) {
@@ -4159,6 +4268,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     }, [quranTranslationInfo.isOpen, quranTranslationInfo.s, quranTranslationInfo.a]);
 
     const toggleAudio = useCallback(() => {
+        markQuranMicroHintUsed(readingModeRef.current, 'play_btn');
         if (isPlaying || isAudioLoading) stopAudio();
         else {
             const activeAyah = currentAyahRef.current?.s && currentAyahRef.current?.a
@@ -4183,6 +4293,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
     const playButtonTimerRef = useRef<number | null>(null);
     const handlePlayButtonPointerDown = () => {
+        markQuranMicroHintUsed(readingModeRef.current, 'play_btn');
         playButtonTimerRef.current = window.setTimeout(() => {
             playButtonTimerRef.current = null;
             openModal('reciter-modal');
@@ -4209,6 +4320,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         if (e && e.type === 'touchstart') {
             e.preventDefault();
         }
+        markQuranMicroHintUsed(readingModeRef.current, 'autoscroll_btn');
         if (autoScrollButtonTimerRef.current) return;
         autoScrollButtonTimerRef.current = window.setTimeout(() => {
             autoScrollButtonTimerRef.current = null;
@@ -4252,12 +4364,12 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     const savedSettings = localStorage.getItem('quran_settings' + modeSuffix);
                     return savedSettings ? JSON.parse(savedSettings) : null;
                 })())
-                : (() => {
+                : (getClusterSettings(getClusterForLanguage(language), readingMode, isLandscapeRef.current) || (() => {
                     const savedSettings = localStorage.getItem('quran_settings' + modeSuffix);
                     return savedSettings ? JSON.parse(savedSettings) : null;
-                })();
-            if (parsed) {
-                const newSettings = { ...DEFAULT_SETTINGS, ...parsed };
+                })());
+            if (parsed || readingMode === 'madinah' || isDarkQuranTheme(newTheme)) {
+                const newSettings = resolveReaderSettingsWithTheme(parsed, newTheme, readingMode);
                 setSettings(prev => {
                     if (JSON.stringify(prev) === JSON.stringify(newSettings)) return prev;
                     return newSettings;
@@ -4316,12 +4428,14 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     const saved = localStorage.getItem('quran_settings' + mode);
                     return saved ? JSON.parse(saved) : null;
                 })())
-                : (() => {
+                : (getClusterSettings(getClusterForLanguage(language), readingMode, isLandscapeRef.current) || (() => {
                     const saved = localStorage.getItem('quran_settings' + mode);
                     return saved ? JSON.parse(saved) : null;
-                })();
-            if (parsed) {
-                const newSettings = { ...DEFAULT_SETTINGS, ...parsed };
+                })());
+            const activeThemeId = getQuranThemeForLayout(getCurrentLayoutContext(navParams), mode, readingMode);
+            const activeThemeObj = THEMES[activeThemeId as keyof typeof THEMES] || THEMES['gold'];
+            if (parsed || readingMode === 'madinah' || isDarkQuranTheme(activeThemeObj)) {
+                const newSettings = resolveReaderSettingsWithTheme(parsed, activeThemeObj, readingMode);
                 setSettings(prev => {
                     if (JSON.stringify(prev) === JSON.stringify(newSettings)) return prev;
                     return newSettings;
@@ -4367,9 +4481,11 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         };
 
         window.addEventListener('theme-change', handleThemeChange);
+        window.addEventListener('themeChanged', handleThemeChange);
         window.addEventListener('settings-change', handleSettingsChange);
         return () => {
             window.removeEventListener('theme-change', handleThemeChange);
+            window.removeEventListener('themeChanged', handleThemeChange);
             window.removeEventListener('settings-change', handleSettingsChange);
         };
     }, [themeSuffix, bookmarkSuffix, readingMode]);
@@ -4483,7 +4599,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 document.documentElement.classList.remove('dark');
             }
         };
-    }, [currentTheme, themeKey, settings.highlightTextColor, settings.wordHighlightColor, settings.textColor, settings.bgColor, settings.fontFamily, activeModals, isNightMode]);
+    }, [currentTheme, themeKey, readingMode, settings.highlightTextColor, settings.wordHighlightColor, settings.textColor, settings.bgColor, settings.fontFamily, activeModals, isNightMode]);
 
     const isBookmarksModalOpen = activeModals.includes('bookmarks-modal');
     useEffect(() => {
@@ -4863,21 +4979,43 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const targetPage = Number(ayah.page);
 
         if (readingModeRef.current === 'madinah') {
-            void loadMadinahPageFont(targetPage);
-            void loadMadinahPageFont(1);
-            preloadAdjacentMadinahFonts(targetPage);
-            if (isMadinahVerticalRef.current) {
-                isJumpingRef.current = true;
-                setMadinahVerticalJump({ page: targetPage, seq: Date.now() + Math.random() });
-                setTimeout(() => {
+            const jumpToken = ++madinahJumpTokenRef.current;
+            const commitMadinahJump = () => {
+                if (!isMountedRef.current || readingModeRef.current !== 'madinah') return;
+                if (jumpToken !== madinahJumpTokenRef.current) return;
+
+                preloadAdjacentMadinahFonts(targetPage);
+                if (isMadinahVerticalRef.current) {
+                    isJumpingRef.current = true;
+                    setMadinahVerticalJump({ page: targetPage, seq: Date.now() + Math.random() });
+                    setTimeout(() => {
+                        isJumpingRef.current = false;
+                    }, 350);
+                } else {
                     isJumpingRef.current = false;
-                }, 350);
+                }
+                handleAyahClick(s, a);
+                if (!isPageInputActiveRef.current && !isBottomPageInputActiveRef.current) {
+                    setActiveModals([]);
+                }
+            };
+
+            const isTargetReady =
+                isMadinahPageFontLoadedSync(targetPage) &&
+                isMadinahPageFontLoadedSync(1);
+
+            if (isTargetReady) {
+                commitMadinahJump();
             } else {
-                isJumpingRef.current = false;
-            }
-            handleAyahClick(s, a);
-            if (!isPageInputActiveRef.current && !isBottomPageInputActiveRef.current) {
-                setActiveModals([]);
+                if (!isPageInputActiveRef.current && !isBottomPageInputActiveRef.current) {
+                    setActiveModals([]);
+                }
+                Promise.all([
+                    loadMadinahPageFont(targetPage),
+                    loadMadinahPageFont(1),
+                ]).then(() => {
+                    commitMadinahJump();
+                });
             }
             return;
         }
@@ -5270,6 +5408,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     }, [visiblePages, jumpToPage, handlePlayButtonPointerDown, handlePlayButtonPointerUp, openModal, handleVoiceCommand, activeModals]);
 
     const saveBookmark = () => { 
+        markQuranMicroHintUsed(readingModeRef.current, 'bookmark_btn');
         const current = currentAyahRef.current;
         if (!current) { showToast('اختر آية أولاً'); return; } 
         const appLang = localStorage.getItem('app_language') || 'ar'; 
@@ -5301,6 +5440,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             // Prevent pointer events if touch is handled
             e.preventDefault();
         }
+        markQuranMicroHintUsed(readingModeRef.current, 'bookmark_btn');
         if (bookmarkButtonTimerRef.current) return;
         bookmarkButtonTimerRef.current = window.setTimeout(() => {
             bookmarkButtonTimerRef.current = null;
@@ -5425,6 +5565,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     }, [isMadinahVertical, readingMode]);
     
     const startAutoScroll = () => {
+        markQuranMicroHintUsed(readingModeRef.current, 'autoscroll_btn');
         if (!mushafContentRef.current) return;
         
         // Close any open menus/settings first to ensure bars can hide
@@ -5598,30 +5739,38 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             .slice(0, 3);
 
     const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPageInput(normalizePageDigits(e.target.value));
+        const normalized = normalizePageDigits(e.target.value);
+        setPageInput(normalized);
+        if (readingModeRef.current === 'madinah') {
+            preloadMadinahPagesForInput(normalized);
+        }
     };
 
     const handlePageInputBlur = () => {
-        if (pageInput) {
-            const pageNum = parseInt(pageInput, 10);
+        const raw = pageInput;
+        isPageInputActiveRef.current = false;
+        setIsPageInputActive(false);
+        setPageInput('');
+        if (raw) {
+            const pageNum = parseInt(raw, 10);
             if (pageNum >= 1 && pageNum <= 604) {
                 jumpToPage(pageNum, true);
             }
         }
-        setIsPageInputActive(false);
-        setPageInput('');
     };
 
     const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handlePageInputBlur();
         } else if (e.key === 'Escape') {
+            isPageInputActiveRef.current = false;
             setIsPageInputActive(false);
             setPageInput('');
         }
     };
 
     const handlePageButtonClick = () => {
+        markQuranMicroHintUsed(readingModeRef.current, 'page_num_btn');
         if (autoScrollState.isActive && !autoScrollState.isPaused) {
             autoScrollPausedRef.current = true;
             setAutoScrollState(p => ({ ...p, isPaused: true }));
@@ -5644,30 +5793,38 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     };
 
     const handleBottomPageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setBottomPageInput(normalizePageDigits(e.target.value));
+        const normalized = normalizePageDigits(e.target.value);
+        setBottomPageInput(normalized);
+        if (readingModeRef.current === 'madinah') {
+            preloadMadinahPagesForInput(normalized);
+        }
     };
 
     const handleBottomPageInputBlur = () => {
-        if (bottomPageInput) {
-            const pageNum = parseInt(bottomPageInput, 10);
+        const raw = bottomPageInput;
+        isBottomPageInputActiveRef.current = false;
+        setIsBottomPageInputActive(false);
+        setBottomPageInput('');
+        if (raw) {
+            const pageNum = parseInt(raw, 10);
             if (pageNum >= 1 && pageNum <= 604) {
                 jumpToPage(pageNum, true);
             }
         }
-        setIsBottomPageInputActive(false);
-        setBottomPageInput('');
     };
 
     const handleBottomPageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleBottomPageInputBlur();
         } else if (e.key === 'Escape') {
+            isBottomPageInputActiveRef.current = false;
             setIsBottomPageInputActive(false);
             setBottomPageInput('');
         }
     };
 
     const handleBottomPageButtonClick = () => {
+        markQuranMicroHintUsed(readingModeRef.current, 'bottom_page_btn');
         if (autoScrollState.isActive && !autoScrollState.isPaused) {
             autoScrollPausedRef.current = true;
             setAutoScrollState(p => ({ ...p, isPaused: true }));
@@ -6231,10 +6388,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         return ayahContextMenu.isOpen ? { ...settings, ...ayahContextMenu.tempSettings } : settings;
     }, [ayahContextMenu.isOpen, ayahContextMenu.tempSettings, settings]);
 
-    const handleOpenSurahDesignPicker = useCallback(() => {
-        setIsSurahDesignPickerOpen(true);
-    }, []);
-
     const handleMadinahPageChange = useCallback((newPage: number) => {
         const clamped = Math.max(1, Math.min(604, newPage));
         const pageData = getPageData(clamped);
@@ -6352,7 +6505,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     onAyahLongPress={handleAyahLongPress}
                     onInteractionStart={handleInteractionStart}
                     onInteractionEnd={handleInteractionEnd}
-                    onSurahHeaderLongPress={handleOpenSurahDesignPicker}
                     settings={mushafDisplaySettings}
                     currentTheme={currentTheme}
                     hideVerses={isHideMode}
@@ -6394,7 +6546,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         onAyahLongPress={handleAyahLongPress}
                         onInteractionStart={handleInteractionStart}
                         onInteractionEnd={handleInteractionEnd}
-                        onSurahHeaderLongPress={handleOpenSurahDesignPicker}
                         settings={mushafDisplaySettings}
                         currentTheme={currentTheme}
                         hideVerses={isHideMode}
@@ -6437,7 +6588,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                                 revealedAyahs={revealedAyahs}
                                 tempRevealedAyah={tempRevealedAyah}
                                 audioProgress={audioProgress}
-                                onSurahHeaderLongPress={handleOpenSurahDesignPicker}
                             />
                     ))}
                     </div>
@@ -6521,7 +6671,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                             modeSuffix={themeSuffix}
                             hideVerses={isHideMode}
                             memorizationSettings={localMemorizationSettings}
-                            onSurahHeaderLongPress={handleOpenSurahDesignPicker}
                             isPlaying={isPlaying}
                             isRecording={isRecording}
                             revealedAyahs={revealedAyahs}
@@ -6785,13 +6934,28 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     setIsSurahDesignPickerOpen(false);
                     closeModal('surah-design-picker');
                 }}
-                currentDesign={Number(settings.surahHeaderDesign) || 1}
+                currentDesign={normalizeMadinahFrameDesign(settings.madinahFrameDesign)}
                 onSelectDesign={(d) => {
-                    const newSettings = { ...settings, surahHeaderDesign: d };
+                    const frameId = normalizeMadinahFrameDesign(d);
+                    const newSettings = {
+                        ...settings,
+                        madinahFrameDesign: frameId,
+                        surahHeaderDesign: getSurahHeaderDesignForFrame(frameId),
+                    };
                     setSettings(newSettings);
-                    localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(newSettings));
-                    window.dispatchEvent(new Event('settings-change'));
-                    showToast(isEn ? 'Surah header design updated' : 'تم تغيير تصميم رأس السورة');
+                    if (!isWirdMode && !localIsMemorizationMode) {
+                        if (readingMode === 'madinah') {
+                            saveMadinahSettings(newSettings);
+                        } else {
+                            localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(newSettings));
+                            const cluster = getClusterForLanguage(language);
+                            syncClusterSettings(cluster, newSettings, isLandscape);
+                        }
+                    } else {
+                        localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(newSettings));
+                        window.dispatchEvent(new Event('settings-change'));
+                    }
+                    showToast(isEn ? 'Page frame & header design updated' : 'تم تغيير تصميم الإطار ورأس الصفحة');
                 }}
                 currentTheme={currentTheme}
                 isLandscape={isLandscape}
@@ -7445,6 +7609,14 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 isEn={isEn}
                 currentTheme={currentTheme}
                 isMadinahMode={readingMode === 'madinah'}
+            />
+
+            <QuranMicroHints
+                readingMode={readingMode}
+                isMadinahVertical={isMadinahVertical}
+                isPaused={isLoading || isAnyMenuOpen || isMainGuideOpen || isSurahJuzGuideOpen || isPageInputActive || isBottomPageInputActive}
+                isEn={isEn}
+                currentTheme={currentTheme}
             />
 
         </div>

@@ -81,6 +81,7 @@ interface AutoSilentPluginInterface {
   getPendingShortcut?(): Promise<{ target?: string; seq?: number }>;
   markShortcutConsumed?(options: { seq: number }): Promise<{ success: boolean }>;
   setStatusBarStyle?(options: { isDark: boolean }): Promise<{ success: boolean; isDark: boolean }>;
+  setSplashFullscreen?(options: { fullscreen: boolean }): Promise<{ success: boolean; fullscreen: boolean }>;
 }
 
 export const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');

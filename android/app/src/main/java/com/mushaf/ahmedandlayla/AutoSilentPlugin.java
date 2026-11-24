@@ -1211,6 +1211,18 @@ public class AutoSilentPlugin extends Plugin {
         call.resolve(ret);
     }
 
+    @PluginMethod
+    public void setSplashFullscreen(PluginCall call) {
+        boolean fullscreen = Boolean.TRUE.equals(call.getBoolean("fullscreen", false));
+        if (getActivity() != null) {
+            MainActivity.setSplashFullscreen(getActivity(), fullscreen);
+        }
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        ret.put("fullscreen", fullscreen);
+        call.resolve(ret);
+    }
+
     public static void applyAppLocale(Context context, String language) {
         if (context == null || language == null || language.trim().isEmpty()) return;
         try {

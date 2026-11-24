@@ -20,6 +20,8 @@ import { QuranDownloadModal, TafsirDownloadModal } from '../QuranReader/Download
 import { quranData as rawQuranData } from '../../utils/quranData';
 import { RECITERS, SURAH_LIST } from '../../data/listenQuranData';
 import { getQuranThemeIdForLayout } from '../../utils/quranThemeHelper';
+import { normalizeMadinahFrameDesign, getSurahHeaderDesignForFrame } from '../QuranReader/madinahFrameDesigns';
+import { syncClusterSettings, getMadinahSettings, saveMadinahSettings } from '../../utils/quranClusterSync';
 import { getShowPageGuides, setShowPageGuides } from '../../utils/guideManager';
 import { showGlobalAppToast } from '../../utils/appNotificationSettings';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
@@ -90,7 +92,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
   // Sub-dialog states for full-screen pages
   const [showAppNotificationModal, setShowAppNotificationModal] = useState<boolean>(false);
   const [showPhoneNotificationModal, setShowPhoneNotificationModal] = useState<boolean>(false);
-  const [showQuranSettingsModal, setShowQuranSettingsModal] = useState<boolean>(false);
+  const [activeReadingSettingsMode, setActiveReadingSettingsMode] = useState<'mushaf' | 'madinah' | null>(null);
   const [showQuranDownloadMenu, setShowQuranDownloadMenu] = useState<boolean>(false);
   const [showTafsirDownloadModal, setShowTafsirDownloadModal] = useState<boolean>(false);
   const [showApprovedSourcesModal, setShowApprovedSourcesModal] = useState<boolean>(false);
@@ -265,9 +267,16 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     }
   };
 
-  // Helper for Quran settings
+  // Helper for Quran / Madinah reading settings
+  const currentSettingsMode: 'mushaf' | 'madinah' = activeReadingSettingsMode || 'mushaf';
+  const currentModeSuffix = currentSettingsMode === 'madinah' ? '_madinah_v' : '';
+
   const getQuranCurrentSettings = () => {
     try {
+      if (currentSettingsMode === 'madinah') {
+        const madinahSaved = getMadinahSettings(false);
+        return madinahSaved ? { ...DEFAULT_SETTINGS, ...madinahSaved } : DEFAULT_SETTINGS;
+      }
       const saved = localStorage.getItem('quran_settings');
       return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
     } catch {
@@ -275,61 +284,58 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     }
   };
 
-  const activeQuranThemeId = getQuranThemeIdForLayout('', undefined, 'mushaf') || 'black';
+  const activeQuranThemeId = getQuranThemeIdForLayout(currentModeSuffix, undefined, currentSettingsMode) || 'black';
   const activeQuranTheme = THEMES[activeQuranThemeId as keyof typeof THEMES] || THEMES.black;
 
-  const handleSelectFont = (fontId: string) => {
+  const updateActiveReadingSubModalSettings = (updates: Record<string, any>, shouldSyncClusterDesign = false) => {
     try {
+      if (currentSettingsMode === 'madinah') {
+        const cur = getMadinahSettings(false) || {};
+        const next = { ...cur, ...updates };
+        saveMadinahSettings(next);
+        return;
+      }
       const saved = localStorage.getItem('quran_settings');
       const cur = saved ? JSON.parse(saved) : {};
-      const next = { ...cur, fontFamily: fontId };
+      const next = { ...cur, ...updates };
       localStorage.setItem('quran_settings', JSON.stringify(next));
-      window.dispatchEvent(new Event('settings-change'));
+      if (shouldSyncClusterDesign) {
+        syncClusterSettings('unified', next, false);
+      } else {
+        window.dispatchEvent(new Event('settings-change'));
+      }
     } catch {}
+  };
+
+  const handleSelectFont = (fontId: string) => {
+    updateActiveReadingSubModalSettings({ fontFamily: fontId });
     setActiveQuranSubModal(null);
   };
 
   const handleSelectReciter = (readerId: string) => {
-    try {
-      const saved = localStorage.getItem('quran_settings');
-      const cur = saved ? JSON.parse(saved) : {};
-      const next = { ...cur, reader: readerId };
-      localStorage.setItem('quran_settings', JSON.stringify(next));
-      window.dispatchEvent(new Event('settings-change'));
-    } catch {}
+    updateActiveReadingSubModalSettings({ reader: readerId });
     setActiveQuranSubModal(null);
   };
 
   const handleSelectTafseer = (tafseerId: string) => {
-    try {
-      const saved = localStorage.getItem('quran_settings');
-      const cur = saved ? JSON.parse(saved) : {};
-      const next = { ...cur, tafseer: tafseerId };
-      localStorage.setItem('quran_settings', JSON.stringify(next));
-      window.dispatchEvent(new Event('settings-change'));
-    } catch {}
+    updateActiveReadingSubModalSettings({ tafseer: tafseerId });
     setActiveQuranSubModal(null);
   };
 
   const handleSelectSurahDesign = (designNum: number) => {
-    try {
-      const saved = localStorage.getItem('quran_settings');
-      const cur = saved ? JSON.parse(saved) : {};
-      const next = { ...cur, surahHeaderDesign: designNum };
-      localStorage.setItem('quran_settings', JSON.stringify(next));
-      window.dispatchEvent(new Event('settings-change'));
-    } catch {}
+    const frameId = normalizeMadinahFrameDesign(designNum);
+    updateActiveReadingSubModalSettings(
+      {
+        madinahFrameDesign: frameId,
+        surahHeaderDesign: getSurahHeaderDesignForFrame(frameId),
+      },
+      true
+    );
     setActiveQuranSubModal(null);
   };
 
   const handleSelectScrollSpeed = (minutes: number) => {
-    try {
-      const saved = localStorage.getItem('quran_settings');
-      const cur = saved ? JSON.parse(saved) : {};
-      const next = { ...cur, scrollMinutes: minutes };
-      localStorage.setItem('quran_settings', JSON.stringify(next));
-      window.dispatchEvent(new Event('settings-change'));
-    } catch {}
+    updateActiveReadingSubModalSettings({ scrollMinutes: minutes });
     setActiveQuranSubModal(null);
   };
 
@@ -339,7 +345,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     activeDownloadType,
     showTafsirDownloadModal,
     showQuranDownloadMenu,
-    showQuranSettingsModal,
+    activeReadingSettingsMode,
     showAppNotificationModal,
     showPhoneNotificationModal,
     showApprovedSourcesModal,
@@ -352,7 +358,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
     activeDownloadType,
     showTafsirDownloadModal,
     showQuranDownloadMenu,
-    showQuranSettingsModal,
+    activeReadingSettingsMode,
     showAppNotificationModal,
     showPhoneNotificationModal,
     showApprovedSourcesModal,
@@ -386,9 +392,9 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
         setShowQuranDownloadMenu(false);
         return true;
       }
-      // 5. If Quran Settings modal is open
-      if (s.showQuranSettingsModal) {
-        setShowQuranSettingsModal(false);
+      // 5. If Reading Settings modal is open
+      if (s.activeReadingSettingsMode) {
+        setActiveReadingSettingsMode(null);
         return true;
       }
       // 6. If App notifications modal is open
@@ -520,16 +526,42 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
               </div>
             </div>
 
-            {/* Card 3: Quran Settings */}
-            <button
-              type="button"
-              onClick={() => setShowQuranSettingsModal(true)}
-              className="w-full text-start p-4 sm:p-5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between white-3d-card-btn"
-            >
-              <h4 className="text-base sm:text-lg font-black truncate">
-                {isEn ? 'Quran Page Settings' : 'إعدادات صفحة القرآن'}
-              </h4>
-            </button>
+            {/* Grouped Large Card: Reading Settings */}
+            <div className="p-4 sm:p-5 rounded-3xl transition-all white-3d-container-card space-y-3">
+              <div className="space-y-2">
+                <h3
+                  className="text-sm sm:text-base font-black tracking-wide"
+                  style={{ color: themeAccentColor }}
+                >
+                  {isEn ? 'Reading Settings' : 'إعدادات القراءة'}
+                </h3>
+                <div className="app-3d-divider" />
+              </div>
+
+              <div className="space-y-2.5 pt-1">
+                {/* Card 1: Vertical Reading Settings (Mushaf) */}
+                <button
+                  type="button"
+                  onClick={() => setActiveReadingSettingsMode('mushaf')}
+                  className="w-full text-start p-3.5 sm:p-4 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between white-3d-card-btn shadow-xs border-0"
+                >
+                  <h4 className="text-base sm:text-lg font-black truncate">
+                    {isEn ? 'Vertical Reading Settings' : 'إعدادات القراءة الرأسية'}
+                  </h4>
+                </button>
+
+                {/* Card 2: Horizontal Reading Settings (Madinah Mushaf) */}
+                <button
+                  type="button"
+                  onClick={() => setActiveReadingSettingsMode('madinah')}
+                  className="w-full text-start p-3.5 sm:p-4 rounded-2xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between white-3d-card-btn shadow-xs border-0"
+                >
+                  <h4 className="text-base sm:text-lg font-black truncate">
+                    {isEn ? 'Horizontal Reading Settings' : 'إعدادات القراءة الأفقية'}
+                  </h4>
+                </button>
+              </div>
+            </div>
 
             {/* Share Card Designs Picker Section */}
             <ShareDesignSelectorSection
@@ -856,10 +888,10 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
           />
         )}
 
-        {/* Full-Screen Child Page 3: Quran Settings */}
-        {showQuranSettingsModal && (
+        {/* Full-Screen Child Page 3: Reading Settings (Mushaf / Madinah) */}
+        {activeReadingSettingsMode && (
           <SettingsModal
-            onClose={() => setShowQuranSettingsModal(false)}
+            onClose={() => setActiveReadingSettingsMode(null)}
             onOpenModal={(modalName) => {
               if (modalName === 'notification-settings-modal') {
                 setShowPhoneNotificationModal(true);
@@ -869,12 +901,12 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
             }}
             showToast={showGlobalAppToast}
             isLandscape={false}
-            readingMode="mushaf"
-            modeSuffix=""
+            readingMode={activeReadingSettingsMode}
+            modeSuffix={currentModeSuffix}
           />
         )}
 
-        {/* Sub-modals triggered from Quran Settings */}
+        {/* Sub-modals triggered from Reading Settings */}
         {activeQuranSubModal === 'font-modal' && (
           <FontSelectModal
             isOpen={true}
@@ -882,17 +914,17 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
             currentFontId={getQuranCurrentSettings().fontFamily}
             onSelect={handleSelectFont}
             isLandscape={false}
-            readingMode="mushaf"
+            readingMode={currentSettingsMode}
           />
         )}
 
         {activeQuranSubModal === 'reciter-modal' && (
           <ReciterSelectModal
             onClose={() => setActiveQuranSubModal(null)}
-            currentReader={getValidReaderForMode('mushaf', getQuranCurrentSettings().reader)}
+            currentReader={getValidReaderForMode(currentSettingsMode, getQuranCurrentSettings().reader)}
             isLandscape={false}
             readersList={READERS}
-            readingMode="mushaf"
+            readingMode={currentSettingsMode}
             currentTheme={activeQuranTheme}
             zIndexClass="z-[99999999]"
             onSelect={handleSelectReciter}
@@ -914,7 +946,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
           <SurahDesignPickerModal
             isOpen={true}
             onClose={() => setActiveQuranSubModal(null)}
-            currentDesign={Number(getQuranCurrentSettings().surahHeaderDesign) || 1}
+            currentDesign={normalizeMadinahFrameDesign(getQuranCurrentSettings().madinahFrameDesign)}
             onSelectDesign={handleSelectSurahDesign}
             currentTheme={activeQuranTheme}
             isLandscape={false}
@@ -941,7 +973,7 @@ export const HomeScreenSettingsModal: React.FC<HomeScreenSettingsModalProps> = (
             isLandscape={false}
             mode="ayah"
             readersList={ARABIC_READERS}
-            initialReaderId={getValidReaderForMode('mushaf', getQuranCurrentSettings().reader)}
+            initialReaderId={getValidReaderForMode(currentSettingsMode, getQuranCurrentSettings().reader)}
             zIndexClass="z-[99999999]"
             title={isEn ? 'Download Holy Quran' : 'تحميل القرآن الكريم'}
             isFromHomeScreenSettings={true}

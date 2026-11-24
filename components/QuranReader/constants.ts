@@ -731,6 +731,9 @@ export const syncQuranThemeToStorage = (theme: any, modeSuffix: string = '', rea
         }
         const colors = getToolbarColorsForTheme(theme);
         localStorage.setItem('toolbar_colors_v2' + modeSuffix, JSON.stringify(colors));
+        if (isNightModeForLayout('modern') || isDarkQuranTheme(theme)) {
+            return;
+        }
         const saved = JSON.parse(localStorage.getItem('quran_settings' + modeSuffix) || '{}');
         const updated = {
             ...DEFAULT_SETTINGS,

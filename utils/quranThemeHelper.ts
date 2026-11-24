@@ -207,31 +207,70 @@ export function getQuranSettingsForLayout(modeSuffix: string = '_v', navParams?:
       localStorage.getItem(`quran_settings_madinah${modeSuffix}`) ||
       localStorage.getItem(`quran_layout_${layout}_madinah_settings${modeSuffix}`) ||
       localStorage.getItem(`quran_layout_${layout}_madinah_settings`);
+    let parsedMadinah: any = null;
     if (savedMadinah) {
       try {
-        return JSON.parse(savedMadinah);
+        parsedMadinah = JSON.parse(savedMadinah);
       } catch (e) {}
     }
-    return null;
+    if (isNightModeForLayout(layout)) {
+      const hasCustomNight = localStorage.getItem('quran_settings_madinah_night_colors_custom') === 'true';
+      let nightSaved: any = null;
+      try {
+        const rawNight = localStorage.getItem('quran_settings_madinah_night');
+        nightSaved = rawNight ? JSON.parse(rawNight) : null;
+      } catch {}
+      const deepBlack = THEMES.deep_black;
+      return {
+        ...(parsedMadinah || {}),
+        bgColor: (hasCustomNight && nightSaved?.bgColor) ? nightSaved.bgColor : deepBlack.bg,
+        textColor: (hasCustomNight && nightSaved?.textColor) ? nightSaved.textColor : deepBlack.text,
+        highlightTextColor: (hasCustomNight && nightSaved?.highlightTextColor)
+          ? nightSaved.highlightTextColor
+          : (parsedMadinah?.lockHighlightColor ? parsedMadinah.highlightTextColor : deepBlack.highlightText),
+        theme: (hasCustomNight && nightSaved?.theme) ? nightSaved.theme : deepBlack.id,
+      };
+    }
+    return parsedMadinah;
   }
   
   // Check unified global settings first
   const unifiedKey = `quran_layout_${layout}_unified_settings`;
   const savedUnified = localStorage.getItem(unifiedKey) || localStorage.getItem('quran_settings_unified');
+  let parsedBase: any = null;
   if (savedUnified) {
     try {
-      return JSON.parse(savedUnified);
+      parsedBase = JSON.parse(savedUnified);
     } catch (e) {}
+  } else {
+    const layoutKey = `quran_layout_${layout}_${mKey}_settings${modeSuffix}`;
+    const saved = localStorage.getItem(layoutKey) || localStorage.getItem(`quran_layout_${layout}_${mKey}_settings`);
+    if (saved) {
+      try {
+        parsedBase = JSON.parse(saved);
+      } catch (e) {}
+    }
   }
 
-  const layoutKey = `quran_layout_${layout}_${mKey}_settings${modeSuffix}`;
-  const saved = localStorage.getItem(layoutKey) || localStorage.getItem(`quran_layout_${layout}_${mKey}_settings`);
-  if (saved) {
+  if (isNightModeForLayout(layout)) {
+    const hasCustomNight = localStorage.getItem('quran_settings_unified_night_colors_custom') === 'true';
+    let nightSaved: any = null;
     try {
-      return JSON.parse(saved);
-    } catch (e) {}
+      const rawNight = localStorage.getItem('quran_settings_unified_night');
+      nightSaved = rawNight ? JSON.parse(rawNight) : null;
+    } catch {}
+    const deepBlack = THEMES.deep_black;
+    return {
+      ...(parsedBase || {}),
+      bgColor: (hasCustomNight && nightSaved?.bgColor) ? nightSaved.bgColor : deepBlack.bg,
+      textColor: (hasCustomNight && nightSaved?.textColor) ? nightSaved.textColor : deepBlack.text,
+      highlightTextColor: (hasCustomNight && nightSaved?.highlightTextColor)
+        ? nightSaved.highlightTextColor
+        : (parsedBase?.lockHighlightColor ? parsedBase.highlightTextColor : deepBlack.highlightText),
+      theme: (hasCustomNight && nightSaved?.theme) ? nightSaved.theme : deepBlack.id,
+    };
   }
-  return null;
+  return parsedBase;
 }
 
 export function setQuranSettingsForLayout(settings: any, modeSuffix: string = '_v', navParams?: any, readingMode: string = 'mushaf'): void {

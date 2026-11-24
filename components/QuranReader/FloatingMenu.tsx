@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
-  getAppNotificationSettings,
-  saveAppNotificationSettings,
-  APP_NOTIFICATION_CHANGE_EVENT,
-  AppNotificationSettings,
-} from "../../utils/appNotificationSettings";
-import {
-  Smartphone,
-  AppWindow,
-  VolumeX,
   Search,
   Globe,
   Compass,
@@ -18,7 +9,6 @@ import {
   X,
   Info,
   Type,
-  Bell,
   Check,
   ChevronLeft,
   BookOpen,
@@ -37,9 +27,7 @@ import {
   isDarkQuranTheme,
   ReadingMode,
 } from "./constants";
-import { usePrayerTimes } from "../../context/PrayerTimesContext";
 import { useLanguage } from "../../context/LanguageContext";
-import { setupNotifications } from "../../utils/notifications";
 import { QuranSpotlightGuide, getQuranGuideSeen } from "./QuranSpotlightGuide";
 import { QURAN_SIDEBAR_STEPS, MADINAH_SIDEBAR_STEPS } from "./quranGuideSteps";
 import { useShowPageGuides } from "../../utils/guideManager";
@@ -70,7 +58,6 @@ interface FloatingMenuProps {
 
 const ALL_SHORTCUTS = [
   { id: "font-type", label: "نوع الخط", icon: <Type size={18} /> },
-  { id: "notification-settings", label: "الإشعارات", icon: <Bell size={18} /> },
   { id: "sajdah-list", label: "آيات السجدة", icon: <Compass size={18} /> },
   { id: "thematic-encyclopedia", label: "الموسوعة الموضوعية", icon: <BookOpen size={18} /> },
   { id: "waqf-guide", label: "علامات الوقف", icon: <Compass size={18} /> },
@@ -81,7 +68,6 @@ const ALL_SHORTCUTS = [
 
 const DEFAULT_SHORTCUTS = [
   "font-type",
-  "notification-settings",
   "sajdah-list",
 ];
 
@@ -117,7 +103,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   type MenuView =
     | "main"
     | "font"
-    | "notifications"
     | "bookmarks"
     | "sajdah_list";
   const [currentView, setCurrentView] = useState<MenuView>("main");
@@ -156,13 +141,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   }, [readingMode, isFloatingMenuOpen, currentView, madinahSizeKey, isSidebarGuideOpen, selectedShortcuts.length]);
 
   useEffect(() => {
-    if (isLandscape) {
-      setIsSidebarGuideOpen(false);
-      return;
-    }
     if (isFloatingMenuOpen) {
-      const nextView = readingMode === "madinah" && initialView === "font" ? "main" : initialView;
+      const nextView =
+        (readingMode === "madinah" && initialView === "font") ||
+        initialView === "notifications"
+          ? "main"
+          : initialView;
       setCurrentView(nextView as MenuView);
+
+      if (isLandscape) {
+        setIsSidebarGuideOpen(false);
+        return;
+      }
 
       const sidebarGuideKey = readingMode === "madinah" ? "madinah_sidebar_menu_v2" : "sidebar_menu_v2";
       if (!getQuranGuideSeen(sidebarGuideKey)) {
@@ -173,6 +163,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       }
     } else {
       setIsSidebarGuideOpen(false);
+      setCurrentView("main");
     }
   }, [isFloatingMenuOpen, initialView, isLandscape, readingMode]);
 
@@ -366,62 +357,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   );
                 })}
                 </div>
-              </div>
-              <div
-                className="p-3 shrink-0"
-                style={{
-                  backgroundColor: `${currentTheme.accent}10`,
-                }}
-              >
-                <button
-                  onClick={() => setCurrentView("main")}
-                  className="floating-menu-subview-btn-text w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
-                  style={{
-                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
-                    color: currentTheme.text,
-                    border: "none",
-                  }}
-                >
-                  {isEn ? "Back" : "رجوع"}
-                </button>
-              </div>
-            </div>
-          ) : currentView === "notifications" ? (
-            <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
-              <div
-                className="p-3.5 flex items-center justify-between shrink-0"
-                style={{
-                  backgroundColor: `${currentTheme.accent}15`,
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <Bell size={20} className="quran-3d-icon" style={{ color: iconColor }} />
-                  <h3
-                    className="floating-menu-subview-title font-extrabold text-xs"
-                    style={{ color: currentTheme.text }}
-                  >
-                    {isEn ? "Notifications" : "الإشعارات"}
-                  </h3>
-                </div>
-              </div>
-              <div className="flex-grow min-h-0 overflow-hidden p-3 flex flex-col">
-                <NotificationSettingsContent
-                  showToast={showToast}
-                  currentTheme={currentTheme}
-                  isEn={isEn}
-                  isRTL={isRTL}
-                  modeSuffix={
-                    isMemorizationMode
-                      ? `_memorization_${isLandscape ? "h" : "v"}`
-                      : isWirdMode
-                        ? `_wird_${isLandscape ? "h" : "v"}`
-                        : readingMode === "mushaf"
-                          ? isLandscape
-                            ? "_h"
-                            : "_v"
-                          : `_${readingMode}_${isLandscape ? "h" : "v"}`
-                  }
-                />
               </div>
               <div
                 className="p-3 shrink-0"
@@ -670,20 +605,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       currentTheme={currentTheme}
                       isRTL={isRTL}
                     />
-                    <MenuItem
-                      data-id="menu-item-madinah"
-                      icon={<BookOpen size={18} />}
-                      label="مصحف المدينة"
-                      onClick={() =>
-                        handleAction(() => {
-                          setReadingMode("madinah");
-                        })
-                      }
-                      iconColor={sidebarIconColor}
-                      isActive={readingMode === "madinah"}
-                      currentTheme={currentTheme}
-                      isRTL={isRTL}
-                    />
+                    {!isLandscape && (
+                      <MenuItem
+                        data-id="menu-item-madinah"
+                        icon={<BookOpen size={18} />}
+                        label="مصحف المدينة"
+                        onClick={() =>
+                          handleAction(() => {
+                            setReadingMode("madinah");
+                          })
+                        }
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "madinah"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                    )}
                   </>
                 ) : (
                   <>
@@ -844,8 +781,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       onClick={() => {
                         if (shortcut.id === "font-type") {
                           setCurrentView("font");
-                        } else if (shortcut.id === "notification-settings") {
-                          setCurrentView("notifications");
                         } else if (shortcut.id === "sajdah-list") {
                           setCurrentView("sajdah_list");
                         } else if (shortcut.id === "thematic-encyclopedia") {
@@ -929,443 +864,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         isMadinahMode={readingMode === "madinah"}
       />
     </>
-  );
-};
-
-const NotificationSettingsContent: React.FC<{
-  showToast: (msg: string) => void;
-  modeSuffix: string;
-  currentTheme: any;
-  isEn?: boolean;
-  isRTL?: boolean;
-}> = ({ showToast, modeSuffix, currentTheme, isEn = false, isRTL = true }) => {
-  const isDarkTheme = isDarkQuranTheme(currentTheme);
-  const { config, updateConfig } = usePrayerTimes();
-  const [activeTab, setActiveTab] = useState<"app" | "phone">("app");
-
-  const [appSettings, setAppSettings] = useState<AppNotificationSettings>(() =>
-    getAppNotificationSettings()
-  );
-
-  useEffect(() => {
-    const syncAppSettings = () => setAppSettings(getAppNotificationSettings());
-    window.addEventListener(APP_NOTIFICATION_CHANGE_EVENT, syncAppSettings);
-    return () => window.removeEventListener(APP_NOTIFICATION_CHANGE_EVENT, syncAppSettings);
-  }, []);
-
-  const [phoneSettings, setPhoneSettings] = useState(() => {
-    const saved = localStorage.getItem("phone_notifications_settings");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error parsing phone notification settings", e);
-      }
-    }
-    return {
-      sabah: true,
-      masaa: true,
-      dua: true,
-      tasbeehMorning: true,
-      tasbeehEvening: true,
-      kahf: true,
-    };
-  });
-
-  const toggleAppSetting = (key: keyof AppNotificationSettings) => {
-    const newSettings = { ...appSettings, [key]: !appSettings[key] };
-    setAppSettings(newSettings);
-    saveAppNotificationSettings(newSettings);
-
-    const labels: Record<string, string> = {
-      quarter: isEn ? "Hizbs & Quarters Alerts" : "تنبيهات الأحزاب والأرباع",
-      juz: isEn ? "Juz Transitions Alerts" : "تنبيهات بداية الأجزاء",
-      sajda: isEn ? "Sajdah Verses Alerts" : "تنبيهات السجدات",
-      themes: isEn ? "Theme Changes Alerts" : "تنبيهات تغيير الثيمات",
-      downloads: isEn ? "Downloads Alerts" : "تنبيهات التحميل",
-      bookmarks: isEn ? "Bookmarks Alerts" : "تنبيهات الإشارات المرجعية",
-      general: isEn ? "General Alerts" : "التنبيهات العامة",
-    };
-
-    showToast(isEn ? `${labels[key]} ${newSettings[key] ? "enabled" : "disabled"}` : `${newSettings[key] ? "تم تفعيل" : "تم تعطيل"} ${labels[key]}`);
-  };
-
-  const togglePhoneSetting = (key: string) => {
-    const newSettings = { ...phoneSettings, [key]: !phoneSettings[key] };
-    setPhoneSettings(newSettings);
-    localStorage.setItem(
-      "phone_notifications_settings",
-      JSON.stringify(newSettings),
-    );
-    setupNotifications(newSettings);
-
-    const labels: Record<string, string> = {
-      sabah: isEn ? "Morning Adhkar" : "أذكار الصباح",
-      masaa: isEn ? "Evening Adhkar" : "أذكار المساء",
-      dua: isEn ? "Dua Time" : "وقت الدعاء",
-      tasbeehMorning: isEn ? "Morning Tasbeeh" : "التسبيح (صباحاً)",
-      tasbeehEvening: isEn ? "Evening Tasbeeh" : "التسبيح (مساءً)",
-      kahf: isEn ? "Surah Al-Kahf" : "سورة الكهف",
-    };
-
-    showToast(isEn ? `${labels[key]} ${newSettings[key] ? "enabled" : "disabled"}` : `${newSettings[key] ? "تم تفعيل" : "تم تعطيل"} ${labels[key]}`);
-  };
-
-  const toggleNightNotification = (
-    key: "firstThird" | "midnight" | "lastThird",
-  ) => {
-    const currentNightNotifs = config.nightNotifications || {
-      firstThird: true,
-      midnight: true,
-      lastThird: true,
-    };
-    const newNightNotifs = {
-      ...currentNightNotifs,
-      [key]: !currentNightNotifs[key],
-    };
-    updateConfig({ nightNotifications: newNightNotifs });
-
-    const labels: Record<string, string> = {
-      firstThird: isEn ? "First Third of Night" : "أول الليل",
-      midnight: isEn ? "Midnight" : "منتصف الليل",
-      lastThird: isEn ? "Last Third of Night" : "الثلث الأخير",
-    };
-
-    showToast(
-      isEn
-        ? `${labels[key]} alert ${newNightNotifs[key] ? "enabled" : "disabled"}`
-        : `${newNightNotifs[key] ? "تم تفعيل" : "تم تعطيل"} إشعار ${labels[key]}`,
-    );
-  };
-
-  const muteAudioForDuration = (durationDays: number) => {
-    const muteUntil = Date.now() + durationDays * 24 * 60 * 60 * 1000;
-    updateConfig({ audioMutedUntil: muteUntil });
-    showToast(
-      isEn
-        ? `Prayer audio alerts muted for ${durationDays} day(s)`
-        : `تم تعطيل التنبيهات الصوتية للصلاة لمدة ${durationDays} يوم`,
-    );
-  };
-
-  const unmuteAudio = () => {
-    updateConfig({ audioMutedUntil: undefined });
-    showToast(isEn ? "Prayer audio alerts enabled" : "تم تفعيل التنبيهات الصوتية للصلاة");
-  };
-
-  const isAudioMuted =
-    config.audioMutedUntil && Date.now() < config.audioMutedUntil;
-
-  return (
-    <div
-      className="flex flex-col h-full font-cairo"
-      style={{ fontFamily: "'Cairo', sans-serif" }}
-      dir={isRTL ? "rtl" : "ltr"}
-    >
-      <div
-        className="flex gap-2 mb-3 px-1 shrink-0"
-      >
-        <button
-          className={`floating-menu-subview-tab flex-1 py-2 px-1.5 text-[10px] font-bold leading-tight text-center flex items-center justify-center gap-1.5 rounded-xl transition-all border-0 ${activeTab === "app" ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
-          style={{
-            backgroundColor:
-              activeTab === "app" ? (currentTheme.accent || "#10b981") : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
-            color: activeTab === "app" ? "#ffffff" : currentTheme.text,
-            border: "none",
-          }}
-          onClick={() => setActiveTab("app")}
-        >
-          <AppWindow size={14} className="quran-3d-icon shrink-0" />
-          <span>{isEn ? "App Alerts" : "إشعارات التطبيق"}</span>
-        </button>
-        <button
-          className={`floating-menu-subview-tab flex-1 py-2 px-1.5 text-[10px] font-bold leading-tight text-center flex items-center justify-center gap-1.5 rounded-xl transition-all border-0 ${activeTab === "phone" ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
-          style={{
-            backgroundColor:
-              activeTab === "phone" ? (currentTheme.accent || "#10b981") : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
-            color: activeTab === "phone" ? "#ffffff" : currentTheme.text,
-            border: "none",
-          }}
-          onClick={() => setActiveTab("phone")}
-        >
-          <Smartphone size={14} className="quran-3d-icon shrink-0" />
-          <span>{isEn ? "Phone Alerts" : "إشعارات الهاتف"}</span>
-        </button>
-      </div>
-
-      <div className="space-y-3 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 pb-1">
-        {activeTab === "app" ? (
-          <div className="space-y-2">
-            {[
-              {
-                id: "quarter",
-                label: isEn ? "Hizbs & Quarters" : "الأحزاب والأرباع",
-                desc: isEn ? "Alert when reaching a new Hizb or Quarter" : "تنبيه عند الوصول لبداية حزب أو ربع جديد",
-              },
-              {
-                id: "juz",
-                label: isEn ? "Juz Transitions" : "بداية الأجزاء",
-                desc: isEn ? "Alert when moving to a new Juz" : "تنبيه عند الانتقال لجزء جديد",
-              },
-              {
-                id: "sajda",
-                label: isEn ? "Sajdah Verses" : "مواضع السجدات",
-                desc: isEn ? "Alert when reaching a prostration verse" : "تنبيه عند الوصول لآية بها سجدة تلاوة",
-              },
-              {
-                id: "themes",
-                label: isEn ? "Theme Changes" : "تغيير الثيمات",
-                desc: isEn ? "Alert when applying a new theme" : "تنبيه عند تطبيق لون أو ثيم جديد",
-              },
-              {
-                id: "downloads",
-                label: isEn ? "Downloads" : "التحميلات",
-                desc: isEn ? "Alerts for download status" : "تنبيهات حالة تحميل السور أو التفاسير",
-              },
-              {
-                id: "bookmarks",
-                label: isEn ? "Bookmarks" : "الإشارات المرجعية",
-                desc: isEn ? "Alert when saving or deleting a bookmark" : "تنبيه عند حفظ أو حذف إشارة مرجعية",
-              },
-              {
-                id: "general",
-                label: isEn ? "General Alerts" : "تنبيهات عامة",
-                desc: isEn ? "Alerts for memorization, tests, and operations" : "تنبيهات الحفظ، الاختبارات، والعمليات الأخرى",
-              },
-            ].map((item) => {
-              const settingKey = item.id as keyof AppNotificationSettings;
-              return (
-              <div
-                key={item.id}
-                onClick={() => toggleAppSetting(settingKey)}
-                className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-opacity cursor-pointer border-0 ${appSettings[settingKey] ? "" : "opacity-75"}`}
-                style={{
-                  backgroundColor: appSettings[settingKey]
-                    ? `${currentTheme.accent}15`
-                    : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
-                  color: currentTheme.text,
-                  border: "none",
-                }}
-              >
-                <div className={`flex flex-col gap-0.5 flex-1 min-w-0 ${isRTL ? "text-right" : "text-left"}`}>
-                  <span className="floating-menu-subview-item-title font-bold text-[11px]">{item.label}</span>
-                  <span className="floating-menu-subview-item-meta text-[9px] opacity-60 font-bold">{item.desc}</span>
-                </div>
-                <div
-                  className={`floating-menu-subview-check w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 quran-raised-card`}
-                  style={{
-                    backgroundColor: appSettings[settingKey]
-                      ? currentTheme.accent
-                      : `${currentTheme.text}20`,
-                    color: appSettings[settingKey] ? "#ffffff" : currentTheme.text,
-                    border: "none",
-                  }}
-                >
-                  {appSettings[settingKey] && <Check className="w-2.5 h-2.5" />}
-                </div>
-              </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h4 className={`floating-menu-subview-section-title font-extrabold text-[10px] opacity-80 px-1 ${isRTL ? "text-right" : "text-left"}`}>
-                {isEn ? "Night Times" : "أوقات الليل"}
-              </h4>
-              {[
-                {
-                  id: "firstThird",
-                  label: isEn ? "First Third" : "أول الليل",
-                  desc: isEn ? "Alert when first third of night begins" : "تنبيه بدخول وقت أول الليل",
-                },
-                {
-                  id: "midnight",
-                  label: isEn ? "Midnight" : "منتصف الليل",
-                  desc: isEn ? "Alert when Islamic midnight begins" : "تنبيه بدخول منتصف الليل الشرعي",
-                },
-                {
-                  id: "lastThird",
-                  label: isEn ? "Last Third" : "الثلث الأخير",
-                  desc: isEn ? "Alert when last third of night begins" : "تنبيه بدخول الثلث الأخير من الليل",
-                },
-              ].map((item) => {
-                const isEnabled =
-                  config.nightNotifications?.[
-                    item.id as keyof typeof config.nightNotifications
-                  ] ?? true;
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() =>
-                      toggleNightNotification(
-                        item.id as "firstThird" | "midnight" | "lastThird",
-                      )
-                    }
-                    className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-opacity cursor-pointer border-0 ${isEnabled ? "" : "opacity-75"}`}
-                    style={{
-                      backgroundColor: isEnabled
-                        ? `${currentTheme.accent}15`
-                        : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
-                      color: currentTheme.text,
-                      border: "none",
-                    }}
-                  >
-                    <div className={`flex flex-col gap-0.5 flex-1 min-w-0 ${isRTL ? "text-right" : "text-left"}`}>
-                      <span className="floating-menu-subview-item-title font-bold text-[11px]">
-                        {item.label}
-                      </span>
-                      <span className="floating-menu-subview-item-meta text-[9px] opacity-60 font-bold">{item.desc}</span>
-                    </div>
-                    <div
-                      className={`floating-menu-subview-check w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 quran-raised-card`}
-                      style={{
-                        backgroundColor: isEnabled
-                          ? currentTheme.accent
-                          : `${currentTheme.text}20`,
-                        color: isEnabled ? "#ffffff" : currentTheme.text,
-                        border: "none",
-                      }}
-                    >
-                      {isEnabled && <Check className="w-2.5 h-2.5" />}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div
-              className="space-y-2 pt-2"
-            >
-              <h4 className={`floating-menu-subview-section-title font-extrabold text-[10px] opacity-80 px-1 ${isRTL ? "text-right" : "text-left"}`}>
-                {isEn ? "Adhkar & Tasbeeh" : "الأذكار والتسبيح"}
-              </h4>
-              {[
-                {
-                  id: "sabah",
-                  label: isEn ? "Morning Adhkar" : "أذكار الصباح",
-                  desc: isEn ? "Daily at 7:00 AM" : "تنبيه يومي الساعة 7:00 صباحاً",
-                },
-                {
-                  id: "masaa",
-                  label: isEn ? "Evening Adhkar" : "أذكار المساء",
-                  desc: isEn ? "Daily at 4:30 PM" : "تنبيه يومي الساعة 4:30 عصراً",
-                },
-                {
-                  id: "dua",
-                  label: isEn ? "Dua Time" : "وقت الدعاء",
-                  desc: isEn ? "Daily at 2:00 PM" : "تنبيه يومي الساعة 2:00 ظهراً",
-                },
-                {
-                  id: "tasbeehMorning",
-                  label: isEn ? "Morning Tasbeeh" : "التسبيح (صباحاً)",
-                  desc: isEn ? "Daily at 10:30 AM" : "تنبيه يومي الساعة 10:30 صباحاً",
-                },
-                {
-                  id: "tasbeehEvening",
-                  label: isEn ? "Evening Tasbeeh" : "التسبيح (مساءً)",
-                  desc: isEn ? "Daily at 8:00 PM" : "تنبيه يومي الساعة 8:00 مساءً",
-                },
-                {
-                  id: "kahf",
-                  label: isEn ? "Surah Al-Kahf" : "سورة الكهف",
-                  desc: isEn ? "Weekly on Friday at 9:00 AM" : "تنبيه أسبوعي يوم الجمعة الساعة 9:00 صباحاً",
-                },
-              ].map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => togglePhoneSetting(item.id)}
-                  className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl quran-raised-card transition-opacity cursor-pointer border-0 ${phoneSettings[item.id as keyof typeof phoneSettings] ? "" : "opacity-75"}`}
-                  style={{
-                    backgroundColor: phoneSettings[
-                      item.id as keyof typeof phoneSettings
-                    ]
-                      ? `${currentTheme.accent}15`
-                      : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
-                    color: currentTheme.text,
-                    border: "none",
-                  }}
-                >
-                  <div className={`flex flex-col gap-0.5 flex-1 min-w-0 ${isRTL ? "text-right" : "text-left"}`}>
-                    <span className="floating-menu-subview-item-title font-bold text-[11px]">{item.label}</span>
-                    <span className="floating-menu-subview-item-meta text-[9px] opacity-60">{item.desc}</span>
-                  </div>
-                  <div
-                    className={`floating-menu-subview-check w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 app-3d-checkbox ${
-                      phoneSettings[item.id as keyof typeof phoneSettings] ? "app-3d-checkbox-checked" : ""
-                    }`}
-                    style={{
-                      backgroundColor: phoneSettings[
-                        item.id as keyof typeof phoneSettings
-                      ]
-                        ? currentTheme.accent
-                        : `${currentTheme.text}20`,
-                      color: phoneSettings[
-                        item.id as keyof typeof phoneSettings
-                      ]
-                        ? "#ffffff"
-                        : currentTheme.text,
-                    }}
-                  >
-                    {phoneSettings[item.id as keyof typeof phoneSettings] && (
-                      <Check className="w-2.5 h-2.5 quran-3d-icon" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div
-              className="space-y-2 pt-2"
-              style={{ borderTop: `1px solid ${currentTheme.text}10` }}
-            >
-              <div className="flex items-center justify-between mb-1 px-1">
-                <h4 className="floating-menu-subview-section-title font-bold text-[10px] opacity-80 flex items-center gap-1">
-                  <VolumeX size={14} className="shrink-0" />
-                  {isEn ? "Mute Prayer Audio Alerts" : "إيقاف التنبيهات الصوتية"}
-                </h4>
-                {isAudioMuted && (
-                  <button
-                    onClick={unmuteAudio}
-                    className="floating-menu-subview-chip text-[9px] quran-raised-btn border-0 bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300 px-2 py-0.5 rounded-lg font-bold cursor-pointer"
-                  >
-                    {isEn ? "Enable" : "تفعيل"}
-                  </button>
-                )}
-              </div>
-              {isAudioMuted && config.audioMutedUntil && (
-                <p className="floating-menu-subview-chip text-[9px] text-red-500 px-1">
-                  {isEn ? "Muted until: " : "متوقفة حتى: "}
-                  {new Date(config.audioMutedUntil).toLocaleDateString(isEn ? "en-US" : "ar-SA")}
-                </p>
-              )}
-              <div className="grid grid-cols-3 gap-1.5">
-                {[
-                  { label: isEn ? "Today" : "اليوم", days: 1 },
-                  { label: isEn ? "2 Days" : "يومين", days: 2 },
-                  { label: isEn ? "3 Days" : "3 أيام", days: 3 },
-                  { label: isEn ? "1 Week" : "أسبوع", days: 7 },
-                  { label: isEn ? "1 Month" : "شهر", days: 30 },
-                ].map((opt) => (
-                  <button
-                    key={opt.days}
-                    onClick={() => muteAudioForDuration(opt.days)}
-                    className="floating-menu-subview-chip py-1.5 px-1 text-[9px] font-bold rounded-xl quran-raised-btn border-0 transition-all"
-                    style={{
-                      color: currentTheme.text,
-                      backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
-                      border: "none",
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
   );
 };
 

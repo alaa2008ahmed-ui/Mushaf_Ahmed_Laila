@@ -146,7 +146,42 @@ export const preloadAdjacentMadinahFonts = (centerPage: number): void => {
     }
 };
 
-export const preloadMadinahPagesIdle = (pages: number[], batchSize = 4): void => {
+export const preloadMadinahPagesForInput = (inputDigits: string): void => {
+    if (!inputDigits) return;
+    const exact = parseInt(inputDigits, 10);
+    if (!Number.isFinite(exact) || exact < 1) return;
+
+    const toPreload = new Set<number>();
+    if (exact <= TOTAL_PAGES) {
+        toPreload.add(exact);
+        if (exact > 1) toPreload.add(exact - 1);
+        if (exact < TOTAL_PAGES) toPreload.add(exact + 1);
+    }
+
+    // Speculatively warm likely next-digit targets (e.g. typing "6" -> 60..69, "60" -> 600..604)
+    if (inputDigits.length <= 2) {
+        const tensBase = exact * 10;
+        for (let d = 0; d <= 9; d++) {
+            const candidate = tensBase + d;
+            if (candidate >= 1 && candidate <= TOTAL_PAGES) {
+                toPreload.add(candidate);
+            }
+        }
+        if (inputDigits.length === 1 && exact <= 6) {
+            const hundredsBase = exact * 100;
+            if (hundredsBase <= TOTAL_PAGES) toPreload.add(hundredsBase);
+            if (hundredsBase + 4 <= TOTAL_PAGES) toPreload.add(hundredsBase + 4);
+        }
+    }
+
+    toPreload.forEach((p) => {
+        if (!loadedFonts.has(p)) {
+            void loadMadinahPageFont(p);
+        }
+    });
+};
+
+export const preloadMadinahPagesIdle = (pages: number[], batchSize = 6): void => {
     if (typeof window === 'undefined') return;
     const queue: number[] = [];
     const seen = new Set<number>();
@@ -274,7 +309,7 @@ export const loadQpcMadinahData = (): Promise<QpcMadinahStore> => {
 };
 
 export const preloadQpcAndMadinahStartup = (priorityPages: number[] = []): void => {
-    const immediatePages = [1, 2, ...priorityPages];
+    const immediatePages = [1, 2, 604, ...priorityPages];
     for (let i = 0; i < immediatePages.length; i++) {
         const p = immediatePages[i];
         if (p >= 1 && p <= TOTAL_PAGES) {
@@ -288,8 +323,9 @@ export const preloadQpcAndMadinahStartup = (priorityPages: number[] = []): void 
 
     dataPromise
         .then((store) => {
-            // Warm up all 30 Juz start pages and 114 Surah start pages cleanly in idle batches
-            preloadMadinahPagesIdle([...JUZ_START_PAGES, ...store.surahStartPages], 4);
+            const allPages = Array.from({ length: TOTAL_PAGES }, (_, i) => i + 1);
+            // Warm up all 30 Juz start pages, 114 Surah start pages, and remaining pages in idle batches
+            preloadMadinahPagesIdle([...JUZ_START_PAGES, ...store.surahStartPages, ...allPages], 6);
         })
         .catch(() => {
             idlePreloadStarted = false;

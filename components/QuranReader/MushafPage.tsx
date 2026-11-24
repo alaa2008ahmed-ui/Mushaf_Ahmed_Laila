@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
-import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, SURAH_NAMES_AR, getEffectiveWordHighlightColor } from './constants';
+import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, SURAH_NAMES_AR, getEffectiveWordHighlightColor, isDarkQuranTheme } from './constants';
 import SurahHeader from './SurahHeader';
+import { getSurahHeaderDesignForFrame } from './madinahFrameDesigns';
 
 interface MushafPageProps {
     pageNum: number;
@@ -19,6 +20,7 @@ interface MushafPageProps {
         textColor: string;
         theme: string;
         surahHeaderDesign?: number;
+        madinahFrameDesign?: number;
         isBold?: boolean;
         highlightTextColor?: string;
         wordHighlightEnabled?: boolean;
@@ -122,12 +124,41 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
     
     let currentSurah = -1;
     
+    const isDark = isDarkQuranTheme(currentTheme);
+    const isHexLight = (color?: string): boolean => {
+        if (!color || typeof color !== 'string') return false;
+        const c = color.trim().toLowerCase();
+        if (c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return false;
+        const hex = c.startsWith('#') ? c.slice(1) : '';
+        if (!hex) return false;
+        let r = 0, g = 0, b = 0;
+        if (hex.length === 3) {
+            r = parseInt(hex[0] + hex[0], 16);
+            g = parseInt(hex[1] + hex[1], 16);
+            b = parseInt(hex[2] + hex[2], 16);
+        } else if (hex.length === 6) {
+            r = parseInt(hex.slice(0, 2), 16);
+            g = parseInt(hex.slice(2, 4), 16);
+            b = parseInt(hex.slice(4, 6), 16);
+        } else {
+            return false;
+        }
+        if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.45;
+    };
+    const resolvedPageBg = isDark
+        ? ((settings as any)?.bgColor && !isHexLight((settings as any).bgColor) ? (settings as any).bgColor : (currentTheme?.bg || '#000000'))
+        : 'var(--qr-bg, #ffffff)';
+    const resolvedTextColor = isDark
+        ? (settings?.textColor && isHexLight(settings.textColor) ? settings.textColor : (currentTheme?.text || '#ffffff'))
+        : 'var(--qr-text)';
+
     const pageStyle = {
         fontSize: settings ? `${settings.fontSize}rem` : '1.6rem',
         fontWeight: settings?.isBold ? '900' : 'normal',
         WebkitTextStroke: settings?.isBold ? '0.5px currentColor' : '0px',
         fontFamily: 'var(--qr-fontFamily)',
-        color: 'var(--qr-text)',
+        color: resolvedTextColor,
         letterSpacing: 0,
         fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
         textRendering: 'optimizeLegibility' as const
@@ -138,7 +169,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
         fontFamily: settings?.fontFamily || 'var(--font-amiri-quran)',
         fontWeight: settings?.isBold ? '900' : 'normal',
         WebkitTextStroke: settings?.isBold ? '0.5px currentColor' : '0px',
-        color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#6d28d9')
+        color: isDark ? '#ffffff' : (currentTheme?.accent || '#6d28d9')
     };
 
     const borderColor = currentTheme?.palette?.[0] || currentTheme?.accent || '#d97706';
@@ -168,7 +199,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
 
     return (
         <div id={`page-${pageNum}`} className={`mushaf-page ${pageNum === 1 ? 'first-page' : ''}`} data-page={pageNum} ref={pageRef} style={{ 
-            backgroundColor: 'var(--qr-bg, #ffffff)',
+            backgroundColor: resolvedPageBg,
             boxSizing: 'border-box'
         }}>
             <div className="page-content" style={pageStyle}>
@@ -249,7 +280,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                                         surahType={SURAH_INFO[ayah.sNum]?.type || 'مكية'}
                                         ayahCount={SURAH_INFO[ayah.sNum]?.ayahs || 7}
                                         currentTheme={currentTheme}
-                                        design={settings?.surahHeaderDesign || 1}
+                                        design={getSurahHeaderDesignForFrame(settings?.madinahFrameDesign)}
                                         onLongPress={onSurahHeaderLongPress}
                                     />
                                     {ayah.sNum !== 1 && ayah.sNum !== 9 && (
@@ -260,7 +291,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                             <span 
                                 id={id} 
                                 className={`ayah-text-block ${highlightedAyahId === id ? 'highlighted' : ''} ${isSajdah ? 'ayah-sajdah' : ''} ${shouldHide ? 'hide-text' : ''}`} 
-                                style={highlightedAyahId === id && currentTheme?.id === 'deep_black' ? { color: 'var(--qr-highlight-text, #f59e0b)', textShadow: '0 0 1px rgba(245, 158, 11, 0.45)' } : undefined}
+                                style={highlightedAyahId === id && isDark ? { color: 'var(--qr-highlight-text, #f59e0b)', textShadow: '0 0 1px rgba(245, 158, 11, 0.45)' } : undefined}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!isLongPressTriggered.current) {

@@ -57,6 +57,34 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
     const [expandedSurahs, setExpandedSurahs] = useState<Record<number, boolean>>({});
     const searchJobIdRef = useRef(0);
     const searchTimeoutRef = useRef<any>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const searchBoxRef = useRef<HTMLFormElement>(null);
+    const isKeyboardOpenRef = useRef(false);
+
+    const dismissKeyboard = useCallback((force = false) => {
+        const inputEl = searchInputRef.current;
+        const activeEl = document.activeElement;
+        const hasFocusedInput = Boolean(
+            (inputEl && activeEl === inputEl) ||
+            (activeEl instanceof HTMLElement && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA'))
+        );
+
+        if (inputEl && activeEl === inputEl) {
+            inputEl.blur();
+        } else if (activeEl instanceof HTMLElement && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+            activeEl.blur();
+        }
+
+        if (Capacitor.isNativePlatform() && (force || hasFocusedInput || isKeyboardOpenRef.current)) {
+            isKeyboardOpenRef.current = false;
+            Keyboard.hide().catch(() => {});
+        }
+    }, []);
+
+    const handleCloseModal = useCallback(() => {
+        dismissKeyboard(true);
+        onClose();
+    }, [dismissKeyboard, onClose]);
 
     const stripTajweedTags = (text: string) => {
         return text;
@@ -296,7 +324,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
             }
             style={isLandscape ? undefined : { top: 0, left: 0, right: 0, height: `${initialHeight}px`, backgroundColor: 'rgba(0,0,0,0.5)' }}
             dir={isRTL ? "rtl" : "ltr"}
-            onClick={onClose}
+            onClick={handleCloseModal}
         >
             <div
                 className={isLandscape
@@ -305,6 +333,17 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                 }
                 style={{ backgroundColor: currentTheme?.bg || '#ffffff', fontFamily: "'Cairo', sans-serif", border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}
+                onPointerDownCapture={(e) => {
+                    const target = e.target as HTMLElement | null;
+                    if (target && searchBoxRef.current?.contains(target)) return;
+                    if (target?.closest('button, a, [role="button"], .cursor-pointer')) return;
+                    dismissKeyboard();
+                }}
+                onClickCapture={(e) => {
+                    const target = e.target as HTMLElement | null;
+                    if (target && searchBoxRef.current?.contains(target)) return;
+                    dismissKeyboard();
+                }}
             >
                 <div className="flex-1 min-h-0 w-full flex flex-col overflow-hidden" style={{ color: currentTheme?.text || '#000000' }}>
                     
@@ -343,11 +382,34 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
 
                     {/* Search Input Section */}
                     <div className={`${isLandscape ? 'px-3 py-1.5' : 'px-4 py-3'} shrink-0 z-10`} style={{ backgroundColor: currentTheme?.bg || '#ffffff' }}>
-                        <div className="relative">
+                        <form
+                            ref={searchBoxRef}
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                performSearch(query);
+                                dismissKeyboard(true);
+                            }}
+                            className="relative"
+                        >
                             <input 
+                                ref={searchInputRef}
                                 type="text" 
+                                enterKeyHint="search"
                                 value={query}
                                 onChange={(e) => handleSearchInput(e.target.value)}
+                                onFocus={() => {
+                                    isKeyboardOpenRef.current = true;
+                                }}
+                                onBlur={() => {
+                                    isKeyboardOpenRef.current = false;
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.keyCode === 13) {
+                                        e.preventDefault();
+                                        performSearch(query);
+                                        dismissKeyboard(true);
+                                    }
+                                }}
                                 placeholder={isEn ? "Search for an ayah, word, or in Hisn Al-Muslim..." : "ابحث عن آية، أو كلمة، أو في حصن المسلم..."} 
                                 className={`w-full ${isLandscape ? 'py-2 px-10 text-xs rounded-xl' : `p-3.5 ${isRTL ? "pl-12 pr-12" : "pr-12 pl-12"} rounded-2xl`} quran-raised-card font-bold border-none outline-none transition-all`}
                                 style={{ 
@@ -359,7 +421,11 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                             />
                             {query && (
                                 <button 
-                                    onClick={() => handleSearchInput('')}
+                                    type="button"
+                                    onClick={() => {
+                                        handleSearchInput('');
+                                        setTimeout(() => searchInputRef.current?.focus(), 10);
+                                    }}
                                     className={`absolute ${isRTL ? "right-2.5" : "left-2.5"} top-1/2 transform -translate-y-1/2 ${isLandscape ? 'w-6 h-6' : 'w-7 h-7'} rounded-lg quran-raised-btn flex items-center justify-center transition-all`}
                                     style={{ 
                                         backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
@@ -371,13 +437,13 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                 </button>
                             )}
                             <button 
-                                onClick={() => performSearch(query)} 
+                                type="submit"
                                 className={`absolute ${isRTL ? "left-2" : "right-2"} top-1/2 transform -translate-y-1/2 ${isLandscape ? 'p-1.5 rounded-lg' : 'p-2 rounded-xl'} quran-raised-btn-selected flex items-center justify-center transition`}
                                 style={{ backgroundColor: currentTheme?.accent || '#10b981', color: '#ffffff' }}
                             >
                                 <svg className={`${isLandscape ? 'w-3.5 h-3.5' : 'w-4 h-4'} quran-3d-icon`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             </button>
-                        </div>
+                        </form>
                         {searchStats && (
                             <div className={`${isLandscape ? 'text-[10px] mt-1' : 'text-xs mt-2'} text-center font-bold opacity-60`} style={{ color: currentTheme?.text }}>{searchStats}</div>
                         )}

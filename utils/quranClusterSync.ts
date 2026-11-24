@@ -1,4 +1,4 @@
-import { ReadingMode, THEMES, DEFAULT_SETTINGS, getToolbarColorsForTheme } from '../components/QuranReader/constants';
+import { ReadingMode, THEMES, DEFAULT_SETTINGS, getToolbarColorsForTheme, isNightModeForLayout, isDarkQuranTheme } from '../components/QuranReader/constants';
 
 export type ReadingCluster = 'unified' | 'ar' | 'en';
 
@@ -19,23 +19,92 @@ export const isModeInCluster = (_cluster: ReadingCluster | string, mode: Reading
     return ALL_READING_MODES.includes(mode as ReadingMode);
 };
 
+const isHexLightColor = (color?: string): boolean => {
+    if (!color || typeof color !== 'string') return false;
+    const c = color.trim().toLowerCase();
+    if (c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return false;
+    const hex = c.startsWith('#') ? c.slice(1) : '';
+    if (!hex) return false;
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+    } else if (hex.length === 6) {
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+    } else {
+        return false;
+    }
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.45;
+};
+
+const readRawMadinahBaseSettings = (isLandscape: boolean = false): any => {
+    const orient = isLandscape ? 'h' : 'v';
+    const altOrient = isLandscape ? 'v' : 'h';
+    const keysToCheck = [
+        'quran_settings_madinah',
+        `quran_settings_madinah_${orient}`,
+        `quran_settings_modern_madinah_${orient}`,
+        `quran_settings_madinah_${altOrient}`,
+        `quran_settings_modern_madinah_${altOrient}`,
+    ];
+    for (const key of keysToCheck) {
+        const saved = localStorage.getItem(key);
+        if (saved) {
+            return JSON.parse(saved);
+        }
+    }
+    return null;
+};
+
 export const getMadinahSettings = (isLandscape: boolean = false): any => {
     try {
-        const orient = isLandscape ? 'h' : 'v';
-        const altOrient = isLandscape ? 'v' : 'h';
-        const keysToCheck = [
-            'quran_settings_madinah',
-            `quran_settings_madinah_${orient}`,
-            `quran_settings_modern_madinah_${orient}`,
-            `quran_settings_madinah_${altOrient}`,
-            `quran_settings_modern_madinah_${altOrient}`,
-        ];
-        for (const key of keysToCheck) {
-            const saved = localStorage.getItem(key);
-            if (saved) {
-                return JSON.parse(saved);
-            }
+        const baseParsed = readRawMadinahBaseSettings(isLandscape);
+        const isNight = isNightModeForLayout('modern');
+
+        if (!isNight) {
+            return baseParsed;
         }
+
+        const nightRaw = localStorage.getItem('quran_settings_madinah_night');
+        const nightParsed = nightRaw ? JSON.parse(nightRaw) : null;
+        const hasCustomNightColors = localStorage.getItem('quran_settings_madinah_night_colors_custom') === 'true';
+        const nightThemeId =
+            localStorage.getItem('current_theme_id_modern_madinah_night') ||
+            localStorage.getItem('current_theme_id_madinah_night') ||
+            'deep_black';
+        const nightTheme = (THEMES as any)[nightThemeId] || THEMES.deep_black;
+        const mergedBase = baseParsed ? { ...baseParsed } : { ...DEFAULT_SETTINGS };
+
+        if (
+            hasCustomNightColors &&
+            nightParsed &&
+            !isHexLightColor(nightParsed.bgColor) &&
+            isHexLightColor(nightParsed.textColor)
+        ) {
+            return {
+                ...mergedBase,
+                bgColor: nightParsed.bgColor || nightTheme.bg || '#000000',
+                textColor: nightParsed.textColor || nightTheme.text || '#ffffff',
+                highlightTextColor: mergedBase.lockHighlightColor
+                    ? (nightParsed.highlightTextColor || mergedBase.highlightTextColor)
+                    : (nightParsed.highlightTextColor || nightTheme.highlightText || nightTheme.accent),
+                theme: nightParsed.theme || nightTheme.id || 'deep_black',
+            };
+        }
+
+        return {
+            ...mergedBase,
+            bgColor: nightTheme.bg || '#000000',
+            textColor: nightTheme.text || '#ffffff',
+            highlightTextColor: mergedBase.lockHighlightColor
+                ? (mergedBase.highlightTextColor || nightTheme.highlightText || nightTheme.accent)
+                : (nightTheme.highlightText || nightTheme.accent),
+            theme: nightTheme.id || 'deep_black',
+        };
     } catch (e) {
         console.warn('Failed to get Madinah settings', e);
     }
@@ -48,9 +117,51 @@ export const saveMadinahSettings = (
 ) => {
     try {
         if (!newSettings || typeof newSettings !== 'object') return;
-        const existing = getMadinahSettings(false) || {};
-        const mergedSettings = { ...DEFAULT_SETTINGS, ...existing, ...newSettings };
-        const serialized = JSON.stringify(mergedSettings);
+        const isNight = isNightModeForLayout('modern');
+        const existingDay = readRawMadinahBaseSettings(false) || {};
+
+        let serialized: string;
+        if (isNight) {
+            const nightPayload = {
+                bgColor: newSettings.bgColor || '#000000',
+                textColor: newSettings.textColor || '#ffffff',
+                highlightTextColor: newSettings.highlightTextColor || THEMES.deep_black.highlightText,
+                theme: newSettings.theme || 'deep_black',
+            };
+            localStorage.setItem('quran_settings_madinah_night', JSON.stringify(nightPayload));
+            if (options?.markCustomColors) {
+                localStorage.setItem('quran_settings_madinah_night_colors_custom', 'true');
+            }
+
+            const existingDayTheme =
+                existingDay.theme && !isDarkQuranTheme(existingDay.theme)
+                    ? existingDay.theme
+                    : 'gold';
+            const dayFallbackTheme = (THEMES as any)[existingDayTheme] || THEMES.gold;
+            const mergedDaySettings = {
+                ...DEFAULT_SETTINGS,
+                ...existingDay,
+                ...newSettings,
+                bgColor:
+                    existingDay.bgColor && isHexLightColor(existingDay.bgColor)
+                        ? existingDay.bgColor
+                        : dayFallbackTheme.bg,
+                textColor:
+                    existingDay.textColor && !isHexLightColor(existingDay.textColor)
+                        ? existingDay.textColor
+                        : dayFallbackTheme.text,
+                highlightTextColor:
+                    existingDay.highlightTextColor || dayFallbackTheme.highlightText || dayFallbackTheme.accent,
+                theme: existingDayTheme,
+            };
+            serialized = JSON.stringify(mergedDaySettings);
+        } else {
+            const mergedSettings = { ...DEFAULT_SETTINGS, ...existingDay, ...newSettings };
+            serialized = JSON.stringify(mergedSettings);
+            if (options?.markCustomColors) {
+                localStorage.setItem('quran_settings_madinah_colors_custom', 'true');
+            }
+        }
 
         localStorage.setItem('quran_settings_madinah', serialized);
         localStorage.setItem('quran_settings_madinah_v', serialized);
@@ -60,10 +171,6 @@ export const saveMadinahSettings = (
         localStorage.setItem('quran_layout_modern_madinah_settings_v', serialized);
         localStorage.setItem('quran_layout_modern_madinah_settings_h', serialized);
         localStorage.setItem('quran_layout_modern_madinah_settings', serialized);
-
-        if (options?.markCustomColors) {
-            localStorage.setItem('quran_settings_madinah_colors_custom', 'true');
-        }
 
         window.dispatchEvent(new Event('settings-change'));
     } catch (e) {
@@ -180,7 +287,8 @@ export const getClusterPosition = (
 export const syncClusterSettings = (
     _cluster: ReadingCluster | string,
     newSettings: any,
-    _isLandscape: boolean = false
+    _isLandscape: boolean = false,
+    options?: { markCustomColors?: boolean }
 ) => {
     try {
         if (!newSettings || typeof newSettings !== 'object') return;
@@ -190,7 +298,45 @@ export const syncClusterSettings = (
                                   localStorage.getItem('quran_settings_ar_cluster') || 
                                   localStorage.getItem('quran_settings');
         const currentUnified = currentUnifiedStr ? JSON.parse(currentUnifiedStr) : {};
-        const mergedSettings = { ...DEFAULT_SETTINGS, ...currentUnified, ...newSettings };
+        const isNight = isNightModeForLayout('modern');
+
+        let mergedSettings: any;
+        if (isNight) {
+            const nightPayload = {
+                bgColor: newSettings.bgColor || '#000000',
+                textColor: newSettings.textColor || '#ffffff',
+                highlightTextColor: newSettings.highlightTextColor || THEMES.deep_black.highlightText,
+                theme: newSettings.theme || 'deep_black',
+            };
+            localStorage.setItem('quran_settings_unified_night', JSON.stringify(nightPayload));
+            if (options?.markCustomColors) {
+                localStorage.setItem('quran_settings_unified_night_colors_custom', 'true');
+            }
+
+            const existingDayTheme =
+                currentUnified.theme && !isDarkQuranTheme(currentUnified.theme)
+                    ? currentUnified.theme
+                    : 'gold';
+            const dayFallbackTheme = (THEMES as any)[existingDayTheme] || THEMES.gold;
+            mergedSettings = {
+                ...DEFAULT_SETTINGS,
+                ...currentUnified,
+                ...newSettings,
+                bgColor:
+                    currentUnified.bgColor && isHexLightColor(currentUnified.bgColor)
+                        ? currentUnified.bgColor
+                        : dayFallbackTheme.bg,
+                textColor:
+                    currentUnified.textColor && !isHexLightColor(currentUnified.textColor)
+                        ? currentUnified.textColor
+                        : dayFallbackTheme.text,
+                highlightTextColor:
+                    currentUnified.highlightTextColor || dayFallbackTheme.highlightText || dayFallbackTheme.accent,
+                theme: existingDayTheme,
+            };
+        } else {
+            mergedSettings = { ...DEFAULT_SETTINGS, ...currentUnified, ...newSettings };
+        }
         const serialized = JSON.stringify(mergedSettings);
         
         // Save unified master settings
@@ -303,16 +449,57 @@ export const getClusterSettings = (
         const saved = localStorage.getItem('quran_settings_unified') || 
                       localStorage.getItem('quran_settings_ar_cluster') || 
                       localStorage.getItem('quran_settings_en_cluster');
-        if (saved) {
-            return JSON.parse(saved);
+        let baseParsed: any = saved ? JSON.parse(saved) : null;
+
+        if (!baseParsed) {
+            const orient = isLandscape ? 'h' : 'v';
+            const modeSuffix = currentMode === 'mushaf' ? `_${orient}` : `_${currentMode}_${orient}`;
+            const modeSaved = localStorage.getItem(`quran_settings${modeSuffix}`);
+            if (modeSaved) {
+                baseParsed = JSON.parse(modeSaved);
+            }
         }
 
-        const orient = isLandscape ? 'h' : 'v';
-        const modeSuffix = currentMode === 'mushaf' ? `_${orient}` : `_${currentMode}_${orient}`;
-        const modeSaved = localStorage.getItem(`quran_settings${modeSuffix}`);
-        if (modeSaved) {
-            return JSON.parse(modeSaved);
+        if (!isNightModeForLayout('modern')) {
+            return baseParsed;
         }
+
+        const nightRaw = localStorage.getItem('quran_settings_unified_night');
+        const nightParsed = nightRaw ? JSON.parse(nightRaw) : null;
+        const hasCustomNightColors = localStorage.getItem('quran_settings_unified_night_colors_custom') === 'true';
+        const nightThemeId =
+            localStorage.getItem('current_theme_id_modern_unified_night') ||
+            localStorage.getItem('current_theme_id_modern_mushaf_night') ||
+            'deep_black';
+        const nightTheme = (THEMES as any)[nightThemeId] || THEMES.deep_black;
+        const mergedBase = baseParsed ? { ...baseParsed } : { ...DEFAULT_SETTINGS };
+
+        if (
+            hasCustomNightColors &&
+            nightParsed &&
+            !isHexLightColor(nightParsed.bgColor) &&
+            isHexLightColor(nightParsed.textColor)
+        ) {
+            return {
+                ...mergedBase,
+                bgColor: nightParsed.bgColor || nightTheme.bg || '#000000',
+                textColor: nightParsed.textColor || nightTheme.text || '#ffffff',
+                highlightTextColor: mergedBase.lockHighlightColor
+                    ? (nightParsed.highlightTextColor || mergedBase.highlightTextColor)
+                    : (nightParsed.highlightTextColor || nightTheme.highlightText || nightTheme.accent),
+                theme: nightParsed.theme || nightTheme.id || 'deep_black',
+            };
+        }
+
+        return {
+            ...mergedBase,
+            bgColor: nightTheme.bg || '#000000',
+            textColor: nightTheme.text || '#ffffff',
+            highlightTextColor: mergedBase.lockHighlightColor
+                ? (mergedBase.highlightTextColor || nightTheme.highlightText || nightTheme.accent)
+                : (nightTheme.highlightText || nightTheme.accent),
+            theme: nightTheme.id || 'deep_black',
+        };
     } catch (e) {
         console.warn('Failed to get cluster settings', e);
     }

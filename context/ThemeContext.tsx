@@ -322,6 +322,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             document.body.classList.remove('hide-top-bars');
         }
 
+        let quranBg = '#ffffff';
         if (videoBg) videoBg.style.display = 'none';
         if (pageKey === 'quran') {
             document.body.style.backgroundImage = 'none';
@@ -330,7 +331,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             const quranThemeId = getQuranThemeForLayout('modern', modeSuffix);
             const quranThemeObj = QURAN_THEMES[quranThemeId as keyof typeof QURAN_THEMES];
             const isDarkQuran = quranThemeId === 'deep_black';
-            const quranBg = (quranThemeObj && quranThemeObj.bg) ? quranThemeObj.bg : (isDarkQuran ? '#000000' : '#ffffff');
+            quranBg = (quranThemeObj && quranThemeObj.bg) ? quranThemeObj.bg : (isDarkQuran ? '#000000' : '#ffffff');
             document.body.style.setProperty('background-color', quranBg, 'important');
         } else {
             document.documentElement.classList.remove('quran-page-active');
@@ -377,9 +378,6 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         root.style.setProperty('--bottom-bar-bg', isBlackTheme ? '#000000' : (theme.barBg || (isDark ? '#1e293b' : '#ffffff')));
         const barBorderColor = isBlackTheme ? '#333333' : (theme.barBorder ? theme.barBorder.split(' ')[2] : (isDark ? '#334155' : '#e2e8f0'));
         root.style.setProperty('--bottom-bar-border', barBorderColor);
-        root.style.setProperty('--qr-bar-bg', isBlackTheme ? '#000000' : (theme.barBg || (isDark ? '#1e293b' : '#ffffff')));
-        root.style.setProperty('--qr-bar-border', barBorderColor);
-        root.style.setProperty('--qr-bar-text', isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor));
         
         const quranCardBg = theme.cardBg || (isDark ? '#1e293b' : '#ffffff');
         const quranCardBorder = theme.cardBorder || (isDark ? '#334155' : '#e2e8f0');
@@ -401,17 +399,24 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         root.style.setProperty('--badge-finished-bg', isDark ? 'rgba(74, 222, 128, 0.15)' : 'rgba(34, 197, 94, 0.1)');
         root.style.setProperty('--badge-finished-text', isDark ? '#4ade80' : '#16a34a');
 
-        // Set compatibility variables for components that use qr- prefix
-        root.style.setProperty('--qr-accent', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
-        root.style.setProperty('--qr-accent-text', isBlackTheme ? '#000000' : (theme.accentText || '#ffffff'));
-        root.style.setProperty('--qr-bg', theme.bgColor || '#0D1B2A');
-        root.style.setProperty('--qr-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
-        root.style.setProperty('--qr-card-bg', pageKey === 'quran' ? quranCardBg : (isBlackTheme ? '#111111' : defaultCardBg));
-        root.style.setProperty('--qr-card-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
-        root.style.setProperty('--qr-card-border', pageKey === 'quran' ? quranCardBorder : (isBlackTheme ? '#333333' : defaultCardBorder));
-        root.style.setProperty('--qr-modal-bg', isBlackTheme ? '#000000' : (theme.cardBg || (isDark ? '#1e293b' : '#ffffff')));
-        root.style.setProperty('--qr-modal-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
-        root.style.setProperty('--qr-modal-border', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
+        // Set compatibility variables for components outside QuranReader without clobbering QuranReader's active theme variables
+        if (pageKey !== 'quran') {
+            root.style.setProperty('--qr-bar-bg', isBlackTheme ? '#000000' : (theme.barBg || (isDark ? '#1e293b' : '#ffffff')));
+            root.style.setProperty('--qr-bar-border', barBorderColor);
+            root.style.setProperty('--qr-bar-text', isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor));
+            root.style.setProperty('--qr-accent', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
+            root.style.setProperty('--qr-accent-text', isBlackTheme ? '#000000' : (theme.accentText || '#ffffff'));
+            root.style.setProperty('--qr-bg', theme.bgColor || '#0D1B2A');
+            root.style.setProperty('--qr-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
+            root.style.setProperty('--qr-card-bg', isBlackTheme ? '#111111' : defaultCardBg);
+            root.style.setProperty('--qr-card-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
+            root.style.setProperty('--qr-card-border', isBlackTheme ? '#333333' : defaultCardBorder);
+            root.style.setProperty('--qr-modal-bg', isBlackTheme ? '#000000' : (theme.cardBg || (isDark ? '#1e293b' : '#ffffff')));
+            root.style.setProperty('--qr-modal-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
+            root.style.setProperty('--qr-modal-border', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
+        } else if (!root.style.getPropertyValue('--qr-bg')) {
+            root.style.setProperty('--qr-bg', quranBg);
+        }
 
         // Synchronize mobile StatusBar icons ONLY when theme changes (QuranReader syncs its own active Quran theme)
         const isQuranReaderScreen = currentPage === 'quran' || currentPage === 'quran-landscape';

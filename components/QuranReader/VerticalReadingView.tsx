@@ -3,6 +3,7 @@ import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { ChevronUp, ChevronDown, BookOpen, Share2, Copy, Check, ZoomIn } from 'lucide-react';
 import { toArabic, SURAH_INFO, SURAH_NAMES_AR, SURAH_NAMES_EN, SAJDAH_LOCATIONS, getBilingualEnglishFont, getEffectiveWordHighlightColor, isDarkQuranTheme } from './constants';
 import SurahHeader from './SurahHeader';
+import { getSurahHeaderDesignForFrame } from './madinahFrameDesigns';
 import { getClusterForLanguage, syncClusterSettings } from '../../utils/quranClusterSync';
 import { useLanguage } from '../../context/LanguageContext';
 import { shareAsImage } from '../../utils/shareAsImage';
@@ -710,7 +711,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                             surahType={item.surahType}
                             ayahCount={item.ayahCount}
                             currentTheme={currentTheme}
-                            design={settings.surahHeaderDesign || 1}
+                            design={getSurahHeaderDesignForFrame(settings?.madinahFrameDesign)}
                             onLongPress={onSurahHeaderLongPress}
                             isTranslationMode={readingMode === 'translation'}
                             isBilingualMode={readingMode === 'bilingual'}

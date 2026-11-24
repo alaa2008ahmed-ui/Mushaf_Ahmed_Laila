@@ -1288,8 +1288,29 @@ const MadinahPageContent: React.FC<MadinahPageContentProps> = React.memo(
 
         const isDark = isDarkQuranTheme(currentTheme);
         const madinahPalette = getMadinahThemePalette(currentTheme);
-        const textColor = settings?.textColor || currentTheme?.text || (isDark ? '#f8fafc' : '#000000');
-        const bismillahColor = isDark ? '#f8fafc' : madinahPalette.deep;
+        const isTextLight = (() => {
+            const c = settings?.textColor;
+            if (!c || typeof c !== 'string') return false;
+            const clean = c.trim().replace(/^#/, '');
+            let r = 0, g = 0, b = 0;
+            if (clean.length === 3) {
+                r = parseInt(clean[0] + clean[0], 16);
+                g = parseInt(clean[1] + clean[1], 16);
+                b = parseInt(clean[2] + clean[2], 16);
+            } else if (clean.length === 6) {
+                r = parseInt(clean.slice(0, 2), 16);
+                g = parseInt(clean.slice(2, 4), 16);
+                b = parseInt(clean.slice(4, 6), 16);
+            } else {
+                return false;
+            }
+            if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+            return (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.45;
+        })();
+        const textColor = isDark
+            ? (settings?.textColor && isTextLight ? settings.textColor : (currentTheme?.text || '#ffffff'))
+            : (settings?.textColor || currentTheme?.text || '#000000');
+        const bismillahColor = isDark ? '#ffffff' : madinahPalette.deep;
 
         const ayahHighlightColor =
             settings?.highlightTextColor ||
