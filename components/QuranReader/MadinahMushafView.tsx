@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import MadinahFrameSVG, { getMadinahThemePalette } from './MadinahFrameSVG';
 import MadinahPageContent from './MadinahPageContent';
+<<<<<<< HEAD
 import { isDarkQuranTheme, toArabic } from './constants';
+=======
+import { toArabic } from './constants';
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
 import { useLanguage } from '../../context/LanguageContext';
 
 interface MadinahMushafViewProps {

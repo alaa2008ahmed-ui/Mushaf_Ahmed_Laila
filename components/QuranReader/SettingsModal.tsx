@@ -168,6 +168,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             ['textColor', 'bgColor', 'highlightTextColor', 'theme'].includes(k)
         );
         if (isMadinahMode) {
+            const hasColorChange = Object.keys(updates).some((k) =>
+                ['textColor', 'bgColor', 'highlightTextColor', 'theme'].includes(k)
+            );
             saveMadinahSettings(newSettings, {
                 markCustomColors: hasColorChange,
             });
@@ -176,6 +179,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         syncClusterSettings(cluster, newSettings, isLandscape, {
             markCustomColors: hasColorChange,
         });
+    };
+
+    const updateSetting = (key: string, value: any) => {
+        updateSettings({ [key]: value });
     };
 
     const updateSetting = (key: string, value: any) => {

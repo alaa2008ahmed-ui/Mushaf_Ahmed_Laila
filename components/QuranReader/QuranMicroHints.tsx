@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Hand } from 'lucide-react';
+<<<<<<< HEAD
 import { isDarkQuranTheme } from './constants';
+=======
+import { getMadinahThemePalette } from './MadinahFrameSVG';
+import { resolveQuranModalPalette } from './modalThemeUtils';
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
 
 export type QuranMicroHintId =
     | 'verse_num'
@@ -20,8 +25,13 @@ interface QuranMicroHintStorage {
 const STORAGE_KEY = 'quran_micro_hints_v1';
 const USED_EVENT_NAME = 'quran-micro-hint-used';
 const MAX_SHOWN_PER_HINT = 5;
+<<<<<<< HEAD
 const MAX_HINTS_PER_VISIT = 7;
 const HINT_DURATION_MS = 4000;
+=======
+const MAX_HINTS_PER_VISIT = 4;
+const HINT_DURATION_MS = 3800;
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
 
 const getVariedInitialDelayMs = () => 2500 + Math.floor(Math.random() * 3000); // 2.5s - 5.5s
 
@@ -384,10 +394,13 @@ const QuranMicroHints: React.FC<QuranMicroHintsProps> = ({
 
                     return;
                 }
+<<<<<<< HEAD
 
                 if (candidates.length > 0) {
                     scheduleNextHint(8000);
                 }
+=======
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
             }, delayMs);
         },
         [
@@ -471,6 +484,7 @@ const QuranMicroHints: React.FC<QuranMicroHintsProps> = ({
     }, [activeBubble, isPaused, clearAllTimers, dismissCurrentHint, scheduleNextHint]);
 
     const bubblePalette = useMemo(() => {
+<<<<<<< HEAD
         const isDark = isDarkQuranTheme(currentTheme);
         const themeId = typeof currentTheme === 'string' ? currentTheme : (currentTheme?.id || '');
 
@@ -598,6 +612,32 @@ const QuranMicroHints: React.FC<QuranMicroHintsProps> = ({
             shadow: '0 10px 26px rgba(17, 24, 39, 0.44)',
         };
     }, [currentTheme]);
+=======
+        if (readingMode === 'madinah') {
+            const p = getMadinahThemePalette(currentTheme);
+            const modalP = resolveQuranModalPalette(currentTheme);
+            return {
+                bg: modalP.isDark ? 'rgba(20, 20, 24, 0.94)' : 'rgba(255, 252, 245, 0.96)',
+                text: modalP.isDark ? '#f8fafc' : p.bannerText,
+                border: modalP.isDark ? `${p.gold}66` : `${p.primary}55`,
+                accent: modalP.isDark ? p.gold : p.primary,
+                shadow: modalP.isDark
+                    ? '0 6px 20px rgba(0,0,0,0.55)'
+                    : '0 6px 18px rgba(15,23,42,0.14)',
+            };
+        }
+        const modalP = resolveQuranModalPalette(currentTheme);
+        return {
+            bg: modalP.isDark ? 'rgba(20, 20, 24, 0.94)' : 'rgba(255, 253, 248, 0.96)',
+            text: modalP.isDark ? '#f8fafc' : modalP.cardText,
+            border: `${modalP.headerAccent}55`,
+            accent: modalP.headerAccent,
+            shadow: modalP.isDark
+                ? '0 6px 20px rgba(0,0,0,0.55)'
+                : '0 6px 18px rgba(15,23,42,0.14)',
+        };
+    }, [readingMode, currentTheme]);
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
 
     if (!isSupportedMode || !activeBubble) return null;
 
@@ -619,10 +659,18 @@ const QuranMicroHints: React.FC<QuranMicroHintsProps> = ({
                     width: `${activeBubble.width}px`,
                     backgroundColor: bubblePalette.bg,
                     color: bubblePalette.text,
+<<<<<<< HEAD
                     border: `1.5px solid ${bubblePalette.border}`,
                     borderRadius: '12px',
                     padding: '8px 11px',
                     boxShadow: bubblePalette.shadow,
+=======
+                    border: `1px solid ${bubblePalette.border}`,
+                    borderRadius: '12px',
+                    padding: '7px 10px',
+                    boxShadow: bubblePalette.shadow,
+                    backdropFilter: 'blur(6px)',
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
                     opacity: isVisible ? 1 : 0,
                     transform: isVisible
                         ? 'translateY(0) scale(1)'
@@ -640,6 +688,7 @@ const QuranMicroHints: React.FC<QuranMicroHintsProps> = ({
                         left: `${activeBubble.arrowLeft}px`,
                         ...(activeBubble.placement === 'below'
                             ? {
+<<<<<<< HEAD
                                   top: '-5.5px',
                                   borderTop: `1.5px solid ${bubblePalette.border}`,
                                   borderLeft: `1.5px solid ${bubblePalette.border}`,
@@ -651,6 +700,19 @@ const QuranMicroHints: React.FC<QuranMicroHintsProps> = ({
                               }),
                         width: '9px',
                         height: '9px',
+=======
+                                  top: '-5px',
+                                  borderTop: `1px solid ${bubblePalette.border}`,
+                                  borderLeft: `1px solid ${bubblePalette.border}`,
+                              }
+                            : {
+                                  bottom: '-5px',
+                                  borderBottom: `1px solid ${bubblePalette.border}`,
+                                  borderRight: `1px solid ${bubblePalette.border}`,
+                              }),
+                        width: '8px',
+                        height: '8px',
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
                         backgroundColor: bubblePalette.bg,
                         transform: 'rotate(45deg)',
                     }}
@@ -659,11 +721,19 @@ const QuranMicroHints: React.FC<QuranMicroHintsProps> = ({
                     <span
                         className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                         style={{
+<<<<<<< HEAD
                             backgroundColor: bubblePalette.iconBg,
                             color: bubblePalette.iconColor,
                         }}
                     >
                         <Hand size={12} />
+=======
+                            backgroundColor: `${bubblePalette.accent}1A`,
+                            color: bubblePalette.accent,
+                        }}
+                    >
+                        <Hand size={11} />
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
                     </span>
                     <span className="text-[11px] leading-[1.45] font-bold">
                         {activeBubble.text}

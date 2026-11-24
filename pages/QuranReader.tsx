@@ -3533,10 +3533,13 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const openModal = useCallback((modalName: string, params?: any) => { 
         if (modalName === 'share-ayah') {
             markQuranMicroHintUsed(readingModeRef.current, 'share_btn');
+<<<<<<< HEAD
         } else if (modalName === 'bookmarks-modal') {
             markQuranMicroHintUsed(readingModeRef.current, 'bookmark_btn');
         } else if (modalName === 'reciter-modal') {
             markQuranMicroHintUsed(readingModeRef.current, 'play_btn');
+=======
+>>>>>>> c7b69c6627c45c223b9a00767509f7457add205f
         }
         stopAudio(); 
         setIsFloatingMenuOpen(false);
