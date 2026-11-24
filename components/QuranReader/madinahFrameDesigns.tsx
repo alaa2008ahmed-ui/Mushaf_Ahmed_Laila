@@ -24,6 +24,20 @@ export const normalizeMadinahFrameDesign = (raw?: number | string): MadinahFrame
     return 1;
 };
 
+export const FRAME_TO_SURAH_HEADER_DESIGN: Record<MadinahFrameDesignId, number> = {
+    1: 1, // Royal Madinah
+    2: 2, // Andalusian Arch
+    3: 3, // Eight-Point Star
+    4: 4, // Mamluk Mihrab
+    5: 7, // Ottoman Rumi
+    6: 9, // Kufic Geometric
+};
+
+export const getSurahHeaderDesignForFrame = (raw?: number | string): number => {
+    const id = normalizeMadinahFrameDesign(raw);
+    return FRAME_TO_SURAH_HEADER_DESIGN[id] ?? 1;
+};
+
 /* ============================================================================
    1. OUTER PAGE FRAME: Side Patterns, Top Caps, Corners, Bottom Edge & Medallion
    ============================================================================ */

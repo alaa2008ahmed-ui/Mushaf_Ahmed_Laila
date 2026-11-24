@@ -41,6 +41,11 @@ import {
     drawExtraDesignUpperMotif,
     drawExtraDesignLowerMotif,
 } from './shareCardDesignsExtra';
+import {
+    drawQuranPageBackdropAndFrame,
+    drawQuranPageUpperMotif,
+    drawQuranPageLowerMotif,
+} from './shareCardDesignsQuran';
 
 export type { ShareDesignId };
 export {
@@ -729,9 +734,9 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         ? 'In the Name of Allah, the Entirely Merciful, the Especially Merciful' 
         : 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
 
-    let headerEndY = topSectionStartY + (isEn ? 34 : 56);
+    let headerEndY = topSectionStartY + (isEn ? 46 : 74);
     if (cleanCategory) {
-        headerEndY += 12 + 46; // badge height (46px)
+        headerEndY += 56 + 16; // badge height (56px) + bottom spacing (16px)
     }
 
     // Anchor Title cleanly under Header (never stranded mid-canvas) and wrap if wide
@@ -942,16 +947,16 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     ctx.fillText(bismillahText, width / 2, currentTopY + (isEn ? 22 : 38));
     ctx.restore();
 
-    currentTopY += isEn ? 36 : 58;
+    currentTopY += isEn ? 46 : 74;
 
     // Category Badge (Ornate Illuminated Cartouche)
     if (cleanCategory) {
         ctx.save();
-        ctx.font = `bold 22px ${fontFamily}`;
-        const maxPillWidth = defaultMaxWidth - 20;
+        ctx.font = `bold 26px ${fontFamily}`;
+        const maxPillWidth = defaultMaxWidth - 16;
         const catMetrics = ctx.measureText(cleanCategory);
-        const pillW = Math.min(maxPillWidth, catMetrics.width + 68);
-        const pillH = 46;
+        const pillW = Math.min(maxPillWidth, catMetrics.width + 84);
+        const pillH = 56;
         const pillX = (width - pillW) / 2;
 
         const cartoucheGrad = ctx.createLinearGradient(pillX, currentTopY, pillX + pillW, currentTopY + pillH);
@@ -960,22 +965,22 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         cartoucheGrad.addColorStop(1, typoTheme.badgeBgStops[2]);
         ctx.fillStyle = cartoucheGrad;
         ctx.strokeStyle = typoTheme.badgeBorder;
-        ctx.lineWidth = 2.2;
-        drawRoundRect(ctx, pillX, currentTopY, pillW, pillH, 23);
+        ctx.lineWidth = 2.4;
+        drawRoundRect(ctx, pillX, currentTopY, pillW, pillH, 28);
         ctx.fill();
         ctx.stroke();
 
         ctx.strokeStyle = typoTheme.badgeInnerLine;
-        ctx.lineWidth = 1;
-        drawRoundRect(ctx, pillX + 3, currentTopY + 3, pillW - 6, pillH - 6, 20);
+        ctx.lineWidth = 1.1;
+        drawRoundRect(ctx, pillX + 3.5, currentTopY + 3.5, pillW - 7, pillH - 7, 24.5);
         ctx.stroke();
 
-        drawIslamicStar(ctx, pillX + 16, currentTopY + pillH / 2, 6, 3, 8, typoTheme.badgeStarColor);
-        drawIslamicStar(ctx, pillX + pillW - 16, currentTopY + pillH / 2, 6, 3, 8, typoTheme.badgeStarColor);
+        drawIslamicStar(ctx, pillX + 20, currentTopY + pillH / 2, 7.5, 3.75, 8, typoTheme.badgeStarColor);
+        drawIslamicStar(ctx, pillX + pillW - 20, currentTopY + pillH / 2, 7.5, 3.75, 8, typoTheme.badgeStarColor);
 
         ctx.fillStyle = typoTheme.badgeTextColor;
         ctx.textAlign = 'center';
-        ctx.fillText(cleanCategory, width / 2, currentTopY + 30, pillW - 44);
+        ctx.fillText(cleanCategory, width / 2, currentTopY + 36, pillW - 56);
         ctx.restore();
 
         currentTopY += pillH + 16;
@@ -1146,11 +1151,11 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     ctx.shadowColor = typoTheme.brandShadow;
     ctx.shadowBlur = 6;
     ctx.shadowOffsetY = 1;
-    ctx.fillText(brandName, width / 2, footerStartY + 42);
+    ctx.fillText(brandName, width / 2, footerStartY + 40);
 
-    ctx.font = `600 18px ${fontFamily}`;
+    ctx.font = isEn ? `600 24px ${fontFamily}` : `700 30px ${fontFamily}`;
     ctx.fillStyle = typoTheme.subtitleColor;
-    ctx.fillText(brandSubtitle, width / 2, footerStartY + 72);
+    ctx.fillText(brandSubtitle, width / 2, footerStartY + 84);
     ctx.restore();
 
     return canvas;
@@ -1380,6 +1385,8 @@ function drawBackdropForDesign(
 ) {
     if (drawExtraDesignBackdropAndFrame(ctx, designId, width, height, outerMargin, innerMargin)) {
         return;
+    } else if (drawQuranPageBackdropAndFrame(ctx, designId, width, height, outerMargin, innerMargin)) {
+        return;
     } else if (designId === 'sanaani_qamariya') {
         drawSanaaniBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
     } else if (designId === 'lapis_turquoise') {
@@ -1467,6 +1474,8 @@ export function renderDesignMotifDataUrl(designId: ShareDesignId, position: 'upp
     if (position === 'upper') {
         if (drawExtraDesignUpperMotif(ctx, designId, cx, cy, availableHeight)) {
             // Rendered by extra design renderer
+        } else if (drawQuranPageUpperMotif(ctx, designId, cx, cy, availableHeight)) {
+            // Rendered by Quran page design renderer
         } else if (designId === 'sanaani_qamariya') {
             drawSanaaniUpperQamariya(ctx, cx, cy, availableHeight);
         } else if (designId === 'lapis_turquoise') {
@@ -1491,6 +1500,8 @@ export function renderDesignMotifDataUrl(designId: ShareDesignId, position: 'upp
     } else {
         if (drawExtraDesignLowerMotif(ctx, designId, cx, cy, availableHeight)) {
             // Rendered by extra design renderer
+        } else if (drawQuranPageLowerMotif(ctx, designId, cx, cy, availableHeight)) {
+            // Rendered by Quran page design renderer
         } else if (designId === 'sanaani_qamariya') {
             drawSanaaniLowerMotif(ctx, cx, cy, availableHeight);
         } else if (designId === 'lapis_turquoise') {

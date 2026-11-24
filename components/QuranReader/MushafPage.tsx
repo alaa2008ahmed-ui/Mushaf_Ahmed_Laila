@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, SURAH_NAMES_AR, getEffectiveWordHighlightColor } from './constants';
 import SurahHeader from './SurahHeader';
+import { getSurahHeaderDesignForFrame } from './madinahFrameDesigns';
 
 interface MushafPageProps {
     pageNum: number;
@@ -19,6 +20,7 @@ interface MushafPageProps {
         textColor: string;
         theme: string;
         surahHeaderDesign?: number;
+        madinahFrameDesign?: number;
         isBold?: boolean;
         highlightTextColor?: string;
         wordHighlightEnabled?: boolean;
@@ -249,7 +251,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                                         surahType={SURAH_INFO[ayah.sNum]?.type || 'مكية'}
                                         ayahCount={SURAH_INFO[ayah.sNum]?.ayahs || 7}
                                         currentTheme={currentTheme}
-                                        design={settings?.surahHeaderDesign || 1}
+                                        design={getSurahHeaderDesignForFrame(settings?.madinahFrameDesign)}
                                         onLongPress={onSurahHeaderLongPress}
                                     />
                                     {ayah.sNum !== 1 && ayah.sNum !== 9 && (

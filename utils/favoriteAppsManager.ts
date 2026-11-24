@@ -27,6 +27,7 @@ export const DEFAULT_FAVORITE_APPS = [
   'islamic-sites',
   'prophetic-seerah',
   'divine-miracles',
+  'quran-horizontal',
   'quran-landscape',
   'memorization'
 ];
@@ -53,6 +54,7 @@ export const VALID_APP_IDS = [
   'calendar',
   'islamic-sites',
   'voice-control',
+  'quran-horizontal',
   'quran-landscape',
   'divine-miracles',
   'memorization'

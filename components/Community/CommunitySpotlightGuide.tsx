@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Sparkles,
@@ -106,70 +106,71 @@ export const resetCommunityGuides = (): void => {
   } catch (e) {}
 };
 
-const renderStepIcon = (iconName: string | undefined, color: string) => {
+const renderStepIcon = (iconName: string | undefined, color: string, iconSize: number = 16) => {
+  const emojiClass = iconSize <= 13 ? 'text-[13px] leading-none select-none' : 'text-base select-none';
   switch (iconName) {
     case 'lang':
-      return <span className="font-bold text-xs select-none">ع/En</span>;
+      return <span className={`font-bold select-none ${iconSize <= 13 ? 'text-[10px]' : 'text-xs'}`}>ع/En</span>;
     case 'tab':
-      return <Users size={16} />;
+      return <Users size={iconSize} />;
     case 'user':
-      return <span className="text-base select-none">👤</span>;
+      return <span className={emojiClass}>👤</span>;
     case 'country':
-      return <span className="text-base select-none">🌍</span>;
+      return <span className={emojiClass}>🌍</span>;
     case 'lock':
-      return <span className="text-base select-none">🔐</span>;
+      return <span className={emojiClass}>🔐</span>;
     case 'action':
-      return <Check size={16} className="stroke-[3]" />;
+      return <Check size={iconSize} className="stroke-[3]" />;
     case 'nav':
-      return <span className="text-base select-none">🧭</span>;
+      return <span className={emojiClass}>🧭</span>;
     case 'profile':
-      return <span className="text-base select-none">✨</span>;
+      return <span className={emojiClass}>✨</span>;
     case 'quran':
-      return <BookOpen size={16} />;
+      return <BookOpen size={iconSize} />;
     case 'search':
-      return <span className="text-base select-none">🔍</span>;
+      return <span className={emojiClass}>🔍</span>;
     case 'group':
-      return <Users size={16} />;
+      return <Users size={iconSize} />;
     case 'block':
-      return <span className="text-base select-none">🛡️</span>;
+      return <span className={emojiClass}>🛡️</span>;
     case 'chat':
-      return <MessageSquare size={16} />;
+      return <MessageSquare size={iconSize} />;
     case 'verse':
-      return <BookOpen size={16} />;
+      return <BookOpen size={iconSize} />;
     case 'attach':
-      return <Paperclip size={16} />;
+      return <Paperclip size={iconSize} />;
     case 'emoji':
-      return <Smile size={16} />;
+      return <Smile size={iconSize} />;
     case 'voice':
-      return <Mic size={16} />;
+      return <Mic size={iconSize} />;
     case 'clock':
-      return <Clock size={16} />;
+      return <Clock size={iconSize} />;
     case 'bell':
-      return <Bell size={16} />;
+      return <Bell size={iconSize} />;
     case 'calendar':
-      return <Calendar size={16} />;
+      return <Calendar size={iconSize} />;
     case 'volume':
-      return <Volume2 size={16} />;
+      return <Volume2 size={iconSize} />;
     case 'gear':
-      return <Settings size={16} />;
+      return <Settings size={iconSize} />;
     case 'map':
-      return <MapPin size={16} />;
+      return <MapPin size={iconSize} />;
     case 'moon':
-      return <Moon size={16} />;
+      return <Moon size={iconSize} />;
     case 'file':
-      return <FileText size={16} />;
+      return <FileText size={iconSize} />;
     case 'share':
-      return <Share2 size={16} />;
+      return <Share2 size={iconSize} />;
     case 'slider':
-      return <Sliders size={16} />;
+      return <Sliders size={iconSize} />;
     case 'compass':
-      return <Compass size={16} />;
+      return <Compass size={iconSize} />;
     case 'widgets':
-      return <LayoutGrid size={16} />;
+      return <LayoutGrid size={iconSize} />;
     case 'cloud':
-      return <Cloud size={16} />;
+      return <Cloud size={iconSize} />;
     default:
-      return <Sparkles size={16} />;
+      return <Sparkles size={iconSize} />;
   }
 };
 
@@ -185,20 +186,32 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   const { language, formatNumber } = useLanguage();
   const { isNightMode, homeThemeVariant, themeKey } = useTheme();
   const effectiveIsEn = isEn || language === 'en';
+  const isSingleStep = steps.length === 1;
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setCurrentStepIndex(0);
+      setMeasuredCardHeight(null);
       if (onStepChange) onStepChange(0);
       setGuideSeen(guideKey);
     }
   }, [isOpen, guideKey]);
 
   const step = steps[currentStepIndex];
+
+  useLayoutEffect(() => {
+    if (isOpen && cardRef.current) {
+      const h = cardRef.current.offsetHeight;
+      if (h > 0 && h !== measuredCardHeight) {
+        setMeasuredCardHeight(h);
+      }
+    }
+  }, [isOpen, currentStepIndex, step?.id, isSingleStep, effectiveIsEn]);
 
   useEffect(() => {
     if (isOpen && step && onStepChange) {
@@ -465,11 +478,13 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
 
   const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 700;
   const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 380;
-  const cardWidth = Math.min(380, screenWidth - 28);
-  const margin = 14;
-  const cardHeight = cardRef.current?.offsetHeight || 240;
+  const sizeScale = isSingleStep ? 0.8 : 1;
+  const cardWidth = Math.round(Math.min(380, screenWidth - 28) * sizeScale);
+  const margin = isSingleStep ? 12 : 14;
+  const fallbackCardHeight = isSingleStep ? 192 : 240;
+  const cardHeight = cardRef.current?.offsetHeight || measuredCardHeight || fallbackCardHeight;
 
-  let beakLeft = Math.round(cardWidth / 2 - 8);
+  let beakLeft = Math.round(cardWidth / 2 - (isSingleStep ? 6 : 8));
 
   if (targetRect) {
     const targetCenterX = targetRect.left + targetRect.width / 2;
@@ -478,12 +493,16 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
     const isTargetVeryLarge = targetRect.height > screenHeight * 0.40;
 
     const computedLeft = Math.max(14, Math.min(screenWidth - cardWidth - 14, Math.round(targetCenterX - cardWidth / 2)));
-    beakLeft = Math.max(20, Math.min(cardWidth - 28, Math.round(targetCenterX - computedLeft - 8)));
+    beakLeft = Math.max(18, Math.min(cardWidth - 24, Math.round(targetCenterX - computedLeft - (isSingleStep ? 6 : 8))));
 
-    const minCardMaxHeight = Math.max(220, Math.min(420, screenHeight - 100));
+    const minCardMaxHeight = isSingleStep
+      ? Math.max(176, Math.min(336, screenHeight - 80))
+      : Math.max(220, Math.min(420, screenHeight - 100));
 
     // Smart placement: center the card when target is very large, center is requested, or space is cramped
-    const neededTooltipSpace = Math.max(220, cardHeight + margin);
+    const neededTooltipSpace = isSingleStep ? Math.max(176, cardHeight + margin) : Math.max(220, cardHeight + margin);
+    const spaceThreshold = isSingleStep ? 160 : 200;
+    const minSubHeight = isSingleStep ? 144 : 180;
 
     if (step.preferredPlacement === 'center' || isTargetVeryLarge) {
       pointerPlacement = 'center';
@@ -495,41 +514,41 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         width: cardWidth,
         maxHeight: minCardMaxHeight
       };
-    } else if (step.preferredPlacement === 'top' && spaceAbove >= 200) {
+    } else if (step.preferredPlacement === 'top' && spaceAbove >= spaceThreshold) {
       // Requested top and has ample room above — anchor by bottom so card never overlaps target
       pointerPlacement = 'bottom';
       cardPositionStyle = {
         bottom: Math.max(16, screenHeight - targetRect.top + margin),
         left: computedLeft,
         width: cardWidth,
-        maxHeight: Math.max(180, targetRect.top - margin - 20)
+        maxHeight: Math.max(minSubHeight, targetRect.top - margin - 20)
       };
-    } else if (spaceBelow >= neededTooltipSpace || (spaceBelow >= 200 && spaceBelow >= spaceAbove) || targetRect.top <= 160) {
+    } else if (spaceBelow >= neededTooltipSpace || (spaceBelow >= spaceThreshold && spaceBelow >= spaceAbove) || targetRect.top <= 160) {
       // Target is near top of screen or has ample room below: place cleanly below target
       pointerPlacement = 'top';
       cardPositionStyle = {
         top: Math.max(16, targetRect.bottom + margin),
         left: computedLeft,
         width: cardWidth,
-        maxHeight: Math.max(180, screenHeight - targetRect.bottom - margin - 16)
+        maxHeight: Math.max(minSubHeight, screenHeight - targetRect.bottom - margin - 16)
       };
-    } else if (spaceAbove >= 200) {
+    } else if (spaceAbove >= spaceThreshold) {
       // Ample space above: anchor bottom edge cleanly above targetRect.top
       pointerPlacement = 'bottom';
       cardPositionStyle = {
         bottom: Math.max(16, screenHeight - targetRect.top + margin),
         left: computedLeft,
         width: cardWidth,
-        maxHeight: Math.max(180, targetRect.top - margin - 20)
+        maxHeight: Math.max(minSubHeight, targetRect.top - margin - 20)
       };
-    } else if (spaceBelow >= 170) {
+    } else if (spaceBelow >= (isSingleStep ? 136 : 170)) {
       // Tight space fallback preferring below without shifting up over target
       pointerPlacement = 'top';
       cardPositionStyle = {
         top: Math.max(16, targetRect.bottom + margin),
         left: computedLeft,
         width: cardWidth,
-        maxHeight: Math.max(160, screenHeight - targetRect.bottom - margin - 16)
+        maxHeight: Math.max(isSingleStep ? 128 : 160, screenHeight - targetRect.bottom - margin - 16)
       };
     } else {
       // Safe fallback: center on screen
@@ -552,7 +571,9 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
       top: centeredTop,
       left: centeredLeft,
       width: cardWidth,
-      maxHeight: Math.max(240, screenHeight - 48)
+      maxHeight: isSingleStep
+        ? Math.max(192, Math.round((screenHeight - 48) * 0.8))
+        : Math.max(240, screenHeight - 48)
     };
   }
 
@@ -698,13 +719,15 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         key={`card-${step.id}`}
         ref={cardRef}
         data-guide-card="true"
-        className="fixed z-[100003] pointer-events-auto rounded-3xl p-4 sm:p-5 border-2 flex flex-col overflow-visible box-border max-w-[calc(100vw-28px)]"
+        className={`fixed z-[100003] pointer-events-auto border-2 flex flex-col overflow-visible box-border max-w-[calc(100vw-28px)] ${
+          isSingleStep ? 'rounded-[20px] p-3 sm:p-4' : 'rounded-3xl p-4 sm:p-5'
+        }`}
         style={{
           ...cardPositionStyle,
           background: cardSurface.bg,
           color: cardSurface.text,
           borderColor: currentAccent,
-          boxShadow: `0 7px 0 ${cardSurface.lip}, ${cardSurface.outerShadow}, inset 0 2px 2px ${cardSurface.inset}`
+          boxShadow: `0 ${isSingleStep ? '5.5px' : '7px'} 0 ${cardSurface.lip}, ${cardSurface.outerShadow}, inset 0 2px 2px ${cardSurface.inset}`
         }}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -715,7 +738,9 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         {/* Pointer Beak pointing dynamically toward highlighted target */}
         {pointerPlacement === 'top' && (
           <div 
-            className="absolute -top-2.5 w-4 h-4 rotate-45 border-t-2 border-l-2"
+            className={`absolute rotate-45 border-t-2 border-l-2 ${
+              isSingleStep ? '-top-[7px] w-3 h-3' : '-top-2.5 w-4 h-4'
+            }`}
             style={{
               backgroundColor: cardSurface.beakTopBg,
               borderColor: currentAccent,
@@ -725,7 +750,9 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         )}
         {pointerPlacement === 'bottom' && (
           <div 
-            className="absolute -bottom-2.5 w-4 h-4 rotate-45 border-b-2 border-r-2"
+            className={`absolute rotate-45 border-b-2 border-r-2 ${
+              isSingleStep ? '-bottom-[7px] w-3 h-3' : '-bottom-2.5 w-4 h-4'
+            }`}
             style={{
               backgroundColor: cardSurface.beakBottomBg,
               borderColor: currentAccent,
@@ -736,33 +763,41 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
 
         {/* Top Accent Bevel Bar */}
         <div 
-          className="absolute top-0 inset-x-10 h-1 rounded-b-full opacity-90 pointer-events-none"
+          className={`absolute top-0 rounded-b-full opacity-90 pointer-events-none ${
+            isSingleStep ? 'inset-x-8 h-[3px]' : 'inset-x-10 h-1'
+          }`}
           style={{
             backgroundImage: `linear-gradient(to right, ${currentAccent}, #ffffff, ${currentAccent})`
           }}
         />
 
         {/* Scrollable Content Container */}
-        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar mb-2.5 pe-0.5">
+        <div className={`flex-1 min-h-0 overflow-y-auto hide-scrollbar pe-0.5 ${isSingleStep ? 'mb-2' : 'mb-2.5'}`}>
           {/* Top Header: Badge, Step counter, Close / Skip */}
-          <div className="flex items-center justify-between gap-2 mb-2.5">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className={`flex items-center justify-between ${isSingleStep ? 'gap-1.5 mb-2' : 'gap-2 mb-2.5'}`}>
+            <div className={`flex items-center min-w-0 ${isSingleStep ? 'gap-1.5' : 'gap-2'}`}>
               {/* Step Icon inside 3D pedestal */}
               <div 
-                className="w-9 h-9 rounded-2xl flex items-center justify-center font-bold flex-shrink-0"
+                className={`flex items-center justify-center font-bold flex-shrink-0 ${
+                  isSingleStep ? 'w-7 h-7 rounded-xl' : 'w-9 h-9 rounded-2xl'
+                }`}
                 style={{
                   backgroundColor: currentAccent,
                   backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(0,0,0,0.12) 100%)',
                   color: '#ffffff',
-                  boxShadow: `0 3.5px 0 rgba(0,0,0,0.28), 0 6px 12px ${currentAccent}45, inset 0 1.5px 1px rgba(255,255,255,0.45)`
+                  boxShadow: `0 ${isSingleStep ? '2.5px' : '3.5px'} 0 rgba(0,0,0,0.28), 0 6px 12px ${currentAccent}45, inset 0 1.5px 1px rgba(255,255,255,0.45)`
                 }}
               >
-                {renderStepIcon(step.iconName, currentAccent)}
+                {renderStepIcon(step.iconName, currentAccent, isSingleStep ? 13 : 16)}
               </div>
 
               {/* Step Tag */}
               <span 
-                className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider truncate max-w-[180px]"
+                className={`font-extrabold rounded-full uppercase tracking-wider truncate ${
+                  isSingleStep
+                    ? 'text-[9.5px] px-2 py-0.5 max-w-[145px]'
+                    : 'text-[11px] px-2.5 py-0.5 max-w-[180px]'
+                }`}
                 style={{
                   backgroundColor: isDarkCard ? `${currentAccent}28` : `${currentAccent}1a`,
                   color: isDarkCard ? '#f8fafc' : '#0f172a',
@@ -779,35 +814,43 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             <button
               type="button"
               onClick={handleSkip}
-              className="unified-3d-btn w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 cursor-pointer shrink-0"
+              className={`unified-3d-btn rounded-full flex items-center justify-center hover:text-red-500 cursor-pointer shrink-0 ${
+                isSingleStep ? 'w-[26px] h-[26px]' : 'w-8 h-8'
+              }`}
               style={{
                 background: cardSurface.pillBg,
                 color: cardSurface.pillText,
                 border: `1px solid ${cardSurface.pillBorder}`,
-                boxShadow: `0 2.5px 0 ${cardSurface.pillLip}, 0 4px 8px rgba(0,0,0,0.14), inset 0 1px 1px ${cardSurface.inset}`
+                boxShadow: `0 ${isSingleStep ? '2px' : '2.5px'} 0 ${cardSurface.pillLip}, 0 4px 8px rgba(0,0,0,0.14), inset 0 1px 1px ${cardSurface.inset}`
               }}
               title={effectiveIsEn ? "Skip Tour" : "تخطي الإرشاد"}
             >
-              <X size={15} strokeWidth={2.5} />
+              <X size={isSingleStep ? 12 : 15} strokeWidth={2.5} />
             </button>
           </div>
 
           {/* Title */}
-          <h3 className="text-base sm:text-lg font-black font-cairo mb-1.5 flex items-center gap-1.5 leading-snug">
+          <h3 className={`font-black font-cairo flex items-center gap-1.5 leading-snug ${
+            isSingleStep ? 'text-[13px] sm:text-[14.5px] mb-1' : 'text-base sm:text-lg mb-1.5'
+          }`}>
             <span style={{ color: isDarkCard ? currentAccent : '#0f172a' }}>
               {effectiveIsEn ? (step.titleEn || step.titleAr) : step.titleAr}
             </span>
           </h3>
 
           {/* Detailed Explanation */}
-          <p className="text-xs sm:text-sm leading-relaxed font-medium whitespace-pre-line" style={{ color: cardSurface.descText }}>
+          <p className={`leading-relaxed font-medium whitespace-pre-line ${
+            isSingleStep ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
+          }`} style={{ color: cardSurface.descText }}>
             {effectiveIsEn ? (step.descEn || formatNumber(step.descAr)) : step.descAr}
           </p>
         </div>
 
         {/* Bottom Bar: Dots Progress & Action Controls */}
         <div 
-          className="flex items-center justify-between gap-2 pt-2.5 shrink-0 mt-auto w-full min-w-0"
+          className={`flex items-center justify-between shrink-0 mt-auto w-full min-w-0 ${
+            isSingleStep ? 'gap-1.5 pt-2' : 'gap-2 pt-2.5'
+          }`}
           style={{ borderTop: `1px solid ${cardSurface.divider}` }}
         >
           {/* Progress Dots or Compact Step Indicator */}
@@ -816,9 +859,9 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
               {steps.map((_, idx) => (
                 <span
                   key={idx}
-                  className="h-1.5 rounded-full transition-all duration-300 shrink-0"
+                  className={`${isSingleStep ? 'h-1' : 'h-1.5'} rounded-full transition-all duration-300 shrink-0`}
                   style={{
-                    width: idx === currentStepIndex ? '16px' : '5px',
+                    width: idx === currentStepIndex ? (isSingleStep ? '13px' : '16px') : (isSingleStep ? '4px' : '5px'),
                     backgroundColor: idx === currentStepIndex ? currentAccent : cardSurface.dotInactive
                   }}
                 />
@@ -887,12 +930,16 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             <button
               type="button"
               onClick={handleNext}
-              className="unified-3d-btn px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shrink-0 relative z-10 whitespace-nowrap"
+              className={`unified-3d-btn font-black flex items-center cursor-pointer shrink-0 relative z-10 whitespace-nowrap ${
+                isSingleStep
+                  ? 'px-2.5 py-1 rounded-[10px] text-[10.5px] gap-1'
+                  : 'px-3.5 py-1.5 rounded-xl text-xs gap-1.5'
+              }`}
               style={{
                 backgroundColor: currentAccent,
                 backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(0,0,0,0.08) 100%)',
                 color: '#ffffff',
-                boxShadow: `0 4px 0 rgba(0,0,0,0.32), 0 8px 16px -2px ${currentAccent}55, inset 0 1.5px 1px rgba(255,255,255,0.45)`
+                boxShadow: `0 ${isSingleStep ? '3px' : '4px'} 0 rgba(0,0,0,0.32), 0 8px 16px -2px ${currentAccent}55, inset 0 1.5px 1px rgba(255,255,255,0.45)`
               }}
             >
               <span>
@@ -901,9 +948,9 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
                   : (effectiveIsEn ? 'Next' : 'التالي')}
               </span>
               {!isLastStep ? (
-                effectiveIsEn ? <ChevronRight size={14} /> : <ChevronLeft size={14} />
+                effectiveIsEn ? <ChevronRight size={isSingleStep ? 12 : 14} /> : <ChevronLeft size={isSingleStep ? 12 : 14} />
               ) : (
-                <Check size={14} className="stroke-[3]" />
+                <Check size={isSingleStep ? 12 : 14} className="stroke-[3]" />
               )}
             </button>
           </div>

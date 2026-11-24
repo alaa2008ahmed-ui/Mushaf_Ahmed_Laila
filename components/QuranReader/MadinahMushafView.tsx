@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import MadinahFrameSVG, { getMadinahThemePalette } from './MadinahFrameSVG';
 import MadinahPageContent from './MadinahPageContent';
+import { toArabic } from './constants';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface MadinahMushafViewProps {
     currentPage: number;
@@ -80,9 +82,12 @@ const MadinahVerticalReader: React.FC<MadinahMushafViewProps> = ({
     onAutoScrollButtonPointerUp,
     onAutoScrollButtonPointerLeave,
 }) => {
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const clampedPage = Math.max(1, Math.min(TOTAL_PAGES, currentPage || 1));
     const localScrollerRef = useRef<HTMLDivElement | null>(null);
     const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+    const stageSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
     const [renderCenterPage, setRenderCenterPage] = useState<number>(clampedPage);
     const hasInitializedScrollRef = useRef(false);
     const lastJumpSeqRef = useRef<number | null>(null);
@@ -103,12 +108,17 @@ const MadinahVerticalReader: React.FC<MadinahMushafViewProps> = ({
         if (!el) return;
 
         const updateSize = () => {
-            if (typeof document !== 'undefined' && document.getElementById('madinah-bottom-page-input')) {
+            if (
+                typeof document !== 'undefined' &&
+                document.getElementById('madinah-bottom-page-input') &&
+                stageSizeRef.current.h > 40
+            ) {
                 return;
             }
             const w = Math.round(el.clientWidth);
             const h = Math.round(el.clientHeight);
             if (w > 40 && h > 40) {
+                stageSizeRef.current = { w, h };
                 setStageSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
             }
         };
@@ -120,7 +130,7 @@ const MadinahVerticalReader: React.FC<MadinahMushafViewProps> = ({
         return () => ro.disconnect();
     }, []);
 
-    const pageGap = isLandscape ? 12 : 14;
+    const pageGap = isLandscape ? 22 : 24;
     const pageHeight = useMemo(() => {
         if (stageSize.h <= 40 || stageSize.w <= 40) return 600;
         if (isLandscape) {
@@ -150,6 +160,17 @@ const MadinahVerticalReader: React.FC<MadinahMushafViewProps> = ({
         }
     }, [stageSize.h, stride, clampedPage]);
 
+    const hasPendingVerticalJump = Boolean(
+        verticalJumpTarget && lastJumpSeqRef.current !== verticalJumpTarget.seq
+    );
+    const jumpTargetPage = hasPendingVerticalJump && verticalJumpTarget
+        ? Math.max(1, Math.min(TOTAL_PAGES, verticalJumpTarget.page))
+        : clampedPage;
+    const effectiveCenterPage =
+        hasPendingVerticalJump || Math.abs(clampedPage - renderCenterPage) > 2
+            ? jumpTargetPage
+            : renderCenterPage;
+
     useLayoutEffect(() => {
         const el = localScrollerRef.current;
         if (!el || stageSize.h <= 40 || !verticalJumpTarget) return;
@@ -172,14 +193,14 @@ const MadinahVerticalReader: React.FC<MadinahMushafViewProps> = ({
     }, [stride]);
 
     const visiblePageNumbers = useMemo(() => {
-        const start = Math.max(1, renderCenterPage - 3);
-        const end = Math.min(TOTAL_PAGES, renderCenterPage + 4);
+        const start = Math.max(1, effectiveCenterPage - 3);
+        const end = Math.min(TOTAL_PAGES, effectiveCenterPage + 4);
         const list: number[] = [];
         for (let p = start; p <= end; p++) {
             list.push(p);
         }
         return list;
-    }, [renderCenterPage]);
+    }, [effectiveCenterPage]);
 
     const palette = getMadinahThemePalette(currentTheme);
     const pageBg = settings?.bgColor || currentTheme?.bg || '#ffffff';
@@ -220,7 +241,7 @@ const MadinahVerticalReader: React.FC<MadinahMushafViewProps> = ({
                         style={{
                             position: 'relative',
                             width: '100%',
-                            height: `${TOTAL_PAGES * stride - pageGap}px`,
+                            height: `${TOTAL_PAGES * stride}px`,
                         }}
                     >
                         {visiblePageNumbers.map((pageNum) => {
@@ -260,29 +281,29 @@ const MadinahVerticalReader: React.FC<MadinahMushafViewProps> = ({
                                             audioProgress={audioProgress}
                                         />
                                     </div>
-                                    {pageNum < TOTAL_PAGES && (
-                                        <div
-                                            className="madinah-vertical-divider"
-                                            style={{
-                                                top: `${topPx + pageHeight}px`,
-                                                height: `${pageGap}px`,
-                                            }}
-                                            aria-hidden="true"
+                                    <div
+                                        className="madinah-vertical-divider"
+                                        style={{
+                                            top: `${topPx + pageHeight}px`,
+                                            height: `${pageGap}px`,
+                                        }}
+                                        aria-label={isEn ? `Page ${pageNum}` : `صفحة ${toArabic(pageNum)}`}
+                                    >
+                                        <span
+                                            className="madinah-vertical-divider-line"
+                                            style={{ backgroundColor: palette.gold }}
+                                        />
+                                        <span
+                                            className="madinah-vertical-divider-page-num"
+                                            style={{ color: palette.metaText }}
                                         >
-                                            <span
-                                                className="madinah-vertical-divider-line"
-                                                style={{ backgroundColor: palette.gold }}
-                                            />
-                                            <span
-                                                className="madinah-vertical-divider-gem"
-                                                style={{ backgroundColor: palette.gold }}
-                                            />
-                                            <span
-                                                className="madinah-vertical-divider-line"
-                                                style={{ backgroundColor: palette.gold }}
-                                            />
-                                        </div>
-                                    )}
+                                            {isEn ? pageNum : toArabic(pageNum)}
+                                        </span>
+                                        <span
+                                            className="madinah-vertical-divider-line"
+                                            style={{ backgroundColor: palette.gold }}
+                                        />
+                                    </div>
                                 </React.Fragment>
                             );
                         })}

@@ -4,6 +4,7 @@ import ExitConfirmModal from './components/ExitConfirmModal';
 import AppRouter from './router/AppRouter';
 import WelcomeSplash from './components/WelcomeSplash';
 import ImageSplash, { purgeBootSplashMemory } from './components/ImageSplash';
+import { setSplashFullscreenMode } from './utils/statusBar';
 import { useLanguage } from './context/LanguageContext';
 import RateUs from './components/RateUs';
 import { useWakeLock } from './hooks/useWakeLock';
@@ -114,6 +115,10 @@ function App() {
     }
     return 'splash';
   });
+
+  React.useLayoutEffect(() => {
+    setSplashFullscreenMode(splashStage === 'splash');
+  }, [splashStage]);
 
   const [hasChosenInitialLanguage, setHasChosenInitialLanguage] = useState<boolean>(() => {
     if (isTourPreview) return true;
@@ -282,6 +287,14 @@ function App() {
     pageId = pageAliasMap[pageId] || pageId;
     if (rawPageId === 'quran-search') {
       params = { ...(params || {}), from: params?.from || 'quran' };
+    }
+    if (rawPageId === 'quran-horizontal') {
+      pageId = 'quran';
+      params = { ...(params || {}), from: params?.from || 'modern_home', readingMode: 'madinah' };
+      if (!isTourPreview) {
+        markPageAsSeen('quran-horizontal');
+        recordAppVisit('quran-horizontal');
+      }
     }
 
     const validPages = [

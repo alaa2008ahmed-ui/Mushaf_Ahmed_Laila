@@ -21,7 +21,7 @@ interface ShareDesignSelectorSectionProps {
 
 const THUMB_RENDER_SCALE = 0.2; // 216x384 (>2.3x retina for 80-91px cards)
 const FULL_PREVIEW_RENDER_SCALE = 1; // Crisp 1080x1920 fullscreen preview
-const THUMB_LS_PREFIX = 'share_design_thumbs_v5_';
+const THUMB_LS_PREFIX = 'share_design_thumbs_v7_';
 
 const thumbCache = new Map<string, string>();
 const fullPreviewCache = new Map<string, string>();

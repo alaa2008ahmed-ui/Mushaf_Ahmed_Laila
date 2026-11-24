@@ -4,7 +4,7 @@ import { safeHtml2Canvas } from '../../utils/canvasHelper';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-import { FONTS, SURAH_NAMES_AR, toArabic, getAyahCountText, isDarkQuranTheme, ReadingMode } from './constants';
+import { FONTS, SURAH_INFO, SURAH_NAMES_AR, SURAH_NAMES_EN, toArabic, getAyahCountText, isDarkQuranTheme, ReadingMode } from './constants';
 import { renderTajweedTextHtml } from './MushafPage';
 import { useLanguage } from '../../context/LanguageContext';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
@@ -21,6 +21,12 @@ import {
 } from '../../utils/shareAsImage';
 import { SHARE_DESIGN_CHANGE_EVENT } from '../../utils/shareCardDesigns';
 import { DARK_EXTRA_SHARE_DESIGN_IDS } from '../../utils/shareCardDesignsExtra';
+import {
+    DARK_QURAN_PAGE_SHARE_DESIGN_IDS,
+    isQuranPageShareDesignId,
+    getQuranPageDesignPalette,
+    renderQuranSurahBannerBackdropToDataUrl,
+} from '../../utils/shareCardDesignsQuran';
 import {
     prewarmShareDesignThumbs,
     getShareDesignThumbsSnapshot,
@@ -110,6 +116,7 @@ const DARK_SHARE_DESIGNS = new Set<ShareDesignId>([
     'obsidian_gold',
     'royal_amethyst',
     ...DARK_EXTRA_SHARE_DESIGN_IDS,
+    ...DARK_QURAN_PAGE_SHARE_DESIGN_IDS,
 ]);
 
 const SHARE_DESIGN_BGS: ShareBgOption[] = SHARE_CARD_DESIGNS.map((d) => {
@@ -687,6 +694,19 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
             lowerMotifUrl: renderDesignMotifDataUrl(selectedBg.designId, 'lower'),
         };
     }, [selectedBg]);
+
+    const activeQuranPageDesignId = useMemo(() => {
+        if (selectedBg.type !== 'share_design' || !selectedBg.designId) return null;
+        return isQuranPageShareDesignId(selectedBg.designId) ? selectedBg.designId : null;
+    }, [selectedBg]);
+
+    const quranPagePalette = useMemo(() => {
+        return activeQuranPageDesignId ? getQuranPageDesignPalette(activeQuranPageDesignId) : null;
+    }, [activeQuranPageDesignId]);
+
+    const quranSurahBannerUrl = useMemo(() => {
+        return activeQuranPageDesignId ? renderQuranSurahBannerBackdropToDataUrl(activeQuranPageDesignId) : '';
+    }, [activeQuranPageDesignId]);
 
     useEffect(() => {
         if (!isRangePickerOpen) return;
@@ -1669,6 +1689,171 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 
     // Removed redundant calculation
 
+    const renderQuranPageSurahBanner = (surahNum: number, scale: number) => {
+        if (!quranPagePalette || !quranSurahBannerUrl) return null;
+        const rawAr = SURAH_NAMES_AR[surahNum - 1] || '';
+        const cleanAr = rawAr
+            .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+            .replace(/سورة|سُورَةُ|سُورَة/g, '')
+            .trim();
+        const enName = SURAH_NAMES_EN[surahNum - 1] || '';
+        const info = SURAH_INFO[surahNum];
+        const ayahCount = info?.ayahs || 7;
+        const countLabel = isEn
+            ? `${ayahCount} ${ayahCount === 1 ? 'Verse' : 'Verses'}`
+            : getAyahCountText(ayahCount);
+        const typeLabel = isEn
+            ? info?.type === 'مكية'
+                ? 'Meccan'
+                : 'Medinan'
+            : info?.type || 'مكية';
+        const titleLabel = isEn ? `Surah ${enName}` : `سورة ${cleanAr}`;
+        const bannerW = Math.round(910 * scale * 10) / 10;
+        const bannerH = Math.round(112 * scale * 10) / 10;
+        const titleFontSize = Math.round((isEn ? 32 : 42) * scale * 10) / 10;
+        const metaFontSize = Math.round((isEn ? 21 : 25) * scale * 10) / 10;
+
+        return (
+            <span
+                style={{
+                    position: 'relative',
+                    display: 'block',
+                    width: '100%',
+                    maxWidth: `${bannerW}px`,
+                    height: `${bannerH}px`,
+                    margin: `${Math.round(4 * scale * 10) / 10}px auto ${Math.round(14 * scale * 10) / 10}px auto`,
+                    flexShrink: 0,
+                    boxSizing: 'border-box',
+                }}
+            >
+                <img
+                    src={quranSurahBannerUrl}
+                    alt=""
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'fill',
+                        pointerEvents: 'none',
+                    }}
+                />
+                {/* Right Plaque: Ayah Count */}
+                <span
+                    style={{
+                        position: 'absolute',
+                        right: '3.48%',
+                        top: 0,
+                        bottom: 0,
+                        width: '18.04%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'var(--font-amiri), var(--font-cairo), sans-serif',
+                        fontSize: `${metaFontSize}px`,
+                        fontWeight: 700,
+                        color: quranPagePalette.metaText,
+                        lineHeight: 1.15,
+                        whiteSpace: 'nowrap',
+                        direction: isEn ? 'ltr' : 'rtl',
+                    }}
+                >
+                    {countLabel}
+                </span>
+                {/* Center Cartouche: Surah Name */}
+                <span
+                    style={{
+                        position: 'absolute',
+                        left: '24.56%',
+                        top: 0,
+                        bottom: 0,
+                        width: '50.87%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: `0 ${Math.round(28 * scale * 10) / 10}px`,
+                        boxSizing: 'border-box',
+                        fontFamily: 'var(--font-amiri), var(--font-amiri-quran), serif',
+                        fontSize: `${titleFontSize}px`,
+                        fontWeight: 800,
+                        color: quranPagePalette.bannerText,
+                        lineHeight: 1.15,
+                        whiteSpace: 'nowrap',
+                        direction: isEn ? 'ltr' : 'rtl',
+                    }}
+                >
+                    {titleLabel}
+                </span>
+                {/* Left Plaque: Revelation Type */}
+                <span
+                    style={{
+                        position: 'absolute',
+                        left: '3.48%',
+                        top: 0,
+                        bottom: 0,
+                        width: '18.04%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'var(--font-amiri), var(--font-cairo), sans-serif',
+                        fontSize: `${metaFontSize}px`,
+                        fontWeight: 700,
+                        color: quranPagePalette.metaText,
+                        lineHeight: 1.15,
+                        whiteSpace: 'nowrap',
+                        direction: isEn ? 'ltr' : 'rtl',
+                    }}
+                >
+                    {typeLabel}
+                </span>
+            </span>
+        );
+    };
+
+    const renderQuranPageBottomDivider = (mushafPageNum: number, scale: number) => {
+        if (!quranPagePalette) return null;
+        return (
+            <div
+                style={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    marginTop: `${Math.round(8 * scale * 10) / 10}px`,
+                    marginBottom: `${Math.round(8 * scale * 10) / 10}px`,
+                    flexShrink: 0,
+                }}
+            >
+                <div
+                    style={{
+                        fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
+                        fontSize: `${Math.round(42 * scale * 10) / 10}px`,
+                        fontWeight: 700,
+                        lineHeight: 1.2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: `${Math.round(10 * scale * 10) / 10}px`,
+                        direction: 'rtl',
+                    }}
+                >
+                    <span style={{ color: quranPagePalette.verseBracket }}>﴿</span>
+                    <span style={{ color: quranPagePalette.verseNumber }}>{toArabic(mushafPageNum)}</span>
+                    <span style={{ color: quranPagePalette.verseBracket }}>﴾</span>
+                </div>
+                <div
+                    style={{
+                        width: '62%',
+                        height: `${Math.max(1, Math.round(3 * scale * 10) / 10)}px`,
+                        backgroundColor: quranPagePalette.gold,
+                        marginTop: `${Math.round(6 * scale * 10) / 10}px`,
+                        borderRadius: '999px',
+                    }}
+                />
+            </div>
+        );
+    };
+
     const hiddenCaptureNodes = (
         <>
             {/* Hidden capture elements for High Quality Image & Page Share (Exact 1080x1920 Story format) */}
@@ -1679,10 +1864,12 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     const chunkExplanation = chunk.ayahs.map(ay => getExplanationText(ay.s, ay.a)).filter(t => t).join('\n');
                     const firstChunkAyah = chunk.ayahs[0];
                     const hasMultipleSurahsInChunk = chunk.ayahs.some((ay, idx) => idx > 0 && ay.s !== firstChunkAyah?.s);
+                    const isFatihaStart = firstChunkAyah?.s === 1 && firstChunkAyah?.a === 1;
                     const showTopBismillah =
                         showBismillah &&
                         isMushafLikeMode &&
-                        !(firstChunkAyah?.s === 9 && firstChunkAyah?.a === 1);
+                        !(firstChunkAyah?.s === 9 && firstChunkAyah?.a === 1) &&
+                        !(quranPagePalette && isFatihaStart);
                     const showTopSurahLabel =
                         shareType === 'page' &&
                         hasMultipleSurahsInChunk &&
@@ -1706,7 +1893,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
                                 padding:
-                                    selectedBg.type === 'share_design'
+                                    quranPagePalette
+                                        ? selectedFrame.id !== 'none'
+                                            ? '96px 90px 90px 90px'
+                                            : '76px 76px 72px 76px'
+                                        : selectedBg.type === 'share_design'
                                         ? selectedFrame.id !== 'none'
                                             ? '164px 128px 162px 128px'
                                             : '152px 118px 150px 118px'
@@ -1744,9 +1935,10 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                             )}
                             <FrameOverlay frame={selectedFrame} scale={4} />
                             <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '100%', flex: 1, boxSizing: 'border-box' }}>
-                                {/* Top Bismillah Header */}
+                                {/* Top Bismillah / Quran Surah Banner Header */}
                                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '8px' }}>
-                                    {showTopSurahLabel && (
+                                    {quranPagePalette && firstChunkAyah && renderQuranPageSurahBanner(firstChunkAyah.s, 1)}
+                                    {!quranPagePalette && showTopSurahLabel && (
                                         <p
                                             style={{
                                                 fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
@@ -1765,7 +1957,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             style={{ 
                                                 fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif', 
                                                 fontSize: `${chunkTypo.bismillahSize}px`, 
-                                                color: selectedBg.accent, 
+                                                color: quranPagePalette ? (quranPagePalette.isDark ? quranPagePalette.gold : quranPagePalette.deep) : selectedBg.accent, 
                                                 margin: 0,
                                                 textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 6px 12px rgba(0,0,0,0.5)',
                                                 fontWeight: 'bold'
@@ -1774,7 +1966,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
                                         </p>
                                     )}
-                                    {isShort && (
+                                    {!quranPagePalette && isShort && (
                                         selectedBg.type === 'share_design' && shareDesignAssets?.upperMotifUrl ? (
                                             <img
                                                 src={shareDesignAssets.upperMotifUrl}
@@ -1822,28 +2014,34 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 <React.Fragment key={`${ay.s}-${ay.a}-${idx}`}>
                                                     {isNewMidChunkSurah && (
                                                         <>
-                                                            <span
-                                                                style={{
-                                                                    display: 'block',
-                                                                    fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
-                                                                    fontSize: `${Math.round(chunkTypo.bismillahSize * 0.9)}px`,
-                                                                    color: selectedBg.accent,
-                                                                    marginTop: '14px',
-                                                                    marginBottom: '2px',
-                                                                    lineHeight: 1.4,
-                                                                    fontWeight: 'bold',
-                                                                    textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 4px 10px rgba(0,0,0,0.45)',
-                                                                }}
-                                                            >
-                                                                سُورَةُ {getSurahName(ay.s)}
-                                                            </span>
+                                                            {quranPagePalette ? (
+                                                                <span style={{ display: 'block', marginTop: '14px' }}>
+                                                                    {renderQuranPageSurahBanner(ay.s, 1)}
+                                                                </span>
+                                                            ) : (
+                                                                <span
+                                                                    style={{
+                                                                        display: 'block',
+                                                                        fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
+                                                                        fontSize: `${Math.round(chunkTypo.bismillahSize * 0.9)}px`,
+                                                                        color: selectedBg.accent,
+                                                                        marginTop: '14px',
+                                                                        marginBottom: '2px',
+                                                                        lineHeight: 1.4,
+                                                                        fontWeight: 'bold',
+                                                                        textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 4px 10px rgba(0,0,0,0.45)',
+                                                                    }}
+                                                                >
+                                                                    سُورَةُ {getSurahName(ay.s)}
+                                                                </span>
+                                                            )}
                                                             {showBismillah && ay.s !== 9 && (
                                                                 <span
                                                                     style={{
                                                                         display: 'block',
                                                                         fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
                                                                         fontSize: `${Math.round(chunkTypo.bismillahSize * 0.88)}px`,
-                                                                        color: selectedBg.accent,
+                                                                        color: quranPagePalette ? (quranPagePalette.isDark ? quranPagePalette.gold : quranPagePalette.deep) : selectedBg.accent,
                                                                         marginBottom: '8px',
                                                                         lineHeight: 1.4,
                                                                         fontWeight: 'bold',
@@ -1856,7 +2054,15 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                         </>
                                                     )}
                                                     <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: renderTajweedTextHtml(getAyahText(ay.s, ay.a, false)) }} />
-                                                    {` ﴿${toArabic(ay.a)}﴾ `}
+                                                    {quranPagePalette ? (
+                                                        <>
+                                                            <span style={{ color: quranPagePalette.verseBracket }}> ﴿</span>
+                                                            <span style={{ color: quranPagePalette.verseNumber }}>{toArabic(ay.a)}</span>
+                                                            <span style={{ color: quranPagePalette.verseBracket }}>﴾ </span>
+                                                        </>
+                                                    ) : (
+                                                        ` ﴿${toArabic(ay.a)}﴾ `
+                                                    )}
                                                 </React.Fragment>
                                             );
                                         })}
@@ -1876,7 +2082,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             {chunkExplanation}
                                         </p>
                                     )}
-                                    {isShort && (
+                                    {!quranPagePalette && isShort && (
                                         selectedBg.type === 'share_design' && shareDesignAssets?.lowerMotifUrl ? (
                                             <img
                                                 src={shareDesignAssets.lowerMotifUrl}
@@ -1897,10 +2103,13 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 
                                 {/* Bottom Metadata & Footer */}
                                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingBottom: customText ? (selectedFrame.id !== 'none' ? '20px' : '16px') : (selectedFrame.id !== 'none' ? '12px' : '8px'), gap: customText ? '10px' : '14px', boxSizing: 'border-box' }}>
+                                    {quranPagePalette && renderQuranPageBottomDivider(chunk.mushafPage, 1)}
                                     <p style={{ fontFamily: selectedFont, color: textColor, textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 3px 6px rgba(0,0,0,0.5)', fontSize: '38px', fontWeight: 'bold', opacity: 0.96, textAlign: 'center', margin: 0, lineHeight: 1.35 }}>
                                         {chunk.surahInfoText}
                                     </p>
-                                    <div style={{ width: '60%', borderTop: `2px solid ${selectedBg.dividerColor || (selectedBg.isLight ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.35)')}` }}></div>
+                                    {!quranPagePalette && (
+                                        <div style={{ width: '60%', borderTop: `2px solid ${selectedBg.dividerColor || (selectedBg.isLight ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.35)')}` }}></div>
+                                    )}
                                     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                                         <a 
                                             href="https://play.google.com/store/apps/details?id=com.mushaf.ahmedandlayla"
@@ -2270,10 +2479,12 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                         .join('\n');
                     const firstPreviewAyah = currentPageChunk.ayahs[0];
                     const hasMultiplePreviewSurahs = currentPageChunk.ayahs.some((ay, idx) => idx > 0 && ay.s !== firstPreviewAyah?.s);
+                    const isPreviewFatihaStart = firstPreviewAyah?.s === 1 && firstPreviewAyah?.a === 1;
                     const showPreviewTopBismillah =
                         showBismillah &&
                         isMushafLikeMode &&
-                        !(firstPreviewAyah?.s === 9 && firstPreviewAyah?.a === 1);
+                        !(firstPreviewAyah?.s === 9 && firstPreviewAyah?.a === 1) &&
+                        !(quranPagePalette && isPreviewFatihaStart);
                     const showPreviewTopSurahLabel =
                         shareType === 'page' &&
                         hasMultiplePreviewSurahs &&
@@ -2486,7 +2697,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
                                         padding:
-                                            selectedBg.type === 'share_design'
+                                            quranPagePalette
+                                                ? selectedFrame.id !== 'none'
+                                                    ? '32px 30px 30px 30px'
+                                                    : '25px 25px 24px 25px'
+                                                : selectedBg.type === 'share_design'
                                                 ? selectedFrame.id !== 'none'
                                                     ? '55px 43px 54px 43px'
                                                     : '51px 39px 50px 39px'
@@ -2545,9 +2760,10 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             boxSizing: 'border-box',
                                         }}
                                     >
-                                        {/* Top Bismillah Header */}
+                                        {/* Top Bismillah / Quran Surah Banner Header */}
                                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '3px' }}>
-                                            {showPreviewTopSurahLabel && (
+                                            {quranPagePalette && firstPreviewAyah && renderQuranPageSurahBanner(firstPreviewAyah.s, 1 / 3)}
+                                            {!quranPagePalette && showPreviewTopSurahLabel && (
                                                 <p
                                                     style={{
                                                         fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
@@ -2566,7 +2782,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                     style={{
                                                         fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
                                                         fontSize: `${previewBismillahSize}px`,
-                                                        color: selectedBg.accent,
+                                                        color: quranPagePalette ? (quranPagePalette.isDark ? quranPagePalette.gold : quranPagePalette.deep) : selectedBg.accent,
                                                         margin: 0,
                                                         textShadow: selectedBg.id === 'bg_white' || selectedBg.isLight ? 'none' : '0 2px 4px rgba(0,0,0,0.5)',
                                                         fontWeight: 'bold',
@@ -2575,7 +2791,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                     بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
                                                 </p>
                                             )}
-                                            {previewIsShort &&
+                                            {!quranPagePalette && previewIsShort &&
                                                 (selectedBg.type === 'share_design' && shareDesignAssets?.upperMotifUrl ? (
                                                     <img
                                                         src={shareDesignAssets.upperMotifUrl}
@@ -2634,28 +2850,34 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                         <React.Fragment key={`${ay.s}-${ay.a}-${idx}`}>
                                                             {isNewMidChunkSurah && (
                                                                 <>
-                                                                    <span
-                                                                        style={{
-                                                                            display: 'block',
-                                                                            fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
-                                                                            fontSize: `${Math.round(previewBismillahSize * 0.9 * 10) / 10}px`,
-                                                                            color: selectedBg.accent,
-                                                                            marginTop: '5px',
-                                                                            marginBottom: '1px',
-                                                                            lineHeight: 1.4,
-                                                                            fontWeight: 'bold',
-                                                                            textShadow: selectedBg.id === 'bg_white' || selectedBg.isLight ? 'none' : '0 1.5px 3.5px rgba(0,0,0,0.45)',
-                                                                        }}
-                                                                    >
-                                                                        سُورَةُ {getSurahName(ay.s)}
-                                                                    </span>
+                                                                    {quranPagePalette ? (
+                                                                        <span style={{ display: 'block', marginTop: '5px' }}>
+                                                                            {renderQuranPageSurahBanner(ay.s, 1 / 3)}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span
+                                                                            style={{
+                                                                                display: 'block',
+                                                                                fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
+                                                                                fontSize: `${Math.round(previewBismillahSize * 0.9 * 10) / 10}px`,
+                                                                                color: selectedBg.accent,
+                                                                                marginTop: '5px',
+                                                                                marginBottom: '1px',
+                                                                                lineHeight: 1.4,
+                                                                                fontWeight: 'bold',
+                                                                                textShadow: selectedBg.id === 'bg_white' || selectedBg.isLight ? 'none' : '0 1.5px 3.5px rgba(0,0,0,0.45)',
+                                                                            }}
+                                                                        >
+                                                                            سُورَةُ {getSurahName(ay.s)}
+                                                                        </span>
+                                                                    )}
                                                                     {showBismillah && ay.s !== 9 && (
                                                                         <span
                                                                             style={{
                                                                                 display: 'block',
                                                                                 fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif',
                                                                                 fontSize: `${Math.round(previewBismillahSize * 0.88 * 10) / 10}px`,
-                                                                                color: selectedBg.accent,
+                                                                                color: quranPagePalette ? (quranPagePalette.isDark ? quranPagePalette.gold : quranPagePalette.deep) : selectedBg.accent,
                                                                                 marginBottom: '3px',
                                                                                 lineHeight: 1.4,
                                                                                 fontWeight: 'bold',
@@ -2673,7 +2895,15 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                                     __html: renderTajweedTextHtml(getAyahText(ay.s, ay.a, false)),
                                                                 }}
                                                             />
-                                                            {` ﴿${toArabic(ay.a)}﴾ `}
+                                                            {quranPagePalette ? (
+                                                                <>
+                                                                    <span style={{ color: quranPagePalette.verseBracket }}> ﴿</span>
+                                                                    <span style={{ color: quranPagePalette.verseNumber }}>{toArabic(ay.a)}</span>
+                                                                    <span style={{ color: quranPagePalette.verseBracket }}>﴾ </span>
+                                                                </>
+                                                            ) : (
+                                                                ` ﴿${toArabic(ay.a)}﴾ `
+                                                            )}
                                                         </React.Fragment>
                                                     );
                                                 })}
@@ -2697,7 +2927,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 </p>
                                             )}
 
-                                            {previewIsShort &&
+                                            {!quranPagePalette && previewIsShort &&
                                                 (selectedBg.type === 'share_design' && shareDesignAssets?.lowerMotifUrl ? (
                                                     <img
                                                         src={shareDesignAssets.lowerMotifUrl}
@@ -2734,6 +2964,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 boxSizing: 'border-box',
                                             }}
                                         >
+                                            {quranPagePalette && renderQuranPageBottomDivider(currentPageChunk.mushafPage, 1 / 3)}
                                             <p
                                                 style={{
                                                     fontFamily: selectedFont,
@@ -2749,12 +2980,14 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             >
                                                 {currentPageChunk.surahInfoText}
                                             </p>
-                                            <div
-                                                style={{
-                                                    width: '60%',
-                                                    borderTop: `1px solid ${selectedBg.dividerColor || (selectedBg.isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.35)')}`,
-                                                }}
-                                            />
+                                            {!quranPagePalette && (
+                                                <div
+                                                    style={{
+                                                        width: '60%',
+                                                        borderTop: `1px solid ${selectedBg.dividerColor || (selectedBg.isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.35)')}`,
+                                                    }}
+                                                />
+                                            )}
                                             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                                                 <span
                                                     style={{

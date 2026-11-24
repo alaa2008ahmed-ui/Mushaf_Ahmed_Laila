@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getCurrentSplashImage } from '../utils/splashThemeHelper';
+import { setSplashFullscreenMode } from '../utils/statusBar';
 
 const SPLASH_DURATION_MS = 3000;
 
@@ -14,6 +15,7 @@ interface ImageSplashProps {
 export function purgeBootSplashMemory(): void {
   if (typeof document === 'undefined') return;
   try {
+    setSplashFullscreenMode(false);
     document.body.style.backgroundColor = '#FFFFFF';
     document.documentElement.style.backgroundColor = '#FFFFFF';
     const bootEl = document.getElementById('initial-boot-splash');
@@ -74,6 +76,8 @@ const ImageSplash: React.FC<ImageSplashProps> = ({ onEnded }) => {
   }, []);
 
   useLayoutEffect(() => {
+    setSplashFullscreenMode(true);
+
     const now = Date.now();
     const rawStart =
       typeof window !== 'undefined' && typeof (window as any).__SPLASH_START_TS__ === 'number'
@@ -94,7 +98,7 @@ const ImageSplash: React.FC<ImageSplashProps> = ({ onEnded }) => {
         heroImgRef.current.removeAttribute('src');
       }
 
-      // Transition state first, then synchronously remove boot splash DOM
+      // Restore normal system bars & transition state, then synchronously remove boot splash DOM
       onEndedRef.current();
       purgeBootSplashMemory();
     };

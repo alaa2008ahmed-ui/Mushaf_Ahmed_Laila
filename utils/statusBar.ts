@@ -4,6 +4,56 @@ import { AutoSilentMode } from './silentMode';
 let lastAppliedTheme: string | null = null;
 let lastAppliedStatusBarIsDark: boolean | null = null;
 let lastSyncedThemeColor: string | null = null;
+let isSplashFullscreenActive = false;
+
+/**
+ * Enables or disables edge-to-edge immersive fullscreen during the initial launch splash screen,
+ * hiding both the top status bar and bottom navigation bar on mobile so only the splash image shows.
+ */
+export function setSplashFullscreenMode(fullscreen: boolean): void {
+  isSplashFullscreenActive = fullscreen;
+
+  if (typeof document !== 'undefined') {
+    try {
+      const root = document.documentElement;
+      const body = document.body;
+      if (fullscreen) {
+        root.classList.add('splash-fullscreen-active');
+        body?.classList.add('splash-fullscreen-active');
+        const appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
+        if (appleMeta) appleMeta.content = 'black-translucent';
+      } else {
+        root.classList.remove('splash-fullscreen-active');
+        body?.classList.remove('splash-fullscreen-active');
+        lastAppliedTheme = null;
+        lastAppliedStatusBarIsDark = null;
+      }
+    } catch {}
+  }
+
+  if (!Capacitor.isNativePlatform()) {
+    return;
+  }
+
+  if (
+    Capacitor.getPlatform() === 'android' &&
+    AutoSilentMode &&
+    typeof AutoSilentMode.setSplashFullscreen === 'function'
+  ) {
+    try {
+      void AutoSilentMode.setSplashFullscreen({ fullscreen }).catch(() => {});
+    } catch {}
+    return;
+  }
+
+  try {
+    if (fullscreen) {
+      void SystemBars.hide().catch(() => {});
+    } else {
+      void SystemBars.show().catch(() => {});
+    }
+  } catch {}
+}
 
 /**
  * Synchronizes the native Android/iOS status bar & navigation bar icon colors
@@ -45,7 +95,7 @@ export function syncSystemStatusBar(
           appleMeta.name = 'apple-mobile-web-app-status-bar-style';
           document.head.appendChild(appleMeta);
         }
-        const targetAppleStyle = isDarkTheme ? 'black-translucent' : 'default';
+        const targetAppleStyle = isSplashFullscreenActive || isDarkTheme ? 'black-translucent' : 'default';
         if (appleMeta.content !== targetAppleStyle) {
           appleMeta.content = targetAppleStyle;
         }
@@ -59,6 +109,10 @@ export function syncSystemStatusBar(
     } catch {
       // Ignore DOM metadata errors in restricted environments
     }
+  }
+
+  if (isSplashFullscreenActive) {
+    return;
   }
 
   if (lastAppliedStatusBarIsDark === isDarkTheme) {

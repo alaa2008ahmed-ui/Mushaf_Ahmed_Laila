@@ -12,6 +12,11 @@
 		]
 	},
 	"plugins": {
+		"SystemBars": {
+			"hidden": true,
+			"initialViewportFitValueHint": "cover",
+			"insetsHandling": "css"
+		},
 		"Keyboard": {
 			"resize": "native",
 			"style": "dark"

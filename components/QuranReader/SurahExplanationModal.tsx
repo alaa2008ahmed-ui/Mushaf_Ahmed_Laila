@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
-import { X, Volume2, VolumeX, Copy, Check, Share2, ZoomIn, BookOpen, RefreshCw } from 'lucide-react';
+import { X, Volume2, VolumeX, Copy, Check, Share2, ZoomIn, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { shareAsImage } from '../../utils/shareAsImage';
 import {
@@ -96,6 +96,7 @@ const SurahExplanationModal: React.FC<SurahExplanationModalProps> = ({
     const [loadError, setLoadError] = useState<boolean>(false);
     const [dataRevision, setDataRevision] = useState<number>(0);
     const [copiedAyahKey, setCopiedAyahKey] = useState<string | null>(null);
+    const [copiedSurah, setCopiedSurah] = useState<boolean>(false);
     const [reloadNonce, setReloadNonce] = useState<number>(0);
     const [selectedAyah, setSelectedAyah] = useState<{ s: number; a: number }>({
         s: surahNumber,
@@ -111,6 +112,7 @@ const SurahExplanationModal: React.FC<SurahExplanationModalProps> = ({
         if (!isOpen) return;
         setSelectedAyah({ s: surahNumber, a: targetAyahNumber || 1 });
         setVisibleSurah(surahNumber);
+        setCopiedSurah(false);
         userInteractedRef.current = false;
     }, [isOpen, surahNumber, targetAyahNumber]);
 
@@ -311,17 +313,6 @@ const SurahExplanationModal: React.FC<SurahExplanationModalProps> = ({
         setVisibleSurah(sNum);
     }, []);
 
-    const handleScrollToSelected = useCallback(() => {
-        const idx = ayahToIndexMap.get(`${selectedAyah.s}:${selectedAyah.a}`);
-        if (idx !== undefined) {
-            virtuosoRef.current?.scrollToIndex({
-                index: idx,
-                align: 'center',
-                behavior: 'smooth',
-            });
-        }
-    }, [ayahToIndexMap, selectedAyah]);
-
     const handleClose = () => {
         if (isAudioPlaying && onStopAudio) {
             onStopAudio();
@@ -341,6 +332,68 @@ const SurahExplanationModal: React.FC<SurahExplanationModalProps> = ({
             : isEn
             ? 'Translation is not available for this verse.'
             : 'الترجمة غير متوفرة لهذه الآية.';
+
+    const copyTextToClipboard = useCallback(async (text: string): Promise<boolean> => {
+        if (navigator.clipboard?.writeText) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch {
+                // fallback below
+            }
+        }
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return ok;
+        } catch {
+            return false;
+        }
+    }, []);
+
+    const handleCopyCurrentSurah = useCallback(
+        async (targetSurahNum: number, titleText: string, subtitleText: string) => {
+            const surahs: any[] = quranData?.surahs || [];
+            const surahObj = surahs.find((s, idx) => Number(s?.number || idx + 1) === targetSurahNum);
+            const ayahs: any[] = surahObj?.ayahs || [];
+            if (ayahs.length === 0) return;
+
+            const parts: string[] = [`${titleText} (${subtitleText})`];
+            if (targetSurahNum !== 1 && targetSurahNum !== 9) {
+                parts.push('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ');
+            }
+
+            for (let idx = 0; idx < ayahs.length; idx++) {
+                const ayah = ayahs[idx];
+                const aNum = Number(ayah?.numberInSurah || idx + 1);
+                const ayahText = ayah?.text || '';
+                const rawBody = getExplanationEntrySync(
+                    mode,
+                    targetSurahNum,
+                    aNum,
+                    currentTafseerId,
+                    tafseerCacheRef.current
+                );
+                const cleanExp = cleanExplanationText(rawBody) || emptyFallbackText;
+                parts.push(`${ayahText} ﴿${toArabic(aNum)}﴾\n${cleanExp}`);
+            }
+
+            const ok = await copyTextToClipboard(parts.join('\n\n'));
+            if (ok) {
+                setCopiedSurah(true);
+                window.setTimeout(() => setCopiedSurah(false), 1800);
+                showToast?.(isEn ? 'Current surah copied to clipboard' : 'تم نسخ السورة الحالية بالكامل');
+            }
+        },
+        [copyTextToClipboard, currentTafseerId, emptyFallbackText, isEn, mode, quranData, showToast, tafseerCacheRef]
+    );
 
     const renderItem = useCallback(
         (index: number, item: FlattenedExplanationItem) => {
@@ -588,8 +641,6 @@ const SurahExplanationModal: React.FC<SurahExplanationModalProps> = ({
     const activeSurahNum = visibleSurah || selectedAyah.s || surahNumber;
     const activeRawArName = stripSurahWord(SURAH_NAMES_AR[activeSurahNum - 1] || '');
     const activeEnName = SURAH_NAMES_EN[activeSurahNum - 1] || activeRawArName;
-    const selectedRawArName = stripSurahWord(SURAH_NAMES_AR[selectedAyah.s - 1] || '');
-    const selectedEnName = SURAH_NAMES_EN[selectedAyah.s - 1] || selectedRawArName;
     const tafseerDisplayName = getTafseerDisplayName(currentTafseerId, isEn ? 'en' : 'ar');
 
     const headerTitle =
@@ -607,10 +658,14 @@ const SurahExplanationModal: React.FC<SurahExplanationModalProps> = ({
 
     const headerSubtitle =
         mode === 'tafseer'
-            ? `${tafseerDisplayName} • ${isEn ? 'All 114 Surahs' : 'جميع السور (١١٤)'}`
+            ? tafseerDisplayName
             : mode === 'meanings'
-            ? `${isEn ? 'Quran Vocabulary & Meanings' : 'معاني مفردات القرآن'} • ${isEn ? 'All 114 Surahs' : 'جميع السور (١١٤)'}`
-            : `${isEn ? 'English Translation' : 'الترجمة الإنجليزية'} • ${isEn ? 'All 114 Surahs' : 'جميع السور (١١٤)'}`;
+            ? isEn
+                ? 'Quran Vocabulary & Meanings'
+                : 'معاني مفردات القرآن'
+            : isEn
+            ? 'English Translation'
+            : 'الترجمة الإنجليزية';
 
     return (
         <div
@@ -620,61 +675,54 @@ const SurahExplanationModal: React.FC<SurahExplanationModalProps> = ({
                 backgroundColor: p.modalBg,
                 color: p.modalText,
                 fontFamily: p.fontFamily || "'Cairo', sans-serif",
+                paddingBottom: 'var(--logical-safe-bottom, var(--app-safe-bottom, env(safe-area-inset-bottom, 0px)))',
             }}
         >
             {/* Full-screen Top Bar with X Exit Button */}
             <div
-                className={`shrink-0 ${isLandscape ? 'px-3 py-2' : 'px-3.5 sm:px-5 pt-3 pb-2.5'}`}
+                className={`shrink-0 ${isLandscape ? 'px-3 pb-2' : 'px-3.5 sm:px-5 pb-2.5'}`}
                 style={{
                     borderBottom: `1px solid ${hairlineColor}`,
                     backgroundColor: p.modalBg,
+                    paddingTop: isLandscape
+                        ? 'calc(0.5rem + var(--logical-safe-top, var(--app-safe-top, env(safe-area-inset-top, 0px))))'
+                        : 'calc(0.75rem + var(--logical-safe-top, var(--app-safe-top, env(safe-area-inset-top, 0px))))',
+                    paddingLeft: isLandscape ? 'calc(0.75rem + var(--logical-safe-left, 0px))' : undefined,
+                    paddingRight: isLandscape ? 'calc(0.75rem + var(--logical-safe-right, 0px))' : undefined,
                 }}
             >
                 <div
                     className={`${isLandscape ? 'py-2 px-3 rounded-xl' : 'py-2.5 px-3.5 rounded-2xl'} flex items-center justify-between gap-2.5 quran-raised-card border-0`}
                     style={{ backgroundColor: p.headerBg }}
                 >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1 text-start">
+                    <div className="flex flex-col min-w-0 flex-1 text-start">
                         <span
-                            className={`${isLandscape ? 'w-8 h-8 rounded-lg' : 'w-9 h-9 rounded-xl'} flex items-center justify-center shrink-0`}
-                            style={{
-                                backgroundColor: p.isDark ? 'rgba(255,255,255,0.10)' : `${p.headerAccent}18`,
-                                color: p.headerAccent,
-                            }}
+                            className={`${isLandscape ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-black tracking-wide truncate`}
+                            style={{ color: p.headerAccent }}
                         >
-                            <BookOpen size={isLandscape ? 16 : 18} />
+                            {headerTitle}
                         </span>
-                        <div className="flex flex-col min-w-0">
-                            <span
-                                className={`${isLandscape ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-black tracking-wide truncate`}
-                                style={{ color: p.headerAccent }}
-                            >
-                                {headerTitle}
-                            </span>
-                            <span
-                                className={`${isLandscape ? 'text-[10px]' : 'text-[11px]'} font-bold truncate`}
-                                style={{ color: p.mutedText }}
-                            >
-                                {headerSubtitle}
-                            </span>
-                        </div>
+                        <span
+                            className={`${isLandscape ? 'text-[10px]' : 'text-[11px]'} font-bold truncate`}
+                            style={{ color: p.mutedText }}
+                        >
+                            {headerSubtitle}
+                        </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
                         <button
                             type="button"
-                            onClick={handleScrollToSelected}
-                            className={`${isLandscape ? 'h-8 px-2.5 text-[10px]' : 'h-9 px-3 text-[11px]'} quran-raised-btn rounded-full font-black flex items-center justify-center border-0 cursor-pointer shrink-0 truncate max-w-[130px]`}
-                            style={{ backgroundColor: p.closeBg, color: p.headerAccent }}
-                            title={
-                                isEn
-                                    ? `Selected: ${selectedEnName} ${selectedAyah.a}`
-                                    : `الآية المحددة: ${selectedRawArName} ${toArabic(selectedAyah.a)}`
-                            }
+                            onClick={() => void handleCopyCurrentSurah(activeSurahNum, headerTitle, headerSubtitle)}
+                            className={`${isLandscape ? 'w-8 h-8' : 'w-9 h-9'} quran-raised-btn rounded-full flex items-center justify-center border-0 cursor-pointer shrink-0`}
+                            style={{
+                                backgroundColor: p.closeBg,
+                                color: copiedSurah ? '#16a34a' : p.headerAccent,
+                            }}
+                            title={isEn ? 'Copy current surah' : 'نسخ السورة الحالية'}
+                            aria-label={isEn ? 'Copy current surah' : 'نسخ السورة الحالية'}
                         >
-                            {isEn
-                                ? `${selectedEnName} : ${selectedAyah.a}`
-                                : `${selectedRawArName} : ${toArabic(selectedAyah.a)}`}
+                            {copiedSurah ? <Check size={isLandscape ? 15 : 17} /> : <Copy size={isLandscape ? 15 : 17} />}
                         </button>
                         <button
                             type="button"
